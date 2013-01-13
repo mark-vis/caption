@@ -1,0 +1,798 @@
+% Test of the caption2 package
+% (c) 1995 Harald Axel Sommerfeldt
+
+\documentclass[a4paper]{article}
+
+\usepackage{float}[1995/03/29]
+\usepackage{longtable}[1995/06/15]
+\usepackage[bf,centerlast]{subfigure}[1995/03/06]
+
+%\usepackage{rotating}[1995/04/07]
+%\usepackage{floatfig}\AtBeginDocument{\initfloatingfigs}}{}
+%\usepackage{wrapfig}
+%\usepackage{supertabular}
+
+% Test of error messages
+% \usepackage[huba,hopp,ruled]{caption2}
+
+% von caption2.sty:
+\newcommand*\optionboxed{%
+    \dummycaptionstyle{boxed}{}}
+\newcommand*\optionruled{%
+  \dummycaptionstyle{ruled}{\onelinecaptionsfalse\setcaptionmargin{0pt}}}
+
+\errorcontextlines9
+\def\DebugFromHere{\tracingmacros=1\tracingcommands=1\relax}
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\\string#1}}
+\providecommand\star{\ttfamily*}
+\providecommand\marg[1]{{\ttfamily\char`\{#1\char`\}}}
+\providecommand\oarg[1]{{\ttfamily[#1]}}
+\providecommand\parg[1]{{\ttfamily(#1)}}
+
+\newcommand*\centerlast{%
+  \addtolength{\leftskip}{0pt plus 1fil}%
+  \addtolength{\rightskip}{0pt plus -1fil}%
+  \setlength{\parfillskip}{0pt plus 2fil}}
+
+\makeatletter
+\let\x@makecaption\@makecaption
+\let\x@floatc@plain\floatc@plain
+\let\x@fs@boxed\fs@boxed
+\let\x@floatc@ruled\floatc@ruled
+\let\x@LT@makecaption\LT@makecaption
+\let\x@makesubfigurecaption\@makesubfigurecaption
+\makeatother
+\usepackage{caption2}
+\makeatletter
+\let\c@makecaption\@makecaption
+\let\c@floatc@plain\floatc@plain
+\let\c@fs@boxed\fs@boxed
+\let\c@floatc@ruled\floatc@ruled
+\let\c@LT@makecaption\LT@makecaption
+\let\c@makesubfigurecaption\@makesubfigurecaption
+\makeatother
+
+% some helpers
+\newcommand*\normalcaptionstyle{%
+  \captionstyle{normal}
+  \renewcommand*\captionfont{}
+  \renewcommand*\captionlabelfont{}
+  \setcaptionmargin{0pt}%
+  \setlength\captionindent{0pt}%
+  \renewcommand*\captionlabeldelim{:}%
+  \onelinecaptionstrue}
+\newcommand*\mycaptionstyle{%
+  \captionstyle{indent}%
+  \renewcommand\captionfont{\small}%
+  \renewcommand\captionlabelfont{\bfseries}%
+  \setcaptionmargin{\leftmargini}%
+  \setlength\captionindent{\parindent}%
+  \renewcommand\captionlabeldelim{.}%
+  \onelinecaptionstrue}
+
+\newcommand*\shortcaption[1]{This is a short #1 caption.}
+\newcommand*\longcaption[1]{This is a #1 caption. This is a #1 caption. This is a #1 caption.
+  This is a #1 caption. This is a #1 caption. This is a #1 caption.}
+\newcommand*\test[3]{%
+  \begin{figure}[!ht]
+  \centerline{\uppercase{#1 caption}}
+  \caption[This figure sucks]{\label{#2}#3{#1}}
+  \end{figure}}
+\newcommand*\text{Here comes some text. Here comes some text. Here comes some text.
+  Here comes some text. Here comes some text. Here comes some text.
+  Here comes some text. Here comes some text. Here comes some text.
+  Here comes some text. Here comes some text. Here comes some text.}
+
+\begin{document}
+
+\title{Test of the caption package}
+\author{Harald Axel Sommerfeldt}
+\maketitle
+
+\tableofcontents
+\let\oldsection\section
+\def\section#1{\typeout{Section: #1}\oldsection{#1}}
+\let\oldsubsection\subsection
+\def\subsection#1{\typeout{Subsection: #1}\oldsubsection{#1}}
+
+\clearpage
+\section{Comparison with \LaTeX's captions}
+
+\makeatletter
+\let\@makecaption\x@makecaption
+\makeatother
+\test{\LaTeX{}}{latex1}{\shortcaption}
+\test{\LaTeX{}}{latex2}{\longcaption}
+\text
+\makeatletter
+\let\@makecaption\c@makecaption
+\makeatother
+\test{\textsf{caption}}{caption1}{\shortcaption}
+\test{\textsf{caption}}{caption2}{\longcaption}
+\text
+
+
+\clearpage
+\mycaptionstyle
+\section{Predefined caption styles}
+
+\newlength\xyz\xyz\textwidth\advance\xyz by -2\captionmargin
+\noindent\hbox{\vrule width \captionmargin height 0.4pt depth 0pt
+\vrule width \xyz height 0pt depth 0pt
+\vrule width \captionmargin height 0.4pt depth 0pt}
+
+\captionstyle{normal}
+\test{normal}{normal1}{\longcaption}
+\captionstyle{center}
+\test{center}{center1}{\longcaption}
+\captionstyle{flushleft}
+\test{flushleft}{flushleft1}{\longcaption}
+\captionstyle{flushright}
+\test{flushright}{flushright1}{\longcaption}
+\captionstyle{centerlast}
+\test{centerlast}{centerlast1}{\longcaption}
+\captionstyle{hang}
+\test{hang}{hang1}{\longcaption}
+\captionstyle{indent}
+\test{indent}{indent1}{\longcaption}
+
+\noindent\hbox{\vrule width \captionmargin height 0.4pt depth 0pt
+\vrule width \xyz height 0pt depth 0pt
+\vrule width \captionmargin height 0.4pt depth 0pt}
+
+\clearpage
+\mycaptionstyle
+\section{\cs{captionwidth}}
+
+\setcaptionwidth{\textwidth}
+\addtolength{\captionwidth}{-40pt}
+\noindent\hspace{20pt}\hrulefill\hspace{20pt}
+
+\captionstyle{normal}
+\test{normal}{normal2}{\longcaption}
+\captionstyle{center}
+\test{center}{center2}{\longcaption}
+\captionstyle{flushleft}
+\test{flushleft}{flushleft2}{\longcaption}
+\captionstyle{flushright}
+\test{flushright}{flushright2}{\longcaption}
+\captionstyle{centerlast}
+\test{centerlast}{centerlast2}{\longcaption}
+\captionstyle{hang}
+\test{hang}{hang2}{\longcaption}
+\captionstyle{indent}
+\test{indent}{indent2}{\longcaption}
+
+\noindent\hspace{20pt}\hrulefill\hspace{20pt}
+
+
+\clearpage
+\mycaptionstyle
+\section{The option `nooneline'}
+
+\onelinecaptionsfalse
+
+\captionstyle{normal}
+\test{normal}{normal3}{\shortcaption}
+\captionstyle{center}
+\test{center}{center3}{\shortcaption}
+\captionstyle{flushleft}
+\test{flushleft}{flushleft3}{\shortcaption}
+\captionstyle{flushright}
+\test{flushright}{flushright3}{\shortcaption}
+\captionstyle{centerlast}
+\test{centerlast}{centerlast3}{\shortcaption}
+\captionstyle{hang}
+\test{hang}{hang3}{\shortcaption}
+\captionstyle{indent}
+\test{indent}{indent3}{\shortcaption}
+
+
+\clearpage
+\mycaptionstyle
+\setcaptionmargin{1cm}
+\twocolumn
+\sloppy
+\section{Twocolumn floats}
+
+\subsection{Blah}
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+\test{twocolumn}{twocolumn1}{\longcaption}
+\begin{figure*}[!ht]
+ \centerline{\uppercase{twocolumn caption}}
+% \divide\captionmargin by 2  % warum klappt dies nicht???
+ \setcaptionmargin{1mm}%
+ \caption{\label{twocolumn2}\longcaption{twocolumn}}
+\end{figure*}
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+
+Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah.
+\fussy
+\onecolumn
+
+
+\clearpage
+\mycaptionstyle
+\section{User-defined captions styles}
+
+\newcaptionstyle{fancy}{%
+  \textsf{\captionlabel}\\\captiontext\par}
+\captionstyle{fancy}
+\test{fancy}{fancy1}{\shortcaption}
+\test{fancy}{fancy2}{\longcaption}
+
+\renewcaptionstyle{fancy}{%
+  \usecaptionmargin\captionfont%
+  \onelinecaption{{\captionlabelfont\captionlabel:} \captiontext}%
+    {{\centering\captionlabelfont\captionlabel\par}\centerlast\captiontext\par}}
+\test{another fancy}{fancy3}{\shortcaption}
+\test{another fancy}{fancy4}{\longcaption}
+
+
+\iffalse
+\section{Test of errors}
+\newcaptionstyle{normal}{}
+\renewcaptionstyle{kaese}{}
+\usecaptionstyle{normal}
+\onelinecaption{}{}
+\fi
+
+
+\ifx\floatstyle\undefined
+\else
+\clearpage
+\normalcaptionstyle
+\makeatletter
+\let\old@fst@table\fst@table
+\let\old@table\table
+\let\old@endtable\endtable
+\makeatother
+\section{The float package}
+
+\floatstyle{plain}
+\newfloat{Example}{t}{lof}[section]
+\floatstyle{ruled}
+\newfloat{Program}{tbp}{lof}[section]
+\floatstyle{boxed}
+\restylefloat{table}
+
+\newcommand\testplainfloat{%
+\begin{Example}[H]
+\begin{verse}
+\cs{floatstyle}\marg{ruled}\\
+\cs{newfloat}\marg{Program}\marg{tbp}\marg{lop}\oarg{section}\\
+\dots\ loads o' stuff \dots\\
+\cs{begin}\marg{Program}\\
+\cs{begin}\marg{verbatim}\\
+\dots\ program text \dots\\
+\cs{end}\marg{verbatim}\\
+\cs{caption}{\ttfamily\char`\{}\dots\ caption \dots{\ttfamily\char`\}}\\
+\cs{end}\marg{Program}
+\end{verse}
+\caption{This is another silly floating Example. Except that this one
+  doesn't actually float because it uses the {\tt[H]} optional parameter
+  to appear \textbf{Here}. (Gotcha.)}
+\end{Example}}
+\newcommand\testruledfloat{%
+\begin{Program}[H]
+\texttt{\char35 include \char`\<stdio.h\char`\>}\\
+\\
+\texttt{int main(int argc, char **argv)}\\
+\texttt{\char`\{}\\
+\texttt{\ \ \ \ \ \ \ int i;}\\
+\texttt{\ \ \ \ \ \ \ for (i = 0; i < argc; ++i)}\\
+\texttt{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ printf("argv[\%d] = \%s\cs{n}", i, argv[i]);}\\
+\texttt{\ \ \ \ \ \ \ return 0;}\\
+\texttt{\char`\}}\\
+\caption{The first program. This hasn't got anything to do with the style
+   but is included as an example. Note the \texttt{ruled} float style.}
+\end{Program}}
+\newcommand\testboxedfloat{%
+\begin{table}[H] \def\B##1{$\displaystyle{n\choose##1}$}
+\begin{center} \begin{tabular}{c|cccccccc}
+$n$&\B0&\B1&\B2&\B3&\B4&\B5&\B6&\B7\\ \hline
+ 0 & 1\\
+ 1 & 1&1\\
+ 2 & 1&2&1\\
+ 3 & 1&3&3&1\\
+ 4 & 1&4&6&4&1\\
+ 5 & 1&5&10&10&5&1\\
+ 6 & 1&6&15&20&15&6&1\\
+ 7 & 1&7&21&35&35&21&7&1
+\end{tabular} \end{center}
+\caption{Pascal's triangle. This is a re-styled \LaTeX\ \texttt{table}.}
+\end{table}}
+\newcommand\testfloat{\testplainfloat\testruledfloat\testboxedfloat}
+
+\subsection{Without caption package}
+\makeatletter
+\let\floatc@plain\x@floatc@plain
+\let\fs@boxed\x@fs@boxed
+\let\floatc@ruled\x@floatc@ruled
+\makeatother
+\testfloat
+
+\clearpage
+\subsection{With caption package}
+\makeatletter
+\let\floatc@plain\c@floatc@plain
+\let\fs@boxed\c@fs@boxed
+\let\floatc@ruled\c@floatc@ruled
+\makeatother
+\testfloat
+
+\clearpage
+\mycaptionstyle
+\makeatletter
+\subsection{\dots and with captionstyle `\caption@style'}
+\makeatother
+\testfloat
+
+\iffalse
+\subsection{Test of errors}
+\captionstyle{boxed}
+\test{this should not work}{floaterr}{\shortcaption}
+\captionstyle{indent}
+\fi
+
+\clearpage
+\subsection{Redefined caption styles}
+
+\renewcaptionstyle{ruled}{\itshape\captiontext} % very ugly!
+\renewcaptionstyle{boxed}{{\renewcommand\captionlabelfont{\sffamily}\usecaptionstyle{centerlast}}}
+\testruledfloat
+\testboxedfloat
+
+\mycaptionstyle
+\renewcommand*\captionlabelfont{}
+\subsection{The option `boxed'}
+\optionboxed
+\testboxedfloat
+\subsection{The option `ruled'}
+\optionruled
+\testruledfloat
+
+\subsection{User-defined float styles}
+\makeatletter
+\def\fs@fancy{%
+  \def\@fs@pre{\hrule{\centering\scshape This is the start!\par}\hrule}%
+  \def\@fs@mid{\hrule{\centering\scshape This is the middle!\par}\hrule}%
+  \def\@fs@post{\hrule{\centering\scshape This is the end!\par}\hrule}%
+  \let\@fs@iftopcapt\iffalse%
+  \def\@fs@capt{\captionstyle{fancy}\floatc@plain}}
+\makeatother
+\floatstyle{fancy}
+
+\newfloat{Fancyfl}{tbp}{lof}[section]
+\begin{Fancyfl}[H]
+\begin{center}A very fancy float\end{center}
+\caption{\longcaption{very fancy}}
+\end{Fancyfl}
+
+\makeatletter
+\let\fst@table\old@fst@table
+\let\table\old@table
+\let\endtable\old@endtable
+\makeatother
+\fi
+
+
+\ifx\LTcapwidth\undefined
+\else
+\clearpage
+\section{The longtable package}
+
+\newcommand\testlongtable[1]{%
+\begin{longtable}{|l|r|}
+#1{\longcaption{longtable}} \\
+Test & Test \\
+Test & Test \\
+\end{longtable}}
+
+\subsection{Without caption package}
+\makeatletter
+\let\LT@makecaption\x@LT@makecaption
+\makeatother
+\testlongtable{\caption}
+\testlongtable{\caption*}
+
+\subsection{With caption package}
+\makeatletter
+\let\LT@makecaption\c@LT@makecaption
+\makeatother
+
+\normalcaptionstyle
+\testlongtable{\caption}
+\testlongtable{\caption*}
+
+\mycaptionstyle\setcaptionmargin{0pt}
+\testlongtable{\caption}
+\testlongtable{\caption*}
+
+\renewcaptionstyle{longtable}{%
+  \setcaptionwidth\LTcapwidth\usecaptionmargin
+  \onelinecaption{Longtable: \captiontext}{Longtable: \captiontext\par}}
+\testlongtable{\caption}
+\testlongtable{\caption*}
+
+\renewcaptionstyle{longtable}{%
+  \usecaptionmargin
+  \onelinecaption{Longtable: \captiontext}{Longtable: \captiontext\par}}
+\testlongtable{\caption}
+\testlongtable{\caption*}
+
+\fi
+
+
+\ifx\rotcaption\undefined
+\else
+\clearpage
+\mycaptionstyle
+\section{The rotating package}
+
+\begin{sidewaystable}
+\centering
+\begin{tabular}{|llllllllp{1in}lp{1in}|}
+\hline
+Context   &Length   &Breadth/   &Depth   &Profile   &Pottery   &Flint   &Animal   &Stone   &Other    &C14 Dates \\
+  &         &Diameter   &        &          &          &        & 
+Bones&&&\\
+\hline
+&&&&&&&&&&\\
+\multicolumn{10}{|l}{\bf Grooved Ware}&\\
+784       &---        &0.9m       &0.18m   &Sloping U &P1       &$\times$46  &  $\times$8      &&       $\times$2 bone&  2150$\pm$ 100 BC\\
+785       &---        &1.00m      &0.12    &Sloping U &P2--4    &$\times$23  &  $\times$21     & Hammerstone &---&---\\
+962       &---        &1.37m      &0.20m   &Sloping U &P5--6    &$\times$48  &  $\times$57*    & ---&     ---&1990 $\pm$ 80 BC (Layer 4) 1870 $\pm$90 BC (Layer 1)\\
+983       &0.83m      &0.73m      &0.25m   &Stepped U &---      &$\times$18  &  $\times$8      & ---& Fired clay&---\\
+&&&&&&&&&&\\
+\multicolumn{10}{|l}{\bf Beaker}&\\
+552       &---        &0.68m      &0.12m   &Saucer    &P7--14   &---           & ---       & ---       &---        &---\\
+790       &---        &0.60m      &0.25m   &U         &P15      &$\times$12    & ---       & Quartzite-lump&---    &---\\
+794       &2.89m      &0.75m      &0.25m   &Irreg.    &P16      &$\times$3     & ---       & ---       &---        &---\\
+\hline
+\end{tabular}
+ 
+\caption[Grooved Ware and Beaker Features, their Finds and
+Radiocarbon Dates]{Grooved Ware and Beaker Features, their
+Finds and Radiocarbon Dates; For a breakdown of the Pottery
+Assemblages see Tables I and III; for
+the Flints see Tables II and IV; for the
+Animal Bones see Table V.}\label{rotfloat2}
+\end{sidewaystable}
+
+\begin{table}[H]
+\centering
+\hbox{
+\rotcaption{Minimum number of individuals; effect of rotating table
+and caption separately}\label{rotfloat3}%
+\begin{sideways}
+\begin{tabular}[t]{cccccccccp{1cm}}
+\hline
+Phase&Total&Cattle&Sheep&Pig&Red Deer&Horse&Dog&Goat&Other\\
+\hline
+&1121&54&12&32&1&1&1&1&1 polecat\\
+3&8255&58&6&35&1&1&1&1&1 roe deer, 1 hare, 1 cat, 1 otter\\
+4&543&45&6&45&4&1&1&---&---\\
+\hline
+&9919&157&24&112&6&3&3&2&5\\
+\hline
+\end{tabular}
+\end{sideways}
+}
+\end{table}
+
+\fi
+
+
+\ifx\subcapsize\undefined
+\else
+\clearpage
+\normalcaptionstyle
+\section{The subfigure package}
+\makeatletter
+\typeout{subcapstyle: \caption@substyle (should be `centerlast')}
+\makeatother
+
+\newcommand*\goodgap{%
+  \hspace{\subfigtopskip}%
+  \hspace{\subfigbottomskip}}
+
+\makeatletter
+\newcommand\testsubfigure[2]{%
+\renewcommand\thesubfigure{(\alph{subfigure})}
+\renewcommand{\@thesubfigure}{{\subcaplabelfont\thesubfigure}\space}
+\let\p@subfigure\thefigure
+\setcounter{lofdepth}{1}
+\begin{figure}[!ht]
+  \centering
+  \subfigure[First]{%
+    \fbox{\hbox to 20mm{\vbox to 15mm{\vfil\null}\hfil}}}%
+  \goodgap%
+  \subfigure[Second Figure]{
+    \fbox{\hbox to 20mm{\vbox to 10mm{\vfil\null}\hfil}}}\\
+  \subfigure[Third]{\label{#1-c}%
+    \fbox{\hbox to 20mm{\vbox to 10mm{\vfil\null}\hfil}}}\\
+  \caption{Three subfigures.}%
+  \label{#1}%
+\end{figure}
+Figure~\ref{#1} contains two top `subfigures' and Figure~\ref{#1-c}.
+
+\renewcommand{\thesubfigure}{\thefigure.\arabic{subfigure}}
+\renewcommand{\@thesubfigure}{\thesubfigure:\space}
+\renewcommand{\p@subfigure}{}
+\setcounter{lofdepth}{2}
+\begin{figure}[!ht]
+  \begin{center}%
+    \subfigure[First]{%
+      \label{#2:first}%
+      \fbox{\hbox to 21mm{\vbox to 15mm{\vfil\null}\hfil}}}%
+    \goodgap%
+    \subfigure[Second]{%
+      \label{#2:second}%
+      \fbox{\hbox to 21mm{\vbox to 15mm{\vfil\null}\hfil}}}\\
+  \end{center}
+  \caption{Two subfigures.}
+\end{figure}                  
+See subfigures~\ref{#2:first} and \ref{#2:second}.}
+\makeatother
+
+\subsection{Without caption package}
+\makeatletter
+\let\@makesubfigurecaption\x@makesubfigurecaption
+\makeatother
+\subcaphangfalse
+\subcapcenterfalse
+\subcapcenterlastfalse
+\subcapnoonelinefalse
+\testsubfigure{3figs}{fig}
+
+\clearpage
+\subsection{With caption package}
+\makeatletter
+\let\@makesubfigurecaption\c@makesubfigurecaption
+\makeatother
+\subcapstyle{normal}
+\testsubfigure{3figx}{fix}
+
+\clearpage
+\subsection{\dots and with subcapstyle `hang'}
+\subcapstyle{hang}
+\renewcommand\subcapsize{\footnotesize\itshape}
+\renewcommand\subcaplabelfont{\upshape}
+\testsubfigure{3figy}{fiy}
+
+\fi
+
+
+\ifx\floatingfigure\undefined
+\else
+\clearpage
+\mycaptionstyle
+\section{The floatfig package}
+\sloppy
+
+Herr$^{1}$ Dr.~med.~Richard Wenger, Leiter der Roent\-gen-Ab\-tei\-lung
+einer Klinik in Davos, und seine
+Tochter Th\'e\-r\`ese kamen gegen elf Uhr vormittags
+in Calais an. Sie hatten den Schnellzug genommen,
+der Basel um null Uhr fuenfzig verlaesst, und die
+Nacht in einem Liege\-wagen-Abteil verbracht.
+Aus Sparsamkeit, aus erzieherischen Gruenden und weil
+Th\'e\-r\`ese in den Weihnachtsferien mit dem gleichen
+Zug und in der gleichen Klasse reisen, Strecke und
+Art des Reisens also kennenlernen sollte, hatte Dr.~Wenger
+kein Schlafwagenabteil erster Klasse bestellt.
+uebrigens hatten sie Glueck gehabt, nur ein
+einziger Fahrgast war waehrend der Nacht zugestiegen,
+in Metz, hatte sich, ohne das Licht anzuzuenden
+und so leise wie moeglich, auf eine der oberen
+Baenke gelegt und den Zug bereits in Lille wieder
+verlassen.\par
+\begin{floatingfigure}{10truecm}
+%
+\vbox to 5truecm{\vfil
+                 \hbox to \hsize{\hfil Fl-Fig. \the\ffigcount\hfil}%
+                 \vfil}
+%
+\caption{Irgendwelcher Text, der die Abb. erlaeutert.}
+\end{floatingfigure}
+%Irgendwelcher Text, der die Abb. erlaeutert./
+%
+Nach der Abfahrt hatte Dr.~Wen\-ger noch eine
+Weile die `Times' gelesen. Er hatte das Blatt im
+Basler Bahnhof gekauft, um nachzusehen, was in London ...
+
+\fussy
+\fi
+
+
+\ifx\wrapfigure\undefined
+\else
+\ifx\floatingfigure\undefined
+  \clearpage
+  \mycaptionstyle
+\fi
+\section{The wrapfig package}
+\sloppy
+
+\begin{wrapfigure}{r}{3in}
+%\begin{boxit}
+  \begin{center} This is a ``wrapfigure.'' \end{center}
+  \caption{A wrapfigure example}
+%\end{boxit}
+\end{wrapfigure}
+%%
+\texttt{wrapfigure} is a different type of \emph{nonfloating} figure environment
+for \LaTeX. A figure of the specified width will appear on either the left of right
+of the page. \LaTeX\ will try to wrap text around the figure leaving a gap of
+\verb|\columnsep| by producing a numer of short lines of text. The number of short
+lines is based upon the height of the figure plus the length \verb|\intextsep|.
+You can override this guess by specifying the optional argument.
+
+\fussy
+\fi
+
+
+\ifx\supertabular\undefined
+\else
+\clearpage
+\mycaptionstyle
+\section{The supertabular package}
+\newcommand{\tbsp}{\rule{0pt}{18pt}}
+                  % I use \tbsp to get a vertical distance after \hline
+
+\begin{center}
+\tablefirsthead{\hline  \multicolumn{1}{|c}{\tbsp Number}
+                       & \multicolumn{1}{c}{Number$^2$}
+                       & Number$^4$
+                       & \multicolumn{1}{c|}{Number!} \\ \hline\tbsp  }
+\tablehead{\hline \multicolumn{4}{|l|}{\small\sl continued from previous page}\\
+           \hline \multicolumn{1}{|c}{\tbsp Number}
+                       & \multicolumn{1}{c}{Number$^2$}
+                       & Number$^4$
+                       & \multicolumn{1}{c|}{Number!} \\ \hline\tbsp  }
+\tabletail{\hline\multicolumn{4}{|r|}{\small\sl continued on next page}\\\hline}
+\tablelasttail{\hline}
+\bottomcaption{This table is split across pages}
+\par
+\begin{supertabular}{| r@{\hspace{6.5mm}}| r@{\hspace{5.5mm}}| r | r|}
+1   &     1  &        1  &           1    \\
+2   &     4  &       16  &           2    \\
+3   &     9  &       81  &           6    \\
+4   &    16  &      256  &          24    \\[5mm]
+5   &    25  &      625  &         120    \\
+6   &    36  &     1296  &         720    \\
+7   &    49  &     2401  &        5040    \\
+8   &    64  &     4096  &       40320    \\
+9   &    81  &     6561  &      362880    \\
+10  &   100  &    10000  &     3628800    \\
+11  &   121  &    14641  &    39916800    \\
+12  &   144  &    20736  &   479001600    \\[.5cm]
+\hline & & & \\
+13  &   169  &    28561  &  6.22702080E+9 \\[1cm]
+14  &   196  &    38416  &  8.71782912E+10\\
+15  &   225  &    50625  &  1.30767437E+12\\
+16  &   256  &    65536  &  2.09227899E+13\\
+17  &   289  &    83521  &  3.55687428E+14\\[5mm]
+18  &   324  &   104976  &  6.40237370E+15\\
+19  &   361  &   130321  &  1.21645100E+17\\
+20  &   400  &   160000  &  2.43290200E+18\\
+\end{supertabular}
+\end{center}
+
+\fi
+
+
+\clearpage
+\section{Reported errors}
+
+\captionstyle{hang}
+
+\begin{figure}[!ht]
+This figure is labeled correctly.
+\caption{``A sobering thought, Eileen: What if, right at this very moment I
+*am* living up to my full potential?'' -- Jane Wagner\label{xxx}}
+\end{figure}
+
+\begin{figure}[!ht]
+This figure is not -- the difference is the \verb+\label+ command
+\caption{\label{yyy}``A sobering thought, Eileen: What if, right at this very
+moment I *am* living up to my full potential?'' -- Jane Wagner}
+\end{figure}
+
+
+\end{document}
+\endinput
+
