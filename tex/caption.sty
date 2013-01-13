@@ -6,28 +6,29 @@
 %%
 %% caption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994 Harald Axel Sommerfeldt
+%% Copyright (C) 1994-95 Harald Axel Sommerfeldt
 %% 
-
 \NeedsTeXFormat{LaTeX2e}[1994/06/01]
-\ProvidesPackage{caption}[1995/01/09 v1.3 caption package (AS)]
-\typeout{Package: caption v1.3 <1995/01/09> (Axel Sommerfeldt)}
+\ProvidesPackage{caption}[1995/04/05 v1.4b caption package (HS)]
+\typeout{Package: caption v1.4b <1995/04/05> (Harald Sommerfeldt)}
 \newcommand{\captionsize}{}
+\newcommand{\captionfont}{\captionsize}
 \newcommand{\captionlabelfont}{}
 \newlength{\captionmargin}
 \newcommand{\as@normalcaption}[2]{%
-  #1 #2}
+  #1 #2\par}
 \newcommand{\as@isucaption}[2]{%
-  \sbox{\as@captionbox}{#1\ }%
+  \sbox{\as@captionbox}{#1\space}%
   \addtolength{\as@captionwidth}{-\wd\as@captionbox}%
-  \usebox{\as@captionbox}\parbox[t]{\as@captionwidth}{#2}}
+  \usebox{\as@captionbox}\parbox[t]{\as@captionwidth}{\leavevmode#2}}
 \newcommand{\as@centercaption}[2]{%
-  \parbox[t]{\as@captionwidth}{\begin{center}#1 #2\end{center}}}
+  \parbox[t]{\as@captionwidth}{{\centering#1 #2\par}}}
 \newcommand{\as@annecaption}[2]{%
   \addtolength{\leftskip}{0pt plus 1fil}%
   \addtolength{\rightskip}{0pt plus -1fil}%
   \setlength{\parfillskip}{0pt plus 2fil}%
-  #1 #2}
+  #1 #2\par}
+\let\as@shortcaption\as@centercaption
 \ifx\thesubfigure\undefined
   \newcommand{\as@subcapsize}[1]{}
 \else%
@@ -43,6 +44,7 @@
 \DeclareOption{center}{\let\as@caption\as@centercaption}
 \DeclareOption{anne}{\let\as@caption\as@annecaption}
 \DeclareOption{centerlast}{\ExecuteOptions{anne}}
+\DeclareOption{nooneline}{\AtBeginDocument{\let\as@shortcaption\as@caption}}
 \DeclareOption{scriptsize}{%
   \renewcommand{\captionsize}{\scriptsize}
   \as@subcapsize{\scriptsize}}
@@ -79,28 +81,24 @@
   \setlength{\leftskip}{\captionmargin}%
   \setlength{\rightskip}{\captionmargin}%
   \addtolength{\as@captionwidth}{-2\captionmargin}%
-  \captionsize%
+  \captionfont%
   \sbox{\as@captionbox}{{\captionlabelfont #1:} #2}%
   \ifdim \wd\as@captionbox >\as@captionwidth
-    \as@caption{{\captionlabelfont #1:}}{#2}\par%
+    \as@caption{{\captionlabelfont #1:}}{#2}%
   \else%
-    \begin{center}\usebox{\as@captionbox}\end{center}%
+    \as@shortcaption{{\captionlabelfont #1:}}{#2}%
   \fi}
 \renewcommand{\@makecaption}[2]{%
   \vskip\abovecaptionskip%
   \setlength{\as@captionwidth}{\linewidth}%
   \as@makecaption{#1}{#2}%
   \vskip\belowcaptionskip}
-\ifx\@makercaption\undefined
+\ifx\@makerotcaption\undefined
 \else
   \typeout{\space\space\space\space\space\space\space\space\space
            `rotating' package detected}
-  \renewcommand{\@makercaption}[2]{%
-    \vskip 10\p@%
-    \setlength{\as@captionwidth}{\textheight}%
-    \as@makecaption{#1}{#2}}
   \renewcommand{\@makerotcaption}[2]{%
-    \captionsize%
+    \captionfont%
     \sbox{\as@captionbox}{{\captionlabelfont #1:} #2}%
     \ifdim \wd\as@captionbox > .8\vsize
       \rotatebox{90}{%
@@ -112,10 +110,6 @@
       \rotatebox{90}{\usebox{\as@captionbox}}%
     \fi
     \hspace{12pt}}
-  \renewcommand{\sidewaysfigure}{%
-    \let\@makecaption\@makercaption\@rotfloat{figure}}
-  \renewcommand{\sidewaystable}{%
-    \let\@makecaption\@makercaption\@rotfloat{table}}
 \fi
 \ifx\floatc@plain\undefined
 \else
@@ -128,8 +122,8 @@
   \else
     \renewcommand\floatc@ruled[2]{%
       \setlength{\as@captionwidth}{\linewidth}%
-      \captionsize%
-      \as@caption{{\captionlabelfont #1:}}{#2}\par}
+      \captionfont%
+      \as@caption{{\captionlabelfont #1:}}{#2}}
   \fi
 \fi
 \endinput
