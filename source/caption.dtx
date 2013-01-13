@@ -1,6 +1,8 @@
-% \iffalse
-% caption.dtx - The caption package
-% (c) 1994-95 Axel Sommerfeldt (caption@sommerfeldt.net)
+% \iffalse meta-comment
+% 
+% This is file `caption.dtx'.
+% 
+% Copyright (C) 1994-2003 Axel Sommerfeldt (caption@sommerfeldt.net)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -11,479 +13,2395 @@
 %    http://www.latex-project.org/lppl.txt
 % and version 1.2 or later is part of all distributions of LaTeX 
 % version 1999/12/01 or later.
+% 
+% \fi
+% \CheckSum{1504}
+% \iffalse
+%<*dtx>
+\ProvidesFile{caption.dtx}%
+%</dtx>
+%<package>\NeedsTeXFormat{LaTeX2e}[1994/12/01]
+%<package>\ProvidesPackage{caption}
+%<driver>\ProvidesFile{manual.tex}
+%\ProvidesFile{caption.dtx}
+              [2003/12/20 v3.0 Customising captions (AS)]
 %
 %<*driver>
 \documentclass{ltxdoc}
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{\smallskipamount}
-\usepackage[hang,small,bf]{caption}[1995/01/30]
-\setlength{\captionmargin}{20pt}
+\setlength\parindent{0pt}
+\setlength\parskip{\smallskipamount}
+%
+\usepackage{caption}[2003/12/20]
+%\usepackage{float}
+\usepackage{longtable}
+%\usepackage[raggedright]{sidecap}
+%
+\DeclareCaptionLabelSeparator{periodnewline}{. \newline}
+\DeclareCaptionStyle{periodnewline}[labelsep=period]{labelsep=periodnewline}
+\DeclareCaptionStyle{periodnewlinec}[labelsep=period,justification=centering]{labelsep=periodnewline}
+\DeclareCaptionFormat{reverse}{#3#2#1}
+\DeclareCaptionLabelFormat{fullparens}{(\bothIfFirst{#1}{ }#2)}
+\DeclareCaptionLabelSeparator{fill}{\hfill}
+%
+\DeclareRobustCommand{\KOMAScript}{\textsf{K\kern.05em O\kern.05em%
+    M\kern.05em A\kern.1em-\kern.1em Script}}
+%
 \begin{document}
   \DocInput{caption.dtx}
 \end{document}
 %</driver>
 % \fi
 %
-% \providecommand{\LaTeXcomp}{The \LaTeX{} Companion}
-% \newcommand{\purerm}[1]{{\upshape\mdseries\rmfamily #1}}
-% \newcommand{\puresf}[1]{{\upshape\mdseries\sffamily #1}}
+% \newcommand*{\purerm}[1]{{\upshape\mdseries\rmfamily #1}}
+% \newcommand*{\puresf}[1]{{\upshape\mdseries\sffamily #1}}
+% \newcommand*{\purett}[1]{{\upshape\mdseries\ttfamily #1}}
+% \let\package\puresf\def\thispackage{\package{caption}}
+% \let\env\purett \let\opt\purett
+% 
 % \newenvironment{Options}[1]%
-%  {\begin{list}{}{\renewcommand{\makelabel}[1]{\texttt{##1}\hfil}%
-%     \settowidth{\labelwidth}{\texttt{#1\space}}%
-%     \setlength{\leftmargin}{\labelwidth}%
-%     \addtolength{\leftmargin}{\labelsep}}}%
-%  {\end{list}}
-%
-% \def\packageversion{1.4b}
-% \def\packagedate{1995/04/05}
-% \changes{v1.0}{27 Oct 94}{First release}
-% \changes{v1.2}{28 Nov 94}{Works now with the {\tt figure*} and {\tt table*} environments, too}
-%
-% \title{The \puresf{caption} package\thanks{This package has version number
-%        \packageversion, last revised \packagedate.}}
+%   {\list{}{\renewcommand{\makelabel}[1]{\texttt{##1}\hfil}%
+%    \settowidth{\labelwidth}{\texttt{#1\space}}%
+%    \setlength{\leftmargin}{\labelwidth}%
+%    \addtolength{\leftmargin}{\labelsep}}}%
+%   {\endlist}
+% 
+% \newenvironment{Example}%
+%   {\ifvmode\else\unskip\par\fi
+%    \minipage{\linewidth}\smallskip}%
+%   {\smallskip\endminipage}
+% \newcommand\example[3][figure]{%
+%   \begingroup
+%     \captionsetup{#2}%
+%     \captionof{#1}[]{#3}%
+%   \endgroup}
+% 
+% \GetFileInfo{caption.sty}
+% \title{Typesetting captions with the
+%        \thispackage\ package\thanks{This package has version number
+%        \fileversion, last revised \filedate.}}
 % \author{Axel Sommerfeldt\\\texttt{caption@sommerfeldt.net}}
-% \date{1995/04/05}
+% \date{2003/12/21}
 % \maketitle
-%
+% 
+% 
 % \begin{abstract}
-% The \textsf{caption} package provides many ways to customise the captions
-% in floating environments such |figure| and |table|.
-% The |\rotcaption| command and the |sidewaysfigure| and |sidewaystable|
-% environments provided by the \textsf{rotating} package from S.~Rahtz and
-% L.~Barroca are also supported.
-% The \textsf{caption} package also cooperates with the \textsf{float}
-% package written by A.~Lingnau and the \textsf{subfigure} package written by
-% S.D.~Cochran.
+% The \thispackage\ package provides many ways to customise the captions
+% in floating environments such |figure| and |table| and cooperates with
+% many other packages.
 % \end{abstract}
-%
-% \section{The user interface}
-% \changes{v1.1}{3 Nov 94}{New captiontype: {\tt centerlast}}
-% \changes{v1.4}{30 Jan 95}{New option: {\tt nooneline}}
-%
-% To use this package just type
+% 
+% \iffalse
+% \tableofcontents
+% \fi
+% 
+% 
+% \section{Introduction}
+% 
+% \newcommand\figuretext{%
+%   White sand beaches. The pink smoothness of the conch shell. A sea abundant
+%   with possibilities. Duty-free shops filled with Europe's finest gifts and
+%   perfumes. Play your favorite game of golf amidst the tropical greens on one
+%   of the many championship courses.}
+% 
+% Within the standard \LaTeX\ classes captions haven't received the attention
+% they deserve. Simply typeset as an ordinary paragraph there is no
+% remarkable visual difference from the rest of the text, like here:
+% 
+% \example{belowskip=\abovecaptionskip}{\figuretext}
+% 
+% There should be possibilities to change this, e.g.~it would be nice if you
+% can make the text of the caption a little bit smaller as the normal text,
+% add an extra margin, typeset the caption label with the same font family and
+% shape as your headings etc. Just like this one:
+% 
+% \example{belowskip=\abovecaptionskip,size=small,margin=10pt,labelfont=bf}{\figuretext}
+% 
+% With this package you can do this easily as there are many ready-to-use
+% caption formatting options, but you are free to define your very own stuff, too.
+% 
+% 
+% \pagebreak[4]
+% \section{Using the package}
+% \label{usage}
+% 
+% \DescribeMacro{\usepackage}
+% Insert
 % \begin{quote}
-%   |\usepackage|\oarg{options}|{caption}|
+%   |\usepackage|\oarg{options}|{caption}[|\texttt{\filedate}|]|
 % \end{quote}
-% in the preamble of your document,
-% where the following options are supported:
-% \begin{quote}\begin{Options}{scriptsize\purerm{, \ldots,\ }Large}
-% \item[normal]
-%   provides `normal' captions, this is the default
-% \item[hang \purerm{or} isu]
-%   provides captions with hanging indention
-% \item[center]
-%   provides captions where each line is centered
-% \item[centerlast]
-%   provides captions where the last line of the paragraph is centered
-% \item[nooneline]
-%   if a caption fits on \emph{one} line on the page, it will be centered.
-%   If you don't like this behaviour, just select this option.
-% \item[scriptsize\purerm{, \ldots,\ }Large]
-%   sets the font size of the captions
-% \item[\vbox{\hbox{up{\rm,} it{\rm,} sl{\rm,} sc{\rm,}}
-%       \hbox{md{\rm,} bf{\rm,} rm{\rm,} sf{\rm, or} tt}}]
-%   sets the font attribute of the caption labels.
-% \item[ruled] supports ruled floats of the \textsf{float} package, see
-%   section \ref{sec:float} for details
-% \end{Options}\end{quote}
-%
-% \changes{v1.4}{29 Jan 95}{{\tt\protect\bslash captionsize} changed to {\tt\protect\bslash captionfont}}
-% \DescribeMacro{\captionfont}
-% \DescribeMacro{\captionlabelfont}
-% To setup the font size and attributes of the captions, this package also provides
-% the commands |\captionfont| and |\captionlabelfont| to allow a more
-% flexible way to customize the captions than the above options could do.
-% |\captionfont| is called before each caption, |\captionlabelfont| is
-% called just before the label of the caption, so the whole caption
-% will be created as
+% into the preamble of your document, i.e.~the part of your document
+% between |\documentclass| and |\begin{document}|.
+% The options control how your captions will look like, e.g.
 % \begin{quote}
-%   |{\captionfont{\captionlabelfont |\meta{label}|: }|\meta{caption}|}| \quad.
+%   |\usepackage[margin=10pt,font=small,labelfont=bf]{caption}|
 % \end{quote}
-% Note that these commands are used by the options, e.g.\ the options
-% |small| and |sf| are identical to
-% \begin{quote} |\renewcommand{\captionfont}{\small}| \quad and\\
-%               |\renewcommand{\captionlabelfont}{\sffamily}| \quad. \end{quote}
-%
-% \DescribeMacro{\captionmargin}
-% Furthermore there is a new length |\captionmargin| to setup an extra left and
-% right margin for the captions, e.g.\ the command
-% \begin{quote} |\setlength{\captionmargin}{10pt}| \end{quote}
-% sets this margin to 10pt.
-%
-% \DescribeMacro{\abovecaptionskip}
-% \DescribeMacro{\belowcaptionskip}
-% The lengths |\abovecaptionskip| and |\belowcaptionskip| contain the amount of
-% white space to leave above and below the caption.
-% |\abovecaptionskip| is preset (in the \textsf{article}, \textsf{report} and
-% \textsf{book} document class) to 10pt, |\belowcaptionskip| to 0pt.
-%
-% \subsection{The \puresf{rotating}, \puresf{float} and \puresf{subfigure} package}
-% \changes{v1.2}{28 Nov 94}{Support of the {\sf float} package}
-% \label{sec:float}
-%
-% If you want to use this package together with the \textsf{rotating}\cite{rotating},
-% \textsf{float}\cite{float} and/or the \textsf{subfigure} package, you have to
-% input this package \emph{after} the other ones, like
+% would result in captions looking like the second one in the introduction.
+% 
+% \DescribeMacro{\captionsetup}
+% For a later change of options the \thispackage\ package provides the command
 % \begin{quote}
-% |\usepackage{float,rotating,subfigure}|\\
-% |\usepackage[centerlast,small,sc]{caption}|
+%   |\captionsetup|\oarg{float type}\marg{options}
 % \end{quote}
-% The \textsf{caption} package now redefines the |sidewaysfigure| and
-% |sidewaystable| environments and the |\rotcaption| command provided
-% by the \textsf{rotating} package from S.~Rahtz and L.~Barroca.
-% Note that the |\captionmargin| does not affect the |\rotcaption| command.
+% So
+% \begin{quote}
+%   |\usepackage[margin=10pt,font=small,labelfont=bf]{caption}|
+% \end{quote}
+% and
+% \begin{quote}
+%   |\usepackage{caption}|\\
+%   |\captionsetup{margin=10pt,font=small,labelfont=bf}|
+% \end{quote}
+% are equal in their results.
+% 
+% It's good to know that |\captionsetup| has an effect on the current
+% environment only. So if you want to change some settings for the
+% current |figure| or |table| only, just place the |\captionsetup| command
+% inside the |figure| or |table| right before the |\caption| command.
+% For example
+% \begin{quote}
+%   |\begin{figure}|\\
+%   |  |\ldots\\
+%   |  \captionsetup{singlelinecheck=off}|\\
+%   |  \caption{|\ldots|}|\\
+%   |\end{figure}|
+% \end{quote}
+% switches the single-line-check off, but only for this |figure| so all
+% the other captions remain untouched.
+% 
+% (For a description of the optional parameter \meta{float type} see
+%  section \ref{misc}: \textit{``Useful stuff''}.)
+% 
+% \section{Options}
+% \def\OptionLabel{RaggedRight}
+% 
+% 
+% \subsection{Formatting}
+% 
+% \DescribeMacro{format=}
+% A figure or table caption mainly consits of three parts: the caption label,
+% which says if this object is a `Figure' or `Table' and what number is
+% associated with it, the caption text itself, which is normally a short
+% description of contents, and the caption separator which separates the text
+% from the label.
 %
-% It also redefines the captions of the |plain| and |boxed| styled floats
-% provided by the \textsf{float} package from A.~Lingnau.
-% |ruled| floats are not supported by default, but you can change this via
-% setting the option |ruled|.
-% Note that the |\captionmargin| is not supported in ruled floats.
+% The \textit{caption format} determines how this information will be presented;
+% it is specified with the option
+% \begin{quote}
+%   |format=|\meta{format name}\quad ,
+% \end{quote}
+% having the name of the caption format as its argument.
 %
-% \changes{v1.3}{8 Jan 95}{Support of {\tt\protect\bslash captionlabelfont} in subcaptions}
-% If the \textsf{subfigure} package from S.D.~Cochran is detected, the options
-% |scriptsize|, \ldots, |large| will redefine |\subcapsize| in an adequate way.
-% If you redefine |\captionfont| by yourself and use the \textsf{subfigure}
-% package, you also have to redefine |\subcapsize| by yourself.
-% Also the commands |\@thesubfigure| and |\@thesubtable| will be redefined to
-% use the |\captionlabelfont| command, please take this into consideration if
-% you redefine |\@thesubfigure| or |\@thesubtable| by yourself.
-% E.g.\ a adequate version of the second example in |subfigure.sty| will be:
+% There are two standard caption formats:\footnote{You have the option to
+% define your own ones, too. See section \ref{declare}:
+% \textit{``Do it yourself!''} for details.}
+% 
+% \begin{Options}{\OptionLabel}
+%   \item[default]
+%   Typesets the captions as a normal paragraph.
+%   (This is the default behaviour, it
+%   is adapted from the standard \LaTeX\ document classes.)
+% 
+%   \item[hang]
+%   Indents the caption text, so it will `hang' under the first line of the text.
+% \end{Options}
+% 
+% \begin{Example}
+%   An example: Specifing the option
+%   \begin{quote}
+%     |format=hang|
+%   \end{quote}
+%   yields captions like this:
+%   \example{format=hang}{\figuretext}
+% \end{Example}
+% 
+% \DescribeMacro{indention=}
+% For both formats (\texttt{default} and \texttt{hang}) you can setup an extra
+% indention starting at the second line of the caption. You do this with the
+% option
+% \begin{quote}
+%   |indention=|\meta{amount}.
+% \end{quote}
+% 
+% Two examples:
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |format=default,indention=.5cm|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{format=default,indention=.5cm}{\figuretext}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |format=hang,indention=-0.5cm|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{format=hang,indention=-0.5cm}{\figuretext}
+% \end{Example}
+% 
+% \DescribeMacro{labelformat=}
+% With the option
+% \begin{quote}
+%   |labelformat=|\meta{label format name}
+% \end{quote}
+% you specify how the caption label will be typeset.
+% There are three standard caption label formats:
+% 
+% \begin{Options}{\OptionLabel}
+%   \item[empty]
+%   The caption label will be empty. This option only makes sense when used
+%   together with other options like \texttt{labelsep=none}.
+% 
+%   \item[simple]
+%   The caption label will be typeset as a name and a number.
+%   (This is the default behaviour.)
+% 
+%   \item[parens]
+%   The number of the caption label will be typeset in parentheses.
+% \end{Options}
+% 
+% \begin{Example}
+%   An example: Using the options
+%   \begin{quote}
+%     |labelformat=parens,labelsep=quad|
+%   \end{quote}
+%   yields captions like this one:
+%   \example{labelformat=parens,labelsep=quad}{\figuretext}
+% \end{Example}
+% 
+% \DescribeMacro{labelsep=}
+% With the options
+% \begin{quote}
+%   |labelsep=|\meta{label separator name}
+% \end{quote}
+% you specify what caption separator will be used.
+% You can choose one of the following:
+% 
+% \begin{Options}{\OptionLabel}
+%   \item[none]
+%   There is no caption separator. This option only makes sense when used
+%   together with other options like \texttt{labelformat=empty}.
+% 
+%   \item[colon]
+%   The caption label and text will be separated by a colon and a space.
+%   (This is the default one.)
+% 
+%   \item[period]
+%   The caption label and text will be separated by a period and a space.
+% 
+%   \item[space]
+%   The caption label and text will be separated by a single space.
+% 
+%   \item[quad]
+%   The caption label and text will be separated by a |\quad|.
+% 
+%   \item[newline]
+%   The caption label and text will be separated by a line break (|\newline|).
+% \end{Options}
+% 
+% Two examples:
+% \begin{Example}
+%   \begin{quote}
+%     |labelsep=period|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{labelsep=period}{\figuretext}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |labelsep=newline|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{labelsep=newline}{\figuretext}
+% \end{Example}
+% 
+% 
+% \subsection{Justification}
+% 
+% \DescribeMacro{justification=}
+% As addition to the caption format you could also specify a
+% \emph{caption justification}; it is specified with the option
+% \begin{quote}
+%   |justification=|\meta{justification name}\quad.
+% \end{quote}
+%
+% You can choose one of the following:
+% 
+% \begin{Options}{\OptionLabel}
+%   \item[justified]
+%   Typesets the caption as a normal paragraph. (This is the default.)
+% 
+%   \item[centering]
+%   Each line of the caption will be centered.
+% 
+% \iffalse
+%   \item[Centering]
+%   Each line of the caption will be centered, too.
+%   But this time the command |\Centering| of the \package{ragged2e} package
+%   will be used to achieve this. This difference is that this time the word
+%   breaking algorithm of \TeX\ will work inside the caption.
+% \fi
+% 
+%   \item[centerlast]
+%   The last line of each paragraph of the caption text will be centered.
+% 
+%   \item[centerfirst]
+%   Only the first line of the caption will be centered.
+% 
+%   \item[raggedright]
+%   Each line of the caption will be moved to the left margin.
+% 
+% \iffalse
+%   \item[RaggedRight]
+%   Each line of the caption will be moved to the left margin using
+%   the command |\RaggedRight| from the \package{ragged2e} package.
+% \fi
+%   \item[RaggedRight]
+%   Each line of the caption will be moved to the left margin, too.
+%   But this time the command |\RaggedRight| of the \package{ragged2e} package
+%   will be used to achieve this. This difference is that this time the word
+%   breaking algorithm of \TeX\ will work inside the caption.
+% 
+%   \item[raggedleft]
+%   Each line of the caption will be moved to the right margin.
+% 
+% \iffalse
+%   \item[RaggedLeft]
+%   Each line of the caption will be moved to the right margin using
+%   the command |\RaggedLeft| from the \package{ragged2e} package.
+% \fi
+% \end{Options}
+% 
+% Two examples:
+% \begin{Example}
+%   \begin{quote}
+%     |justification=centerlast|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{justification=centerlast}{\figuretext}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |format=hang,justification=raggedright|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{format=hang,justification=raggedright}{\figuretext}
+% \end{Example}
+% 
+% \DescribeMacro{singlelinecheck=}
+% If the caption fit in a single line it will always be centered, ignoring
+% the justification you set:
+%
+% \example{belowskip=\abovecaptionskip}{A short caption.}
+%
+% This behaviour is adapted from the standard \LaTeX\ document classes
+% |article|, |report|, and |book|), but using the \thispackage\ package
+% you can switch this special treatment of such short captions off
+% with the option
+% \begin{quote}
+%   |singlelinecheck=|\marg{bool}\quad.
+% \end{quote}
+% Using |false|, |no|, |off| or |0| for \meta{bool} you switch off the
+% extra centering:
+% \begin{quote}
+%   |singlelinecheck=false|
+% \end{quote}
+% Doing so the above short caption would look like
+%
+% \example{belowskip=\abovecaptionskip,singlelinecheck=false}{A short caption.}
+% 
+% Using |true|, |yes|, |on| or |1| for \meta{bool} you switch on the
+% extra centering again. (The default is on.)
+% 
+% 
+% \subsection{Fonts}
+% 
+% \DescribeMacro{font=}
+% \DescribeMacro{labelfont=}
+% \DescribeMacro{textfont=}
+% There are three font options which affects different parts of the caption:
+% One affecting the whole caption (|font|), one which only affects the caption
+% label and separator (|labelfont|) and at last one which only affects the
+% caption text (|testfont|).
+% You set them up using the options
+% \begin{quote}\begin{tabular}{@{}r@{}ll}
+%   |font=|      & \marg{font options} & ,\\
+%   |labelfont=| & \marg{font options} & and\\
+%   |textfont=|  & \marg{font options} & .\\
+% \end{tabular}\end{quote}
+% 
+% And these are the available font options:
+% 
+% \begin{Options}{\OptionLabel}
+%   \item[scriptsize]   {\scriptsize Very small size}
+%   \item[footnotesize] {\footnotesize The size usually used for footnotes}
+%   \item[small]        {\small Small size}
+%   \item[normalsize]   {\normalsize Normal size}
+%   \item[large]        {\large Large size}
+%   \item[Large]        {\Large Even larger size}
+% 
+%   \item[up]           {\upshape Upright shape}
+%   \item[it]           {\itshape Italic shape}
+%   \item[sl]           {\slshape Slanted shape}
+%   \item[sc]           {\scshape Small Caps shape}
+% 
+%   \item[md]           {\mdseries Medium series}
+%   \item[bf]           {\bfseries Bold series}
+% 
+%   \item[rm]           {\rmfamily Roman family}
+%   \item[sf]           {\sffamily Sans Serif family}
+%   \item[tt]           {\ttfamily Typewriter family}
+% \end{Options}
+% 
+% If you use only one of these options you can omit the braces, e.g.~the
+% options
+% \iffalse
+% \begin{quote}
+% \fi
+%   |font={small}|
+% \iffalse
+% \end{quote}
+% \fi
+% and
+% \iffalse
+% \begin{quote}
+% \fi
+%   |font=small|
+% \iffalse
+% \end{quote}
+% \fi
+% yield the same result.
+% 
+% Two examples:
+% \begin{Example}
+%   \begin{quote}
+%     |font={small,it},labelfont=bf|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{font={small,it},labelfont=bf}{\figuretext}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |font=small,labelfont=bf,textfont=it|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{font=small,labelfont=bf,textfont=it}{\figuretext}
+% \end{Example}
+% 
+% 
+% \subsection{Margins and further paragraph options}
+% 
+% \DescribeMacro{margin=}
+% \DescribeMacro{width=}
+% For all captions you can specify \emph{either} an extra margin \emph{or}
+% a fixed width. You do this using the options
+% \begin{quote}\begin{tabular}{@{}r@{}ll}
+%   |margin=| & \meta{amount}   & \emph{or}\\
+%   |width=|  & \meta{amount} & \\
+% \end{tabular}\end{quote}
+% Nevertheless what option you use, the left and right margin will be the
+% same.
+% 
+% Two examples illustrating this:
+% \begin{Example}
+%   \begin{quote}
+%     |margin=10pt|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{margin=10pt}{\figuretext}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |width=.75\textwidth|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{width=.75\textwidth}{\figuretext}
+% \end{Example}
+% 
+% \DescribeMacro{parskip=}
+% This option is useful for captions containing more than one paragraph.
+% If specifies the extra vertical space inserted between them:
+% \begin{quote}
+%   |parskip=|\meta{amount}
+% \end{quote}
+% One example:
+% \begin{Example}
+%   \begin{quote}
+%     |margin=10pt,parskip=5pt|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{margin=10pt,parskip=5pt}{
+%     First paragraph of the caption. This one contains some test, just to
+%     show how these options affect the layout of the caption.
+% 
+%     Second paragraph of the caption. This one contains some text, too, to
+%     show how these options affect the layout of the caption.}
+% \end{Example}
+% 
+% \DescribeMacro{hangindent=}
+% The option
+% \begin{quote}
+%   |hangindent=|\meta{amount}
+% \end{quote}
+% is for setting up a hanging indention starting from the second line of each
+% paragraph. If the caption contains just a single paragraph, using this option
+% leads to the same result as the option |indention=| you already know about.
+% But if the caption contains multiple paragraphs you will notice the difference:
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |format=hang,indention=-.5cm|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{format=hang,indention=-.5cm}{
+%     First paragraph of the caption. This one contains some test, just to
+%     show how these options affect the layout of the caption.
+% 
+%     Second paragraph of the caption. This one contains some text, too, to
+%     show how these options affect the layout of the caption.}
+% \end{Example}
+% 
+% \begin{Example}
+%   \begin{quote}
+%     |format=hang,hangindent=-.5cm|
+%   \end{quote}
+%   \captionsetup{aboveskip=0pt}
+%   \example{format=hang,hangindent=-.5cm}{
+%     First paragraph of the caption. This one contains some test, just to
+%     show how these options affect the layout of the caption.
+% 
+%     Second paragraph of the caption. This one contains some text, too, to
+%     show how these options affect the layout of the caption.}
+% \end{Example}
+% 
+% 
+% \subsection{Styles}
+% \label{style}
+% 
+% \DescribeMacro{style=}
+% A suitable combination of caption options is called \emph{caption style}.
+% You can compare them more or less to page styles which you set up with
+% |\pagestyle|: The caption style provides all settings for a whole caption layout.
+% 
+% You switch to an already defined caption style with the option
+% \begin{quote}
+%   |style=|\meta{style name}\quad.
+% \end{quote}
+% The \thispackage\ package usually defines only the style |default| which
+% puts all options you already know about to the default ones.
+% This means that specifing the option
+% \begin{quote}
+%   |style=default|
+% \end{quote}
+% has the same effect as specifing all these options:
+% \begin{quote}
+%   |format=default,labelformat=simple,labelsep=colon,|\\
+%   |justification=justified,font=default,labelfont=default,|\\
+%   |textfont=default,margin=0pt,indention=0pt,parindent=0pt|\\
+%   |hangindent=0pt,singlelinecheck=1|
+% \end{quote}
+% 
+% 
+% \subsection{Skips}
+% 
+% \DescribeMacro{aboveskip=}
+% \DescribeMacro{belowskip=}
+% The spaces above and below the caption are controlled by the skips
+% |\abovecaptionskip| and |\belowcaptionskip|. The standard \LaTeX\ document
+% classes |article|, |report| and |book| set |\abovecaptionskip| to |10pt|
+% and |\belowcaptionskip| to |0pt|.
+%
+% \pagebreak[3]
+% Both skips can be changed with the command |\setlength|, but you can
+% use these options, too:
+% \nopagebreak[3]
+% \begin{quote}\begin{tabular}{@{}r@{}ll}
+%   |aboveskip=| & \meta{amount} & and\\
+%   |belowskip=| & \meta{amount} & .\\
+% \end{tabular}\end{quote}
+%
+% \DescribeMacro{position=}
+% Using |\abovecaptionskip| and |\belowcaptionskip| has a major design flaw:
+% If the caption is typeset \emph{above} (and not \emph{below}) the figure
+% or table they are not set up very useful at default, because there will be
+% some extra space above the caption but no space between the caption and the
+% figure or table itself. (Remember: |\belowcaptionskip| is usually set to |0pt|.)
+% 
+% Please compare the spacing in these small tables:
+% \begin{Example}
+%   \begin{minipage}[c]{.5\linewidth}
+% \iffalse
+%     \captionsetup{aboveskip=0pt}%
+% \fi
+%     \captionof{table}{A table}
+%     \centering\begin{tabular}{ll}
+%       A & B \\
+%       C & D \\
+%     \end{tabular}
+%   \end{minipage}
+%   \begin{minipage}[c]{.5\linewidth}
+%     \centering\begin{tabular}{ll}
+%       A & B \\
+%       C & D \\
+%     \end{tabular}
+%     \captionof{table}{A table}
+%   \end{minipage}
+% \end{Example}
+% 
+% But using the option |position=| you can fix this: It specifies how the
+% spacing above and below the caption will be used:
+% \begin{quote}
+%   |position=top|
+% \end{quote}
+% tells the \thispackage\ package to use the spacing useful for caption
+% \emph{above} the figure or table and
+% \begin{quote}
+%   |position=bottom|
+% \end{quote}
+% tells the \thispackage\ package to use the spacing useful for captions
+% \emph{below} the figure or table. (The last one is the default setting.)
+% 
+% So adding an extra |\captionsetup{position=top}| to the left example
+% table gives you proper spacing around both captions:
+% \begin{Example}
+%   \begin{minipage}[c]{.5\linewidth}
+%     \captionsetup{position=top}
+%     \captionof{table}{A table}
+%     \centering\begin{tabular}{ll}
+%       A & B \\
+%       C & D \\
+%     \end{tabular}
+%   \end{minipage}
+%   \begin{minipage}[c]{.5\linewidth}
+%     \centering\begin{tabular}{ll}
+%       A & B \\
+%       C & D \\
+%     \end{tabular}
+%     \captionof{table}{A table}
+%   \end{minipage}
+% \end{Example}
+%
+% (Technically speaking |\abovecaptionskip| and |\belowcaptionskip| will
+% be swapped if you specify the option |position=top|, so in both cases
+% |\abovecaptionskip| will be used between the caption and the figure or
+% table itself.)
+% 
+% This option is especially useful when used together with the optional
+% argument of the |\captionsetup| command. (See section \ref{misc}:
+% \textit{``Useful stuff''} for details.) E.g.
+% \begin{quote}
+%   |\captionsetup[table]{position=top}|
+% \end{quote}
+% causes all captions within tables to be treated as captions \emph{above}
+% the table (regarding spacing around it).
+% 
+% \pagebreak[4]
+% \section{Useful stuff}
+% \label{misc}
+% 
+% \DescribeMacro{\caption}
+% The command
+% \nopagebreak[3]
+% \begin{quote}
+%   |\caption|\oarg{lst\_entry}\marg{heading}
+% \end{quote}
+% \nopagebreak[3]
+% typesets the caption inside a floating environment like |figure| or |table|.
+% Well, you already know this, but what is new is the fact then when you leave
+% the argument \meta{lst\_entry} empty, no entry in the list of figures or
+% tables will be made, e.g.
+% \begin{quote}
+%   |\caption[]{A figure without entry in the list of figures.}|
+% \end{quote}
+% 
+% \DescribeMacro{\caption*}
+% The \package{longtable} package defines the command |\caption*| which
+% typesets the caption without label and without entry in the list of tables.
+% An example:
+% \begin{quote}
+%   |\begin{longtable}{cc}|\\
+%   |  \caption*{A table}\\|\\
+%   |  A & B \\|\\
+%   |  C & D \\|\\
+%   |\end{longtable}|
+% \end{quote}
+% looks like
+% \begin{longtable}{cc}
+%   \caption*{A table}\\
+%   A & B \\
+%   C & D \\
+% \end{longtable}
+% 
+% This package does it, too, so you can use this command now within every
+% floating environment like |figure| or |table|. Additionally you can specify
+% an entry for the list of figures or tables within square brackets, like here:
+% \begin{quote}
+%   |\begin{table}|\\
+%   |  \caption*[List entry for the table]{A table}|\\
+%   |  \begin{tabular}{cc}|\\
+%   |    A & B \\|\\
+%   |    C & D \\|\\
+%   |  \end{longtable}|\\
+%   |\end{table}|
+% \end{quote}
+% 
+% \DescribeMacro{\captionof}
+% \DescribeMacro{\captionof*}
+% Sometimes you want to typeset a caption \emph{outside} a floating environment,
+% putting a figure within a |minipage| for instance. For this purpose the
+% \thispackage\ package offers the command
+% \begin{quote}
+%   |\captionof|\marg{float type}\oarg{lst\_entry}\marg{heading}\quad.
+% \end{quote}
+% Note that the first argument, the \meta{float type}, is mandatory here, because
+% the |\captionof| command needs to know which name to put into the caption label
+% (e.g. ``Figure'' or ``Table'') and in which list to put the contents entry.
+% An example:
+% \begin{quote}
+%   |\captionof{figure}{A figure}|\\
+%   |\captionof{table}{A table}|
+% \end{quote}
+% typesets captions like this:
+% \begin{Example}
+%   \captionof{figure}{A figure}
+%   \captionsetup{belowskip=\abovecaptionskip}
+%   \captionof{table}{A table}
+% \end{Example}
+% 
+% The star variant |\captionof*| has the same behaviour as the |\caption*| command:
+% it typesets the caption without label and without entry to the list of figures
+% or tables (if not specified otherwise).
+% 
+% \DescribeMacro{\ContinuedFloat}
+% Sometimes you want to split figures or tables without giving them
+% their own reference number. This is what the command
+% \begin{quote}
+%   |\ContinuedFloat|
+% \end{quote}
+% is for; it should be used as first command inside the floating environment.
+% It prevents the increment of the relevant counter so a figure or table
+% with a |\ContinuedFloat| in it gets the same reference number as the figure
+% or table before.
+% 
+% An example:
+% \begin{quote}
+%   |\begin{table}|\\
+%   |\caption{A table}|\\
+%   \ldots\\
+%   |\end{table}|\\
+%   \ldots\\
+%   |\begin{table}\ContinuedFloat|\\
+%   |\caption{A table (cont.)}|\\
+%   \ldots\\
+%   |\end{table}|
+% \end{quote}
+% gives the following result:
+% \begin{Example}
+%   \makeatletter\def\@captype{table}\makeatother
+%   \caption[]{A table}
+%   \centerline{\ldots}
+%   \ContinuedFloat
+%   \captionsetup{aboveskip=0pt}
+%   \caption[]{A table (cont.)}
+% \end{Example}
+% 
+% \DescribeMacro{\captionsetup}
+% We already know the |\captionsetup| command (see section \ref{usage}:
+% \textit{``Using the package''}), but this time we get enlighten about
+% the optional argument \meta{float type}.
+% 
+% Remember, the syntax of this command is
+% \begin{quote}
+%   |\captionsetup|\oarg{float type}\marg{options}\quad.
+% \end{quote}
+% 
+% If a \meta{float type} gets specified, all the \meta{options} don't
+% change anything at this time. Instead they only get marked for a later use,
+% when a caption inside of a floating environment of the particular type
+% \meta{float type} gets typeset.
+% For example
+% \begin{quote}
+%   |\captionsetup[figure]|\marg{options}
+% \end{quote}
+% forces captions within a |figure| environment to use the given \meta{options}.
+%
+% Here comes an example to illustrate this:
+% \begin{quote}
+%   |\captionsetup{font=small}|\\
+%   |\captionsetup[figure]{labelfont=bf}|
+% \end{quote}
+% gives captions like this:
+% \begin{Example}
+%   \captionsetup{font=small}
+%   \captionsetup[figure]{labelfont=bf}
+%   \captionof{figure}[]{A figure}
+%   \captionsetup{belowskip=\abovecaptionskip}
+%   \captionof{table}[]{A table}
+% \end{Example}
+% 
+% As you see the command |\captionsetup[figure]{labelfont=bf}| only changed
+% the font of the figure caption labels, not touching all other ones.
+% 
+% \DescribeMacro{\clearcaptionsetup}
+% If you want to get rid of these parameters marked for an automatic use within
+% a particular environment you can use the command
+% \begin{quote}
+%   |\clearcaptionsetup|\marg{Typ}\quad.
+% \end{quote}
+%
+% For example |\clearcaptionsetup{figure}| would clear the extra handling in the
+% example above:
+% \begin{Example}
+%   \captionsetup{font=small}
+%   \captionof{figure}[]{A figure}
+%   \captionsetup{belowskip=\abovecaptionskip}
+%   \captionof{table}[]{A table}
+% \end{Example}
+% 
+% As \meta{float type} you can usually give one of these only two:
+% |figure| and |table|.
+% But as we will see later some \LaTeX\ packages exist (like the \package{float}
+% package for example) who can define additional floating enviroments and these two
+% commands also works with them.
+% 
+% 
+% \pagebreak[3]
+% \section{Do it yourself!}
+% \label{declare}
+% 
+% If you don't get familiar with all the given formats, separators, justifications,
+% fonts, and styles you can easily define your very own ones. For this purpose
+% a family of commands is given to you which you should use in the preamble of your
+% document. (This is the part between |\documentclass| and |\begin{document}|.)
+% 
+% \pagebreak[2]
+% \DescribeMacro{\DeclareCaptionFormat}
+% You can define your own caption formats using the command
+% \begin{quote}
+%   |\DeclareCaptionFormat|\marg{name}\marg{code using \#1, \#2 and \#3}\quad.
+% \end{quote}
+% At usage the system replaces \#1 with the caption label, \#2 with the
+% separator and \#3 with the text. So the standard format |default| is defined
+% inside |caption.sty| as
+% \begin{quote}
+%   |\DeclareCaptionFormat{default}{#1#2#3\par}|
+% \end{quote}
+% 
+% \DescribeMacro{\DeclareCaptionLabelFormat}
+% Likewise you can define your own caption label formats:
+% \begin{quote}
+%   |\DeclareCaptionLabelFormat|\marg{name}\marg{code using \#1 and \#2}
+% \end{quote}
+% At usage \#1 gets replaced with the name (e.g. ``figure'') and \#2
+% gets replaced with the reference number (e.g. ``12'').
+% 
+% \DescribeMacro{\bothIfFirst}
+% \DescribeMacro{\bothIfSecond}
+% When you define your own caption label formats and use the \package{subfig}
+% package\cite{subfig}, too, you must take care of empty caption label names.
+% For this purpose the commands
+% \begin{quote}
+%   |\bothIfFirst|\marg{first arg}\marg{second arg}\quad and\\
+%   |\bothIfSecond|\marg{first arg}\marg{second arg}
+% \end{quote}
+% are offered. |\bothIfFirst| tests if the first argument is empty,
+% |\bothIfSecond| tests if the second argument is empty. If it is so
+% both arguments get typeset, otherwise none of them.
+% 
+% For example the standard label format |simple| isn't defined as
+% \begin{quote}
+%   |\DeclareCaptionLabelFormat{simple}{#1 #2}|\quad,
+% \end{quote}
+% because this could cause an extra space if \#1 is empty. Instead |simple|
+% is defined as
+% \begin{quote}
+%   |\DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{ }#2}|\quad,
+% \end{quote}
+% causing the space to appear only if the label name is present.
+% 
+% \pagebreak[3]
+% \DescribeMacro{\DeclareCaptionLabelSeparator}
+% You can define your own caption label separators with
+% \nopagebreak[3]
+% \begin{quote}
+%   |\DeclareCaptionLabelSeparator|\marg{name}\marg{code}\quad.
+% \end{quote}
+% \nopagebreak[3]
+% Again an easy example taken from |caption.sty| itself:
+% \nopagebreak[3]
+% \begin{quote}
+%   |\DeclareCaptionLabelSeparator{colon}{: }|
+% \end{quote}
+% \pagebreak[3]
+% 
+% \DescribeMacro{\DeclareCaptionJustification}
+% You can define your own caption justifications with
+% \begin{quote}
+%   |\DeclareCaptionJustification|\marg{name}\marg{code}\quad.
+% \end{quote}
+% The \meta{code} simply gets typeset just before the caption.
+% E.g.~using the justification |raggedright|, which is defined as
+% \begin{quote}
+%   |\DeclareCaptionJustification{raggedright}{\raggedright}|\quad,
+% \end{quote}
+% yields captions with all lines moved to the left margin.
+% 
+% \DescribeMacro{\DeclareCaptionFont}
+% You can define your own caption fonts with
+% \begin{quote}
+%   |\DeclareCaptionFont|\marg{name}\marg{code}\quad.
+% \end{quote}
+% For example this package defines the options |small| and |bf| as
+% \begin{quote}
+%   |\DeclareCaptionFont{small}{\small}|\quad and\\
+%   |\DeclareCaptionFont{bf}{\bfseries}|\quad.
+% \end{quote}
+% 
+% \DescribeMacro{\DeclareCaptionStyle}
+% The best one comes at last: You can define your own caption styles with
+% \begin{quote}
+%   |\DeclareCaptionStyle|\marg{name}\oarg{additional options}\marg{options}
+% \end{quote}
+% Remember, caption styles are just a collection of suitable options, saved
+% under a given name. You can wake up these options at any time with the
+% option |style=|\meta{style name}.
+%
+% All caption styles are based on the default set of options. (See section
+% \ref{style}: \textit{``Styles''} for a complete list.) So you only need
+% to specify options which are different to them.
+% 
+% If you specify \meta{additional options} they get used in addition when
+% the caption fits into a single line and this check was not disabled with
+% the option |singlelinecheck=off|.
+% 
+% Again a very easy example taken from |caption.sty|:
+% \begin{quote}
+%   |\DeclareCaptionStyle{default}[justification=centering]{}|
+% \end{quote}
+% 
+% 
+% \subsection{Examples}
+% 
+% If you would like to have a colon \emph{and} a line break as caption
+% separator you could define it this way:
+% \begin{quote}
+%   |\DeclareCaptionLabelSeparator{periodnewline}{. \newline}|
+% \end{quote}
+% Selecting this separator with |\captionsetup{labelsep=periodnewline}| you
+% get captions like this:
+% \begin{Example}
+%   \captionsetup{labelsep=periodnewline,labelfont=bf,margin=10pt}
+%   \captionsetup{aboveskip=0pt}
+%   \captionof{figure}[]{\figuretext}
+% \end{Example}
+% 
+% For short captions---which fit into one single line---this separator
+% may not be satisfying, even when the automatically centering process
+% is switched off (|singlelinecheck=off|):
+% \begin{Example}
+%   \captionsetup{labelsep=periodnewline,labelfont=bf,margin=10pt,singlelinecheck=0}
+%   \captionsetup{aboveskip=0pt}
+%   \captionof{figure}[]{A figure.}
+% \end{Example}
+% 
+% An own caption style which selects another caption separator automatically
+% puts this right:
+% \begin{quote}
+%   |\DeclareCaptionStyle{periodnewline}%|\\
+%   |  [labelsep=period]{labelsep=periodnewline}|
+% \end{quote}
+% \begin{Example}
+%   \captionsetup{style=periodnewline,labelfont=bf,margin=10pt}
+%   \captionsetup{aboveskip=0pt}
+%   \captionof{figure}[]{A figure.}
+% \end{Example}
+% If you would like to keep the centering of these captions an appropriate
+% definition is
+% \begin{quote}
+%   |\DeclareCaptionStyle{periodnewline}%|\\
+%   |  [labelsep=period,justification=centering]%|\\
+%   |  {labelsep=periodnewline}|
+% \end{quote}
+% Using this definition short captions look like
+% \begin{Example}
+%   \captionsetup{style=periodnewlinec,labelfont=bf,margin=10pt}
+%   \captionsetup{aboveskip=0pt}
+%   \captionof{figure}[]{A figure.}
+% \end{Example}
+% while long ones still have a line break after the caption label.
+% 
+% \pagebreak[3]
+% Another example: You want captions to look like this:
+% \begin{Example}
+%   \captionsetup{format=reverse,labelformat=fullparens,labelsep=fill,font=small,labelfont=it}
+%   \captionsetup{aboveskip=0pt}
+%  \captionof{figure}[]{\figuretext}
+% \end{Example}
+% \pagebreak[2]
+% You could do it this way:
+% \nopagebreak[3]
+% {\leftmargini=10pt
+%  \begin{quote}
+%    |\DeclareCaptionFormat{reverse}{#3#2#1}|\\
+%    |\DeclareCaptionLabelFormat{fullparens}{(\bothIfFirst{#1}{ }#2)}|\\
+%    |\DeclareCaptionLabelSeparator{fill}{\hfill}|\\
+%    |\captionsetup{format=reverse,labelformat=fullparens|\\
+%    |              labelsep=fill,font=small,labelfont=it}|
+%  \end{quote}}
+% 
+% 
+% \pagebreak[3]
+% \section{Using non-standard document classes}
+% 
+% The \thispackage\ package was developed using the standard document classes
+% |article|, |report| and |book|. But it should work with other document
+% classes, too. (If there are any difficulties about a special document class
+% please don't hesitate to write me an e-mail. Thank you.)
+% 
+% But there is one exception: Please don't use this package together with
+% the \KOMAScript\ document classes. These classes already contain many ways
+% to customise the layout of your captions, so normally you don't need
+% the \thispackage\ package. Nevertheless I will do special adaptions to
+% the \KOMAScript\ document classes in the very next time.
+% 
+% 
+% \section{Using other packages}
+% \label{packages}
+% 
+% The \thispackage\ package contains special adaptions to other packages who
+% handle with captions, too, so the captions always should look like you
+% have specified them to look like.
+%
+% These are the packages the \thispackage\ package is adapted to:
+% 
+% \begin{tabular}{ll}
+%   |float|        & Gives you the possibility to define new floating environments\\
+%   |longtable|    & Typesets tables spanned over multiple pages\\
+%   |rotating|     & Supports rotated figures and tables\\
+%   |sidecap|      & Offers captions \emph{beside} figures or tables\\
+%   |supertabular| & Typesets tables spanned over multiple pages\\
+% \end{tabular}
+% 
+% If a certain support is not desired you can switch it off using the
+% \thispackage\ package option
+% \begin{quote}
+%   |\usepackage[|\ldots|,|\meta{package}|=no]{caption}|\quad.
+% \end{quote}
+% For example specifing the option |float=no| means you don't like the
+% \thispackage\ package to support the \package{float} package.
+% (Note: You can specify these options only within the |\usepackage| command,
+%  especially \emph{not} at a later time with |\captionsetup|.)
+% 
+% For further information about the supported packages please take a look
+% at the documentation belonging to it or buy yourself
+% The \LaTeX\ Companion\cite{companion}.
+% 
+% 
+% \subsection{The \package{float} package}
+% 
+% The \package{float} package\cite{float} offers different styles for floating
+% environments, these styles are |plain|, |plaintop|, |ruled|, and |boxed|.
+% You can link one of these styles to either new floating environments or
+% to one of the existing environments |figure| and |table|.
+% 
+% If you are using the \thispackage\ package and the \package{float} package
+% a caption style |ruled| gets defined automatically. This style represents
+% the caption layout in |ruled| styled floats. For you as an end user this
+% means that captions within |ruled| floats will always look like this,
+% nevertheless what caption options do you specify:
+% 
+% \ifx\floatstyle\undefined
+% 
+% \begin{Example}
+% \hrule height.8pt depth0pt \kern2pt
+% \vbox{\strut{\bfseries Program \ref{packages}.1}
+%    The first program. This hasn't got anything to do with the package
+%    but is included as an example. Note the \texttt{ruled} float style.}
+% \kern2pt\hrule\kern2pt
 % \begin{verbatim}
-% \renewcommand{\thesubfigure}{\thefigure.\arabic{subfigure}}
-% \makeatletter
-%   \renewcommand{\@thesubfigure}{{\captionlabelfont\thesubfigure:}\space}
-%   \renewcommand{\p@subfigure}{}
-% \makeatother
-% ...
+% #include <stdio.h>
+% 
+% int main(int argc, char **argv)
+% {
+%        for (int i = 0; i < argc; ++i)
+%                printf("argv[
+%        return 0;
+% }
 % \end{verbatim}
-%
-% \changes{v1.4b}{5 Apr 95}{Adapted to version 2.8 of the rotating package}
-% This package cooperates with the version 2.8 (1995/04/02) of the
-% \textsf{rotating} package, version 1.2c (1995/03/29) of the \textsf{float}
-% package and version 1.6 (1993/05/13) of the \textsf{subfigure} package,
-% but will hopefully work with future versions, too.
-%
-% \section{Example}
-% Here's an example figure which was produced with the following code in the
-% preamble of this document:
+% \kern2pt\hrule\relax
+% \end{Example}
+% 
+% \else
+% 
+% \floatstyle{ruled}
+% \newfloat{Program}{tbp}{lop}[section]
+% \floatname{Program}{Program}
+% 
+% \begin{Program}[H]
+% \begin{verbatim}
+% #include <stdio.h>
+% 
+% int main(int argc, char **argv)
+% {
+%        for (int i = 0; i < argc; ++i)
+%                printf("argv[
+%        return 0;
+% }
+% \end{verbatim}
+% \caption{The first program. This hasn't got anything to do with the package
+%    but is included as an example. Note the \texttt{ruled} float style.}
+% \end{Program}
+% 
+% \fi
+% 
+% If you want a different layout for |ruled| captions you have to define
+% your own one using the command
 % \begin{quote}
-% |\usepackage[hang,small,bf]{caption}|\\
-% |\setlength{\captionmargin}{20pt}|
+%   |\DeclareCaptionStyle{ruled}|\marg{options}\quad.
 % \end{quote}
-% \begin{figure}[!ht]
-% \centerline{EXAMPLE FIGURE}
-% \caption[Huba]{This is an example caption with a small font and a sans serif label.
-%                The hang option was used. There is a left and right margin of 20pt.}
-% \end{figure}
+% 
+% This mechanism also works with all other float styles. If you want a special
+% caption layout for |plain| or |boxed| floats for example you can simply define
+% a suitable caption style with the same name as the float style.
+% 
+% 
+% \subsection{The \package{longtable} package}
+% 
+% The \package{longtable} package\cite{longtable} offers the environment
+% |longtable| which behaves similar to the |tabular| environment, but
+% the table itself can span multiple pages.
+% 
+% 
+% \subsection{The \package{rotating} package}
+% 
+% The \package{rotating} package\cite{rotating} offers the floating
+% environments \texttt{sideways\-figure} and \texttt{sideways\-table}
+% which are just like normal figures and tables but rotated by 90 degree.
+% Furthermore they always use a full page on their own.
+% 
+% 
+% \subsection{The \package{sidecap} package}
+% 
+% The \package{sidecap} package\cite{sidecap} offers the floating
+% environments |SCfigure| and |SCtable| which are like normal figures
+% and tables but the caption will be put \emph{beside} the contents.
+% 
+% The \package{sidecap} package offers it's own options for justification.
+% If set, they will override the one specified with the caption option
+% |justification=| for captions beside their contents.
 %
-% \StopEventually{
-%   \begin{thebibliography}{9}
-%   \bibitem{rotating}
-%   Sebastian Rahtz and Leonor Barroca:
-%   \emph{A style option for rotated objects in \LaTeX},
-%   1994/10/02
+% Using the \package{sidecap} package you will probably notice that setting
+% caption options \emph{inside} |SCfigure| or |SCtable| environments with
+% |\captionsetup| won't work. This is caused by the implementation design
+% of the \package{sidecap} package, so you'll have to live with it.
+% Furthermore suppressing the entry in the list of figures or tables with
+% |\caption[]{|\ldots|}| won't work inside these environments.
+% 
+% \ifx\SCfigure\undefined
+% 
+% \begin{Example}
+%   \newsavebox\scbox
+%   \begin{lrbox}{\scbox}
+%     \setlength{\unitlength}{.75cm}
+%     \setlength{\fboxsep}{0pt}
+%     \fbox{\begin{picture}(4,4)
+%       \put(1,3){\circle{1}}
+%       \put(3,3){\circle{1}}
+%       \put(2,2){\circle{1}}
+%       \put(1,1){\circle{1}}
+%       \put(3,1){\circle{1}}
+%     \end{picture}}
+%   \end{lrbox}
+%   \newlength\scboxwidth
+%   \setlength\scboxwidth{\wd\scbox}
+%   \makebox[\linewidth][c]{
+%     \parbox[b]{\scboxwidth}{\unhbox\scbox}
+%     \hspace\marginparsep
+%     \parbox[b]{1.5\scboxwidth}{
+%       \captionsetup{justification=RaggedRight,labelfont=bf}
+%       \captionof{figure}[]{A small example with the caption beside the figure.}
+%     }
+%   }
+% \end{Example}
+% 
+% \else
+% 
+% \captionsetup{labelfont=bf}
+% \begin{SCfigure}[1.5][!ht]
+%   \setlength{\unitlength}{.75cm}
+%   \setlength{\fboxsep}{0pt}
+%   \fbox{\begin{picture}(4,4)
+%     \put(1,3){\circle{1}}
+%     \put(3,3){\circle{1}}
+%     \put(2,2){\circle{1}}
+%     \put(1,1){\circle{1}}
+%     \put(3,1){\circle{1}}
+%   \end{picture}}
+% \iffalse
+% \captionsetup{labelfont=bf}
+% \fi
+%   \caption[]{A small example with the caption beside the figure.}
+% \end{SCfigure}
+% \captionsetup{labelfont=default}
+% 
+% \fi
+% 
+% 
+% \subsection{The \package{supertabular} package}
+% 
+% The \package{supertabular} package\cite{supertabular} offers the environment
+% |supertabular| which is quite similar to the |longtable| environment provided
+% by the \package{longtable} package. Both offers the typesetting of tables
+% which can span multiple pages. For a detailed discussion about the differences
+% between these powerful packages please take a look at
+% The \LaTeX\ Companion\cite{companion}.
+% 
+% 
+% \section{Compatibility to older versions}
+% 
+% \subsection{\thispackage\ version $1.x$}
+% 
+% This version of the \thispackage\ package still supports the old options
+% and commands provided by the version $1.x$ of this package. So there
+% shouldn't occur any problems compiling old documents, but please don't mix
+% old options and commands with the new ones. This isn't supported and can
+% yield to ugly side effects.
+% 
+% Here comes a short oversight of the old options and commands and how they
+% are replaced within this version of the \thispackage\ package:
+% 
+% \begin{small}\begin{longtable}{ll}
+% \thispackage\ $1.\mathit{x}$ & \thispackage\ $3.\mathit{x}$\\
+% \hline
+% \endhead
+% |normal|                           & |format=default|\\
+% |hang|                             & |format=hang|\\
+% |isu|                              & |format=hang|\\
+% |center|                           & |justification=centering|\\
+% |centerlast|                       & |justification=centerlast|\\
+% |anne|                             & |justification=centerlast|\\
+% |nooneline|                        & |singlelinecheck=off|\\
+% |scriptsize|                       & |font=scriptsize|\\
+% |footnotesize|                     & |font=footnotesize|\\
+% |small|                            & |font=small|\\
+% |normalsize|                       & |font=normalsize|\\
+% |large|                            & |font=large|\\
+% |Large|                            & |font=Large|\\
+% |up|                               & |labelfont=up|\\
+% |it|                               & |labelfont=it|\\
+% |sl|                               & |labelfont=sl|\\
+% |sc|                               & |labelfont=sc|\\
+% |md|                               & |labelfont=md|\\
+% |bf|                               & |labelfont=bf|\\
+% |rm|                               & |labelfont=rm|\\
+% |sf|                               & |labelfont=sf|\\
+% |tt|                               & |labelfont=tt|\\
+% |\setlength{\captionmargin}|       & |margin=|\meta{Rand}\\
+% |\renewcommand{\captionfont}|      & |\DeclareCaptionFont|\\
+%                                    & $+$ |\captionsetup{font=|\meta{Name}|}|\\
+% |\renewcommand{\captionsize}|      & |\DeclareCaptionFont|\\
+%                                    & $+$ |\captionsetup{font=|\meta{Name}|}|\\
+% |\renewcommand{\captionlabelfont}| & |\DeclareCaptionLabelFont|\\
+%                                    & $+$ |\captionsetup{labelfont=|\meta{Name}|}|\\
+% \end{longtable}\end{small}
+% 
+% 
+% \subsection{\package{caption2} version $2.x$}
+% 
+% Although they do very similar stuff the packages \package{caption} and
+% \package{caption2} have a very different implementation design. So this
+% version of the \thispackage\ package isn't compatible to the
+% \package{caption2} package at all. Of course for compiling old documents
+% you can still use the \package{caption2} package, the latest version
+% is provided with this package. But newly created documents shouldn't use
+% the \package{caption2} package, please use the \thispackage\ package
+% instead as described in this manual.
+% 
+% \iffalse
+% TODO: Table like the "caption 1.x => caption 3.x" one
+% \fi
+% 
+% 
+% \pagebreak[3]
+% \section{Further reading}
+% 
+% I recommend the following documents for further reading:
+% 
+% \begin{itemize}
+% \item
+%   The \TeX\ FAQ - Frequently asked questions about \TeX\ and \LaTeX :
+%   \begin{quote}\texttt{http://faq.tug.org/}\end{quote}
+%
+% \item
+%   A French FAQ can be found at
+%   \begin{quote}\texttt{http://www.grappa.univ-lille3.fr/FAQ-LaTeX/}\end{quote}
+% 
+% \item
+%   \textsf{epslatex} from Keith Reckdahl contains many tips around
+%   graphics in \LaTeXe. You will find this document in the directory
+%   \begin{quote}\texttt{ftp://ftp.dante.de/pub/tex/info/}\end{quote}
+%   as \texttt{epslatex.ps} and \texttt{epslatex.pdf}.
+%
+%   There is also a french translation available:
+%   \begin{quote}\texttt{ftp://ftp.dante.de/pub/tex/info/fepslatex.ps}\end{quote}
+% \end{itemize}
+% 
+% 
+% \section{Thanks}
+% 
+% I would like to thank Katja Melzner, Steven D. Cochran,
+% Frank Mittelbach, David Carlisle und Ivor Tiefenbrun.
+%
+%
+% \changes{v1.0}{27 Oct 94}{First release}
+% \changes{v1.1}{ 3 Nov 94}{New captiontype \cs{centerlast}}
+% \changes{v1.2}{28 Nov 94}{Support of the {\sf float} package}
+% \changes{v1.3}{ 8 Jan 95}{Support of \cs{captionlabelfont} in subcaptions}
+% \changes{v1.4}{30 Jan 95}{New option \cs{nooneline}}
+% \changes{v3.0}{10 Jul 03}{Rewritten; many new commands and features}
+%
+% \StopEventually{\begin{thebibliography}{9}
+%   \bibitem{companion}
+%   Michel Goossens, Frank Mittelbach and Alexander Samarin:
+%   \newblock {\em The {\LaTeX} Companion},
+%   \newblock Addison-Wesley, Reading, Massachusetts, 2004.
+% 
 %   \bibitem{float}
 %   Anselm Lingnau:
 %   \emph{An Improved Environment for Floats},
-%   1995/03/25
-%   \bibitem{A-W:GMS94}
-%   Michel Goossens, Frank Mittelbach and Alexander Samarin:
-%   \newblock {\em The {\LaTeX} Companion},
-%   \newblock Addison-Wesley, Reading, Massachusetts, 1994.
-%   \bibitem{Anne}
-%   Anne Br\"uggemann-Klein:
-%   \emph{Einf\"uhrung in die Dokumentverarbeitung},
-%   B.G. Teubner, Stuttgart, 1989
-%   \bibitem{Kopka-E}
-%   Helmut Kopka:
-%   \emph{\LaTeX -- Erweiterungsm\"oglichkeiten},
-%   3. \"uberarbeitete Auf\/lage, Addison-Wesley, Bonn, 1991
-%   \end{thebibliography}
-% }
+%   2001/11/08
+% 
+%   \bibitem{longtable}
+%   David Carlisle:
+%   \emph{The longtable package},
+%   2000/10/22
+% 
+%   \bibitem{rotating}
+%   Sebastian Rahtz and Leonor Barroca:
+%   \emph{A style option for rotated objects in \LaTeX},
+%   1997/09/26
+% 
+%   \bibitem{sidecap}
+%   Rolf Niepraschk und Hubert G"a"slein:
+%   \emph{The sidecap package},
+%   2003/06/06
+% 
+%   \bibitem{subfig}
+%   Steven D. Cochran:
+%   \emph{The subfig package},
+%   2003/12/01
+% 
+%   \bibitem{supertabular}
+%   Johannes Braams und Theo Jurriens:
+%   \emph{The supertabular environment},
+%   2002/07/19
+% \end{thebibliography}}
+%
+% \DoNotIndex{\\,\_,\ }
+% \DoNotIndex{\@gobble,\@ifundefined,\@namedef,\@nameuse,\@tempdima}
+% \DoNotIndex{\p@,\z@}
+% \DoNotIndex{\active,\addtolength,\advance,\begin,\bfseries}
+% \DoNotIndex{\catcode,\centering,\csname,\def,\divide}
+% \DoNotIndex{\else,\empty,\end,\endcsname,\endgraf,\expandafter}
+% \DoNotIndex{\fi,\footnotesize,\global}
+% \DoNotIndex{\hangindent,\hbox,\hskip,\hspace,\hss}
+% \DoNotIndex{\ifcase,\ifdim,\ifx,\itshape}
+% \DoNotIndex{\Large,\large,\leavevmode,\leftskip,\let,\linewidth}
+% \DoNotIndex{\mdseries,\message}
+% \DoNotIndex{\newcommand,\newdimen,\newlength,\newif,\newsavebox,\noindent}
+% \DoNotIndex{\normalsize,\or}
+% \DoNotIndex{\par,\parbox,\parfillskip,\protect}
+% \DoNotIndex{\raggedleft,\raggedright,\relax,\renewcommand,\rightskip}
+% \DoNotIndex{\rmfamily}
+% \DoNotIndex{\sbox,\scriptsize,\scshape,\setlength,\sffamily,\slshape,\small}
+% \DoNotIndex{\space,\strut}
+% \DoNotIndex{\textheight,\typeout,\ttfamily,\upshape,\usebox}
+% \DoNotIndex{\vsize,\vskip,\wd}
+% \DoNotIndex{\AtBeginDocument,\AtEndOfPackage,\CurrentOption,\DeclareOption}
+% \DoNotIndex{\ExecuteOptions,\InputIfFileExists,\NeedsTeXFormat,\MessageBreak}
+% \DoNotIndex{\PackageError,\PackageWarningNoLine,\ProcessOptions}
+% \DoNotIndex{\ProvidesPackage}
+%
+% \clearpage
 % \setlength{\parskip}{0pt plus 1pt}
 %
-% \CheckSum{296}
-% \DoNotIndex{\\,\_,\ }
-% \DoNotIndex{\p@}
-% \DoNotIndex{\active,\addtolength,\begin,\bfseries}
-% \DoNotIndex{\catcode,\def,\else,\empty,\end,\fi,\footnotesize,\global}
-% \DoNotIndex{\hangindent,\hspace,\ifcase,\ifdim,\ifx,\itshape}
-% \DoNotIndex{\Large,\large,\leavevmode,\leftskip,\let,\linewidth}
-% \DoNotIndex{\mdseries,\newcommand,\newlength,\newsavebox,\noindent,\normalsize}
-% \DoNotIndex{\or,\par,\parbox,\parfillskip,\renewcommand,\rightskip,\rmfamily}
-% \DoNotIndex{\sbox,\scriptsize,\scshape,\setlength,\sffamily,\slshape,\small,\space}
-% \DoNotIndex{\textheight,\typeout,\ttfamily,\undefined,\upshape,\usebox}
-% \DoNotIndex{\vsize,\vskip,\wd}
-% \DoNotIndex{\AtBeginDocument,\DeclareOption,\ExecuteOptions,\NeedsTeXFormat}
-% \DoNotIndex{\ProcessOptions,\ProvidesPackage}
-%
-% \section{The code}
+% \section{The Implementation}
 % \iffalse
 %<*package>
 % \fi
 %
-% \subsection{Identification}
-%    \begin{macrocode}
-\NeedsTeXFormat{LaTeX2e}[1994/06/01]
-\ProvidesPackage{caption}[1995/04/05 v1.4b caption package (AS)]
-%    \end{macrocode}
+% I'm sorry for the missing code documentation, I will do this ASAP.
 %
-% \subsection{Initial code}
-% \begin{macro}{\captionfont}
-% \begin{macro}{\captionlabelfont}
-% \begin{macro}{\captionmargin}
-% |\captionsize| is defined for backward compatibility with v1.3
-% of this package.
 %    \begin{macrocode}
-\newcommand{\captionsize}{}
-\newcommand{\captionfont}{\captionsize}
-\newcommand{\captionlabelfont}{}
-\newlength{\captionmargin}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-% \end{macro}
 %
-% Here are the different basic types of captions implemented:
-% \begin{macro}{\as@normalcaption}
-% \changes{v1.4a}{12 Feb 95}{{\tt\protect\bslash par} added}
-% The `normal' caption
-%    \begin{macrocode}
-\newcommand{\as@normalcaption}[2]{%
-  #1 #2\par}
-%    \end{macrocode}
-% \end{macro}
-% \begin{macro}{\as@isucaption}
-% \changes{v1.4}{27 Jan 95}{{\tt\protect\bslash leavevmode} added}
-% The `iso' or `hang' caption;
-% this code was taken from \LaTeXcomp\cite[p155]{A-W:GMS94} and modified
-% \iffalse
-%  \hangindent\wd\as@captionbox\noindent\usebox{\as@captionbox}#2}
-% \fi
-%    \begin{macrocode}
-\newcommand{\as@isucaption}[2]{%
-  \sbox{\as@captionbox}{#1\space}%
-  \addtolength{\as@captionwidth}{-\wd\as@captionbox}%
-  \usebox{\as@captionbox}\parbox[t]{\as@captionwidth}{\leavevmode#2}}
-%    \end{macrocode}
-% \end{macro}
-% \begin{macro}{\as@centercaption}
-% \changes{v1.4a}{12 Feb 95}{{\tt center} environment changed to {\tt\protect\bslash centering}}
-% The `center' caption
-%    \begin{macrocode}
-\newcommand{\as@centercaption}[2]{%
-  \parbox[t]{\as@captionwidth}{{\centering#1 #2\par}}}
-%    \end{macrocode}
-% \end{macro}
-% \begin{macro}{\as@annecaption}
-% \changes{v1.4a}{12 Feb 95}{{\tt\protect\bslash par} added}
-% The `centerlast' caption; the idea how to do this was taken from Br\"uggemann-Klein\cite{Anne},
-% it is also mentioned in Kopka\cite[p227]{Kopka-E}
-%    \begin{macrocode}
-\newcommand{\as@annecaption}[2]{%
-  \addtolength{\leftskip}{0pt plus 1fil}%
-  \addtolength{\rightskip}{0pt plus -1fil}%
-  \setlength{\parfillskip}{0pt plus 2fil}%
-  #1 #2\par}
-%    \end{macrocode}
-% \end{macro}
-% \begin{macro}{\as@shortcaption}
-% Short captions are centered by default
-%    \begin{macrocode}
-\let\as@shortcaption\as@centercaption
-%    \end{macrocode}
-% \end{macro}
+% Helpers
 %
-% \subsection{Detection of the \puresf{subfigure} package}
-% \begin{macro}{\as@subcapsize}
-% \begin{macro}{\@thesubfigure}
-% \begin{macro}{\@thesubtable}
-% If the \textsf{subfigure} package is loaded, a little message will be typeout
-% and |\as@subcapsize| -- which sets the size of the subcaptions -- will be
-% defined. Also |\@thesubfigure| and |\@thesubtable| will be redefined here to
-% support the |\captionlabelfont| in subcaptions, too (thanks to Kevin Ruland for
-% this idea!).
-% If you don't like this behaviour, just load the |caption| package \emph{after}
-% the |subfigure| package (and eventually redefine the |\subcapsize| by yourself)
-% or redefine |\@thesubfigure| and |\@thesubtable| after loading the |caption|
-% package as shown in the documentation of the \textsf{subfigure} package.
-%    \begin{macrocode}
-\ifx\thesubfigure\undefined
-  \newcommand{\as@subcapsize}[1]{}
-\else%
-  \typeout{\space\space\space\space\space\space\space\space\space
-           `subfigure' package detected}
-  \let\as@subcapsize\subcapsize
-  \renewcommand{\@thesubfigure}{{\captionlabelfont\thesubfigure}\space}
-  \renewcommand{\@thesubtable}{{\captionlabelfont\thesubtable}\space}
-\fi
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-% \end{macro}
+\providecommand*\@nameundef[1]{%
+  \expandafter\let\csname #1\endcsname\@undefined}
 %
-% \subsection{Declaration of options}
-% There are four different types of captions supported: |normal|,
-% |isu|, |center| and |centerlast|. |hang| is exactly the same as |isu|.
-%    \begin{macrocode}
-\DeclareOption{normal}{\let\as@caption\as@normalcaption}
-\DeclareOption{isu}{\let\as@caption\as@isucaption}
-\DeclareOption{hang}{\ExecuteOptions{isu}}
-\DeclareOption{center}{\let\as@caption\as@centercaption}
-\DeclareOption{anne}{\let\as@caption\as@annecaption}
-\DeclareOption{centerlast}{\ExecuteOptions{anne}}
-%    \end{macrocode}
-% If option |nooneline| is set, only-one-line captions will behave like normal
-% ones.
-%    \begin{macrocode}
-\DeclareOption{nooneline}{\AtBeginDocument{\let\as@shortcaption\as@caption}}
-%    \end{macrocode}
-% There are options for six different font sizes available, they also
-% redefine the |\subcapsize| provided by the \textsf{subfigure} package
-% (if detected).
-%    \begin{macrocode}
-\DeclareOption{scriptsize}{%
-  \renewcommand{\captionsize}{\scriptsize}
-  \as@subcapsize{\scriptsize}}
-\DeclareOption{footnotesize}{%
-  \renewcommand{\captionsize}{\footnotesize}
-  \as@subcapsize{\scriptsize}}
-\DeclareOption{small}{%
-  \renewcommand{\captionsize}{\small}
-  \as@subcapsize{\footnotesize}}
-\DeclareOption{normalsize}{%
-  \renewcommand{\captionsize}{\normalsize}
-  \as@subcapsize{\footnotesize}}
-\DeclareOption{large}{%
-  \renewcommand{\captionsize}{\large}
-  \as@subcapsize{\normalsize}}
-\DeclareOption{Large}{%
-  \renewcommand{\captionsize}{\Large}
-  \as@subcapsize{\large}}
-%    \end{macrocode}
-% There are nine options available to set the font attributes of the caption labels.
-%    \begin{macrocode}
-\DeclareOption{up}{\renewcommand{\captionlabelfont}{\upshape}}
-\DeclareOption{it}{\renewcommand{\captionlabelfont}{\itshape}}
-\DeclareOption{sl}{\renewcommand{\captionlabelfont}{\slshape}}
-\DeclareOption{sc}{\renewcommand{\captionlabelfont}{\scshape}}
-\DeclareOption{md}{\renewcommand{\captionlabelfont}{\mdseries}}
-\DeclareOption{bf}{\renewcommand{\captionlabelfont}{\bfseries}}
-\DeclareOption{rm}{\renewcommand{\captionlabelfont}{\rmfamily}}
-\DeclareOption{sf}{\renewcommand{\captionlabelfont}{\sffamily}}
-\DeclareOption{tt}{\renewcommand{\captionlabelfont}{\ttfamily}}
-%    \end{macrocode}
-% If the option |ruled| is set, the captions of ruled floats provided
-% by the \textsf{float} package will also be supported.
-%    \begin{macrocode}
-\DeclareOption{ruled}{\newcommand\as@ruled{}}
-%    \end{macrocode}
+\providecommand\l@addto@macro[2]{%
+  \begingroup
+    \toks@\expandafter{#1#2}%
+    \edef\@tempa{\endgroup\def\noexpand#1{\the\toks@}}%
+  \@tempa}
 %
-% \subsection{Execution of options}
-% The `normal' type of caption is preselected.
-%    \begin{macrocode}
-\ExecuteOptions{normal}
-\ProcessOptions
-%    \end{macrocode}
-%
-% \subsection{Main code}
-% \begin{macro}{\as@captionbox}
-% \begin{macro}{\as@captionwidth}
-% \begin{macro}{\as@makecaption}
-% \begin{macro}{\@makecaption}
-% \changes{v1.4}{30 Jan 95}{{\tt center} environment changed to {\tt\protect\bslash as@shortcaption}}
-% \changes{v1.4a}{12 Feb 95}{{\tt\protect\bslash par} removed}
-% And now \ldots\ it's \ldots\ the new |\@makecaption| code!
-%    \begin{macrocode}
-\newsavebox{\as@captionbox}
-\newlength{\as@captionwidth}
-\newcommand{\as@makecaption}[2]{%
-  \setlength{\leftskip}{\captionmargin}%
-  \setlength{\rightskip}{\captionmargin}%
-  \addtolength{\as@captionwidth}{-2\captionmargin}%
-  \captionfont%
-  \sbox{\as@captionbox}{{\captionlabelfont #1:} #2}%
-  \ifdim \wd\as@captionbox >\as@captionwidth
-    \as@caption{{\captionlabelfont #1:}}{#2}%
-  \else%
-    \as@shortcaption{{\captionlabelfont #1:}}{#2}%
+\def\bothIfFirst#1#2{%
+  \protected@edef\caption@tempa{#1}%
+  \ifx\caption@tempa\@empty\else
+    #1#2%
   \fi}
-\renewcommand{\@makecaption}[2]{%
-  \vskip\abovecaptionskip%
-  \setlength{\as@captionwidth}{\linewidth}%
-  \as@makecaption{#1}{#2}%
-  \vskip\belowcaptionskip}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-% \end{macro}
-% \end{macro}
+\def\bothIfSecond#1#2{%
+  \protected@edef\caption@tempa{#2}%
+  \ifx\caption@tempa\@empty\else
+    #1#2%
+  \fi}
 %
-% \subsection{Support of the \puresf{rotating} package}
-% \begin{macro}{\@makercaption}
-% \changes{v1.4b}{5 Apr 95}{{\tt\protect\bslash @makercaption} removed}
-% \begin{macro}{\@makerotcaption}
-% If the \textsf{rotating} package is loaded, the command |\@makerotcaption|
-% (for support of |\rotcaption|) will be
-% redefined here. The code was taken from the \textsf{rotating} package
-% \cite{rotating} itself and adapted.
-%    \begin{macrocode}
-\ifx\@makerotcaption\undefined
-\else
-  \typeout{\space\space\space\space\space\space\space\space\space
-           `rotating' package detected}
-% \let\@makercaption\undefined
-  \renewcommand{\@makerotcaption}[2]{%
-    \captionfont%
-    \sbox{\as@captionbox}{{\captionlabelfont #1:} #2}%
-    \ifdim \wd\as@captionbox > .8\vsize
-      \rotatebox{90}{%
-        \setlength{\as@captionwidth}{.8\textheight}%
-        \begin{minipage}{\as@captionwidth}%
-          \as@caption{{\captionlabelfont #1:}}{#2}%
-        \end{minipage}}\par
-    \else%
-      \rotatebox{90}{\usebox{\as@captionbox}}%
-    \fi
-    \hspace{12pt}}
-\fi
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
+% Setting boolean options:
+% \caption@setbool{<name>}{<value> = false/true/no/yes/0/1}
+% \caption@ifbool{<name>}{<if-clause>}{<else-clause>}
 %
-% \subsection{Support of the \puresf{float} package}
-% \begin{macro}{\floatc@plain}
-% \begin{macro}{\floatc@ruled}
-% \changes{v1.3}{8 Jan 95}{{\tt\protect\bslash as@normalcaption} changed to {\tt\protect\bslash as@caption}}
-% \changes{v1.4a}{12 Feb 95}{{\tt\protect\bslash par} removed}
-% If the \textsf{float} package is loaded, the command |\floatc@plain|
-% (and the command |\floatc@ruled| if the option |ruled| is given)
-% will be redefined here.
-%    \begin{macrocode}
-\ifx\floatc@plain\undefined
-\else
-  \typeout{\space\space\space\space\space\space\space\space\space
-           `float' package detected}
-  \renewcommand\floatc@plain[2]{%
-    \setlength{\as@captionwidth}{\linewidth}%
-    \as@makecaption{#1}{#2}}
-  \ifx\as@ruled\undefined
-  \else
-    \renewcommand\floatc@ruled[2]{%
-      \setlength{\as@captionwidth}{\linewidth}%
-      \captionfont%
-      \as@caption{{\captionlabelfont #1:}}{#2}}
+\def\caption@setbool#1#2{%
+  \caption@ifinlist{#2}{1,true,yes,on}{%
+    \expandafter\let\csname caption@if#1\endcsname\@firstoftwo
+  }{\caption@ifinlist{#2}{0,false,no,off}{%
+    \expandafter\let\csname caption@if#1\endcsname\@secondoftwo
+  }{%
+    \PackageError{caption}{Undefined boolean value `#2'}{\caption@eh}%
+  }}%
+}
+\def\caption@ifinlist#1#2{%
+  \let\next\@secondoftwo
+  \edef\caption@tempa{#1}%
+  \@for\caption@tempb:={#2}\do{%
+    \ifx\caption@tempa\caption@tempb
+      \let\next\@firstoftwo
+	\fi}%
+  \next}
+%
+\def\caption@ifbool#1{\@nameuse{caption@if#1}}
+%
+% Obsolete stuff for compatiblity to caption.sty 1.3
+%
+\newcommand\captionsize{\captionfont}
+%
+% Margin resp. width
+%
+\newdimen\captionmargin
+\newdimen\captionwidth
+\newif\ifcaption@width
+\newcommand\caption@setmargin{%
+  \caption@widthfalse
+  \setlength\captionmargin}
+\newcommand\caption@setwidth{%
+  \caption@widthtrue
+  \setlength\captionwidth}
+%
+% Indentions
+%
+\newdimen\captionindent
+\newdimen\captionparindent
+\newdimen\captionhangindent
+%
+% Other parameters
+%
+\newif\ifcaption@star
+\let\caption@tfmt\@firstofone
+%
+% Vertical spaces before/after captions
+%
+\@ifundefined{abovecaptionskip}{%
+  \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
+\@ifundefined{belowcaptionskip}{%
+  \newlength\belowcaptionskip\setlength\belowcaptionskip{0\p@}}{}
+%
+% Position (default(=bottom)/bottom/top/auto)
+% ONLY DEFAULT, BOTTOM AND TOP ARE DOCUMENTED!
+% (I keep "auto" so I can set this to default
+% if the base class is ucthesis.cls.)
+%
+\newcommand*\caption@setposition[1]{%
+  \edef\caption@tempa{#1}%
+%
+  \def\caption@tempb{default}%
+  \ifx\caption@tempa\caption@tempb
+    \def\caption@tempa{bottom}%
   \fi
-\fi
+%
+  \def\caption@tempb{top}%
+  \ifx\caption@tempa\caption@tempb
+    \let\caption@position\@firstoftwo
+  \else
+    \def\caption@tempb{bottom}%
+    \ifx\caption@tempa\caption@tempb
+      \let\caption@position\@secondoftwo
+    \else
+      \def\caption@tempb{auto}%
+      \ifx\caption@tempa\caption@tempb
+        \let\caption@position\@undefined
+      \else
+        \PackageError{caption}{Undefined caption position `#1'}{\caption@eh}%
+      \fi
+    \fi
+  \fi}
+%
+% Error
+%
+\newcommand\caption@eh{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `caption' package.\MessageBreak
+  \@ehc}
+%
+% Loading the keyval package
+% (We need it for font options and package option handling)
+%
+\RequirePackage{keyval}[1997/11/10]
+\providecommand*\undefine@key[2]{%
+  \@nameundef{KV@#1@#2}\@nameundef{KV@#1@#2@default}}
+%
+% Reset to default parameters
+% (Note that this does not touch the skips and the positioning.)
+%
+\newcommand\caption@setdefault{\captionsetup{%
+  format=default,labelformat=default,labelsep=colon,justification=justified,%
+  font=default,labelfont=default,textfont=default,%
+  margin=0pt,indention=0pt,parindent=0pt,hangindent=0pt,singlelinecheck}}
+%
+% \DeclareCaptionStyle{<name>}[<additional(!) single-line-list-of-KV>]{<list-of-KV>}
+% \caption@setstyle{<name>}
+%
+\newcommand*\DeclareCaptionStyle[1]{%
+  \@ifnextchar[{\caption@declarestyle{#1}}{\caption@declarestyle{#1}[]}}
+\def\caption@declarestyle#1[#2]{%
+  \global\@namedef{caption@sls@#1}{#2}%
+  \global\@namedef{caption@sty@#1}}
+\@onlypreamble\DeclareCaptionStyle
+\@onlypreamble\caption@declarestyle
+%
+\newcommand*\caption@setstyle[1]{%
+  \@ifundefined{caption@sty@#1}%
+    {\PackageError{caption}{Undefined caption style `#1'}{\caption@eh}}%
+    {\expandafter\let\expandafter\caption@sls\csname caption@sls@#1\endcsname
+     \caption@setdefault\caption@esetup{\csname caption@sty@#1\endcsname}}}
+%
+% Pre-defined styles
+%
+\DeclareCaptionStyle{default}[justification=centering]{}
+%
+% \DeclareCaptionFormat{<name>}{<code with #1, #2, and #3>}
+% \caption@setformat{<name>}
+%
+\newcommand*\DeclareCaptionFormat[1]{%
+  \global\long\expandafter\def\csname caption@fmt@#1\endcsname##1##2##3}
+\@onlypreamble\DeclareCaptionFormat
+%
+\newcommand*\caption@setformat[1]{%
+  \@ifundefined{caption@fmt@#1}%
+    {\PackageError{caption}{Undefined caption format `#1'}{\caption@eh}}%
+    {\expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
+%
+% Pre-defined formats
+%
+\DeclareCaptionFormat{default}{#1#2#3\par}
+\DeclareCaptionFormat{hang}{%
+  \@hangfrom{#1#2}%
+  \advance\captionparindent\hangindent
+  \advance\captionhangindent\hangindent
+  \caption@@par
+  #3\par}
+%
+% \DeclareCaptionLabelFormat{<name>}{<code with #1 and #2>}
+% \caption@setlabelformat{<name>}
+%
+\newcommand*\DeclareCaptionLabelFormat[1]{%
+  \global\expandafter\def\csname caption@lfmt@#1\endcsname##1##2}
+\@onlypreamble\DeclareCaptionLabelFormat
+%
+\newcommand*\caption@setlabelformat[1]{%
+  \@ifundefined{caption@lfmt@#1}%
+    {\PackageError{caption}{Undefined caption label format `#1'}{\caption@eh}}%
+    {\expandafter\let\expandafter\caption@lfmt\csname caption@lfmt@#1\endcsname}}
+%
+% Pre-defined label formats
+%
+\DeclareCaptionLabelFormat{default}{\bothIfFirst{#1}{\nobreakspace}#2}
+\DeclareCaptionLabelFormat{empty}{}
+\DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{\nobreakspace}#2}
+\DeclareCaptionLabelFormat{parens}{\bothIfFirst{#1}{\nobreakspace}(#2)}
+%
+% \DeclareCaptionLabelSeparator{<name>}{<code>}
+% \caption@setlabelseparator{<name>}
+%
+\newcommand*\DeclareCaptionLabelSeparator[1]{%
+  \global\@namedef{caption@lsep@#1}}
+\@onlypreamble\DeclareCaptionLabelSeparator
+%
+\newcommand*\caption@setlabelseparator[1]{%
+  \@ifundefined{caption@lsep@#1}%
+    {\PackageError{caption}{Undefined caption label separator `#1'}{\caption@eh}}%
+    {\expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
+%
+% Pre-defined label separators
+%
+\DeclareCaptionLabelSeparator{default}{: }
+\DeclareCaptionLabelSeparator{none}{}
+\DeclareCaptionLabelSeparator{colon}{: }
+\DeclareCaptionLabelSeparator{period}{. }
+\DeclareCaptionLabelSeparator{space}{ }
+\DeclareCaptionLabelSeparator{quad}{\quad}
+\DeclareCaptionLabelSeparator{widespace}{\hspace{1em plus .3em}}
+\DeclareCaptionLabelSeparator{newline}{\newline}
+%
+% \DeclareCaptionJustification{<name>}{<code>}
+% \caption@setjustification{<name>}
+%
+\newcommand*\DeclareCaptionJustification[1]{%
+  \global\@namedef{caption@hj@#1}}
+\@onlypreamble\DeclareCaptionJustification
+%
+\newcommand*\caption@setjustification[1]{%
+  \@ifundefined{caption@hj@#1}%
+    {\PackageError{caption}{Undefined caption justification `#1'}{\caption@eh}}%
+    {\expandafter\let\expandafter\caption@hj\csname caption@hj@#1\endcsname}}
+%
+% Pre-defined justifications
+%
+\newcommand\caption@centerfirst{%
+  \edef\caption@normaladjust{%
+    \leftskip\the\leftskip
+    \rightskip\the\rightskip
+    \parfillskip\the\parfillskip\relax}%
+  \leftskip\z@\@plus -1fil%
+  \rightskip\z@\@plus 1fil%
+  \parfillskip\z@skip
+  \noindent\hskip\z@\@plus 2fil%
+  \@setpar{\@@par\@restorepar\caption@normaladjust}}
+\newcommand\caption@centerlast{%
+  \leftskip\z@\@plus 1fil%
+  \rightskip\z@\@plus -1fil%
+  \parfillskip\z@\@plus 2fil\relax}
+%
+\DeclareCaptionJustification{default}{}
+\DeclareCaptionJustification{justified}{}
+\DeclareCaptionJustification{centering}{\centering}
+\DeclareCaptionJustification{centerfirst}{\caption@centerfirst}
+\DeclareCaptionJustification{centerlast}{\caption@centerlast}
+\DeclareCaptionJustification{raggedleft}{\raggedleft}
+\DeclareCaptionJustification{raggedright}{\raggedright}
+%
+\DeclareCaptionJustification{Centering}{\Centering}
+\DeclareCaptionJustification{RaggedLeft}{\RaggedLeft}
+\DeclareCaptionJustification{RaggedRight}{\RaggedRight}
+\AtBeginDocument{%
+  \IfFileExists{ragged2e.sty}{%
+    \RequirePackage{ragged2e}%
+  }{%
+    \PackageWarning{caption}{%
+      Cannot locate the 'ragged2e' package, therefore\MessageBreak
+      substituting standard LaTeX versions for\MessageBreak
+      \string\Centering, \string\RaggedLeft\space
+      and \string\RaggedRight.\MessageBreak}%
+    \DeclareCaptionJustification{Centering}{\centering}%
+    \DeclareCaptionJustification{RaggedLeft}{\raggedleft}%
+    \DeclareCaptionJustification{RaggedRight}{\raggedright}%
+}}
+%
+% \DeclareCaptionFont{<name>}{<code>}
+% \caption@setfont{<command>}{<keyval-list of names>}
+%
+\newcommand\DeclareCaptionFont[2]{%
+  \define@key{caption@font}{#1}[]{\g@addto@macro\caption@tempa#2}}
+\@onlypreamble\DeclareCaptionFont
+%
+\newcommand*\caption@setfont[2]{%
+  \let\caption@tempa\@empty
+  \begingroup
+    \setkeys{caption@font}{#2}%
+  \endgroup
+  \expandafter\let\csname caption#1\endcsname\caption@tempa}
+%
+% Pre-defined fonts
+%
+\DeclareCaptionFont{default}{}
+%
+\DeclareCaptionFont{scriptsize}{\scriptsize}
+\DeclareCaptionFont{footnotesize}{\footnotesize}
+\DeclareCaptionFont{small}{\small}
+\DeclareCaptionFont{normalsize}{\normalsize}
+\DeclareCaptionFont{large}{\large}
+\DeclareCaptionFont{Large}{\Large}
+%
+\DeclareCaptionFont{up}{\upshape}
+\DeclareCaptionFont{it}{\itshape}
+\DeclareCaptionFont{sl}{\slshape}
+\DeclareCaptionFont{sc}{\scshape}
+\DeclareCaptionFont{md}{\mdseries}
+\DeclareCaptionFont{bf}{\bfseries}
+\DeclareCaptionFont{rm}{\rmfamily}
+\DeclareCaptionFont{sf}{\sffamily}
+\DeclareCaptionFont{tt}{\ttfamily}
+%
+% \captionsetup[<type>]{<keyval-list of options>}
+% \caption@settype{<type>}
+%
+% If `type' is set, we simply save or append the option list,
+% otherwise we `execute' it with \setkeys
+%
+\def\captionsetup{\@ifnextchar[\caption@setuptype\caption@setup}
+\def\caption@setuptype[#1]{%
+  \@ifundefined{caption@typ@#1}%
+    {\@namedef{caption@typ@#1}}
+    {\expandafter\l@addto@macro\csname caption@typ@#1\endcsname,%
+     \expandafter\l@addto@macro\csname caption@typ@#1\endcsname}}
+\def\caption@setup{\setkeys{caption}}
+%
+\def\caption@esetup#1{%
+  \edef\caption@tempa{\noexpand\caption@setup{#1}}%
+  \caption@tempa}
+%
+% Setting up caption type: Simply execute the saved option list
+% (For use inside \@caption, \LT@makecaption etc.)
+%
+\def\caption@settype#1{%
+  \@ifundefined{caption@typ@#1}{}{%
+    \caption@esetup{\csname caption@typ@#1\endcsname}}}%
+%
+% \clearcaptionsetup{<type>}
+%
+\newcommand*\clearcaptionsetup[1]{\@nameundef{caption@typ@#1}}
+%
+% \showcaptionsetup[<package>]{<type>}
+% (The optional argument will not be documented!)
+%
+\newcommand*\showcaptionsetup[2][]{%
+  \def\caption@tempa{#1}%
+  \ifx\caption@tempa\@empty
+    \def\caption@tempa{Caption\space}%
+  \else
+    \def\caption@tempa{#1 Caption\space}%
+  \fi
+  \GenericWarning{\caption@tempa}{%
+    \caption@tempa Info: KV list on `#2'\MessageBreak
+    Data: (%
+    \@ifundefined{caption@typ@#2}{%
+      % Empty -- print nothing.
+    }{%
+      \@nameuse{caption@typ@#2}%
+    }%
+    )}}
+%
+% Hooks
+% (No, of course we won't document them... :-))
+%
+\newcommand\caption@beginhook{}
+\newcommand\caption@endhook{}
+\newcommand\AtBeginCaption{\l@addto@macro\caption@beginhook}
+\newcommand\AtEndCaption{\l@addto@macro\caption@endhook}
+%
+% We declare options using the keyval package...
+%
+% \DeclareCaptionOption{<option>}{<code>}
+% \DeclareCaptionOption*{<option>}{<code>}
+%
+\newcommand\DeclareCaptionOption{%
+  \@ifstar{\caption@declareoption\AtEndOfPackage}{\caption@declareoption\@gobble}}
+\newcommand*\caption@declareoption[2]{%
+  #1{\undefine@key{caption}{#2}}\define@key{caption}{#2}}
+\@onlypreamble\DeclareCaptionOption
+\@onlypreamble\caption@declareoption
+%
+% ...and we process them using the keyval package
+%
+\def\ProcessOptionsWithKV#1{%
+  \let\@tempc\relax
+  \let\caption@tempa\@empty
+  \@for\CurrentOption:=\@classoptionslist\do{%
+    \@ifundefined{KV@#1@\CurrentOption}%
+    {}%
+    {%
+      \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+      \@expandtwoargs\@removeelement\CurrentOption
+        \@unusedoptionlist\@unusedoptionlist
+    }%
+  }%
+  \edef\caption@tempa{%
+    \noexpand\setkeys{#1}{%
+      \caption@tempa\@ptionlist{\@currname.\@currext}%
+    }%
+  }%
+  \caption@tempa}
+%
+% Here are the options
+%
+\DeclareCaptionOption{config}[caption]{%
+   \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
+                                       #1.cfg used ***}}%
+                             {\PackageWarning{caption}{Configuration
+                               file #1.cfg not found}}}
+%
+\DeclareCaptionOption{default}[]{%
+  \caption@setup{style=default,position=default,aboveskip=10pt,belowskip=0pt}}
+%
+\DeclareCaptionOption{style}{\caption@setstyle{#1}}
+\DeclareCaptionOption{format}{\caption@setformat{#1}}
+\DeclareCaptionOption{labelformat}{\caption@setlabelformat{#1}}
+\DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
+\DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
+\DeclareCaptionOption{justification}{\caption@setjustification{#1}}
+\DeclareCaptionOption{size}{\caption@setfont{font}{#1}} % obsolete
+\DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
+\DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
+\DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
+\DeclareCaptionOption{margin}{\caption@setmargin{#1}}
+\DeclareCaptionOption{width}{\caption@setwidth{#1}}
+\DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}
+\DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
+\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
+\DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
+\DeclareCaptionOption{parskip}[5pt]{\AtBeginCaption{\setlength\parskip{#1}}}
+%
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setbool{slc}{#1}}
+\DeclareCaptionOption{aboveskip}{\setlength\abovecaptionskip{#1}}
+\DeclareCaptionOption{belowskip}{\setlength\belowcaptionskip{#1}}
+\DeclareCaptionOption{position}{\caption@setposition{#1}}
+%
+\DeclareCaptionOption{debug}{\def\caption@debug{#1}}
+%
+% Simulation of the old (caption v1.x) options:
+%
+\DeclareCaptionOption*{normal}[]{\caption@setformat{default}}
+\DeclareCaptionOption*{isu}[]{\caption@setformat{hang}}
+\DeclareCaptionOption*{hang}[]{\caption@setformat{hang}}
+\DeclareCaptionOption*{center}[]{\caption@setjustification{centering}}
+\DeclareCaptionOption*{anne}[]{\caption@setjustification{centerlast}}
+\DeclareCaptionOption*{centerlast}[]{\caption@setjustification{centerlast}}
+%
+\DeclareCaptionOption*{nooneline}[]{\caption@setbool{slc}{0}}
+%
+\DeclareCaptionOption*{scriptsize}[]{\def\captionfont{\scriptsize}}
+\DeclareCaptionOption*{footnotesize}[]{\def\captionfont{\footnotesize}}
+\DeclareCaptionOption*{small}[]{\def\captionfont{\small}}
+\DeclareCaptionOption*{normalsize}[]{\def\captionfont{\normalsize}}
+\DeclareCaptionOption*{large}[]{\def\captionfont{\large}}
+\DeclareCaptionOption*{Large}[]{\def\captionfont{\Large}}
+%
+\DeclareCaptionOption*{up}[]{\l@addto@macro\captionlabelfont\upshape}
+\DeclareCaptionOption*{it}[]{\l@addto@macro\captionlabelfont\itshape}
+\DeclareCaptionOption*{sl}[]{\l@addto@macro\captionlabelfont\slshape}
+\DeclareCaptionOption*{sc}[]{\l@addto@macro\captionlabelfont\scshape}
+\DeclareCaptionOption*{md}[]{\l@addto@macro\captionlabelfont\mdseries}
+\DeclareCaptionOption*{bf}[]{\l@addto@macro\captionlabelfont\bfseries}
+\DeclareCaptionOption*{rm}[]{\l@addto@macro\captionlabelfont\rmfamily}
+\DeclareCaptionOption*{sf}[]{\l@addto@macro\captionlabelfont\sffamily}
+\DeclareCaptionOption*{tt}[]{\l@addto@macro\captionlabelfont\ttfamily}
+%
+\caption@setbool{ruled}{0}
+\DeclareCaptionOption*{ruled}[]{\caption@setbool{ruled}{1}}
+%
+% Options for foreign package support
+%
+\newcommand*\DeclareCaptionPackage[1]{%
+  \caption@setbool{pkt@#1}{1}%
+  \DeclareCaptionOption*{#1}{\caption@setbool{pkt@#1}{##1}}}
+%
+% Compatible packages
+%
+\DeclareCaptionPackage{caption}
+\DeclareCaptionPackage{float}
+\DeclareCaptionPackage{longtable}
+\DeclareCaptionPackage{rotating}
+\DeclareCaptionPackage{sidecap}
+\DeclareCaptionPackage{supertabular}
+%
+\let\DeclareCaptionPackage\@undefined
+%
+% Process options
+%
+\captionsetup{debug=0,style=default,position=default}
+\ProcessOptionsWithKV{caption}
+\AtEndOfPackage{%
+  \let\@unprocessedoptions\relax
+  \let\ProcessOptionsWithKV\@undefined}
+%
+% \captionof(*)
+%
+\def\captionof{\@ifstar{\caption@of{\caption*}}{\caption@of\caption}}
+\newcommand*\caption@of[2]{\def\@captype{#2}#1}
+%
+% ContinuedFloat
+%
+\providecommand\ContinuedFloat{%
+  \ifx\@captype\@undefined
+    \@latex@error{\noexpand\ContinuedFloat outside float}\@ehd
+  \else
+    \addtocounter{\@captype}{\m@ne}%
+  \fi}%
+%
+% \caption@iftop{<true-code>}{<false-code>}
+%
+\newcommand\caption@iftop{%
+  \ifx\caption@position\@undefined
+    \ifodd\caption@debug\relax
+      \edef\caption@tempa{\the\prevdepth}%
+      \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
+    \fi
+%
+%   \caption@setposition{\ifdim\prevdepth>-\p@ bottom\else top\fi}%
+    \ifdim\prevdepth>-\p@
+      \let\caption@position\@secondoftwo
+    \else
+      \let\caption@position\@firstoftwo
+    \fi
+  \fi
+  \caption@position}
+%
+% Making of the caption (with skips & margins)
+%
+\newcommand\@makecaptionex[3]{%
+  \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
+%
+  \ifnum\caption@debug>1 %
+    \llap{$\caption@iftop\downarrow\uparrow$ }%
+  \fi
+%
+  \caption@make{#1}{#2}{#3}%
+%
+  \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
+%
+% Typeset caption
+%
+\newcommand\caption@make[3]{%
+  \caption@calcmargin
+  \caption@beginhook
+%
+  \advance\captionmargin by \captionindent
+  \advance\captionwidth by -\captionindent
+  \hskip\captionmargin
+  \vbox{\hsize=\captionwidth
+    \captionsize\strut
+    \hskip-\captionindent
+%
+% Special single-line treatment
+%
+    \caption@ifslc{%
+      \ifx\caption@sls\@empty\else
+        \begingroup
+        \caption@prepareslc
+        \sbox\@tempboxa{\caption@@make{#1}{#2}{#3}}%
+        \ifdim\wd\@tempboxa >\hsize
+          \endgroup
+        \else
+          \endgroup
+          \caption@esetup\caption@sls
+        \fi
+      \fi}{}%
+%
+    \caption@@make{#1}{#2}{#3}}%
+%
+  \caption@endhook
+  \global\caption@starfalse}
+%
+% Calculate \captionmargin & \captionwidth
+%
+\newcommand\caption@calcmargin{%
+  \ifcaption@width
+    \captionmargin\hsize
+    \advance\captionmargin by -\captionwidth
+    \divide\captionmargin by 2
+  \else
+    \captionwidth\hsize
+    \advance\captionwidth by -2\captionmargin
+  \fi
+%
+  \ifodd\caption@debug\relax
+    \PackageInfo{caption}{\protect\hsize=\the\hsize,
+      \protect\margin=\the\captionmargin,
+      \protect\width=\the\captionwidth}%
+  \fi}
+%
+% Re-define anything which would disturb the single line check
+%
+\newcommand\caption@prepareslc{%
+  \renewcommand\footnote[2][]{}\renewcommand\footnotemark[1][]{}}
+%
+% Typeset caption paragraph
+%
+\newcommand\caption@@make[3]{%
+%
+% |\caption*|? Use no caption label and separator!
+%
+  \ifcaption@star
+    \let\caption@lfmt\@gobbletwo
+    \let\caption@lsep\relax
+  \fi
+%
+% Empty text? Use no caption label separator!
+%
+  \def\caption@tempa{#3}%
+  \def\caption@tempb{\ignorespaces}%
+  \ifx\caption@tempa\caption@tempb
+    \let\caption@tempa\@empty
+  \fi
+  \ifx\caption@tempa\@empty
+    \let\caption@lsep\relax
+  \fi
+%
+% Typeset the caption!
+%
+  \def\caption@@par{%
+    \parindent\captionparindent\hangindent\captionhangindent}%
+  \@setpar{\@@par\caption@@par}\caption@@par
+%
+  \caption@hj\captionsize
+  \caption@fmt{{\captionlabelfont\caption@lfmt{#1}{#2}}}%
+              {{\captionlabelfont\caption@lsep}}%
+              {{\captiontextfont\caption@tfmt{#3}\par}}}
+%
+% CAPTION SUPPORT
+% ===============
+%
+\caption@ifpkt@caption{\AtBeginDocument{%
+%
+% Define \caption[]{...} ...
+%
+  \let\caption@@orig\@caption
+  \long\def\@caption#1[#2]#3{%
+    \begingroup
+      \caption@settype{#1}%
+%
+      \def\caption@tempa{#2}%
+      \ifx\caption@tempa\@empty
+        \def\addcontentsline##1##2##3{}%
+      \fi
+%
+      \def\@makecaption##1{%
+        \@makecaptionex{\@nameuse{#1name}}{\@nameuse{the#1}}}%
+      \caption@@orig{#1}[{#2}]{#3}%
+    \endgroup}
+%
+% Define \caption* ...
+% (07/18/03: \global added, so this works with sidecap)
+%
+  \@ifundefined{cc@caption}{%
+    \def\caption@caption#1{%
+      \@ifstar{\global\caption@startrue\@ifnextchar[{#1}{#1[]}}{#1}}%
+    \let\caption@orig\caption
+    \def\caption{\caption@caption\caption@orig}%
+  }{%
+    \let\caption@@captcont\cc@scaption
+    \long\def\cc@scaption#1[#2]#3{%
+      \begingroup
+        \caption@settype{#1}%
+%
+        \def\@makecaption##1{%
+          \@makecaptionex{\@nameuse{#1name}}{\@nameuse{the#1}}}%
+        \caption@@captcont{#1}[{#2}]{#3}%
+      \endgroup}%
+  }%
+}}{}
+\AtEndOfPackage{\@nameundef{caption@pkt@caption}}
+%
+% GENERIC PACKAGE SUPPORT
+% =======================
+%
+\newcommand*\caption@ifpackage[2]{%
+  \let\next\@gobble
+%
+  \caption@ifpkt@caption{%
+    \caption@ifbool{pkt@#1}{%
+      \@ifundefined{#2}%
+        {\let\next\AtBeginDocument}%
+        {\let\next\@firstofone}}{}%
+%
+    \ifodd\caption@debug\relax
+      \edef\caption@tempa{%
+        \caption@ifbool{pkt@#1}{%
+          \@ifundefined{#2}{AtBeginDocument}{firstofone}%
+        }{gobble}}%
+      \PackageInfo{caption}{#1 = \caption@ifbool{pkt@#1}{1}{0} %
+	    (\@ifundefined{#2}{not }{}loaded -> \caption@tempa)}%
+    \fi
+  }{}%
+%
+  \@nameundef{caption@pkt@#1}%
+  \next}
+\AtEndOfPackage{\let\caption@ifpackage\@undefined}
+%
+% FLOAT SUPPORT
+% =============
+%
+\caption@ifpackage{float}{float@caption}{%
+  \ifx\float@caption\relax
+  \else
+    \PackageInfo{caption}{float package v1.2 (or newer) detected}%
+%
+% Note that this version of \captionof works only with float 1.3 (or newer)
+% (when used with float 1.2 it simply typesets nothing)
+%
+    \renewcommand*\caption@of[2]{\def\@captype{#2}%
+      \expandafter\let\expandafter\caption@of@float\csname @float@c@\@captype\endcsname
+      #1}%
+%
+    \let\caption@@float\float@caption
+    \long\def\float@caption#1[#2]#3{%
+      \begingroup
+        \caption@setfloatstyle{#1}%
+        \caption@settype{#1}%
+%
+        \def\caption@tempa{#2}%
+        \ifx\caption@tempa\@empty
+          \def\addcontentsline##1##2##3{}%
+        \fi
+%
+        \def\@fs@capt##1{%
+          \caption@make
+            {\@nameuse{\@ifundefined{fname@#1}{#1name}{fname@#1}}}
+            {\@nameuse{the#1}}}%
+        \caption@@float{#1}[{#2}]{#3}%
+%
+        \@ifundefined{caption@of@float}{}{%
+          \def\caption@make##1##2##3{%
+            \ifvoid\@floatcapt\else\unvbox\@floatcapt\fi}%
+          \@makecaptionex{}{}{}%
+          \global\let\caption@of@float\@undefined}%
+      \endgroup}
+%
+    \def\caption@setfloatstyle#1{%
+      \expandafter\let\expandafter\caption@fst\csname fst@#1\endcsname
+      \edef\caption@fst{\noexpand\string\expandafter\noexpand\caption@fst}%
+      \edef\caption@fst{\noexpand\@gobblefour\caption@fst}%
+%     \edef\caption@fst{\caption@fst}%
+%
+      \@ifundefined{caption@sty@\caption@fst}{}{%
+        \caption@setstyle\caption@fst}}%
+%
+% If you think this works fine, you are in a big error!
+% The problem is that \newfloat and \restylefloat (of float 1.4) saves the
+% *ACTUAL* definition of \@caption and \float@caption with \let (instead of
+% using \def which would be much more polite to packages who redefine
+% \@caption), so our own \@caption (and of course our own \float@caption)
+% will never been called if the \newfloat or \restylefloat takes place in
+% the preamble of the document!
+%
+% So we have to correct this for ourself:
+% We patch \caption again, this time we determine if the user has used
+% \restylefloat or \restylefloat*. This is quite easy, if \@float@c@<captype>
+% is the same as the original or our own definition of \float@caption, the
+% user has used \restylefloat (and \float@caption should be used), otherwise
+% he has used \restylefloat* (and \@caption should be used).
+% (This test only will fail if some other package re-defines \float@caption,
+% too. And of course it will fail if Anselm Lingnau change this behaviour in
+% his float package in the future without changing the name of the macro
+% \@float@c@<captype>.)
+%
+    \let\caption@float\caption
+    \def\caption{%
+      \ifx\@captype\@undefined
+        \@latex@error{\noexpand\caption outside float}\@ehd
+        \expandafter\@gobble
+      \else\@ifundefined{@float@c@\@captype}{}{%
+%       Let's bring \@float@c@<captype> up-to-date!
+        \expandafter\ifx\csname @float@c@\@captype\endcsname\float@caption
+        \else\expandafter\ifx\csname @float@c@\@captype\endcsname\@caption
+        \else\expandafter\ifx\csname @float@c@\@captype\endcsname\caption@@float
+          \ifodd\caption@debug\relax
+            \PackageInfo{caption}{\protect\@float@c@\@captype\space := \protect\float@caption}%
+          \fi
+          \expandafter\let\csname @float@c@\@captype\endcsname\float@caption
+        \else
+          \ifodd\caption@debug\relax
+            \PackageInfo{caption}{\protect\@float@c@\@captype\space := \protect\@caption}%
+          \fi
+          \expandafter\let\csname @float@c@\@captype\endcsname\@caption
+        \fi\fi\fi
+      }\fi
+      \caption@float}%
+%
+  \fi}
+%
+\caption@ifbool{ruled}{}{%
+  \DeclareCaptionStyle{ruled}{labelfont=bf,labelsep=space}}
+%
+% LONGTABLE SUPPORT
+% =================
+%
+\caption@ifpackage{longtable}{LT@makecaption}{%
+  \ifx\LT@makecaption\relax
+  \else
+    \PackageInfo{caption}{longtable package v3.15 (or newer) detected}%
+%
+% Original code:
+% \def\LT@makecaption#1#2#3{%
+%   \LT@mcol\LT@cols c{\hbox to\z@{\hss\parbox[t]\LTcapwidth{%
+%     % Based on article class "\@makecaption", "#1" is "\@gobble" in star
+%     % form, and "\@firstofone" otherwise.
+%     \sbox\@tempboxa{#1{#2: }#3}%
+%     \ifdim\wd\@tempboxa>\hsize
+%       #1{#2: }#3%
+%     \else
+%       \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+%     \fi
+%     \endgraf\vskip\baselineskip}%
+%   \hss}}}
+%
+    \def\LT@makecaption#1#2#3{%
+       \LT@mcol\LT@cols c{\hbox to\z@{\hss\parbox[t]\linewidth{%
+         \caption@settype{table}%
+         \ifdim\LTcapwidth=4in \else
+           \caption@setwidth\LTcapwidth
+         \fi
+         \caption@startrue#1\caption@starfalse
+         \caption@make\tablename\thetable{#3}%
+         \endgraf\vskip\baselineskip}%
+       \hss}}}%
+%
+  \fi}
+%
+% ROTATING SUPPORT
+% ================
+%
+\caption@ifpackage{rotating}{@rotcaption}{%
+  \ifx\@rotcaption\relax
+  \else
+    \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%
+%
+    \@ifundefined{caption@caption}{}{%
+      \let\caption@rotating\rotcaption
+      \def\rotcaption{\caption@caption\caption@rotating}}%
+%
+    \let\caption@@rotating\@rotcaption
+    \long\def\@rotcaption#1[#2]#3{%
+      \begingroup
+        \def\caption@tempa{#2}%
+        \ifx\caption@tempa\@empty
+          \def\addcontentsline##1##2##3{}%
+        \fi
+        \def\@makerotcaption##1{%
+          \@makerotcaptionex{\@nameuse{#1name}}{\@nameuse{the#1}}}%
+        \caption@settype{#1}%
+        \caption@@rotating{#1}[{#2}]{#3}%
+      \endgroup}
+%
+% Original code:
+% \long\def\@makerotcaption#1#2{%
+%   \setbox\@tempboxa\hbox{#1: #2}%
+%   \ifdim \wd\@tempboxa > .8\vsize
+%     \rotatebox{90}{%
+%     \begin{minipage}{.8\textheight}#1: #2\end{minipage}%
+%     }\par
+%   \else%
+%     \rotatebox{90}{\box\@tempboxa}%
+%   \fi
+%   \hspace{12pt}%
+% }
+%
+    \long\def\@makerotcaptionex#1#2#3{%
+      \rotatebox{90}{%
+        \begin{minipage}{.8\textheight}%
+          \caption@make{#1}{#2}{#3}%
+        \end{minipage}%
+      }\par
+      \hspace{12pt}}%
+%
+  \fi}
+%
+% SIDECAP SUPPORT
+% ===============
+%
+\caption@ifpackage{sidecap}{endSC@FLOAT}{%
+  \ifx\endSC@FLOAT\relax
+  \else
+    \PackageInfo{caption}{sidecap package v1.4d (or newer) detected}%
+%
+% First of all, we let sidecap use an actual definition of \caption:
+% (This is only required for version 1.5d of the sidecap package.)
+%
+    \let\SC@caption=\caption
+%
+% Before typesetting the caption, we set the captionmargin to zero
+% because the extra margin is only disturbing here.
+% (We don't need to take care about the caption position because
+%  the sidecap package set both \abovecaptionskip and \belowcaptionskip
+%  to a skip of zero anyway.)
+% Furthermore \SC@justify will override the caption justification, if set.
+%
+% Very old version (1.4): \SC@justify is not defined
+% Older versions (1.5): \SC@justify is \relax when not set
+% Newer versions (1.6): \SC@justify is \@empty when not set
+%
+    \let\caption@endSC@FLOAT\endSC@FLOAT
+    \def\endSC@FLOAT{%
+      \caption@setmargin\z@
+%
+      \@ifundefined{SC@justify}{}{%
+        \ifx\SC@justify\@empty\else
+          \let\caption@hj\SC@justify
+          \let\SC@justify\@empty
+        \fi}
+%
+      \caption@endSC@FLOAT}%
+%
+% Make \caption* work
+%
+    \@ifundefined{caption@caption}{}{%
+      \let\caption@SC@zfloat\SC@zfloat
+      \def\SC@zfloat#1#2#3[#4]{%
+        \caption@SC@zfloat{#1}{#2}{#3}[#4]%
+        \let\caption@orig\caption
+        \def\caption{\caption@caption\caption@orig}}}%
+%
+  \fi}
+%
+% SUPERTABULAR SUPPORT
+% ====================
+%
+\def\caption@STposition{\if@topcaption top\else bottom\fi}
+\caption@ifpackage{supertabular}{ST@caption}{%
+  \ifx\ST@caption\relax
+  \else
+    \PackageInfo{caption}{supertabular package detected}%
+%
+% Original code:
+% \long\def\ST@caption#1[#2]#3{\par%
+%   \addcontentsline{\csname ext@#1\endcsname}{#1}%
+%                   {\protect\numberline{%
+%                       \csname the#1\endcsname}{\ignorespaces #2}}
+%   \begingroup
+%     \@parboxrestore
+%     \normalsize
+%     \if@topcaption \vskip -10\p@ \fi
+%     \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+%     \if@topcaption \vskip 10\p@ \fi
+%   \endgroup}
+%
+  \let\caption@ST\ST@caption
+  \long\def\ST@caption#1[#2]#3{%
+    \def\caption@tempa{#2}%
+    \ifx\caption@tempa\@empty\else
+      \addcontentsline{\csname ext@#1\endcsname}{#1}%
+                      {\protect\numberline{%
+                          \csname the#1\endcsname}{\ignorespaces #2}}%
+    \fi
+    \begingroup
+      \@parboxrestore
+      \normalsize
+      \caption@settype{#1}%
+      %\caption@setposition{\if@topcaption top\else bottom\fi}%
+      \caption@setposition\caption@STposition
+      \@makecaptionex{\@nameuse{#1name}}{\@nameuse{the#1}}{\ignorespaces #3}\par
+    \endgroup}%
+%
+  \fi}
+%
 %    \end{macrocode}
-% \end{macro}
-% \end{macro}
 %
 % \iffalse
 %</package>
 % \fi
-%
 % \Finale
 %
 \endinput
-
