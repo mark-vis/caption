@@ -1,0 +1,133 @@
+%%
+%% This is file `caption.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% caption.dtx  (with options: `package')
+%% 
+%% Copyright (C) 1994 Axel Sommerfeldt
+%% 
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{caption}[1994/11/28 v1.2 caption package (AS)]
+\typeout{Package: caption v1.2 <1994/11/28> (Axel Sommerfeldt)}
+\newcommand{\captionsize}{}
+\newcommand{\captionlabelfont}{}
+\newlength{\captionmargin}
+\newcommand{\@asnormalcaption}[2]{%
+  #1: #2}
+\newcommand{\@asisucaption}[2]{%
+  \sbox{\@ascaptionbox}{#1:\ }%
+  \addtolength{\@ascaptionwidth}{-\wd\@ascaptionbox}%
+  \usebox{\@ascaptionbox}\parbox[t]{\@ascaptionwidth}{#2}}
+\newcommand{\@ascentercaption}[2]{%
+  \parbox[t]{\@ascaptionwidth}{\begin{center}#1: #2\end{center}}}
+\newcommand{\@asannecaption}[2]{%
+  \addtolength{\leftskip}{0pt plus 1fil}%
+  \addtolength{\rightskip}{0pt plus -1fil}%
+  \setlength{\parfillskip}{0pt plus 2fil}%
+  #1: #2}
+\ifx\thesubfigure\undefined
+  \newcommand{\caption@subcapsize}[1]{}
+\else%
+  \typeout{\space\space\space\space\space\space\space\space\space
+           `subfigure' package detected}
+  \newcommand{\caption@subcapsize}[1]{\renewcommand{\subcapsize}{#1}}
+\fi
+\DeclareOption{normal}{\let\@ascaption\@asnormalcaption}
+\DeclareOption{isu}{\let\@ascaption\@asisucaption}
+\DeclareOption{hang}{\ExecuteOptions{isu}}
+\DeclareOption{center}{\let\@ascaption\@ascentercaption}
+\DeclareOption{anne}{\let\@ascaption\@asannecaption}
+\DeclareOption{centerlast}{\ExecuteOptions{anne}}
+\DeclareOption{scriptsize}{%
+  \renewcommand{\captionsize}{\scriptsize}
+  \caption@subcapsize{\scriptsize}}
+\DeclareOption{footnotesize}{%
+  \renewcommand{\captionsize}{\footnotesize}
+  \caption@subcapsize{\scriptsize}}
+\DeclareOption{small}{%
+  \renewcommand{\captionsize}{\small}
+  \caption@subcapsize{\footnotesize}}
+\DeclareOption{normalsize}{%
+  \renewcommand{\captionsize}{\normalsize}
+  \caption@subcapsize{\footnotesize}}
+\DeclareOption{large}{%
+  \renewcommand{\captionsize}{\large}
+  \caption@subcapsize{\normalsize}}
+\DeclareOption{Large}{%
+  \renewcommand{\captionsize}{\Large}
+  \caption@subcapsize{\large}}
+\DeclareOption{up}{\renewcommand{\captionlabelfont}{\upshape}}
+\DeclareOption{it}{\renewcommand{\captionlabelfont}{\itshape}}
+\DeclareOption{sl}{\renewcommand{\captionlabelfont}{\slshape}}
+\DeclareOption{sc}{\renewcommand{\captionlabelfont}{\scshape}}
+\DeclareOption{md}{\renewcommand{\captionlabelfont}{\mdseries}}
+\DeclareOption{bf}{\renewcommand{\captionlabelfont}{\bfseries}}
+\DeclareOption{rm}{\renewcommand{\captionlabelfont}{\rmfamily}}
+\DeclareOption{sf}{\renewcommand{\captionlabelfont}{\sffamily}}
+\DeclareOption{tt}{\renewcommand{\captionlabelfont}{\ttfamily}}
+\DeclareOption{ruled}{\newcommand\caption@ruled{\empty}}
+\ExecuteOptions{normal}
+\ProcessOptions
+\newsavebox{\@ascaptionbox}
+\newlength{\@ascaptionwidth}
+\newcommand{\@makeascaption}[2]{%
+  \setlength{\leftskip}{\captionmargin}%
+  \setlength{\rightskip}{\captionmargin}%
+  \addtolength{\@ascaptionwidth}{-2\captionmargin}%
+  \captionsize%
+  \sbox{\@ascaptionbox}{{\captionlabelfont #1:} #2}%
+  \ifdim \wd\@ascaptionbox >\@ascaptionwidth
+    \@ascaption{{\captionlabelfont #1}}{#2}\par%
+  \else%
+    \begin{center}\usebox{\@ascaptionbox}\end{center}%
+  \fi}
+\renewcommand{\@makecaption}[2]{%
+  \vskip\abovecaptionskip%
+  \setlength{\@ascaptionwidth}{\linewidth}%
+  \@makeascaption{#1}{#2}%
+  \vskip\belowcaptionskip}
+\ifx\floatc@plain\undefined
+\else
+  \typeout{\space\space\space\space\space\space\space\space\space
+           `float' package detected}
+  \renewcommand\floatc@plain[2]{%
+    \setlength{\@ascaptionwidth}{\linewidth}%
+    \@makeascaption{#1}{#2}}
+  \ifx\caption@ruled\undefined
+  \else
+    \renewcommand\floatc@ruled[2]{%
+      \captionsize%
+      \@asnormalcaption{{\captionlabelfont #1}}{#2}\par}
+  \fi
+\fi
+\ifx\@makercaption\undefined
+\else
+  \typeout{\space\space\space\space\space\space\space\space\space
+           `rotating' package detected}
+  \renewcommand{\@makercaption}[2]{%
+    \vskip 10\p@%
+    \setlength{\@ascaptionwidth}{\textheight}%
+    \@makeascaption{#1}{#2}}
+  \renewcommand{\@makerotcaption}[2]{%
+    \captionsize%
+    \sbox{\@ascaptionbox}{{\captionlabelfont #1:} #2}%
+    \ifdim \wd\@ascaptionbox > .8\vsize
+      \rotatebox{90}{%
+        \setlength{\@ascaptionwidth}{.8\textheight}%
+        \begin{minipage}{\@ascaptionwidth}%
+          \@ascaption{{\captionlabelfont #1}}{#2}%
+        \end{minipage}}\par
+    \else%
+      \rotatebox{90}{\usebox{\@ascaptionbox}}%
+    \fi
+    \hspace{12pt}}
+  \renewcommand{\sidewaysfigure}{%
+    \let\@makecaption\@makercaption\@rotfloat{figure}}
+  \renewcommand{\sidewaystable}{%
+    \let\@makecaption\@makercaption\@rotfloat{table}}
+\fi
+\endinput
+%%
+%% End of file `caption.sty'.
