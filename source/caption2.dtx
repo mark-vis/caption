@@ -2,7 +2,7 @@
 %
 % This is file `caption2.dtx'.
 % 
-% Copyright (C) 1994-2002 Axel Sommerfeldt (caption@sommerfeldt.net)
+% Copyright (C) 1994-2003 Axel Sommerfeldt (caption@sommerfeldt.net)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -15,7 +15,7 @@
 % version 1999/12/01 or later.
 % 
 % \fi
-% \CheckSum{828}
+% \CheckSum{837}
 % \iffalse
 %<*dtx>
 \ProvidesFile{caption2.dtx}
@@ -24,7 +24,7 @@
 %<package>\ProvidesPackage{caption2}
 %<driver>\ProvidesFile{caption2.drv}
 %\ProvidesFile{caption2.dtx}
-              [2002/08/03 v2.1 Customising captions (AS)]
+              [2003/11/12 v2.1a Customising captions (AS)]
 %
 %<*driver>
 \documentclass{ltxdoc}
@@ -36,10 +36,18 @@
 %</driver>
 % \fi
 %
-% \providecommand*{\LaTeXcomp}{The \LaTeX{} Companion}
 % \newcommand*{\purerm}[1]{{\upshape\mdseries\rmfamily #1}}
 % \newcommand*{\puresf}[1]{{\upshape\mdseries\sffamily #1}}
-% \DeclareRobustCommand\cs[1]{\texttt{\char`\\\string#1}}
+% \newcommand*{\purett}[1]{{\upshape\mdseries\ttfamily #1}}
+% \let\package\puresf\def\thispackage{\package{caption2}}
+% \let\env\purett \let\opt\purett
+%
+% \GetFileInfo{caption2.dtx}
+% \title{The \thispackage\ package\thanks{This package has version number
+%        \fileversion, last revised \filedate.}}
+% \author{Axel Sommerfeldt\\\texttt{caption@sommerfeldt.net}}
+% \date{2002/08/03}
+% \maketitle
 %
 % \changes{v1.0}{27 Oct 94}{First release}
 % \changes{v1.1}{ 3 Nov 94}{New captiontype: \cs{centerlast}}
@@ -51,22 +59,9 @@
 % \changes{v2.1}{20 Feb 02}{Revised; new commands and options}
 % \changes{v2.1}{26 Feb 02}{Adapted to version 2.1 of the subfigure package}
 % \changes{v2.1}{26 Feb 02}{New pre-defined caption styles `hang+X'}
+% \changes{v2.1a}{12 Nov 03}{Some minor bug fixes}
 %
-% \GetFileInfo{caption2.dtx}
-% \title{The \puresf{caption2} package\thanks{This package has version number
-%        \fileversion, last revised \filedate.}}
-% \author{Axel Sommerfeldt\\\texttt{caption@sommerfeldt.net}}
-% \date{2002/08/03}
-% \maketitle
-%
-% \begin{abstract}
-% The \textsf{caption2} package provides many ways to customise the captions
-% in environments such |figure|, |table|, |longtable|, and |sidewaystable|.
-% The following \LaTeXe\ packages are supported:
-% float, longtable, and subfigure.
-% But it works fine together with the following packages as well:
-% floatfig, rotating, supertabular, and wrapfig.
-% \end{abstract}
+% \providecommand\LaTeXcomp{The \LaTeX{} Companion}
 %
 % \section{Documentation}
 %
@@ -92,10 +87,6 @@
 %   David Carlisle:
 %   \textsl{The longtable package},
 %   2000/10/22
-%   \bibitem{rotating}
-%   Sebastian Rahtz and Leonor Barroca:
-%   \textsl{A style option for rotated objects in \LaTeX},
-%   1997/09/26
 %   \bibitem{subfigure}
 %   Steven Douglas Cochran:
 %   \textsl{The subfigure package},
@@ -114,7 +105,6 @@
 %   3. \"uberarbeitete Auf\/lage, Addison-Wesley, Bonn, 1991
 %   \end{thebibliography}
 % }
-% \setlength{\parskip}{0pt plus 1pt}
 %
 % \DoNotIndex{\\,\_,\ }
 % \DoNotIndex{\@gobble,\@ifundefined,\@namedef,\@nameuse,\@tempdima}
@@ -142,6 +132,8 @@
 % \DoNotIndex{\ProvidesPackage}
 %
 % \clearpage
+% \setlength{\parskip}{0pt plus 1pt}
+%
 % \section{The Implementation}
 % \iffalse
 %<*package>
@@ -170,6 +162,7 @@
 \newcommand*\captionlabeldelim{}
 \newcommand*\captionlabelsep{}
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\captionsize}
@@ -245,7 +238,7 @@
 \newcommand*\normalcaptionparams{%
   \let\captionsize\@empty
   \renewcommand*\captionfont{\captionsize}%
-  \let\captionlabelfont\@empty%
+  \let\captionlabelfont\@empty
   \renewcommand*\captionlabeldelim{:}%
   \renewcommand*\captionlabelsep{\space}%
   \setcaptionmargin\z@\setlength\captionindent\z@
@@ -271,6 +264,7 @@
 %    \begin{macrocode}
 \newcommand*\defcaptionstyle[1]{%
   \@namedef{caption@@#1}}
+%
 \newcommand*\newcaptionstyle[1]{%
   \expandafter\ifx\csname caption@@#1\endcsname\relax
     \expandafter\defcaptionstyle
@@ -279,6 +273,7 @@
     \expandafter\@gobbletwo
   \fi
   {#1}}
+%
 \newcommand*\renewcaptionstyle[1]{%
   \expandafter\ifx\csname caption@@#1\endcsname\relax
     \PackageError{caption2}{Caption style `#1' undefined}{\caption@eh}%
@@ -312,6 +307,19 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\captionstyle}
+% \cs{captionstyle} sets the actual caption style. It includes a check if the given caption
+% style is defined or not.
+%    \begin{macrocode}
+\newcommand*\captionstyle[1]{%
+  \expandafter\ifx\csname caption@@#1\endcsname\relax
+    \PackageError{caption2}{Undefined caption style `#1'}{\caption@eh}%
+  \else
+    \def\caption@style{#1}%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{style `normal'}
 % \begin{macro}{style `center'}
 % \begin{macro}{style `centerlast'}
@@ -321,7 +329,7 @@
 % \begin{macro}{style `indent'}
 % The predefined caption styles `normal', `center', `flushleft', `flushright', `centerlast',
 % `hang', `hang+X', and `indent'. Because they are quite similar they all are based on the macro
-% \cs{caption@makecaption} which we'll define later on.
+% \cs{caption@makecaption}.
 %    \begin{macrocode}
 \newcaptionstyle{normal}{\caption@makecaption{normal}}
 \newcaptionstyle{center}{\caption@makecaption{center}}
@@ -342,16 +350,123 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\captionstyle}
-% \cs{captionstyle} sets the actual caption style. It includes a check if the given caption
-% style is defined or not.
+% \begin{macro}{\caption@makecaption}
+% Our predefined caption styles. \cs{caption@makecaption} takes the style
+% name as parameter, it does the common stuff and calls a macro
+% (build out of the style name) to do the uncommon stuff if neccessary.
 %    \begin{macrocode}
-\newcommand*\captionstyle[1]{%
-  \expandafter\ifx\csname caption@@#1\endcsname\relax
-    \PackageError{caption2}{Undefined caption style `#1'}{\caption@eh}%
+\newcommand*\caption@makecaption[1]{%
+  \usecaptionmargin
+%
+  \ifcaptionlabel
+    \def\caption@label{%
+      {\captionlabelfont\captionlabel\captionlabeldelim}\captionlabelsep}%
   \else
-    \def\caption@style{#1}%
-  \fi}
+    \let\caption@label\@empty
+  \fi
+%
+  \captionfont
+  \onelinecaption{\caption@label\captiontext}%
+                 {\parbox[b]\captionlinewidth{\strut\@nameuse{caption@@@#1}\par}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \changes{v2.1}{26 Feb 02}{Removed all extra parboxes from caption styles}
+% \changes{v2.1a}{12 Nov 03}{\ldots and put the parbox into \cs{caption@makecaption} instead}
+%
+% \begin{macro}{\caption@@@normal}
+% The `normal' caption style. Just typeset caption (label \& text) as paragraph.
+%    \begin{macrocode}
+\newcommand*\caption@@@normal{%
+  \caption@label\captiontext}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@center}
+% The `center' caption style. Typeset the caption centered within a parbox.
+%    \begin{macrocode}
+\newcommand*\caption@@@center{%
+  \centering\caption@label\captiontext}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@centerlast}
+% The `centerlast' caption style.
+% The idea how to do this was taken from Br\"uggemann-Klein\cite{Anne},
+% it is also mentioned in Kopka\cite[p227]{Kopka-E}.
+%    \begin{macrocode}
+\newcommand*\caption@centerlast{%
+  \advance\leftskip by 0pt plus 1fil%
+  \advance\rightskip by 0pt plus -1fil%
+  \parfillskip0pt plus 2fil\relax}
+%
+\newcommand*\caption@@@centerlast{%
+  \caption@centerlast\caption@label\captiontext}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@flushleft}
+% The `flushleft' caption style. Typeset the caption raggedright within a parbox.
+%    \begin{macrocode}
+\newcommand*\caption@@@flushleft{%
+  \raggedright\caption@label\captiontext}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@flushright}
+% The `flushright' caption style. Typeset the caption raggedleft within a parbox.
+%    \begin{macrocode}
+\newcommand*\caption@@@flushright{%
+  \raggedleft\caption@label\captiontext}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@hang}
+% \begin{macro}{\caption@hangplus}
+% The `hang' caption style.
+% This code was taken from \LaTeXcomp\cite[p155]{A-W:GMS94} and modified.
+%    \begin{macrocode}
+\newcommand*\caption@@@hang{%
+  \sbox\@tempboxa{\caption@label}%
+  \hangindent\wd\@tempboxa\noindent
+  \usebox\@tempboxa\caption@hangplus\captiontext}
+%
+\newcommand*\caption@hangplus{}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@hang@center}
+% The `hang+flushleft' caption style.
+%    \begin{macrocode}
+\newcommand*\caption@@@hang@center{%
+  \let\caption@hangplus\centering\caption@@@hang}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@hang@centerlast}
+% The `hang+flushleft' caption style.
+%    \begin{macrocode}
+\newcommand*\caption@@@hang@centerlast{%
+  \let\caption@hangplus\caption@centerlast\caption@@@hang}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@hang@flushleft}
+% The `hang+flushleft' caption style.
+%    \begin{macrocode}
+\newcommand*\caption@@@hang@flushleft{%
+  \let\caption@hangplus\raggedright\caption@@@hang}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@@@indent}
+% The `indent' caption style. Is is quite like the `hang' style but the
+% indention is given as \cs{captionindent}.
+%    \begin{macrocode}
+\newcommand*\caption@@@indent{%
+  \hangindent\captionindent\noindent
+  \caption@label\captiontext}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -478,11 +593,16 @@
 % \end{macro}
 %
 % \begin{macro}{ruled}
+% \begin{macro}{boxed}
 % The option `ruled' introduced in \textsf{caption} v1.2 is obsolete now, but
-% we will still support it. (We will check it later with \cs{@ifpackagewith}.)
+% we will still support it. The option `boxed' was introduced in version 2.0
+% and is obsolete now, too.
 %    \begin{macrocode}
-\DeclareOption{ruled}{}
+\newif\ifcaption@ruled
+\DeclareOption{ruled}{\caption@ruledtrue}
+\DeclareOption{boxed}{}
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{ignoreLTcapwidth}
@@ -551,163 +671,40 @@
 % \begin{macro}{\captiontext}
 % These values are only set and used within the caption code itself.
 % \cs{captionlinewidth} will be set to the given vertical space for the caption,
-% normally this is \cs{linewidth}. \cs{captionlabel} and \cs{captiontext}
-% will be set to the caption label resp.\ the caption text.
+% normally this is \cs{linewidth}. (This value was called \cs{realcaptionwidth}
+% within \thispackage\ \mbox{2.0}, so we will offer this, too.)
+%
+% \cs{captionlabel} and \cs{captiontext} will be set to the caption label
+% resp.\ the caption text.
 % (Because \cs{captionlabel} and \cs{captiontext} will be locally defined with
 % \cs{def} we do not need to define them here.)
 %    \begin{macrocode}
 \newdimen\captionlinewidth
+\newdimen\realcaptionwidth
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\@makecaption}
-% This is the heart of the \textsf{caption2} package -- the redefinition of the
-% core caption code. It was taken from the \LaTeXe\ standard classes and modified.
-% It's very easy -- apart from using \cs{abovecaptionskip} and \cs{belowcaptionskip}
-% we just set \cs{captionlinewidth}, \cs{captionlabel} and \cs{captiontext}
-% to its appropriate values and using the code of the actual caption style via \cs{usecaptionstyle}.
+% \begin{macro}{\usecaptionmargin}
+% A helper macro for caption style authors:
+% It calculates \cs{leftskip} and \cs{rightskip} out of
+% \cs{captionlinewidth} and \cs{captionmargin} resp.\ \cs{captionwidth}.
+% Also \cs{captionlinewidth} will be corrected to the appropriate value.
 %    \begin{macrocode}
-\renewcommand\@makecaption[2]{%
-  \vskip\abovecaptionskip
-  \captionlinewidth\hsize
-  \def\captionlabel{#1}%
-  \def\captiontext{#2}%
-  \usecaptionstyle{\caption@style}%
-  \vskip\belowcaptionskip}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\usecaptionstyle}
-% First we check if we are inside a caption -- if \cs{captiontext} is undefined we are not.
-% If we are we call the appropriate caption definition.
-%    \begin{macrocode}
-\newcommand*\usecaptionstyle[1]{%
-  \ifx\captiontext\relax
-    \PackageError{caption2}{You can't use \protect#1
-      in normal text}{The usage of \protect#1 is only
-      allowed inside code declared with\MessageBreak \protect\defcaptionstyle,
-      \protect\newcaptionstyle \space or \protect\renewcaptionstyle.
-      \space\caption@eh}
+\newcommand*\usecaptionmargin{%
+  \ifcaptionwidth
+    \leftskip\captionlinewidth
+    \advance\leftskip by -\captionwidth
+    \divide\leftskip by 2
+    \rightskip\leftskip
+    \captionlinewidth\captionwidth
   \else
-    \@ifundefined{caption@@#1}%
-      {\PackageError{caption2}{Caption style `#1' undefined}{\caption@eh}}%
-      {\@nameuse{caption@@#1}}
-  \fi}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@makecaption}
-% Our predefined caption styles. \cs{caption@makecaption} takes the style
-% name as parameter, it does the common stuff and calls a macro
-% (build out of the style name) to do the uncommon stuff if neccessary.
-%    \begin{macrocode}
-\newcommand*\caption@makecaption[1]{%
-  \ifcaptionlabel
-    \def\caption@label{{\captionlabelfont\captionlabel\captionlabeldelim}\captionlabelsep}%
-  \else
-    \let\caption@label\@empty
+    \leftskip\captionmargin
+    \rightskip\captionmargin
+    \advance\captionlinewidth by -2\captionmargin
   \fi
-  \usecaptionmargin\captionfont
-  \onelinecaption{\caption@label\captiontext}%
-    {\@nameuse{caption@@@#1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \changes{v2.1}{26 Feb 02}{Removed all extra parboxes from caption styles}
-%
-% \begin{macro}{\caption@@@normal}
-% The `normal' caption style. Just typeset caption (label \& text) as paragraph.
-%    \begin{macrocode}
-\newcommand*\caption@@@normal{%
-  \caption@label\captiontext\par}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@center}
-% The `center' caption style. Typeset the caption centered within a parbox.
-%    \begin{macrocode}
-\newcommand*\caption@@@center{%
-  \centering\caption@label\captiontext\par}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@centerlast}
-% The `centerlast' caption style.
-% The idea how to do this was taken from Br\"uggemann-Klein\cite{Anne},
-% it is also mentioned in Kopka\cite[p227]{Kopka-E}.
-%    \begin{macrocode}
-\newcommand*\caption@centerlast{%
-  \advance\leftskip by 0pt plus 1fil%
-  \advance\rightskip by 0pt plus -1fil%
-  \parfillskip0pt plus 2fil\relax}
-\newcommand*\caption@@@centerlast{%
-  \caption@centerlast\caption@label\captiontext\par}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@flushleft}
-% The `flushleft' caption style. Typeset the caption raggedright within a parbox.
-%    \begin{macrocode}
-\newcommand*\caption@@@flushleft{%
-  \raggedright\caption@label\captiontext\par}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@flushright}
-% The `flushright' caption style. Typeset the caption raggedleft within a parbox.
-%    \begin{macrocode}
-\newcommand*\caption@@@flushright{%
-  \raggedleft\caption@label\captiontext\par}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@hang}
-% \begin{macro}{\caption@hangplus}
-% The `hang' caption style.
-% This code was taken from \LaTeXcomp\cite[p155]{A-W:GMS94} and modified.
-%    \begin{macrocode}
-\newcommand*\caption@@@hang{%
-  \sbox\@tempboxa{\caption@label}%
-  \hangindent\wd\@tempboxa\noindent
-  \usebox\@tempboxa\caption@hangplus\captiontext\par}
-\newcommand*\caption@hangplus{}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@hang@center}
-% The `hang+flushleft' caption style.
-%    \begin{macrocode}
-\newcommand*\caption@@@hang@center{%
-  \let\caption@hangplus\centering\caption@@@hang}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@hang@centerlast}
-% The `hang+flushleft' caption style.
-%    \begin{macrocode}
-\newcommand*\caption@@@hang@centerlast{%
-  \let\caption@hangplus\caption@centerlast\caption@@@hang}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@hang@flushleft}
-% The `hang+flushleft' caption style.
-%    \begin{macrocode}
-\newcommand*\caption@@@hang@flushleft{%
-  \let\caption@hangplus\raggedright\caption@@@hang}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@indent}
-% The `indent' caption style. Is is quite like the `hang' style but the
-% indention is given as \cs{captionindent}.
-%    \begin{macrocode}
-\newcommand*\caption@@@indent{%
-  \hangindent\captionindent\noindent
-  \caption@label\captiontext\par}
+  \realcaptionwidth\captionlinewidth}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -728,26 +725,42 @@
   \fi\next}
 %    \end{macrocode}
 % \end{macro}
+%
+% \begin{macro}{\usecaptionstyle}
+% First we check if we are inside a caption -- if \cs{captiontext} is undefined we are not.
+% If we are we call the appropriate caption definition.
+%    \begin{macrocode}
+\newcommand*\usecaptionstyle[1]{%
+  \@ifundefined{captiontext}{%
+    \PackageError{caption2}{You can't use \protect#1
+      in normal text}{The usage of \protect#1 is only
+      allowed inside code declared with\MessageBreak \protect\defcaptionstyle,
+      \protect\newcaptionstyle \space or \protect\renewcaptionstyle.
+      \space\caption@eh}
+  }{%
+    \@ifundefined{caption@@#1}%
+      {\PackageError{caption2}{Caption style `#1' undefined}{\caption@eh}}%
+      {\@nameuse{caption@@#1}}
+  }}
+%    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\usecaptionmargin}
-% Another helper macro for caption style authors:
-% It calculates \cs{leftskip} and \cs{rightskip} out of
-% \cs{captionlinewidth} and \cs{captionmargin} resp.\ \cs{captionwidth}.
-% Also \cs{captionlinewidth} will be corrected to the appropriate value.
+% \begin{macro}{\@makecaption}
+% This is the heart of the \thispackage\ package -- the redefinition of the
+% core caption code. It was taken from the \LaTeXe\ standard classes and modified.
+% It's very easy -- apart from using \cs{abovecaptionskip} and \cs{belowcaptionskip}
+% we just set \cs{captionlinewidth}, \cs{captionlabel} and \cs{captiontext}
+% to its appropriate values and using the code of the actual caption style via
+% \cs{usecaptionstyle}.
 %    \begin{macrocode}
-\newcommand*\usecaptionmargin{%
-  \ifcaptionwidth
-    \leftskip\captionlinewidth
-    \advance\leftskip by -\captionwidth
-    \divide\leftskip by 2
-    \rightskip\leftskip
-    \captionlinewidth\captionwidth
-  \else
-    \leftskip\captionmargin
-    \rightskip\captionmargin
-    \advance\captionlinewidth by -2\captionmargin
-  \fi}
+\renewcommand\@makecaption[2]{%
+  \vskip\abovecaptionskip
+  \captionlinewidth\hsize
+  \realcaptionwidth\hsize
+  \def\captionlabel{#1}%
+  \def\captiontext{#2}%
+  \usecaptionstyle{\caption@style}%
+  \vskip\belowcaptionskip}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -800,7 +813,7 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@floatc}
-% First we define a helper macro to typeset the caption via \cs{usecaption},
+% First we define a helper macro to typeset the caption via \cs{usecaptionstyle},
 % the 1st parameter is the caption style name,
 % the 2nd and 3rd are the caption label and text.
 %
@@ -821,7 +834,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{floatc@plain}
+% \begin{macro}{\floatc@plain}
 % Now we can redefine the caption code of the \textsf{float} package.
 % Here we redefine \cs{floatc@plain} to use our caption code, so
 % \texttt{plain} and \texttt{boxed} float types will use the actual
@@ -831,7 +844,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{floatc@ruled}
+% \begin{macro}{\floatc@ruled}
 % The support of the \texttt{ruled} float type is a little
 % more complex. First we define a caption style `ruled' so the end-user
 % can change this caption style afterwards. If the (obsolete) option
@@ -841,19 +854,20 @@
 % Then we redefine \cs{floatc@ruled} so the caption style `ruled' will
 % be used.
 %    \begin{macrocode}
-    \@ifpackagewith{caption2}{ruled}{%
+    \ifcaption@ruled
       \dummycaptionstyle{ruled}{\onelinecaptionsfalse\setcaptionmargin{\z@}}%
-    }{%
+    \else
       \newcaptionstyle{ruled}{%
         \ifcaptionlabel
           {\@fs@cfont\captionlabel}\space%
         \fi\captiontext\par}%
-    }
+    \fi
+%
     \renewcommand*\floatc@ruled{\caption@floatc{ruled}}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{caption@of}
+% \begin{macro}{\caption@of}
 % Typesetting captions outside floats is not so easy with redefined floats,
 % because
 % \begin{itemize}
@@ -881,8 +895,9 @@
         \@nameuse{fst@#2}%
         \@ifundefined{@float@setevery}{}{\@float@setevery{#2}}%
         \let\caption@fs@capt\@fs@capt
-        \let\@fs@capt\caption@of@float}
+        \let\@fs@capt\caption@of@float}%
       #1}
+%
     \newcommand\caption@of@float[2]{\egroup
       \vskip\abovecaptionskip
       \normalsize\caption@fs@capt{#1}{#2}%
@@ -927,18 +942,20 @@
 % and |\@firstofone| otherwise.)
 %    \begin{macrocode}
     \dummycaptionstyle{longtable}{}
+%
     \renewcommand\LT@makecaption[3]{%
       \LT@mcol\LT@cols c{\hbox to\z@{\hss\parbox[t]\hsize{%
-      \ifignoreLTcapwidth
-      \else
-        \setcaptionwidth\LTcapwidth
-      \fi
-      \captionlinewidth\hsize
-      \captionlabelfalse#1\captionlabeltrue
-      \def\captionlabel{#2}%
-      \def\captiontext{#3}%
-      \usecaptionstyle{longtable}%
-      \endgraf\vskip\baselineskip}%
+        \ifignoreLTcapwidth
+        \else
+          \setcaptionwidth\LTcapwidth
+        \fi
+        \captionlinewidth\hsize
+        \realcaptionwidth\hsize
+        \captionlabelfalse#1\captionlabeltrue
+        \def\captionlabel{#2}%
+        \def\captiontext{#3}%
+        \usecaptionstyle{longtable}%
+        \endgraf\vskip\baselineskip}%
       \hss}}}
 %    \end{macrocode}
 % \end{macro}
@@ -1031,6 +1048,7 @@
   \hbox to\@tempdima{%
     \caption@subfig@hss\parbox[t]{\@tempdima}{%
       \captionlinewidth\@tempdima
+      \realcaptionwidth\@tempdima
       \captionlabeltrue
       \def\captionlabel{#1}%
       \def\captiontext{\ignorespaces #2}%
