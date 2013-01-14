@@ -1,28 +1,45 @@
 % \iffalse meta-comment
-%
+% 
 % This is file `caption2.dtx'.
 % 
-% Copyright (C) 1994-2003 Axel Sommerfeldt (caption@sommerfeldt.net)
+% Copyright (C) 1994-2004 Axel Sommerfeldt (caption@sommerfeldt.net)
 % 
 % --------------------------------------------------------------------------
 % 
-% It may be distributed and/or modified under the
-% conditions of the LaTeX Project Public License, either version 1.2
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either version 1.3
 % of this license or (at your option) any later version.
 % The latest version of this license is in
-%    http://www.latex-project.org/lppl.txt
-% and version 1.2 or later is part of all distributions of LaTeX 
-% version 1999/12/01 or later.
+%   http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of LaTeX
+% version 2003/12/01 or later.
+% 
+% This work has the LPPL maintenance status "maintained".
+% 
+% This Current Maintainer of this work is Axel Sommerfeldt.
+% 
+% This work consists of the files caption.ins, caption.dtx,
+% caption2.dtx, caption.xml, and anleitung.tex and the derived files
+% caption.sty, caption2.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{844}
+% \CheckSum{842}
 %
 % \iffalse
 %<*driver>
 \documentclass{ltxdoc}
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
+%
+\ifx\pdfoutput\undefined\else
+  \ifcase\pdfoutput\else
+    \usepackage{mathptmx,courier}
+    \usepackage[scaled=0.90]{helvet}
+  \fi
+\fi
+%
 \usepackage{caption2}[2004/04/16]
+%
 \begin{document}
   \DocInput{caption2.dtx}
 \end{document}
@@ -48,6 +65,7 @@
 % \changes{v2.1}{26 Feb 02}{Adapted to version 2.1 of the subfigure package}
 % \changes{v2.1a}{12 Nov 03}{Some minor bug fixes and improved compatibility to v2.0}
 % \changes{v2.1b}{16 Apr 04}{Some minor bug fixes and improved compatibility to v2.0}
+% \changes{v2.1c}{10 May 04}{Some minor bug fixes and improved compatibility to v2.0}
 %
 % \providecommand\LaTeXcomp{The \LaTeX{} Companion}
 %
@@ -100,12 +118,12 @@
 % \DoNotIndex{\@undefined,\@unprocessedoptions,\@unusedoptionlist}
 % \DoNotIndex{\p@,\z@}
 % \DoNotIndex{\active,\addtocounter,\addtolength,\advance}
-% \DoNotIndex{\baselineskip,\begin,\begingroup,\bfseries,\box}
+% \DoNotIndex{\baselineskip,\begin,\begingroup,\bfseries,\bgroup,\box}
 % \DoNotIndex{\catcode,\centering,\changes,\csname,\def,\divide,\do,\downarrow}
-% \DoNotIndex{\edef,\else,\empty,\end,\endcsname,\endgraf,\endgroup,\expandafter}
+% \DoNotIndex{\edef,\egroup,\else,\empty,\end,\endcsname,\endgraf,\endgroup,\expandafter}
 % \DoNotIndex{\fi,\footnotesize,\global}
 % \DoNotIndex{\hangindent,\hbox,\hfil,\hsize,\hskip,\hspace,\hss}
-% \DoNotIndex{\ifcase,\ifdim,\ifnum,\ifodd,\ifvoid,\ifvmode}
+% \DoNotIndex{\if,\ifcase,\ifdim,\ifnum,\ifodd,\ifvoid,\ifvmode}
 % \DoNotIndex{\ifx,\ignorespaces,\itshape}
 % \DoNotIndex{\Large,\large,\leavevmode,\leftmargini,\leftskip,\let,\linewidth}
 % \DoNotIndex{\llap,\long,\m@ne,\margin,\mdseries,\message}
@@ -119,7 +137,7 @@
 % \DoNotIndex{\sbox,\scriptsize,\scshape,\setbox,\setlength,\sffamily,\slshape}
 % \DoNotIndex{\small,\string,\space,\strut}
 % \DoNotIndex{\textheight,\the,\toks@,\typeout,\ttfamily}
-% \DoNotIndex{\unvbox,\uparrow,\upshape,\usebox,\usepackage}
+% \DoNotIndex{\undefined,\unvbox,\uparrow,\upshape,\usebox,\usepackage}
 % \DoNotIndex{\vbox,\vsize,\vskip,\wd,\width,\z@skip}
 % \DoNotIndex{\AtBeginDocument,\AtEndOfPackage,\CurrentOption,\DeclareOption}
 % \DoNotIndex{\ExecuteOptions,\GenericWarning,\IfFileExists,\InputIfFileExists}
@@ -139,7 +157,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption2}[2004/04/16 v2.1b Customising captions (AS)]
+\ProvidesPackage{caption2}[2004/05/10 v2.1c Customising captions (AS)]
 %    \end{macrocode}
 %
 % \subsection{Preliminary declarations}
@@ -358,6 +376,7 @@
 % (build out of the style name) to do the uncommon stuff if neccessary.
 % \changes{v2.1}{26 Feb 02}{Renamed from \cs{caption@make} to \cs{caption@makecaption}}
 % \changes{v2.1b}{16 Apr 04}{We offer and use \cs{caption@make}, again}
+% \changes{v2.1c}{10 May 04}{Bugfix: Extra \cs{par} added}
 %    \begin{macrocode}
 \newcommand*\caption@makecaption[1]{%
   \usecaptionmargin
@@ -370,8 +389,9 @@
   \fi
 %
   \captionfont
-  \onelinecaption{\caption@label\captiontext}%
-                 {\parbox[b]\captionlinewidth{\strut\@nameuse{caption@@@#1}\par}}}
+  \onelinecaption
+    {\caption@label\captiontext}%
+    {\parbox[b]\captionlinewidth{\strut\@nameuse{caption@@@#1}\par}\par}}
 \newcommand*\caption@make{\caption@makecaption}
 %    \end{macrocode}
 % \end{macro}
@@ -782,29 +802,26 @@
 % already loaded, otherwise not. The parameter \#3 contains code
 % which will be executed if no support is required -- this is for
 % cleanup purposes. The final parameter \#4 contains the code itself.
+% \changes{v2.1c}{9 May 04}{Compatibility warning removed}
 %    \begin{macrocode}
 \renewcommand*\caption@package[3]{%
   \if1\@nameuse{caption@pkt@#1}%
     \@ifundefined{#2}%
       {\let\next\AtBeginDocument}%
       {\let\next\@firstofone}%
+  \else\ifcaption@twozero
+    \@ifundefined{#2}%
+      {#3\let\next\@gobble}%
+      {\let\next\@firstofone}%
   \else
-    \ifcaption@twozero
-      \@ifundefined{#2}{#3\let\next\@gobble}{%
-        \PackageWarning{caption2}{%
-          The `#1' package will be supported without explicit option %
-          (v2.0 compatibility issue)}%
-        \let\next\@firstofone}%
-    \else
-      #3\let\next\@gobble
-    \fi
-  \fi
+    #3\let\next\@gobble
+  \fi\fi
   \expandafter\let\csname caption@pkt@#1\endcsname\undefined
   \ifcaption@debug
     \ifx\next\@gobble\PackageInfo{caption2}{#1 => gobble}%
     \else\ifx\next\@firstofone\PackageInfo{caption2}{#1 => firstofone}%
     \else\ifx\next\AtBeginDocument\PackageInfo{caption2}{#1 => AtBeginDocument}%
-    \else\PackageInfo{caption2}{#1 => ???}\fi\fi\fi
+    \fi\fi\fi
   \fi
   \next}
 %    \end{macrocode}

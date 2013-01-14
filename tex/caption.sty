@@ -10,16 +10,24 @@
 %% 
 %% --------------------------------------------------------------------------
 %% 
-%% It may be distributed and/or modified under the
-%% conditions of the LaTeX Project Public License, either version 1.2
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
 %% of this license or (at your option) any later version.
 %% The latest version of this license is in
-%%    http://www.latex-project.org/lppl.txt
-%% and version 1.2 or later is part of all distributions of LaTeX
-%% version 1999/12/01 or later.
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2003/12/01 or later.
+%% 
+%% This work has the LPPL maintenance status "maintained".
+%% 
+%% This Current Maintainer of this work is Axel Sommerfeldt.
+%% 
+%% This work consists of the files caption.ins, caption.dtx,
+%% caption2.dtx, caption.xml, and anleitung.tex and the derived files
+%% caption.sty, caption2.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2004/01/23 v3.0a Customising captions (AS)]
+\ProvidesPackage{caption}[2004/05/16 v3.0b Customising captions (AS)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -165,22 +173,21 @@
 \DeclareCaptionJustification{raggedleft}{\raggedleft}
 \DeclareCaptionJustification{raggedright}{\raggedright}
 \def\caption@hj@default{\caption@hj@justified}
-\DeclareCaptionJustification{Centering}{\Centering}
-\DeclareCaptionJustification{RaggedLeft}{\RaggedLeft}
-\DeclareCaptionJustification{RaggedRight}{\RaggedRight}
-\AtBeginDocument{%
-  \IfFileExists{ragged2e.sty}{%
-    \RequirePackage{ragged2e}%
-  }{%
+\DeclareCaptionJustification{Centering}{%
+  \caption@ragged\Centering\centering}
+\DeclareCaptionJustification{RaggedLeft}{%
+  \caption@ragged\RaggedLeft\raggedleft}
+\DeclareCaptionJustification{RaggedRight}{%
+  \caption@ragged\RaggedRight\raggedright}
+\newcommand*\caption@ragged[2]{%
+  \@ifundefined{caption\string#1}{%
     \PackageWarning{caption}{%
-      Cannot locate the 'ragged2e' package, therefore\MessageBreak
-      substituting standard LaTeX versions for\MessageBreak
-      \string\Centering, \string\RaggedLeft\space
-      and \string\RaggedRight.\MessageBreak}%
-    \DeclareCaptionJustification{Centering}{\centering}%
-    \DeclareCaptionJustification{RaggedLeft}{\raggedleft}%
-    \DeclareCaptionJustification{RaggedRight}{\raggedright}%
-}}
+      Cannot locate the `ragged2e' package, therefore\MessageBreak
+      substituting \string#2 for \string#1\MessageBreak}%
+    \global\@namedef{caption\string#1}}{}%
+  #2}
+\AtBeginDocument{\IfFileExists{ragged2e.sty}{%
+  \RequirePackage{ragged2e}\let\caption@ragged\@firstoftwo}{}}
 \newcommand\DeclareCaptionFont[2]{%  bugfixed v3.0a
   \define@key{caption@fnt}{#1}[]{\g@addto@macro\caption@tempa{#2}}}
 \@onlypreamble\DeclareCaptionFont
@@ -256,31 +263,6 @@
   #1{\undefine@key{caption}{#2}}\define@key{caption}{#2}}
 \@onlypreamble\DeclareCaptionOption
 \@onlypreamble\caption@declareoption
-\def\ProcessOptionsWithKV#1{%  bugfixed v3.0a
-  \let\@tempc\relax
-  \let\caption@tempa\@empty
-  \@for\CurrentOption:=\@classoptionslist\do{%
-    \@ifundefined{KV@#1@\CurrentOption}%
-    {}%
-    {%
-      \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
-      \@expandtwoargs\@removeelement\CurrentOption
-        \@unusedoptionlist\@unusedoptionlist
-    }%
-  }%
-  \edef\caption@tempa{%
-    \noexpand\setkeys{#1}{%
-      \caption@tempa\@ptionlist{\@currname.\@currext}%
-    }%
-  }%
-  \caption@tempa
-  \let\CurrentOption\@empty
-  \AtEndOfPackage{\let\@unprocessedoptions\relax}}
-\DeclareCaptionOption{config}[caption]{%
-   \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
-                                       #1.cfg used ***}}%
-                             {\PackageWarning{caption}{Configuration
-                               file #1.cfg not found}}}
 \DeclareCaptionOption{default}[]{%
   \caption@setup{style=default,position=default,aboveskip=10pt,belowskip=0pt}}
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
@@ -289,7 +271,7 @@
 \DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}%  changed v3.0a
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}% changed v3.0a
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
@@ -297,16 +279,117 @@
 \DeclareCaptionOption{width}{\caption@setwidth{#1}}
 \DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
-\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
-\DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
+\DeclareCaptionOption{parindent}[\parindent]{\setlength\captionparindent{#1}}% changed v3.0b
+\DeclareCaptionOption{hangindent}[0pt]{\setlength\captionhangindent{#1}}% changed v3.0b
 \DeclareCaptionOption{parskip}[5pt]{\AtBeginCaption{\setlength\parskip{#1}}}
 \DeclareCaptionOption{singlelinecheck}[1]{\caption@setbool{slc}{#1}}
 \DeclareCaptionOption{aboveskip}{\setlength\abovecaptionskip{#1}}
 \DeclareCaptionOption{belowskip}{\setlength\belowcaptionskip{#1}}
 \DeclareCaptionOption{position}{\caption@setposition{#1}}
+\DeclareCaptionOption{listof}{\caption@setbool{lof}{#1}}% new v3.0b
+\DeclareCaptionOption{debug}{\def\caption@debug{#1}}
+\captionsetup{style=default,position=default,listof=1,debug=0}
+\newcommand\caption@fixposition{%
+  \ifx\caption@position\@undefined
+    \caption@autoposition
+  \fi}
+\newcommand\caption@autoposition{% bugfixed v3.0a
+  \ifvmode
+    \ifodd\caption@debug\relax
+      \edef\caption@tempa{\the\prevdepth}%
+      \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
+    \fi
+    \ifdim\prevdepth>-\p@
+      \let\caption@position\@secondoftwo
+    \else
+      \let\caption@position\@firstoftwo
+    \fi
+  \else
+    \ifodd\caption@debug\relax
+      \PackageInfo{caption}{no \protect\prevdepth}%
+    \fi
+    \let\caption@position\@secondoftwo
+  \fi}
+\newcommand\caption@iftop{% bugfixed v3.0a
+  \ifx\caption@position\@firstoftwo
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\newcommand\caption@make[2]{%
+  \caption@@make{\caption@lfmt{#1}{#2}}}
+\newcommand\caption@@make[2]{%
+  \caption@beginhook
+  \caption@calcmargin
+  \advance\captionmargin by \captionindent
+  \advance\captionwidth by -\captionindent
+  \hskip\captionmargin
+  \vbox{\hsize=\captionwidth
+    \ifdim\captionindent=\z@\else
+      \hskip-\captionindent
+    \fi
+    \caption@ifslc{%
+      \ifx\caption@sls\@empty\else
+        \caption@beginslc
+        \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
+        \ifdim\wd\@tempboxa >\hsize
+          \caption@endslc
+        \else
+          \caption@endslc
+          \caption@esetup\caption@sls
+        \fi
+      \fi}{}%
+    \captionsize\captionfont\strut
+    \caption@@@make{#1}{#2}}%
+  \caption@endhook
+  \global\caption@starfalse}
+\newcommand\caption@calcmargin{%
+  \ifcaption@width
+    \captionmargin\hsize
+    \advance\captionmargin by -\captionwidth
+    \divide\captionmargin by 2
+  \else
+    \captionwidth\hsize
+    \advance\captionwidth by -2\captionmargin
+  \fi
+  \ifodd\caption@debug\relax
+    \PackageInfo{caption}{\protect\hsize=\the\hsize,
+      \protect\margin=\the\captionmargin,
+      \protect\width=\the\captionwidth}%
+  \fi}
+\newcommand\caption@beginslc{%
+  \begingroup
+  \let\label\@gobble\let\@footnotetext\@gobble
+  \def\stepcounter##1{\advance\csname c@##1\endcsname\@ne\relax}}
+\newcommand\caption@endslc{%
+  \endgroup}
+\newcommand\caption@@@make[2]{%
+  \ifcaption@star
+    \let\caption@lfmt\@gobbletwo
+    \let\caption@lsep\relax
+  \fi
+  \def\caption@tempa{#2}%
+  \def\caption@tempb{\ignorespaces}%
+  \ifx\caption@tempa\caption@tempb
+    \let\caption@tempa\@empty
+  \fi
+  \ifx\caption@tempa\@empty
+    \let\caption@lsep\relax
+  \fi
+  \def\caption@@par{%
+    \parindent\captionparindent\hangindent\captionhangindent}%
+  \@setpar{\@@par\caption@@par}\caption@@par
+  \caption@hj\captionsize\captionfont
+  \caption@fmt{{\captionlabelfont#1}}%
+              {{\captionlabelfont\caption@lsep}}%
+              {{\captiontextfont\nobreak\hskip\z@skip#2\par}}}
+\DeclareCaptionOption{config}[caption]{%
+   \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
+                                       #1.cfg used ***}}%
+                             {\PackageWarning{caption}{Configuration
+                               file #1.cfg not found}}}
 \DeclareCaptionOption*{figureposition}{\captionsetup[figure]{position=#1}}%  new v3.0a
 \DeclareCaptionOption*{tableposition}{\captionsetup[table]{position=#1}}%    new v3.0a
-\DeclareCaptionOption{debug}{\def\caption@debug{#1}}
 \DeclareCaptionOption*{normal}[]{\caption@setformat{normal}}
 \DeclareCaptionOption*{isu}[]{\caption@setformat{hang}}
 \DeclareCaptionOption*{hang}[]{\caption@setformat{hang}}
@@ -336,12 +419,32 @@
   \DeclareCaptionOption*{#1}{\caption@setbool{pkt@#1}{##1}}}
 \DeclareCaptionPackage{caption}
 \DeclareCaptionPackage{float}
+\DeclareCaptionPackage{listings}
 \DeclareCaptionPackage{longtable}
 \DeclareCaptionPackage{rotating}
 \DeclareCaptionPackage{sidecap}
 \DeclareCaptionPackage{supertabular}
 \let\DeclareCaptionPackage\@undefined
-\captionsetup{debug=0,style=default,position=default}
+\def\ProcessOptionsWithKV#1{% bugfixed v3.0a
+  \let\@tempc\relax
+  \let\caption@tempa\@empty
+  \@for\CurrentOption:=\@classoptionslist\do{%
+    \@ifundefined{KV@#1@\CurrentOption}%
+    {}%
+    {%
+      \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+      \@expandtwoargs\@removeelement\CurrentOption
+        \@unusedoptionlist\@unusedoptionlist
+    }%
+  }%
+  \edef\caption@tempa{%
+    \noexpand\setkeys{#1}{%
+      \caption@tempa\@ptionlist{\@currname.\@currext}%
+    }%
+  }%
+  \caption@tempa
+  \let\CurrentOption\@empty
+  \AtEndOfPackage{\let\@unprocessedoptions\relax}}
 \ProcessOptionsWithKV{caption}
 \let\ProcessOptionsWithKV\@undefined
 \def\captionof{\@ifstar{\caption@of{\caption*}}{\caption@of\caption}}
@@ -354,6 +457,9 @@
   \fi}%
 \newcommand*\caption@floatname[1]{\@nameuse{#1name}}
 \newcommand*\caption@thefloat[1]{\@nameuse{the#1}}
+\def\caption@letfloattype#1{%
+  \def\caption@setfloattype##1{%
+    \caption@settype{##1}\caption@settype{#1}}}
 \newcommand*\caption@begin[1]{%
   \begingroup
   \caption@setfloattype{#1}%
@@ -361,106 +467,23 @@
     \caption@lfmt{\caption@floatname{#1}}{\caption@thefloat{#1}}}%
   \caption@fixposition
   \global\let\caption@fixedposition\caption@position
-  \caption@@begin{#1}%
+  \caption@@begin{#1}}
+\newcommand*\caption@beginex[1]{%
+  \caption@begin{#1}%
   \caption@preparelof}
-\newcommand\caption@end{%
+\newcommand*\caption@end{%
   \caption@@end
   \endgroup
   \let\caption@position\caption@fixedposition}
 \let\caption@@begin\@gobble%  new v3.0a
 \let\caption@@end\@empty%     new v3.0a
-\newcommand\caption@fixposition{%  bugfixed v3.0a
-  \ifx\caption@position\@undefined
-    \ifvmode
-      \ifodd\caption@debug\relax
-        \edef\caption@tempa{\the\prevdepth}%
-        \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
-      \fi
-      \ifdim\prevdepth>-\p@
-        \let\caption@position\@secondoftwo
-      \else
-        \let\caption@position\@firstoftwo
-      \fi
-    \else
-      \ifodd\caption@debug\relax
-        \PackageInfo{caption}{no \protect\prevdepth}%
-      \fi
-      \let\caption@position\@secondoftwo
-    \fi
-  \fi}
-\newcommand*\caption@preparelof[1]{%
-  \def\caption@tempa{#1}%
+\newcommand*\caption@preparelof[1]{% changed v3.0b
+  \caption@ifbool{lof}%
+    {\def\caption@tempa{#1}}%
+    {\let\caption@tempa\@empty}%
   \ifx\caption@tempa\@empty
     \def\addcontentsline##1##2##3{}%
   \fi}
-\newcommand\caption@iftop{%  bugfixed v3.0a
-  \ifx\caption@position\@firstoftwo
-    \expandafter\@firstoftwo
-  \else
-    \expandafter\@secondoftwo
-  \fi}
-\newcommand\caption@make[2]{%
-  \caption@@make{\caption@lfmt{#1}{#2}}}
-\newcommand\caption@@make[2]{%
-  \caption@beginhook
-  \caption@calcmargin
-  \advance\captionmargin by \captionindent
-  \advance\captionwidth by -\captionindent
-  \hskip\captionmargin
-  \vbox{\hsize=\captionwidth
-    \hskip-\captionindent
-    \caption@ifslc{%
-      \ifx\caption@sls\@empty\else
-        \begingroup
-        \caption@prepareslc
-        \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-        \ifdim\wd\@tempboxa >\hsize
-          \endgroup
-        \else
-          \endgroup
-          \caption@esetup\caption@sls
-        \fi
-      \fi}{}%
-    \captionsize\captionfont\strut
-    \caption@@@make{#1}{#2}}%
-  \caption@endhook
-  \global\caption@starfalse}
-\newcommand\caption@calcmargin{%
-  \ifcaption@width
-    \captionmargin\hsize
-    \advance\captionmargin by -\captionwidth
-    \divide\captionmargin by 2
-  \else
-    \captionwidth\hsize
-    \advance\captionwidth by -2\captionmargin
-  \fi
-  \ifodd\caption@debug\relax
-    \PackageInfo{caption}{\protect\hsize=\the\hsize,
-      \protect\margin=\the\captionmargin,
-      \protect\width=\the\captionwidth}%
-  \fi}
-\newcommand\caption@prepareslc{%
-  \renewcommand\footnote[2][]{}\renewcommand\footnotemark[1][]{}}
-\newcommand\caption@@@make[2]{%
-  \ifcaption@star
-    \let\caption@lfmt\@gobbletwo
-    \let\caption@lsep\relax
-  \fi
-  \def\caption@tempa{#2}%
-  \def\caption@tempb{\ignorespaces}%
-  \ifx\caption@tempa\caption@tempb
-    \let\caption@tempa\@empty
-  \fi
-  \ifx\caption@tempa\@empty
-    \let\caption@lsep\relax
-  \fi
-  \def\caption@@par{%
-    \parindent\captionparindent\hangindent\captionhangindent}%
-  \@setpar{\@@par\caption@@par}\caption@@par
-  \caption@hj\captionsize\captionfont
-  \caption@fmt{{\captionlabelfont#1}}%
-              {{\captionlabelfont\caption@lsep}}%
-              {{\captiontextfont#2\par}}}
 \caption@ifpkt@caption{
   \renewcommand\@makecaption[2]{%
     \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
@@ -472,7 +495,7 @@
   \AtBeginDocument{%
     \let\caption@@old\@caption
     \long\def\@caption#1[#2]#3{%
-      \caption@begin{#1}{#2}%
+      \caption@beginex{#1}{#2}%
         \caption@@old{#1}[{#2}]{#3}%
       \caption@end}%
     \@ifundefined{cc@caption}{%
@@ -483,7 +506,7 @@
     }{%
       \let\caption@@captcont\cc@scaption
       \long\def\cc@scaption#1[#2]#3{%
-        \caption@begin{#1}{#2}%
+        \caption@beginex{#1}{#2}%
           \caption@@captcont{#1}[{#2}]{#3}%
         \caption@end}%
     }%
@@ -508,19 +531,23 @@
   \@nameundef{caption@ifpkt@#1}%  bugfixed v3.0a
   \next}
 \AtEndOfPackage{\let\caption@ifpackage\@undefined}
+\def\caption@setfloatposition{%
+  \caption@setposition{\@fs@iftopcapt t\else b\fi}}
 \caption@ifpackage{float}{float@caption}{%
   \ifx\float@caption\relax
   \else
     \PackageInfo{caption}{float package v1.2 (or newer) detected}%
     \let\caption@of@float\@gobble
-    \let\caption@of@old\caption@of
-    \renewcommand*\caption@of[1]{%
-      \caption@of@old{\let\caption@of@float\@firstofone#1}}
+    \renewcommand*\caption@of[2]{%
+      \@ifundefined{fst@#2}{}{%
+        \let\caption@of@float\@firstofone
+        \@nameuse{fst@#2}\@float@setevery{#2}}%
+      \def\@captype{#2}#1}%
     \renewcommand*\caption@floatname[1]{%
       \@nameuse{\@ifundefined{fname@#1}{#1name}{fname@#1}}}%
     \let\caption@@float\float@caption
     \long\def\float@caption#1[#2]#3{%
-      \caption@begin{#1}{#2}%
+      \caption@beginex{#1}{#2}%
         \let\@fs@capt\caption@@make
         \caption@@float{#1}[{#2}]{#3}%
         \caption@of@float{%
@@ -534,13 +561,9 @@
         \edef\caption@fst{\noexpand\string\expandafter\noexpand\caption@fst}%
         \edef\caption@fst{\noexpand\@gobblefour\caption@fst}%
         \@ifundefined{caption@sty@\caption@fst}{}{\caption@setstyle\caption@fst}%
-        \caption@settype\caption@fst
+        \caption@setfloatposition%  changed v3.0b
       \fi
       \caption@settype{#1}}%
-    \captionsetup[plain]{position=b}%
-    \captionsetup[plaintop]{position=t}%
-    \captionsetup[boxed]{position=b}%
-    \captionsetup[ruled]{position=t}%
     \let\caption@float\caption
     \def\caption{%
       \ifx\@captype\@undefined
@@ -570,14 +593,26 @@
 \caption@ifbool{ruled}{}{%
   \DeclareCaptionStyle{ruled}{labelfont=bf,labelsep=space}}
 \let\caption@ifruled\@undefined
+\caption@ifpackage{listings}{lst@MakeCaption}{%
+  \ifx\lst@MakeCaption\relax
+  \else
+    \PackageInfo{caption}{listings package v1.2 (or newer) detected}%
+    \let\caption@lst@MakeCaption\lst@MakeCaption
+    \def\lst@MakeCaption#1{%
+      \let\caption@setfloattype\caption@settype
+      \def\caption@autoposition{\caption@setposition{#1}}%
+      \caption@begin{lstlisting}%
+        \caption@lst@MakeCaption{#1}%
+      \caption@end}%
+  \fi}
 \caption@ifpackage{longtable}{LT@makecaption}{%
   \ifx\LT@makecaption\relax
   \else
     \PackageInfo{caption}{longtable package v3.15 (or newer) detected}%
     \def\LT@makecaption#1#2#3{%
        \LT@mcol\LT@cols c{\hbox to\z@{\hss\parbox[t]\linewidth{%
-         \let\caption@setfloattype\caption@settype
-         \caption@begin{table}{}%
+         \caption@letfloattype{longtable}%
+         \caption@begin{table}%
            \ifdim\LTcapwidth=4in \else
              \caption@setwidth\LTcapwidth
            \fi
@@ -596,7 +631,7 @@
       \def\rotcaption{\caption@caption\caption@rot}}%
     \let\caption@@rot\@rotcaption
     \long\def\@rotcaption#1[#2]#3{%
-      \caption@begin{#1}{#2}%
+      \caption@beginex{#1}{#2}%
         \caption@@rot{#1}[{#2}]{#3}%
       \caption@end}%
     \long\def\@makerotcaption#1#2{%
@@ -612,6 +647,15 @@
   \else
     \PackageInfo{caption}{sidecap package v1.4d (or newer) detected}%
     \let\SC@caption=\caption
+    \@ifundefined{caption@caption}{}{%
+      \let\caption@SC@zfloat\SC@zfloat
+      \def\SC@zfloat#1#2#3[#4]{%
+        \caption@SC@zfloat{#1}{#2}{#3}[#4]%
+        \global\let\SC@CAPsetup\@empty
+        \renewcommand\captionsetup[1]{\g@addto@macro\SC@CAPsetup{,##1}}%
+        \let\caption@old\caption
+        \def\caption{\caption@caption\caption@old}%
+      }}%
     \let\caption@endSC@FLOAT\endSC@FLOAT
     \def\endSC@FLOAT{%
       \caption@setmargin\z@
@@ -620,15 +664,11 @@
           \let\caption@hj\SC@justify
           \let\SC@justify\@empty
         \fi}%
+      \caption@esetup\SC@CAPsetup
+      \caption@letfloattype{SC\@captype}%
       \caption@endSC@FLOAT}%
-    \@ifundefined{caption@caption}{}{%
-      \let\caption@SC@zfloat\SC@zfloat
-      \def\SC@zfloat#1#2#3[#4]{%
-        \caption@SC@zfloat{#1}{#2}{#3}[#4]%
-        \let\caption@old\caption
-        \def\caption{\caption@caption\caption@old}}}%
   \fi}
-\def\caption@fixSTposition{%
+\def\caption@setSTposition{%
   \caption@setposition{\if@topcaption t\else b\fi}}
 \caption@ifpackage{supertabular}{ST@caption}{%
   \ifx\ST@caption\relax
@@ -636,9 +676,9 @@
     \PackageInfo{caption}{supertabular package detected}%
   \let\caption@ST\ST@caption
   \long\def\ST@caption#1[#2]#3{\par%  bugfixed v3.0a
-    \let\caption@setfloattype\caption@settype
-    \let\caption@fixposition\caption@fixSTposition
-    \caption@begin{#1}{#2}%
+    \caption@letfloattype{supertabular}%
+    \let\caption@fixposition\caption@setSTposition
+    \caption@beginex{#1}{#2}%
       \addcontentsline{\csname ext@#1\endcsname}{#1}%
                       {\protect\numberline{%
                           \csname the#1\endcsname}{\ignorespaces #2}}%
