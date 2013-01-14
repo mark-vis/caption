@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2004/05/16 v3.0b Customising captions (AS)]
+\ProvidesPackage{caption}[2004/07/16 v3.0c Customising captions (AS)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -62,7 +62,7 @@
     \PackageError{caption}{Undefined boolean value `#2'}{\caption@eh}%
   }}}
 \def\caption@ifbool#1{\@nameuse{caption@if#1}}
-\newcommand\captionsize{}%  changed v3.0a
+\providecommand\captionsize{}%  changed v3.0a+c
 \newdimen\captionmargin
 \newdimen\captionwidth
 \newif\ifcaption@width
@@ -477,7 +477,7 @@
   \let\caption@position\caption@fixedposition}
 \let\caption@@begin\@gobble%  new v3.0a
 \let\caption@@end\@empty%     new v3.0a
-\newcommand*\caption@preparelof[1]{% changed v3.0b
+\newcommand*\caption@preparelof[1]{%  changed v3.0b
   \caption@ifbool{lof}%
     {\def\caption@tempa{#1}}%
     {\let\caption@tempa\@empty}%
@@ -493,22 +493,19 @@
     \caption@@make{#1}{#2}%
     \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
   \AtBeginDocument{%
-    \let\caption@@old\@caption
-    \long\def\@caption#1[#2]#3{%
-      \caption@beginex{#1}{#2}%
-        \caption@@old{#1}[{#2}]{#3}%
-      \caption@end}%
     \@ifundefined{cc@caption}{%
       \def\caption@caption#1{%
         \@ifstar{\global\caption@startrue\@ifnextchar[{#1}{#1[]}}{#1}}%
       \let\caption@old\caption
       \def\caption{\caption@caption\caption@old}%
-    }{%
-      \let\caption@@captcont\cc@scaption
-      \long\def\cc@scaption#1[#2]#3{%
+      \let\caption@@old\@caption
+      \long\def\@caption#1[#2]#3{%
         \caption@beginex{#1}{#2}%
-          \caption@@captcont{#1}[{#2}]{#3}%
+          \caption@@old{#1}[{#2}]{#3}%
         \caption@end}%
+    }{%
+      \PackageInfo{caption}{captcont package v2.0 detected}%
+      \def\caption@caption#1{#1}%  added v3.0c
     }%
   }}{}
 \AtEndOfPackage{\let\caption@ifpkt@caption\@undefined}%  bugfixed v3.0a
@@ -618,17 +615,16 @@
            \fi
            \caption@startrue#1\caption@starfalse
            \caption@@make{#2}{#3}%
-         \caption@end
-         \endgraf\vskip\baselineskip}%
+           \endgraf\vskip\baselineskip
+         \caption@end}%
        \hss}}}%
   \fi}
 \caption@ifpackage{rotating}{@rotcaption}{%
   \ifx\@rotcaption\relax
   \else
     \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%
-    \@ifundefined{caption@caption}{}{%
-      \let\caption@rot\rotcaption
-      \def\rotcaption{\caption@caption\caption@rot}}%
+    \let\caption@rot\rotcaption
+    \def\rotcaption{\caption@caption\caption@rot}%
     \let\caption@@rot\@rotcaption
     \long\def\@rotcaption#1[#2]#3{%
       \caption@beginex{#1}{#2}%
@@ -647,15 +643,14 @@
   \else
     \PackageInfo{caption}{sidecap package v1.4d (or newer) detected}%
     \let\SC@caption=\caption
-    \@ifundefined{caption@caption}{}{%
-      \let\caption@SC@zfloat\SC@zfloat
-      \def\SC@zfloat#1#2#3[#4]{%
-        \caption@SC@zfloat{#1}{#2}{#3}[#4]%
-        \global\let\SC@CAPsetup\@empty
-        \renewcommand\captionsetup[1]{\g@addto@macro\SC@CAPsetup{,##1}}%
-        \let\caption@old\caption
-        \def\caption{\caption@caption\caption@old}%
-      }}%
+    \let\caption@SC@zfloat\SC@zfloat
+    \def\SC@zfloat#1#2#3[#4]{%
+      \caption@SC@zfloat{#1}{#2}{#3}[#4]%
+      \global\let\SC@CAPsetup\@empty
+      \renewcommand\captionsetup[1]{\g@addto@macro\SC@CAPsetup{,##1}}%
+      \let\caption@old\caption
+      \def\caption{\caption@caption\caption@old}%
+    }%
     \let\caption@endSC@FLOAT\endSC@FLOAT
     \def\endSC@FLOAT{%
       \caption@setmargin\z@

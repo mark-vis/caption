@@ -23,7 +23,7 @@
 % caption.sty, caption2.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{1647}
+% \CheckSum{1667}
 %
 % \iffalse
 %<*driver>
@@ -94,17 +94,16 @@
 %        \thispackage\ package\thanks{This package has version number
 %        \fileversion, last revised \filedate.}}
 % \author{Axel Sommerfeldt\\\texttt{caption@sommerfeldt.net}}
-% \date{2004/05/16}
+% \date{2004/07/16}
 % \maketitle
 % 
 % 
 % \begin{abstract}
 % The \thispackage\ package provides many ways to customise the captions
 % in floating environments such |figure| and |table| and cooperates with
-% many other packages.
-% \footnote{A complete re-work of the user interface done together with
-% Steven D. Cochran and Frank Mittelbach has lead to this new enhanced
-% version 3.0.}
+% many other packages.\footnote{A complete re-work of the user interface
+% done together with Steven D. Cochran and Frank Mittelbach has lead to
+% this new enhanced version 3.0.}
 % \end{abstract}
 % 
 % \iffalse
@@ -328,10 +327,10 @@
 % 
 % \begin{Example}
 %   \begin{quote}
-%     |labelsep=newline|
+%     |labelsep=newline,singlelinecheck=false|
 %   \end{quote}
 %   \captionsetup{aboveskip=0pt}
-%   \example{labelsep=newline}{\figuretext}
+%   \example{labelsep=newline,singlelinecheck=false}{\figuretext}
 % \end{Example}
 % 
 % 
@@ -1110,23 +1109,21 @@
 % \pagebreak[3]
 % \section{Using non-standard document classes}
 % 
-% \NEWdescription{v3.0b}
+% \NEWdescription{v3.0c}
 % The \thispackage\ package was developed using the standard document classes
 % |article|, |report| and |book|. But it should work with other document
 % classes, too. (If there are any difficulties about a special document class
 % please don't hesitate to write me an e-mail. Thank you.)
 % 
 % If you would like to use the \thispackage\ package with the
-% \KOMAScript\ classes, you have to take into consideration that all the
-% possibilities for customization of the captions the \KOMAScript\ classes have
+% \KOMAScript\ classes or with the \package{memoir} class, you have to take
+% into consideration that all the possibilities for customization of the
+% captions the \KOMAScript\ classes or \package{memoir} class have
 % to offer will get lost. (And they have a lot of possibilites to offer!)
 % So commands like |\captionabove|, |\captionbelow|, |\captionformat|,
-% |\figureformat|, |\tableformat|, |\setcapindent|, |\setcaphanging|
-% etc.\ will not work anymore.
+% |\figureformat|, |\tableformat|, |\setcapindent|, |\setcaphanging|,
+% |\captionstyle| etc.\ will not work anymore.
 % So make a wise decision!
-% 
-% Using the \thispackage\ with the \package{memoir} document class is not
-% recommended.
 % 
 % 
 % \section{Using other packages}
@@ -1484,6 +1481,7 @@
 % \changes{v3.0}{10 Jul 03}{Rewritten; many new commands and features}
 % \changes{v3.0a}{22 Jan 04}{Some bugfixes and small design changes}
 % \changes{v3.0b}{14 May 04}{Some bugfixes and small improvements}
+% \changes{v3.0c}{15 Jul 04}{Bugfix regarding rotating and sidecap package support}
 %
 % \StopEventually{\begin{thebibliography}{9}
 %   \bibitem{companion}
@@ -1582,7 +1580,7 @@
 % Identification
 %
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2004/05/16 v3.0b Customising captions (AS)]
+\ProvidesPackage{caption}[2004/07/16 v3.0c Customising captions (AS)]
 %    \end{macrocode}
 %
 % \subsection{Kernel}
@@ -1637,9 +1635,10 @@
 %
 \def\caption@ifbool#1{\@nameuse{caption@if#1}}
 %
-% Obsolete stuff for compatiblity to caption.sty 1.3
+% Obsolete stuff for compatiblity to caption.sty v1.3
 %
-\newcommand\captionsize{}%  changed v3.0a
+% \changes{v3.0a}{16 Jul 04}{Minimum adaption to the memoir class}
+\providecommand\captionsize{}%  changed v3.0a+c
 %
 % Margin resp. width
 %
@@ -2291,7 +2290,7 @@
 %
 % \caption@preparelof{<list entry>}
 %
-\newcommand*\caption@preparelof[1]{% changed v3.0b
+\newcommand*\caption@preparelof[1]{%  changed v3.0b
   \caption@ifbool{lof}%
     {\def\caption@tempa{#1}}%
     {\let\caption@tempa\@empty}%
@@ -2305,6 +2304,17 @@
 \caption@ifpkt@caption{
 %
 % \@makecaption{<label>}{<text>}
+% Original code:
+% \long\def\@makecaption#1#2{%
+%   \vskip\abovecaptionskip
+%   \sbox\@tempboxa{#1: #2}%
+%   \ifdim \wd\@tempboxa >\hsize
+%     #1: #2\par
+%   \else
+%     \global \@minipagefalse
+%     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+%   \fi
+%   \vskip\belowcaptionskip}
 %
   \renewcommand\@makecaption[2]{%
     \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
@@ -2315,29 +2325,29 @@
     \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
 %
   \AtBeginDocument{%
-%
-% Define \caption[]{...} ...
-%
-    \let\caption@@old\@caption
-    \long\def\@caption#1[#2]#3{%
-      \caption@beginex{#1}{#2}%
-        \caption@@old{#1}[{#2}]{#3}%
-      \caption@end}%
-%
-% Define \caption* ...
-% (07/18/03: \global added, so this works with sidecap)
-%
     \@ifundefined{cc@caption}{%
+%
+%     Define \caption* ...
+%     (07/18/03: \global added, so this works with sidecap)
+%
       \def\caption@caption#1{%
         \@ifstar{\global\caption@startrue\@ifnextchar[{#1}{#1[]}}{#1}}%
+%
       \let\caption@old\caption
       \def\caption{\caption@caption\caption@old}%
-    }{%
-      \let\caption@@captcont\cc@scaption
-      \long\def\cc@scaption#1[#2]#3{%
+%
+%     Define \caption[]{...} ...
+%
+      \let\caption@@old\@caption
+      \long\def\@caption#1[#2]#3{%
         \caption@beginex{#1}{#2}%
-          \caption@@captcont{#1}[{#2}]{#3}%
+          \caption@@old{#1}[{#2}]{#3}%
         \caption@end}%
+    }{%
+%     Minimum captcont package support (bugfixed v3.0c)
+%     --------------------------------
+      \PackageInfo{caption}{captcont package v2.0 detected}%
+      \def\caption@caption#1{#1}%  added v3.0c
     }%
   }}{}
 \AtEndOfPackage{\let\caption@ifpkt@caption\@undefined}%  bugfixed v3.0a
@@ -2368,8 +2378,8 @@
   \next}
 \AtEndOfPackage{\let\caption@ifpackage\@undefined}
 %
-% FLOAT SUPPORT
-% =============
+% FLOAT PACKAGE SUPPORT
+% =====================
 %
 \def\caption@setfloatposition{%
   \caption@setposition{\@fs@iftopcapt t\else b\fi}}
@@ -2466,8 +2476,8 @@
   \DeclareCaptionStyle{ruled}{labelfont=bf,labelsep=space}}
 \let\caption@ifruled\@undefined
 %
-% LISTINGS SUPPORT (new in 3.0b)
-% ================
+% LISTINGS PACKAGE SUPPORT (new in 3.0b)
+% ========================
 %
 \caption@ifpackage{listings}{lst@MakeCaption}{%
   \ifx\lst@MakeCaption\relax
@@ -2484,8 +2494,8 @@
 %
   \fi}
 %
-% LONGTABLE SUPPORT
-% =================
+% LONGTABLE PACKAGE SUPPORT
+% =========================
 %
 \caption@ifpackage{longtable}{LT@makecaption}{%
   \ifx\LT@makecaption\relax
@@ -2516,24 +2526,24 @@
            \fi
            \caption@startrue#1\caption@starfalse
            \caption@@make{#2}{#3}%
-         \caption@end
+           \endgraf\vskip\baselineskip
+%          \endgraf\vskip\abovecaptionskip% always `position=top'
+         \caption@end}%
 %
-         \endgraf\vskip\baselineskip}%
        \hss}}}%
 %
   \fi}
 %
-% ROTATING SUPPORT
-% ================
+% ROTATING PACKAGE SUPPORT
+% ========================
 %
 \caption@ifpackage{rotating}{@rotcaption}{%
   \ifx\@rotcaption\relax
   \else
     \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%
 %
-    \@ifundefined{caption@caption}{}{%
-      \let\caption@rot\rotcaption
-      \def\rotcaption{\caption@caption\caption@rot}}%
+    \let\caption@rot\rotcaption
+    \def\rotcaption{\caption@caption\caption@rot}%
 %
     \let\caption@@rot\@rotcaption
     \long\def\@rotcaption#1[#2]#3{%
@@ -2564,8 +2574,8 @@
 %
   \fi}
 %
-% SIDECAP SUPPORT
-% ===============
+% SIDECAP PACKAGE SUPPORT
+% =======================
 %
 \caption@ifpackage{sidecap}{endSC@FLOAT}{%
   \ifx\endSC@FLOAT\relax
@@ -2579,18 +2589,17 @@
 %
 % Make \caption* and local settings (\captionsetup) work
 %
-    \@ifundefined{caption@caption}{}{%
-      \let\caption@SC@zfloat\SC@zfloat
-      \def\SC@zfloat#1#2#3[#4]{%
-        \caption@SC@zfloat{#1}{#2}{#3}[#4]%
+    \let\caption@SC@zfloat\SC@zfloat
+    \def\SC@zfloat#1#2#3[#4]{%
+      \caption@SC@zfloat{#1}{#2}{#3}[#4]%
 %
-        \global\let\SC@CAPsetup\@empty
-        \renewcommand\captionsetup[1]{\g@addto@macro\SC@CAPsetup{,##1}}%
+      \global\let\SC@CAPsetup\@empty
+      \renewcommand\captionsetup[1]{\g@addto@macro\SC@CAPsetup{,##1}}%
 %
-        \let\caption@old\caption
-%       \def\caption{\renewcommand\captionsetup[1]{}\caption@caption\caption@old}%
-        \def\caption{\caption@caption\caption@old}%
-      }}%
+      \let\caption@old\caption
+%     \def\caption{\renewcommand\captionsetup[1]{}\caption@caption\caption@old}%
+      \def\caption{\caption@caption\caption@old}%
+    }%
 %
 % Before typesetting the caption, we set the captionmargin to zero
 % because the extra margin is only disturbing here.
@@ -2620,8 +2629,8 @@
 %
   \fi}
 %
-% SUPERTABULAR SUPPORT
-% ====================
+% SUPERTABULAR PACKAGE SUPPORT
+% ============================
 %
 \def\caption@setSTposition{%
   \caption@setposition{\if@topcaption t\else b\fi}}
@@ -2659,8 +2668,8 @@
 %
   \fi}
 %
-% KOMA-SCRIPT SUPPORT
-% ===================
+% KOMA-SCRIPT CLASSES SUPPORT (new in 3.0a)
+% ===========================
 %
 % \changes{v3.0a}{18 Jan 04}{Minimum adaption to KOMA-Script}
 \AtBeginDocument{\let\scr@caption\caption}
