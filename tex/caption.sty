@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2005/06/26 v3.0f Customising captions (AS)]
+\ProvidesPackage{caption}[2005/06/28 v3.0g Customising captions (AS)]
 \RequirePackage{caption3}
 \DeclareCaptionOption{type}{\def\@captype{#1}}% new v3.0d
 \newcommand*\caption@floatname[1]{\@nameuse{#1name}}
@@ -248,13 +248,15 @@
   \PackageInfo{caption}{hyperref package v6.74m (or newer) detected}%
   \def\caption@ContinuedFloat#1{%
     \@ifundefined{theH#1}{}{%
-      \@ifundefined{c@CF@#1}{\newcounter{CF@#1}}{}%
-      \stepcounter{CF@#1}%
-      \expandafter\l@addto@macro\csname theH#1\endcsname{.\arabic{CF@#1}}%
+      \@ifundefined{CF@#1}{%
+        \expandafter\newcount\csname CF@#1\endcsname
+        \caption@resetContinuedFloat{#1}}{}%
+      \global\advance\csname CF@#1\endcsname\@ne\relax
+      \expandafter\l@addto@macro\csname theH#1\endcsname{.\expandafter\@arabic\csname CF@#1\endcsname}%
       \let\caption@resetContinuedFloat\@gobble
     }}%
   \def\caption@resetContinuedFloat#1{%
-    \@ifundefined{c@CF@#1}{}{\@stpelt{CF@#1}}}%
+    \@ifundefined{CF@#1}{}{\global\csname CF@#1\endcsname\z@\relax}}%
 }
 \caption@ifpackage{hypcap}{hc@caption}{%
   \PackageInfo{caption}{hypcap package v1.0 (or newer) detected}%
