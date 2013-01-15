@@ -23,12 +23,12 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files caption.ins, caption.dtx,
-%% caption2.dtx, caption.xml, and anleitung.tex and the derived files
+%% caption2.dtx, and anleitung.tex and the derived files
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2006/01/12 v3.0i Customising captions (AR)]
-\RequirePackage{caption3}[2005/12/04]
+\ProvidesPackage{caption}[2006/03/21 v3.0j Customising captions (AR)]
+\RequirePackage{caption3}[2006/01/12] % needs v3.0i or newer
 \DeclareCaptionOption{config}[caption]{%
    \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
                                        #1.cfg used ***}}%
@@ -71,8 +71,12 @@
   \DeclareCaptionOption*{tablecaptionbelow}[]{\captionsetup[table]{position=b}}
   \def\onelinecaptionstrue{\caption@setbool{slc}{1}}
   \def\onelinecaptionsfalse{\caption@setbool{slc}{0}}
-  \def\captionabove{\caption@setposition{t}\scr@caption}
-  \def\captionbelow{\caption@setposition{b}\scr@caption}
+  \def\captionabove{%
+    \caption@setposition{t}\let\caption@setposition\@gobble
+    \scr@caption}
+  \def\captionbelow{%
+    \caption@setposition{b}\let\caption@setposition\@gobble
+\scr@caption}
 }
 \newcommand*\caption@declarepackage[1]{%
   \caption@setbool{pkt@#1}{1}%
@@ -96,6 +100,7 @@
 \caption@declarepackage{hypcap}
 \caption@declarepackage{listings}
 \caption@declarepackage{longtable}
+\caption@declarepackage{picins}
 \caption@declarepackage{rotating}
 \caption@declarepackage{sidecap}
 \caption@declarepackage{supertabular}
@@ -103,12 +108,16 @@
   \let\@tempc\relax
   \let\caption@tempa\@empty
   \@for\CurrentOption:=\@classoptionslist\do{%
-    \@ifundefined{KV@#1@\CurrentOption}%
-    {}%
-    {%
-      \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
-      \@expandtwoargs\@removeelement\CurrentOption
-        \@unusedoptionlist\@unusedoptionlist
+    \@ifundefined{KV@#1@\CurrentOption}{%
+    }{%
+      \@ifundefined{KV@#1@\CurrentOption @default}{%
+        \PackageInfo{#1}{Global option `\CurrentOption' ignored}%
+      }{%
+        \PackageInfo{#1}{Global option `\CurrentOption' processed}%
+        \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+        \@expandtwoargs\@removeelement\CurrentOption
+          \@unusedoptionlist\@unusedoptionlist
+      }%
     }%
   }%
   \edef\caption@tempa{%
@@ -344,6 +353,10 @@
       \caption@end}}%
   \newcommand\caption@LT@make[1]{%
     \LT@mcol\LT@cols c{\hbox to\z@{\hss\parbox[t]\hsize{#1}\hss}}}%
+}
+\caption@ifpackage{picins}{piccaption}{%
+  \PackageInfo{caption}{picins package v3.0 (or newer) detected}%
+  \def\piccaption{\@dblarg\@piccaption}
 }
 \caption@ifpackage{rotating}{@rotcaption}{%
   \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%

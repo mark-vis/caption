@@ -23,11 +23,11 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files caption.ins, caption.dtx,
-%% caption2.dtx, caption.xml, and anleitung.tex and the derived files
+%% caption2.dtx, and anleitung.tex and the derived files
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2006/01/12 v3.0i caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2006/03/16 v3.0j caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -89,14 +89,13 @@
   \let\KV@errx\caption@KV@errx
   \let\KV@err\caption@KV@err}
 \newcommand\caption@package{caption}
-\newcommand\caption@settype{\@ifnextchar[\caption@@settype\caption@@@settype}
+\newcommand\caption@settype{%
+  \@ifnextchar[\caption@@settype{\caption@@settype[caption]}}
 \def\caption@@settype[#1]#2{%
-  \def\caption@package{#1}%
-  \caption@@@settype{#2}%
-  \def\caption@package{caption}}
-\newcommand*\caption@@@settype[1]{%
-  \@ifundefined{\caption@typ@#1}{}{%
-    \caption@esetup{\csname\caption@typ@#1\endcsname}}}
+  \@ifundefined{\caption@typ@#2}{}{%
+    \def\caption@package{#1}%
+    \caption@esetup{\csname\caption@typ@#2\endcsname}%
+    \def\caption@package{caption}}}
 \newcommand*\caption@esetup[1]{%
   \edef\caption@tempa{\noexpand\caption@setup{#1}}%
   \caption@tempa}
@@ -137,24 +136,6 @@
 \DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
 \DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{parskip}{\l@addto@macro\caption@@par{\setlength\parskip{#1}}}
-\@ifundefined{scr@caption}{}{%
-  \let\caption@KV@parindent\KV@caption@parindent
-  \DeclareCaptionOption{parindent}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption3}{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}%
-  \let\caption@KV@parskip\KV@caption@parskip
-  \DeclareCaptionOption{parskip}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption3}{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}%
-}
 \newcommand*\DeclareCaptionStyle[1]{%
   \@ifnextchar[{\caption@declarestyle{#1}}{\caption@declarestyle{#1}[]}}
 \def\caption@declarestyle#1[#2]#3{%
@@ -309,8 +290,6 @@
 \DeclareCaptionFont{tt}{\ttfamily}
 \providecommand\captionsize{}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-%% \caption@setdefaultfont{labelfont}{\scshape}
-%%   \caption@setdefaultfont{labelfont}{\scshape}
 \@ifundefined{abovecaptionskip}{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
 \@ifundefined{belowcaptionskip}{%
@@ -377,11 +356,7 @@
   \caption@ifh{\advance\@tempdima by -\captionindent}%
   \caption@startbox\@tempdima
     \caption@ifh{%
-      \ifdim\captionindent=\z@
-        \leavevmode
-      \else
-        \hskip-\captionindent
-      \fi}%
+        \hskip-\captionindent}%
     \caption@@@make{#1}{#2}%
   \caption@endbox
   \@tempdima\captionmargin

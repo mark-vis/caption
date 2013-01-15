@@ -19,14 +19,15 @@
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
 % This work consists of the files caption.ins, caption.dtx,
-% caption2.dtx, caption.xml, and anleitung.tex and the derived files
+% caption2.dtx, and anleitung.tex and the derived files
 % caption.sty, caption2.sty, caption3.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{2001}
+% \CheckSum{1956}
 %
 % \iffalse
 %<*driver>
+\NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \documentclass{ltxdoc}
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
@@ -1802,8 +1803,11 @@
 % Christoph Bartoschek,
 % Uwe St\"ohr,
 % Ralf Stubner,
-% Geoff Vallis, and
-% Florian Keiler
+% Geoff Vallis,
+% Florian Keiler,
+% J\"urgen G\"obel,
+% and
+% Uwe Siart
 % who all helped to make this package a better one.
 % 
 % \iffalse
@@ -1975,7 +1979,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2006/01/12 v3.0i caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2006/03/16 v3.0j caption3 kernel (AR)]
 %<+debug>\PackageWarning{caption3}{DEBUG VERSION}
 %    \end{macrocode}
 %
@@ -2146,19 +2150,19 @@
 %
 % \begin{macro}{\caption@settype}
 % \changes{v3.0i}{2006/01/03}{Optional argument added}
+% \changes{v3.0j}{2006/01/26}{Revised}
 %  |\caption@settype|\oarg{package}\marg{type}\par
 %  Caption options which have been saved with |\captionsetup|\oarg{type} can
 %  be executed using this command.
 %  (It simply executes the saved option list, if there is any.)
 %    \begin{macrocode}
-\newcommand\caption@settype{\@ifnextchar[\caption@@settype\caption@@@settype}
+\newcommand\caption@settype{%
+  \@ifnextchar[\caption@@settype{\caption@@settype[caption]}}
 \def\caption@@settype[#1]#2{%
-  \def\caption@package{#1}%
-  \caption@@@settype{#2}%
-  \def\caption@package{caption}}
-\newcommand*\caption@@@settype[1]{%
-  \@ifundefined{\caption@typ@#1}{}{%
-    \caption@esetup{\csname\caption@typ@#1\endcsname}}}
+  \@ifundefined{\caption@typ@#2}{}{%
+    \def\caption@package{#1}%
+    \caption@esetup{\csname\caption@typ@#2\endcsname}%
+    \def\caption@package{caption}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2244,6 +2248,9 @@
 %  |\setcaptionmargin|\marg{amount}
 % \changes{v3.0h}{2005/10/24}{Renamed from \cs{caption@setmargin} to \cs{setcaptionmargin}}
 % \changes{v3.0h}{2005/10/24}{\cs{setcaptionmargin} enhanced so it can take left+right margin}
+%  |\setcaptionmargin|\marg{amount}\par
+%  Please never use this in user documents, it's just there to
+%  provide compatibility to |caption2.sty| \version{2.x}.
 %    \begin{macrocode}
 \newcommand*\setcaptionmargin[1]{%
   \captionwidth\z@
@@ -2258,6 +2265,9 @@
 % \begin{macro}{\setcaptionwidth}
 %  |\setcaptionwidth|\marg{amount}
 % \changes{v3.0h}{2005/10/24}{Renamed from \cs{caption@setwidth} to \cs{setcaptionwidth}}
+%  |\setcaptionwidth|\marg{amount}\par
+%  Please never use this in user documents, it's just there to
+%  provide compatibility to |caption2.sty| \version{2.x}.
 %    \begin{macrocode}
 \newcommand\setcaptionwidth{%
   \setlength\captionwidth}
@@ -2288,45 +2298,6 @@
 \DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
 \DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{parskip}{\l@addto@macro\caption@@par{\setlength\parskip{#1}}}
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-\@ifundefined{scr@caption}{}{%
-%    \end{macrocode}
-%
-% There is an option clash between the \KOMAScript\ document classes
-% and the \package{caption} kernel,
-% both define the options |parindent| and |parskip| but with different meaning.
-% Furthermore the ones defined by the \package{caption} kernel take a
-% value as parameter but the \KOMAScript\ ones do not.
-% So we need special versions of the options |parindent| and |parskip| here,
-% ones who determine if a value is given (and therefore should be treated as
-% our option) or not (and therefore should be ignored by us).
-%
-%    \begin{macrocode}
-  \let\caption@KV@parindent\KV@caption@parindent
-  \DeclareCaptionOption{parindent}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption3}{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}%
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-  \let\caption@KV@parskip\KV@caption@parskip
-  \DeclareCaptionOption{parskip}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption3}{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}%
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-}
 %    \end{macrocode}
 %
 % \subsubsection*{Styles}
@@ -2556,13 +2527,6 @@
 \def\caption@iflf@default{\caption@iflf@colon}
 %    \end{macrocode}
 %
-%    \begin{macrocode}
-%\@ifundefined{captionseparator}{}{% new v3.1: french(le) support
-%  \DeclareCaptionLabelSeparator{default}{\captionseparator\space}}
-%\@ifundefined{CaptionSeparator}{}{% new v3.1: frenchb support
-%  \DeclareCaptionLabelSeparator{default}{\CaptionSeparator}}
-%    \end{macrocode}
-%
 % \subsubsection*{Justifications}
 %
 % \begin{macro}{\DeclareCaptionJustification}
@@ -2706,15 +2670,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@setdefaultfont}
-%  |\caption@setdefaultfont|\marg{command}\marg{code}\par
-%  (new v3.1)
 %    \begin{macrocode}
-%\newcommand\caption@setdefaultfont[1]{\long\@namedef{caption#1@default}}
-%\@onlypreamble\caption@setdefaultfont
 \DeclareCaptionFont{default}{}
 %    \end{macrocode}
-% \end{macro}
 %
 % These are the pre-defined font code snippets.
 %
@@ -2753,20 +2711,6 @@
 % \changes{v3.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
 %    \begin{macrocode}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-% new v3.1 (french(le)/frenchb)
-%\ifx\captionfont\emph
-%% \caption@setdefaultfont{labelfont}{\scshape}
-%  \caption@setdefaultfont{textfont}{\em}
-%\else
-%  \def\@tempa{\itshape\@cfORI}
-%  \ifx\captionfont\@tempa
-%%   \caption@setdefaultfont{labelfont}{\scshape}
-%    \caption@setdefaultfont{textfont}{\em}
-%  \fi
-%\fi
 %    \end{macrocode}
 %
 % \subsubsection*{Vertical spaces before and after captions}
@@ -3009,11 +2953,11 @@
 %
 %    \begin{macrocode}
     \caption@ifh{%
-      \ifdim\captionindent=\z@
-        \leavevmode
-      \else
-        \hskip-\captionindent
-      \fi}%
+%     \ifdim\captionindent=\z@
+%       \leavevmode
+%     \else
+        \hskip-\captionindent}%
+%     \fi}%
 %    \end{macrocode}
 %
 % Typeset the caption itself
@@ -3132,7 +3076,6 @@
 %  These macros start and end the box which surrounds the caption paragraph.
 %    \begin{macrocode}
 \newcommand*\caption@startbox[1]{\vbox\bgroup\hsize#1}%
-%\newcommand*\caption@startbox[1]{\vtop\bgroup\hsize#1}% changed v3.1
 %\newcommand*\caption@startbox[1]{\vbox\bgroup\setlength\hsize{#1}\@parboxrestore}%
 \newcommand*\caption@endbox{\egroup}
 %\newcommand*\caption@endbox{\@finalstrut\strutbox\@@par\egroup}
@@ -3246,14 +3189,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2006/01/12 v3.0i Customising captions (AR)]
+\ProvidesPackage{caption}[2006/03/21 v3.0j Customising captions (AR)]
 %<+debug>\PackageWarning{caption}{DEBUG VERSION}
 %    \end{macrocode}
 %
 % \subsubsection*{Loading the caption kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2005/12/04]
+\RequirePackage{caption3}[2006/01/12] % needs v3.0i or newer
 %    \end{macrocode}
 %
 % \subsubsection*{Option for configuration files}
@@ -3351,9 +3294,19 @@
 %
 % \begin{macro}{\captionabove}
 % \begin{macro}{\captionbelow}
+% \changes{v3.0j}{2006/03/21}{Bugfix 06-03-21: \cs{let}\cs{caption@setposition}\cs{@gobble} added}
+%  Original code:
+%  \begin{verbatim}
+%  \newcommand{\captionabove}{\@captionabovetrue\scr@caption}
+%  \newcommand{\captionbelow}{\@captionabovefalse\scr@caption}
+%  \end{verbatim}
 %    \begin{macrocode}
-  \def\captionabove{\caption@setposition{t}\scr@caption}
-  \def\captionbelow{\caption@setposition{b}\scr@caption}
+  \def\captionabove{%
+    \caption@setposition{t}\let\caption@setposition\@gobble
+    \scr@caption}
+  \def\captionbelow{%
+    \caption@setposition{b}\let\caption@setposition\@gobble
+	\scr@caption}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -3476,6 +3429,7 @@
 \caption@declarepackage{hypcap}
 \caption@declarepackage{listings}
 \caption@declarepackage{longtable}
+\caption@declarepackage{picins}
 \caption@declarepackage{rotating}
 \caption@declarepackage{sidecap}
 \caption@declarepackage{supertabular}
@@ -3483,6 +3437,8 @@
 %
 % \begin{macro}{\ProcessOptionsWithKV}
 % \changes{v3.0a}{2004/01/23}{Bugfix, see \purett{news:400D360C.9678329F@gmx.net} for details}
+% \changes{v3.0i}{2006/01/03}{Improvement, uses \cs{caption@setkeys} instead of \cs{setkeys}}
+% \changes{v3.0j}{2006/02/23}{Bugfix, now processes only those global options which have a default value}
 %  We process our options using the keyval package, so we use this one
 %  instead of |\ProcessOptions| offered by \LaTeXe.
 %  (This code was taken from the \package{hyperref} package.)
@@ -3494,12 +3450,16 @@
 %    \begin{macrocode}
   \let\caption@tempa\@empty
   \@for\CurrentOption:=\@classoptionslist\do{%
-    \@ifundefined{KV@#1@\CurrentOption}%
-    {}%
-    {%
-      \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
-      \@expandtwoargs\@removeelement\CurrentOption
-        \@unusedoptionlist\@unusedoptionlist
+    \@ifundefined{KV@#1@\CurrentOption}{%
+    }{%
+      \@ifundefined{KV@#1@\CurrentOption @default}{%
+        \PackageInfo{#1}{Global option `\CurrentOption' ignored}%
+      }{%
+        \PackageInfo{#1}{Global option `\CurrentOption' processed}%
+        \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+        \@expandtwoargs\@removeelement\CurrentOption
+          \@unusedoptionlist\@unusedoptionlist
+      }%
     }%
   }%
   \edef\caption@tempa{%
@@ -3819,7 +3779,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsubsection*{\KOMAScript\ classes support}
+% \subsubsection*{\package{\KOMAScript} classes support}
 % \changes{v3.0a}{2004/01/18}{Minimum adaptation to \KOMAScript\ added}
 % \changes{v3.0h}{2005/08/22}{\cs{PackageInfo} added to \KOMAScript\ support}
 %
@@ -3839,19 +3799,6 @@
 %    \begin{macrocode}
 }}
 %    \end{macrocode}
-%
-% \iffalse
-% \subsubsection*{frenchb package support}
-% \changes{v3.1}{2005/??/??}{Minimum adaptation to \package{frenchb} added}
-%
-% Suppress warning
-% "Package |frenchb.ldf| Warning: The definition of |\@makecaption| has been
-%  changed, frenchb will NOT customize it;"
-%\@ifundefined{FB@makecaption}{}{%
-%  \let\STD@makecaption\@makecaption
-%  \let\FB@makecaption\@makecaption
-%}
-% \fi
 %
 % \subsubsection*{french(le) package support}
 % \changes{v3.0h}{2005/10/03}{Minimum adaptation to \package{french(le)} added}
@@ -3918,7 +3865,7 @@
 }}}
 %    \end{macrocode}
 %
-% \subsubsection*{float package support}
+% \subsubsection*{\package{float} package support}
 % \changes{v3.0f}{2005/05/31}{\package{float} package support rewritten and improved}
 % \iffalse
 % (This is a more straight-ahead implementation, but it only works with v1.3
@@ -4203,7 +4150,7 @@
 \caption@undefbool{ruled}
 %    \end{macrocode}
 %
-% \subsubsection*{floatrow package support}
+% \subsubsection*{\package{floatrow} package support}
 % \changes{v3.0f}{2005/06/01}{Support of the \package{floatrow} package added}
 %
 % The \package{floatrow} package is adapted for usage with the
@@ -4241,7 +4188,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{hyperref package support}
+% \subsubsection*{\package{hyperref} package support}
 % \changes{v3.0f}{2005/06/11}{Support of the \package{hyperref} package added}
 %
 % When the \package{hyperref} package is used we have the problem
@@ -4293,7 +4240,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{hypcap package support}
+% \subsubsection*{\package{hypcap} package support}
 % \changes{v3.0f}{2005/06/22}{Support of the \package{hypcap} package added}
 % 
 % When the \package{hypcap} package is used the following problems occur:
@@ -4397,7 +4344,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{listings package support}
+% \subsubsection*{\package{listings} package support}
 % \changes{v3.0b}{2004/05/16}{Support of the \package{listings} package added}
 %
 %    \begin{macrocode}
@@ -4434,7 +4381,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{longtable package support}
+% \subsubsection*{\package{longtable} package support}
 %
 %    \begin{macrocode}
 \caption@ifpackage{longtable}{LT@makecaption}{%
@@ -4536,7 +4483,32 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{rotating package support}
+% \subsubsection*{\package{picins} package support}
+% \changes{v3.0j}{2006/01/26}{Support of the \package{picins} package added}
+%
+%    \begin{macrocode}
+\caption@ifpackage{picins}{piccaption}{%
+  \PackageInfo{caption}{picins package v3.0 (or newer) detected}%
+%    \end{macrocode}
+%
+% \begin{macro}{\piccaption}
+%  Original code:
+%  \begin{verbatim}
+%  \def\piccaption{\@ifnextchar [{\@piccaption}{\@piccaption[]}}
+%  \end{verbatim}
+%    \begin{macrocode}
+  \def\piccaption{\@dblarg\@piccaption}
+% \def\piccaption{\caption@caption{\@dblarg\@piccaption}}
+%    \end{macrocode}
+% \end{macro}
+%
+% {\itshape TODO: Make |\piccaption[]{|\ldots|}| and |\piccaption{}| work}
+%
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+%
+% \subsubsection*{\package{rotating} package support}
 %
 %    \begin{macrocode}
 \caption@ifpackage{rotating}{@rotcaption}{%
@@ -4615,7 +4587,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{sidecap package support}
+% \subsubsection*{\package{sidecap} package support}
 %
 %    \begin{macrocode}
 \caption@ifpackage{sidecap}{endSC@FLOAT}{%
@@ -4753,7 +4725,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection*{supertabular package support}
+% \subsubsection*{\package{supertabular} package support}
 %
 % \begin{macro}{\caption@setSTposition}
 %  The |position=| setting will be overwritten by the
