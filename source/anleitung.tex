@@ -27,6 +27,10 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\medskipamount}
 
+\errorcontextlines9
+\def\StartTracing{\typeout{StartTracing}\tracingmacros=1\tracingcommands=1\relax}
+\def\StopTracing{\tracingmacros=0\tracingcommands=0\relax\typeout{StopTracing}}
+
 \newcommand\NEWfeature{\NEW{Neues Feature}}
 \newcommand\NEWdescription{\NEW{Neue Beschreibung}}
 \newcommand\NEW[2]{%
@@ -38,6 +42,7 @@
   \ifcase\pdfoutput\else
     \usepackage{mathptmx,courier}
     \usepackage[scaled=0.90]{helvet}
+    \addtolength\marginparwidth{15pt}
   \fi
 \fi
 
@@ -45,12 +50,13 @@
 
 \usepackage{caption}[2004/11/28]
 %\usepackage{float}
-\usepackage{longtable}
+\usepackage{longtable,hyperref}
 %\usepackage[raggedright]{sidecap}
 
-\DeclareCaptionLabelSeparator{period-newline}{. \newline}
+\DeclareCaptionLabelSeparator{period-newline}{. \\}
 \DeclareCaptionStyle{period-newline}[labelsep=period]{labelsep=period-newline}
 \DeclareCaptionStyle{period-newline2}[labelsep=period,justification=centering]{labelsep=period-newline}
+\DeclareCaptionStyle{period-newline3}[labelsep=period]{labelsep=period-newline,justification=centering}
 \DeclareCaptionFormat{reverse}{#3#2#1}
 \DeclareCaptionFormat{llap}{\llap{#1#2}#3\par}
 \DeclareCaptionLabelFormat{fullparens}{(\bothIfFirst{#1}{ }#2)}
@@ -88,8 +94,8 @@
 \title{Setzen von Abbildungs- und Tabellenbeschriftungen mit dem
        \thispackage-Paket\thanks{Dieses Paket hat die Versionsnummer
        \fileversion, zuletzt ge"andert am \filedate.}}
-\author{Axel Sommerfeldt\\\texttt{caption@sommerfeldt.net}}
-\date{5. Mai 2005}
+\author{Axel Sommerfeldt\\\href{mailto:caption@sommerfeldt.net}{\texttt{caption@sommerfeldt.net}}}
+\date{26. Juni 2005}
 \maketitle
 
 
@@ -234,7 +240,7 @@ ab der zweiten Textzeile angepasst werden, dies geschieht mit Hilfe der Option
 \end{quote}
 wobei anstelle von \meta{Einzug} jedes beliebige feste Ma"s angegeben werden kann.
 
-Zwei Beispiele:
+Drei Beispiele:
 
 \begin{Example}
   \begin{quote}
@@ -408,6 +414,14 @@ Einige Beispiele:
   \end{quote}
   \captionsetup{aboveskip=0pt}
   \example{belowskip=\abovecaptionskip,format=hang,justification=RaggedRight}{\figuretext}
+\end{Example}
+
+\begin{Example}
+  \begin{quote}
+    |labelsep=newline,justification=centering|
+  \end{quote}
+  \captionsetup{aboveskip=0pt}
+  \example{belowskip=\abovecaptionskip,labelsep=newline,justification=centering}{\figuretext}
 \end{Example}
 
 \DescribeMacro{singlelinecheck=}
@@ -780,12 +794,10 @@ diese Tabelle:
 \end{longtable}
 
 Das \thispackage-Paket bietet diesen Mechanismus auch f"ur normale Abbildungs-
-und Tabellenbeschriftungen an. Ferner kann hier auch abweichend ein
-Verzeichniseintrag erzeugt werden, indem dieser explizit in eckigen Klammern
-mit angegeben wird. Etwa so:
+und Tabellenbeschriftungen an. Ein Beispiel:
 \begin{quote}
   |\begin{table}|\\
-  |  \caption*[Eine Tabelle]{Eine Tabelle}|\\
+  |  \caption*{Eine Tabelle}|\\
   |  \begin{tabular}{cc}|\\
   |    A & B \\|\\
   |    C & D \\|\\
@@ -821,7 +833,7 @@ f"uhrt zu folgendem Ergebnis:
 \end{Example}
 
 Analog zu |\caption*| gibt es auch den Befehl |\captionof*| f"ur Beschriftungen
-ohne Bezeichner und ohne Verzeichniseintrag, sofern nicht explizit angegeben.
+ohne Bezeichner und ohne Verzeichniseintrag.
 
 Beide Befehle, sowohl |\captionof| als auch |\captionof*|, sollten nur
 \emph{innerhalb} von Umgebungen (wie |minipage| oder |\parbox|) angewandt werden.
@@ -1052,7 +1064,7 @@ Als Beispiel mu"s mal wieder eine einfache Definition aus diesem Paket herhalten
 M"ochte man als Trenner einen Punkt \emph{und} einen Zeilenumbruch haben,
 so lie"se sich das wie folgt realisieren:
 \begin{quote}
-  |\DeclareCaptionLabelSeparator{period-newline}{. \newline}|
+  |\DeclareCaptionLabelSeparator{period-newline}{. \\}|
 \end{quote}
 W"ahlt man diesen Trenner mit |\captionsetup{labelsep=period-newline}| aus, so
 ergeben sich Beschriftungen der Art
@@ -1097,7 +1109,19 @@ eine geeignete Definition:
   \caption[]{Eine Abbildung.}
 \end{Example}
 
-\pagebreak[3]
+Leicht abgewandelt ergibt sich auch bei l"angeren Beschriftungen eine Zentrierung:
+\begin{quote}
+  |\DeclareCaptionStyle{period-newline}%|\\
+  |  [labelsep=period]%|\\
+  |  {labelsep=period-newline,justification=centering}|
+\end{quote}
+\begin{Example}
+  \captionsetup{style=period-newline3,labelfont=bf,margin=10pt}
+  \captionsetup{aboveskip=0pt,type=figure}
+  \caption[]{\figuretext}
+\end{Example}
+
+\bigskip\pagebreak[3]
 Ein anderes Beispiel: Die Beschriftungen sollen wie folgt aussehen:
 \begin{Example}
   \captionsetup{format=reverse,labelformat=fullparens,labelsep=fill,font=small,labelfont=it}
@@ -1116,7 +1140,7 @@ Dies lie"se sich z.B. wie folgt realisieren:
    |              labelsep=fill,font=small,labelfont=it}|
  \end{quote}}
 
-\pagebreak[3]
+\bigskip\pagebreak[3]
 Ein weiteres Beispiel: Der Bezeichner soll in den linken Rand verlagert
 werden, so da"s die komplette Absatzbreite der Beschriftung selber zugute kommt:
 {\leftmargini=10pt
@@ -1170,6 +1194,8 @@ genannten Optionen eingestellt hat. Im einzelnen sind dies die folgenden Pakete:
 
 \begin{tabular}{ll}
   |float|        & Erlaubt die Definition eigener gleitenen Umgebungsstile\\
+  |hyperref|     & Setzt Hyperlinks\\
+  |hypcap|       & Korrigiert die von \package{hyperref} gesetzten Anker bei Beschriftungen\\
   |listings|     & Setzt Quelltexte diverser Programmiersprachen\\
   |longtable|    & Setzt Tabellen, die sich "uber mehrere Seiten erstrecken k"onnen\\
   |rotating|     & Unterst"utzt rotierende Abbildungen und Tabellen\\
@@ -1216,6 +1242,21 @@ Weiterhin definiert es f"ur gleitende Umgebungen die Stile |plain|,
 F"ur die vorhandenen Umgebungen |figure| und |table| kann hierbei der Stil
 ge"andert werden, ferner k"onnen eigene Umgebungstypen definiert werden,
 die ggf.~ein eigenes Verzeichnis bekommen.
+
+Bzgl.~der Abst"ande ist zu beachten, da"s bei Umgebungen des Stils |plain|,
+|plaintop| und |boxed| lediglich |\abovecaptionskip| (und kein
+|\belowcaptionskip|) zur Anwendung kommt. Ferner wird dieser Abstand vom
+\package{float}"=Paket gesetzt und nicht vom \package{caption}"=Paket;
+das hat f"ur Sie als Anwender zur Folge, da"s dieser Abstand nicht innerhalb
+der Umgebung selbst mit |\captionsetup| ver"andert werden kann, ferner ist
+die Option |position=| bei diesen Umgebungen wirkungslos.
+
+Beim Stil |boxed| ist der Abstand mit
+\begin{quote}
+  |\captionsetup[boxed]{skip=2pt}|
+\end{quote}
+voreingestellt, bei |plain| und |plaintop| wird die globale Einstellung
+verwendet, sofern keine lokale definiert wurde.
 
 Kommt das \package{float}"=Paket zusammen mit dem \thispackage"=Paket zum
 Einsatz, so wird automatisch der Beschriftungsstil |ruled| definiert, der das
@@ -1280,9 +1321,9 @@ mittels
 geeignet zu definieren.
 
 Dieser Mechanismus funktioniert auch bei allen anderen Umgebungsstilen,
-d.h.~auch bei Umgebungen des Types |plain| und |boxed| kann ein geeigneter
-Beschriftungsstil mit gleichem Namen definiert werden, der dann automatisch bei
-gleitenden Umgebungen dieses Types zum Einsatz kommt.
+d.h.~auch bei Umgebungen des Types |plain|, |plaintop| und |boxed| kann ein
+geeigneter Beschriftungsstil mit gleichem Namen definiert werden, der dann
+automatisch bei gleitenden Umgebungen dieses Types zum Einsatz kommt.
 
 
 \subsection{Das \package{listings}-Paket}
@@ -1300,9 +1341,6 @@ Quelltexten diverser Programmiersprachen.
 Das \package{longtable}"=Paket\cite{longtable} definiert die Umgebung
 |longtable|, die sich wie eine Tabelle anwenden l"a"st, aber im Gegensatz zu
 |tabular| Seitenumbr"uche innerhalb der Tabelle gestattet.
-
-Zus"atzlich zu den regul"aren Optionen, die f"ur Tabellen festgelegt wurden,
-besteht die M"oglichkeit.
 
 \subsection{Das \package{rotating}-Paket}
 
@@ -1397,19 +1435,11 @@ Eine ausf"uhrliche Behandlung der Unterschiede zwischen den beiden Paketen
 
 \NEWdescription{v3.0b}
 Die Verwendung des \thispackage"=Paketes in Verbindung mit folgenden Paketen
-ist nicht empfehlenswert, da es in der Regel zu unerw"unschten Seiteneffekten
+ist nicht empfehlenswert, da es zu unerw"unschten Seiteneffekten
 oder gar Fehlern kommen kann:
 \begin{quote}
 \package{ccaption}, \package{hvfloat}, \package{nonfloat}
 \end{quote}
-
-Ferner m"ussen bei der Verwendung des \package{hypcap}"=Paketes folgende
-Einschr"ankungen in Kauf genommen werden: Die Erweiterungen des |\caption|
-Befehls funktionieren nicht, die Einstellung |labelformat=| wird nicht
-beachtet und lokale Einstellungen mittels |\captionsetup[|\ldots|]{|\ldots|}|
-gelingen in der Regel nicht mehr. Dies liegt im Implementationsdesign des
-\package{hypcap}"=Paketes begr"undet; der Abschnitt 1.3 "`Limitations"' der
-dazugeh"origen Anleitung wei"st auf diesen Umstand explizit hin.
 
 
 \section{Kompatibilit"at zu "alteren Versionen}
@@ -1480,20 +1510,26 @@ Folgende Dokumente m"ochte ich an dieser Stelle jedem ans Herz legen:
 
 \begin{itemize}
 \item
-  Die DANTE-FAQ:
-  \begin{quote}\texttt{http://www.dante.de/faq/de-tex-faq/}\end{quote}
+  Die DANTE-FAQ:\nopagebreak
+  \begin{quote}
+    \url{http://www.dante.de/faq/de-tex-faq/}
+  \end{quote}
 
 \item
   \emph{"`Gleitobjekte -- die richtige Schmierung"'} von Axel Reichert
   erl"autert den Umgang mit gleitenden Umgebungen und ist hier im Netz
-  zu finden:
-  \begin{quote}\texttt{ftp://ftp.dante.de/pub/tex/info/german/gleitobjekte/}\end{quote}
+  zu finden:\nopagebreak
+  \begin{quote}
+    \url{ftp://ftp.dante.de/pub/tex/info/german/gleitobjekte/}
+  \end{quote}
 
 \item
   \textsf{epslatex} von Keith Reckdahl enth"alt viele n"utzliche Tips im
   Zusammenhang mit der Einbindung von Graphiken in \LaTeXe.
-  Das Dokument ist unter
-  \begin{quote}\texttt{ftp://ftp.dante.de/pub/tex/info/}\end{quote}
+  Das Dokument ist unter\nopagebreak
+  \begin{quote}
+    \url{ftp://ftp.dante.de/pub/tex/info/}
+  \end{quote}
   als \texttt{epslatex.ps} bzw. \texttt{epslatex.pdf} zu finden.
 \end{itemize}
 
@@ -1501,17 +1537,17 @@ Folgende Dokumente m"ochte ich an dieser Stelle jedem ans Herz legen:
 \section{Danksagungen}
 
 Von ganzem Herzen danke ich Katja Melzner, Steven D. Cochran, Frank Mittelbach,
-David Carlisle und Olga Lapko.
+David Carlisle, Carsten Hinz und Olga Lapko.
 
 Weiterhin m"ochte ich mich herzlich bei
 Harald Harders,
-Carsten Hinz,
 Peter L\"offler,
+Peng Yu,
+Alexander Zimmermann,
 Matthias Pospiech,
-Uwe St\"ohr
 J\"urgen Wieferink,
-Peng Yu und
-Alexander Zimmermann
+Christoph Bartoschek und
+Uwe St\"ohr
 f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
 
 
@@ -1525,6 +1561,21 @@ f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
   Anselm Lingnau:
   \emph{An Improved Environment for Floats},
   2001/11/08
+
+  \bibitem{floatrow}
+  Olga Lapko:
+  \emph{The floatrow package documentation},
+  2005/05/22
+
+  \bibitem{hyperref}
+  Sebastian Rahtz:
+  \emph{Hypertext marks in \LaTeX},
+  2003/11/30
+
+  \bibitem{hypcap}
+  Heiko Oberdiek:
+  \emph{The hypcap package -- Adjusting anchors of captions}
+  2001/08/27
 
   \bibitem{listings}
   Carsten Heinz:

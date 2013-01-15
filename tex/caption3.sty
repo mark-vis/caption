@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2004 Axel Sommerfeldt (caption@sommerfeldt.net)
+%% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfeldt.net)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2005/05/05 v3.0e caption3 kernel (AS)]
+\ProvidesPackage{caption3}[2005/06/11 v3.0f caption3 kernel (AS)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -66,7 +66,8 @@
 \providecommand*\undefine@key[2]{%
   \@nameundef{KV@#1@#2}\@nameundef{KV@#1@#2@default}}
 \newcommand\DeclareCaptionOption{%
-  \@ifstar{\caption@declareoption\AtEndOfPackage}{\caption@declareoption\@gobble}}
+  \@ifstar{\caption@declareoption\AtEndOfPackage}%
+          {\caption@declareoption\@gobble}}
 \newcommand*\caption@declareoption[2]{%
   #1{\undefine@key{caption}{#2}}\define@key{caption}{#2}}
 \@onlypreamble\DeclareCaptionOption
@@ -112,7 +113,7 @@
 \newdimen\captionindent
 \newdimen\captionparindent
 \newdimen\captionhangindent
-\DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}% obsolete, do not use!
+\DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}% obsolete!
 \DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
 \DeclareCaptionOption{parindent}[\parindent]{\setlength\captionparindent{#1}}% changed v3.0b
 \DeclareCaptionOption{hangindent}[0pt]{\setlength\captionhangindent{#1}}% changed v3.0b
@@ -124,11 +125,13 @@
 \@onlypreamble\DeclareCaptionStyle
 \@onlypreamble\caption@declarestyle
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
-\newcommand*\caption@setstyle[1]{%
-  \@ifundefined{caption@sty@#1}%
-    {\PackageError{caption}{Undefined caption style `#1'}{\caption@eh}}%
-    {\expandafter\let\expandafter\caption@sls\csname caption@sls@#1\endcsname
-     \caption@setdefault\caption@esetup{\csname caption@sty@#1\endcsname}}}
+\newcommand\caption@setstyle{%
+  \@ifstar{\caption@@setstyle\@gobble}{\caption@@setstyle\@firstofone}}
+\newcommand*\caption@@setstyle[2]{%
+  \@ifundefined{caption@sty@#2}%
+    {#1{\PackageError{caption}{Undefined caption style `#2'}{\caption@eh}}}%
+{\expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
+     \caption@setdefault\caption@esetup{\csname caption@sty@#2\endcsname}}}
 \newcommand\caption@setdefault{\captionsetup{%
   format=default,labelformat=default,labelsep=default,justification=default,%
   font=default,labelfont=default,textfont=default,%
@@ -147,15 +150,15 @@
     {\PackageError{caption}{Undefined caption format `#1'}{\caption@eh}}%
     {\expandafter\let\expandafter\caption@ifh\csname caption@ifh@#1\endcsname
      \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
-\DeclareCaptionFormat{normal}{#1#2#3\par}
+\DeclareCaptionFormat{@normal}{#1#2#3\par}
 \DeclareCaptionFormat{hang}{%
   \@hangfrom{#1#2}%
   \advance\captionparindent\hangindent
   \advance\captionhangindent\hangindent
   \caption@@par
   #3\par}
-\def\caption@fmt@default{\caption@fmt@normal}
-\def\caption@ifh@default{\caption@ifh@normal}% bugfix v3.0e (05-04-28)
+\def\caption@fmt@default{\caption@fmt@@normal}
+\def\caption@ifh@default{\caption@ifh@@normal}% bugfix v3.0e (05-04-28)
 \newcommand*\DeclareCaptionLabelFormat[2]{%
   \global\expandafter\def\csname caption@lfmt@#1\endcsname##1##2{#2}}
 \@onlypreamble\DeclareCaptionLabelFormat
@@ -182,7 +185,7 @@
 \DeclareCaptionLabelSeparator{period}{. }
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator{quad}{\quad}
-\DeclareCaptionLabelSeparator{newline}{\newline}
+\DeclareCaptionLabelSeparator{newline}{\\}% 05-03-23 (v3.0f)
 \def\caption@lsep@default{\caption@lsep@colon}
 \newcommand*\DeclareCaptionJustification[2]{%
   \global\@namedef{caption@hj@#1}{#2}}
