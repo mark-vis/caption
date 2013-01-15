@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2006 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -27,8 +27,8 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2005/10/24 v3.0h Customising captions (AR)]
-\RequirePackage{caption3}[2005/10/24]
+\ProvidesPackage{caption}[2006/01/12 v3.0i Customising captions (AR)]
+\RequirePackage{caption3}[2005/12/04]
 \DeclareCaptionOption{config}[caption]{%
    \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
                                        #1.cfg used ***}}%
@@ -65,38 +65,14 @@
 \DeclareCaptionOption*{oneline}[]{\caption@setbool{slc}{1}}
 \DeclareCaptionOption*{ignoreLTcapwidth}[]{}
 \@ifundefined{scr@caption}{}{%
-  \DeclareCaptionOption*{onelinecaption}[]{\caption@setbool{slc}{1}}
-  \DeclareCaptionOption*{noonelinecaption}[]{\caption@setbool{slc}{0}}
+  \DeclareCaptionOption*{onelinecaption}[]{\onelinecaptionstrue}
+  \DeclareCaptionOption*{noonelinecaption}[]{\onelinecaptionsfalse}
   \DeclareCaptionOption*{tablecaptionabove}[]{\captionsetup[table]{position=t}}
   \DeclareCaptionOption*{tablecaptionbelow}[]{\captionsetup[table]{position=b}}
-  \let\caption@KV@parindent\KV@caption@parindent
-  \let\caption@KV@parindent@default\KV@caption@parindent@default
-  \DeclareCaptionOption*{parindent}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption}{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}
-  \AtEndOfPackage{%
-    \let\KV@caption@parindent\caption@KV@parindent
-    \let\KV@caption@parindent@default\caption@KV@parindent@default
-    \let\caption@KV@parindent\@undefined
-    \let\caption@KV@parindent@default\@undefined}
-  \let\caption@KV@parskip\KV@caption@parskip
-  \let\caption@KV@parskip@default\KV@caption@parskip@default
-  \DeclareCaptionOption*{parskip}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption}{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}
-  \AtEndOfPackage{%
-    \let\KV@caption@parskip\caption@KV@parskip
-    \let\KV@caption@parskip@default\caption@KV@parskip@default
-    \let\caption@KV@parskip\@undefined
-    \let\caption@KV@parskip@default\@undefined}
+  \def\onelinecaptionstrue{\caption@setbool{slc}{1}}
+  \def\onelinecaptionsfalse{\caption@setbool{slc}{0}}
+  \def\captionabove{\caption@setposition{t}\scr@caption}
+  \def\captionbelow{\caption@setposition{b}\scr@caption}
 }
 \newcommand*\caption@declarepackage[1]{%
   \caption@setbool{pkt@#1}{1}%
@@ -136,7 +112,7 @@
     }%
   }%
   \edef\caption@tempa{%
-    \noexpand\setkeys{#1}{%
+    \noexpand\caption@setkeys{#1}{%
       \caption@tempa\@ptionlist{\@currname.\@currext}%
     }%
   }%
@@ -150,14 +126,20 @@
 \newcommand*\caption@of[2]{\def\@captype{#2}#1}
 \DeclareCaptionOption{type}{\def\@captype{#1}}
 \providecommand\ContinuedFloat{%
-  \ifx\@captype\@undefined
-    \@latex@error{\noexpand\ContinuedFloat outside float}\@ehd
-  \else
-    \addtocounter\@captype\m@ne
-    \caption@ContinuedFloat\@captype
-  \fi}%
+  \@ifnextchar[%]
+    \@ContinuedFloat
+    {\ifx\@captype\@undefined
+       \@latex@error{\noexpand\ContinuedFloat outside float}\@ehd
+     \else
+       \@ContinuedFloat[\@captype]%
+     \fi}}
+\def\@ContinuedFloat[#1]{%
+  \addtocounter{#1}\m@ne
+  \caption@ContinuedFloat{#1}%
+  \caption@@ContinuedFloat{#1}}
 \let\caption@ContinuedFloat\@gobble
 \let\caption@resetContinuedFloat\@gobble
+\providecommand*\caption@@ContinuedFloat[1]{}
 \newcommand*\caption@begin[1]{%
   \caption@resetContinuedFloat{#1}%
   \begingroup
@@ -365,19 +347,22 @@
 }
 \caption@ifpackage{rotating}{@rotcaption}{%
   \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%
-  \let\caption@rot\rotcaption
-  \def\rotcaption{\caption@caption\caption@rot}%
-  \let\caption@@rot\@rotcaption
-  \long\def\@rotcaption#1[#2]#3{%
-    \caption@beginex{#1}{#2}%
-      \caption@@rot{#1}[{#2}]{#3}%
-    \caption@end}%
+  \def\rotcaption{\let\@makecaption\@makerotcaption\caption}%
+  \def\rotcaptionof{\@ifstar{\caption@of{\rotcaption*}}{\caption@of\rotcaption}}%
   \long\def\@makerotcaption#1#2{%
-    \rotatebox{90}{%
-      \begin{minipage}{.8\textheight}\caption@@make{#1}{#2}\end{minipage}%
-      }\par
-    \hspace{12pt}%
-  }%
+    \ifdim\captionwidth=\z@
+      \setcaptionwidth{.8\textheight}%
+      \caption@slc{#1}{#2}{.8\vsize}{%
+        \let\caption@makerot\caption@@make
+        \setcaptionmargin\z@
+        \let\caption@startbox\@gobble
+        \let\caption@endbox\relax}%
+      \caption@setbool{slc}{0}% been there, done that
+    \fi
+    \rotatebox{90}{\caption@makerot{#1}{#2}}%
+    \nobreak\hspace{12pt}}%
+  \newcommand\caption@makerot[2]{%
+    \begin{minipage}\captionwidth\caption@@make{#1}{#2}\end{minipage}}%
 }
 \caption@ifpackage{sidecap}{endSC@FLOAT}{%
   \PackageInfo{caption}{sidecap package v1.4d (or newer) detected}%
@@ -398,6 +383,7 @@
     \let\@captype\SC@captype
     \caption@esetup\SC@CAPsetup
     \caption@letfloattype{SC\@captype}{%
+      \@listdepth\z@
       \setcaptionmargin\z@
       \@ifundefined{SC@justify}{}{%
         \ifx\SC@justify\@empty\else

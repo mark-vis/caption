@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfee.de)
+% Copyright (C) 1994-2006 Axel Sommerfeldt (caption@sommerfee.de)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -23,7 +23,7 @@
 % caption.sty, caption2.sty, caption3.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{1930}
+% \CheckSum{2001}
 %
 % \iffalse
 %<*driver>
@@ -33,9 +33,10 @@
 %
 \newcommand\NEWfeature{\NEW{New feature}}
 \newcommand\NEWdescription{\NEW{New description}}
-\newcommand\NEW[2]{%
-  \hskip 1sp \marginpar{\footnotesize\sffamily\raggedleft
-    #1\\#2}}
+\newcommand\NEW[2]{\hskip 1sp \marginpar{\footnotesize\sffamily\raggedleft#1\\#2}}
+%
+\font\manual=manfnt
+\newcommand\DANGER{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{\manual\char127}}}}
 %
 \ifx\pdfoutput\undefined\else
   \ifcase\pdfoutput\else
@@ -75,6 +76,8 @@
 \DeclareRobustCommand{\KOMAScript}{\textsf{K\kern.05em O\kern.05em%
     M\kern.05em A\kern.1em-\kern.1em Script}}
 %
+%<+driver>\OnlyDescription
+%
 \begin{document}
   \DocInput{caption.dtx}
 \end{document}
@@ -111,7 +114,7 @@
 %        \thispackage\ package\thanks{This package has version number
 %        \fileversion, last revised \filedate.}}
 % \author{Axel Sommerfeldt\\\href{mailto:caption@sommerfee.de}{\texttt{caption@sommerfee.de}}}
-% \date{2005/10/23}
+% \date{2006/01/12}
 % \maketitle
 % 
 % \begin{abstract}
@@ -122,9 +125,7 @@
 % this new enhanced version 3.0.}
 % \end{abstract}
 % 
-% \iffalse
 % \tableofcontents
-% \fi
 % 
 % \newcommand\figuretext{^^A
 %   White sand beaches. The pink smoothness of the conch shell. A sea abundant
@@ -215,9 +216,16 @@
 %
 % \pagebreak[3]
 % \section{Options}
+% 
 % \def\OptionLabel{RaggedRight}
 % \def\UserDefined{\ldots}
-% \def\SeeUserDefined{{\small (See section \ref{declare}: \textit{``Do it yourself''})}}
+% \makeatletter
+% \newcommand*\Section{\@ifstar{\@Section\relax}{\@Section{section}}}
+% \newcommand*\@Section[3]{#1 \ref{#2}: \textit{``#3''}}
+% \makeatother
+% \newcommand*\See[1]{{\small (See #1)}}
+% \newcommand*\SeeUserDefined[1][]{%
+%   \See{\Section{declare}{Do it yourself}#1}}
 % 
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -404,6 +412,7 @@
 % \fi
 % 
 % \subsection{Justification}
+% \label{justification}
 % 
 % \DescribeMacro{justification=}
 % As addition to the caption format you could also specify a
@@ -489,14 +498,15 @@
 % \end{Example}
 % 
 % \DescribeMacro{singlelinecheck=}
-% If the caption fit in a single line it will always be centered, ignoring
-% the justification you set:
+% The standard \LaTeX\ document classes (|article|, |report|, and |book|)
+% automatically center a caption if it fits in one single line:
 %
 % \example{belowskip=\abovecaptionskip}{A short caption.}
 %
-% This behaviour is adapted from the standard \LaTeX\ document classes
-% |article|, |report|, and |book|), but using the \thispackage\ package
-% you can switch this special treatment of such short captions off
+% \DANGER
+% The \thispackage\ package adapts this behaviour and therefore usually
+% ignores the justification you have set with |justification=| in such case.
+% But you can switch this special treatment of such short captions off
 % with the option
 % \begin{quote}
 %   |singlelinecheck=|\meta{bool}\quad.
@@ -522,6 +532,7 @@
 % \fi
 % 
 % \subsection{Fonts}
+% \label{fonts}
 % 
 % \DescribeMacro{font=}
 % \DescribeMacro{labelfont=}
@@ -605,6 +616,7 @@
 % \fi
 % 
 % \subsection{Margins and further paragraph options}
+% \label{margins}
 % 
 % \DescribeMacro{margin=}
 % \DescribeMacro{width=}
@@ -814,8 +826,9 @@
 % 
 % \DescribeMacro{tableposition=}
 % This option is especially useful when used together with the optional
-% argument of the |\captionsetup| command. (See section \ref{misc}:
-% \textit{``Useful stuff''} for details.) E.g.,
+% argument of the |\captionsetup| command.
+% \See{\Section{misc}{Useful stuff} for details}\par
+% E.g.,
 % \begin{quote}
 %   |\captionsetup[table]{position=top}|
 % \end{quote}
@@ -882,7 +895,7 @@
 %   |  \begin{tabular}{cc}|\\
 %   |    A & B \\|\\
 %   |    C & D \\|\\
-%   |  \end{longtable}|\\
+%   |  \end{tabular}|\\
 %   |\end{table}|
 % \end{quote}
 % 
@@ -952,8 +965,8 @@
 % \end{Example}
 % 
 % \DescribeMacro{\captionsetup}
-% We already know the |\captionsetup| command (see section \ref{usage}:
-% \textit{``Using the package''}), but this time we get enlighten about
+% We already know the |\captionsetup| command (see \Section{usage}
+% {Using the package}), but this time we get enlighten about
 % the optional argument \meta{float type}.
 % 
 % Remember, the syntax of this command is
@@ -1137,8 +1150,8 @@
 % under a given name. You can wake up these options at any time with the
 % option |style=|\meta{style name}.
 %
-% All caption styles are based on the default set of options. (See section
-% \ref{style}: \textit{``Styles''} for a complete list.) So you only need
+% All caption styles are based on the default set of options. (See \Section
+% {style}{Styles} for a complete list.) So you only need
 % to specify options which are different to them.
 % 
 % If you specify \meta{additional options} they get used in addition when
@@ -1331,6 +1344,7 @@
 % \fi
 % 
 % \subsection{The \package{float} package}
+% \label{float}
 % 
 % A very useful feature is provided by the \package{float} package\cite{float}:
 % It offers the float placement specifier |H| which is much more restrictive
@@ -1416,6 +1430,7 @@
 % \fi
 % 
 % \subsection{The \package{listings} package}
+% \label{listings}
 % 
 % \NEWdescription{v3.0b}
 % The \package{listings} package\cite{listings} is a source code printer for \LaTeX.
@@ -1434,6 +1449,7 @@
 % \fi
 % 
 % \subsection{The \package{longtable} package}
+% \label{longtable}
 % 
 % The \package{longtable} package\cite{longtable} offers the environment
 % |longtable| which behaves similar to the |tabular| environment, but
@@ -1447,6 +1463,7 @@
 % \fi
 % 
 % \subsection{The \package{rotating} package}
+% \label{rotating}
 % 
 % The \package{rotating} package\cite{rotating} offers the floating
 % environments \texttt{sideways\-figure} and \texttt{sideways\-table}
@@ -1458,6 +1475,7 @@
 % \fi
 % 
 % \subsection{The \package{sidecap} package}
+% \label{sidecap}
 % 
 % \NEWdescription{v3.0b}
 % The \package{sidecap} package\cite{sidecap} offers the floating
@@ -1530,6 +1548,7 @@
 % \fi
 % 
 % \subsection{The \package{supertabular} package}
+% \label{supertabular}
 % 
 % The \package{supertabular} package\cite{supertabular} offers the environment
 % |supertabular| which is quite similar to the |longtable| environment provided
@@ -1549,7 +1568,8 @@
 % is not recommended; usually this would cause unwanted side effects or even
 % errors:
 % \begin{quote}
-% \package{ccaption}, \package{hvfloat}, \package{nonfloat}
+%   \package{ccaption}, \package{ftcap}, \package{hvfloat}, and
+%   \package{nonfloat}
 % \end{quote}
 %
 % \iffalse
@@ -1557,8 +1577,9 @@
 % \fi
 % 
 % \section{Compatibility to older versions}
+% \label{compatibility}
 % 
-% \subsection{\thispackage\ version $1.x$}
+% \subsection{The \thispackage\ package version $1.x$}
 % 
 % This version of the \thispackage\ package still supports the old options
 % and commands provided by the version $1.x$ of this package. So there
@@ -1566,61 +1587,174 @@
 % old options and commands with the new ones. This isn't supported and can
 % yield to ugly side effects.
 % 
-% Here comes a short oversight of the old options and commands and how they
-% are replaced within this version of the \thispackage\ package:
+% Here comes a short oversight of the obsolete options and commands and how
+% they have been replaced within this version of the \thispackage\ package:
 % 
-% \begin{small}\begin{longtable}{ll}
+% {\small\begin{longtable}{ll}
 % \thispackage\ \version{1.x} & \thispackage\ \version{3.x}\\
 % \hline
 % \endhead
-% |normal|                           & |format=plain|\\
-% |hang|                             & |format=hang|\\
-% |isu|                              & |format=hang|\\
-% |center|                           & |justification=centering|\\
-% |centerlast|                       & |justification=centerlast|\\
-% |anne|                             & |justification=centerlast|\\
-% |flushleft|                        & |justification=raggedright|\\
-% |flushright|                       & |justification=raggedleft|\\
-% |oneline|                          & |singlelinecheck=on|\\
-% |nooneline|                        & |singlelinecheck=off|\\
-% |scriptsize|                       & |font=scriptsize|\\
-% |footnotesize|                     & |font=footnotesize|\\
-% |small|                            & |font=small|\\
-% |normalsize|                       & |font=normalsize|\\
-% |large|                            & |font=large|\\
-% |Large|                            & |font=Large|\\
-% |up|                               & |labelfont=up|\\
-% |it|                               & |labelfont=it|\\
-% |sl|                               & |labelfont=sl|\\
-% |sc|                               & |labelfont=sc|\\
-% |md|                               & |labelfont=md|\\
-% |bf|                               & |labelfont=bf|\\
-% |rm|                               & |labelfont=rm|\\
-% |sf|                               & |labelfont=sf|\\
-% |tt|                               & |labelfont=tt|\\
-% |\setlength{\captionmargin}|       & |margin=|\meta{amount}\\
-% |\renewcommand{\captionfont}|      & |\DeclareCaptionFont|\\
-%                                    & $+$ |\captionsetup{font=|\meta{name}|}|\\
-% |\renewcommand{\captionsize}|      & |\DeclareCaptionFont|\\
-%                                    & $+$ |\captionsetup{font=|\meta{name}|}|\\
-% |\renewcommand{\captionlabelfont}| & |\DeclareCaptionLabelFont|\\
-%                                    & $+$ |\captionsetup{labelfont=|\meta{name}|}|\\
-% \end{longtable}\end{small}
+% |normal|        & |format=plain|\\
+% |hang|          & |format=hang|\\
+% |isu|           & |format=hang|\\
+% |center|        & |justification=centering|\\
+% |centerlast|    & |justification=centerlast|\\
+% \iffalse
+% |anne|          & |justification=centerlast|\\
+% \fi
+% |nooneline|     & |singlelinecheck=off|\\
+% |scriptsize|    & |font=scriptsize|\\
+% |footnotesize|  & |font=footnotesize|\\
+% |small|         & |font=small|\\
+% |normalsize|    & |font=normalsize|\\
+% |large|         & |font=large|\\
+% |Large|         & |font=Large|\\
+% |up|            & |labelfont=up|\\
+% |it|            & |labelfont=it|\\
+% |sl|            & |labelfont=sl|\\
+% |sc|            & |labelfont=sc|\\
+% |md|            & |labelfont=md|\\
+% |bf|            & |labelfont=bf|\\
+% |rm|            & |labelfont=rm|\\
+% |sf|            & |labelfont=sf|\\
+% |tt|            & |labelfont=tt|\\
+% \end{longtable}}
 % 
-% \subsection{\package{caption2} version $2.x$}
+% Beside the options for setting up the desired font there were also
+% the commands |\captionsize| resp.~|\captionfont| and |\captionlabelfont|
+% who could be redefined with |\renewcommand| and allowed an alternate and
+% more flexible way to change the font used for captions.
+% This mechanism was replaced by the commands
+% \begin{minipage}\linewidth\begin{quote}
+%   |\DeclareCaptionFont{|\ldots|}{|\ldots|}|\qquad and\\
+%   |\captionsetup{font=|\ldots|,labelfont=|\ldots|}|\qquad.
+% \end{quote}\SeeUserDefined\strut\end{minipage}
+% 
+% Setting the margin for captions was done in \version{1.x} with
+% \begin{quote}
+%   |\setlength{\captionmargin}{|\ldots|}|\quad.
+% \end{quote}
+% This was replaced by
+% \begin{quote}
+%   |\captionsetup{margin=|\ldots|}|\qquad.
+% \end{quote}
+% \See{\Section{margins}{Margins and further paragraph options}}
+% 
+% For example the old-style code
+% \begin{quote}
+% |\usepackage[hang,bf]{caption}|\\
+% |\renewcommand\captionfont{\small\sffamily}|\\
+% |\setlength\captionmargin{10pt}|
+% \end{quote}
+% should now be written as
+% \begin{quote}
+% |\usepackage[format=hang,labelfont=bf,font={small,sf},|\\
+% |            margin=10pt]{caption}|
+% \end{quote}
+% or
+% \begin{quote}
+% |\usepackage{caption}|\\
+% |\captionsetup{format=hang,labelfont=bf,font={small,sf},|\\
+% |              margin=10pt}|\qquad.
+% \end{quote}
+% 
+% The quite exotic option |ruled| who allowed a partial usage of
+% the caption settings for |ruled| floats defined with the
+% \package{float} package will be emulated by this version of the
+% caption package, too.
+% But using this option is not recommended anymore since this
+% version of the \thispackage\ package offers a more flexible way
+% for changing the captions of these floating environments:
+% \begin{quote}
+%   |\DeclareCaptionStyle{ruled}{|\ldots|}|
+% \end{quote}
+% resp.
+% \begin{quote}
+%   |\captionsetup[ruled]{|\ldots|}|\qquad.
+% \end{quote}
+% \SeeUserDefined[, \Section*{misc}{Useful stuff}, and
+%                 \Section*{float}{The \package{float} package}]
+% 
+% \subsection{The \package{caption2} package version $2.x$}
 % 
 % Although they do very similar stuff the packages \package{caption} and
-% \package{caption2} have a very different implementation design. So this
-% version of the \thispackage\ package isn't compatible to the
-% \package{caption2} package at all. Of course for compiling old documents
-% you can still use the \package{caption2} package, the latest version
-% is provided with this package. But newly created documents shouldn't use
-% the \package{caption2} package, please use the \thispackage\ package
-% instead as described in this manual.
+% its experimental and now obsolete variant \package{caption2} have a
+% very different implementation design.
+% Therefore a full compatibility could not be offered.
+% For that reason you will still find a file called |caption2.sty| in
+% this package distribution, so old documents using the \package{caption2}
+% package will still compile fine.
+% 
+% Newly created documents should use the actual version of the
+% \thispackage\ package instead. In most cases it's sufficient to replace
+% the command
+% \begin{quote}
+%   |\usepackage[...]{caption2}|
+% \end{quote}
+% by
+% \begin{quote}
+%   |\usepackage[...]{caption}|\qquad.
+% \end{quote}
+% But some options and commands will not be emulated, so you can get
+% error messages afterwards. This section will help you removing
+% these errors. If you have problems migrating from \package{caption2}
+% to \package{caption} please don't hesitate to send me an e-mail.
+% 
+% In addition to the obsolete options shown in the last section
+% these ones will be emulated, too:
+% 
+% {\small\begin{longtable}{ll}
+% \package{caption2} \version{2.x} & \thispackage\ \version{3.x}\\
+% \hline
+% \endhead
+% |flushleft|   & |justification=raggedright|\\
+% |flushright|  & |justification=raggedleft|\\
+% |oneline|     & |singlelinecheck=on|\\
+% \end{longtable}}
+% 
+% Setting the margin for captions was done in \version{2.x} with
+% \begin{quote}\leavevmode\hbox{%
+%   |\setcaptionmargin{|\ldots|}| resp.
+%   |\setcaptionwidth{|\ldots|}|\quad.
+% }\end{quote}
+% This was replaced by
+% \begin{quote}\leavevmode\hbox{%
+%   |\captionsetup{margin=|\ldots|}| resp.
+%   |\captionsetup{width=|\ldots|}|\quad.
+% }\end{quote}
+% \See{\Section{margins}{Margins and further paragraph options}}
+% 
+% The so-called single-line-check was controlled by the commands
+% |\oneline|\-|captions|\-|false| (for switching the check off) and
+% |\oneline|\-|captions|\-|true| (for switching the check on).
+% This was replaced by
+% |\captionsetup{|\discretionary{}{}{}|singlelinecheck=|\discretionary{}{}{}|off}|
+% resp.
+% |\captionsetup{|\discretionary{}{}{}|singlelinecheck=|\discretionary{}{}{}|on}|.
+% \See{\Section{justification}{Justification}}
+% 
+% The commands
+% \begin{quote}
+%   |\captionstyle|, |\captionlabeldelim|, |\captionlabelsep|,\\
+%   |\captionindent|, |\captionlabelfalse|, |\defcaptionstyle|,\\
+%   |\newcaptionstyle|, and |\renewcaptionstyle|
+% \end{quote}
+% do not have a simple replacement and therefore will not be emulated
+% by this version of the \thispackage\ package. (So using them will
+% yield to error messages.) Rewriting such code is not always easy and
+% straight-ahead, but by conscientious reading of this manual you should
+% find appropriate options and commands instead.
 % 
 % \iffalse
-% TODO: Table like the "caption 1.x => caption 3.x" one
+% ... (some examples)
 % \fi
+% 
+% The \version{2.x} option |ignoreLTcapwidth| do not have a replacement, too.
+% But in most cases you could simply drop using that option because
+% in this version of the \thispackage\ package the value of |\LTcapwidth|
+% will be ignored anyway (unless you set it to a different value than the
+% default one).
+% \See{\Section{longtable}{The \package{longtable} package}}
 % 
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -1642,12 +1776,9 @@
 % 
 % \item
 %   \textsf{epslatex} from Keith Reckdahl contains many tips around
-%   graphics in \LaTeXe. You will find this document in the directory
-%   \begin{quote}\url{ftp://ftp.ctan.org/pub/tex/info/}\end{quote}
-%   as \texttt{epslatex.ps} and \texttt{epslatex.pdf}.
-%
-%   There is also a french translation available:
-%   \begin{quote}\url{ftp://ftp.ctan.org/pub/tex/info/fepslatex.ps}\end{quote}
+%   including graphics in \LaTeXe\ documents.
+%   You will find this document in the directory
+%   \begin{quote}\url{ftp://ftp.ctan.org/pub/tex/info/epslatex/}\end{quote}
 % \end{itemize}
 % 
 % \iffalse
@@ -1656,8 +1787,9 @@
 % 
 % \section{Thanks}
 % 
-% I would like to thank Katja Melzner, Steven D. Cochran, Frank Mittelbach,
-% David Carlisle, Carsten Hinz, and Olga Lapko.
+% I would like to thank Katja Melzner,
+% Steven D. Cochran, Frank Mittelbach,
+% David Carlisle, Carsten Hinz, Olga Lapko, and Keith Reckdahl.
 % Thanks a lot for all your help, ideas, patience, spirit, and support!
 % 
 % Also I would like to thank
@@ -1727,7 +1859,7 @@
 %   \bibitem{subfig}
 %   Steven D. Cochran:
 %   \emph{The subfig package},
-%   2004/01/16
+%   2005/07/05
 % 
 %   \bibitem{supertabular}
 %   Johannes Braams und Theo Jurriens:
@@ -1790,7 +1922,6 @@
 % 
 % \clearpage
 % \setlength{\parskip}{0pt plus 1pt}
-% \def\ifdebug#1{{\footnotesize\texttt{<#1debug>}\par}\iffalse}
 %
 % \section{The Implementation}
 %
@@ -1844,18 +1975,9 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2005/10/24 v3.0h caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2006/01/12 v3.0i caption3 kernel (AR)]
+%<+debug>\PackageWarning{caption3}{DEBUG VERSION}
 %    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-\PackageWarning{caption3}{DEBUG VERSION}
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
 %
 % \subsubsection*{Generic helpers}
 %
@@ -2001,17 +2123,40 @@
   \@ifundefined{\caption@typ@#1}%
     {\@namedef{\caption@typ@#1}{#2}}%
     {\expandafter\l@addto@macro\csname\caption@typ@#1\endcsname{,#2}}}
-\def\caption@setup{\setkeys{caption}}
+\newcommand\caption@setup{\caption@setkeys{caption}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setkeys}
+% \changes{v3.0i}{2006/01/03}{\cs{caption@setkeys} introduced}
+% This one simply calls |\setkeys| but lets error messages refer to
+% the \package{caption} package instead of the \package{keyval} package.
+%    \begin{macrocode}
+\newcommand*\caption@setkeys[2]{%
+  \let\caption@KV@errx\KV@errx
+  \let\caption@KV@err\KV@err
+  \def\KV@errx##1{\PackageError\caption@package{##1}\@ehc}%
+  \let\KV@err\KV@errx
+  \setkeys{#1}{#2}%
+  \let\KV@errx\caption@KV@errx
+  \let\KV@err\caption@KV@err}
+\newcommand\caption@package{caption}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@settype}
-%  |\caption@settype|\marg{type}\par
+% \changes{v3.0i}{2006/01/03}{Optional argument added}
+%  |\caption@settype|\oarg{package}\marg{type}\par
 %  Caption options which have been saved with |\captionsetup|\oarg{type} can
 %  be executed using this command.
 %  (It simply executes the saved option list, if there is any.)
 %    \begin{macrocode}
-\newcommand*\caption@settype[1]{%
+\newcommand\caption@settype{\@ifnextchar[\caption@@settype\caption@@@settype}
+\def\caption@@settype[#1]#2{%
+  \def\caption@package{#1}%
+  \caption@@@settype{#2}%
+  \def\caption@package{caption}}
+\newcommand*\caption@@@settype[1]{%
   \@ifundefined{\caption@typ@#1}{}{%
     \caption@esetup{\csname\caption@typ@#1\endcsname}}}
 %    \end{macrocode}
@@ -2102,8 +2247,8 @@
 %    \begin{macrocode}
 \newcommand*\setcaptionmargin[1]{%
   \captionwidth\z@
-  \caption@setmargin#1,#1,\@nil\@@}
-\def\caption@setmargin#1,#2,#3\@@{%
+  \caption@@setmargin#1,#1,\@nil\@@}
+\def\caption@@setmargin#1,#2,#3\@@{%
   \setlength\captionmargin{#1}%
   \setlength\captionmarginx{#2}%
   \advance\captionmarginx by -\captionmargin}
@@ -2140,9 +2285,48 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}% obsolete!
 \DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
-\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
+\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{parskip}{\l@addto@macro\caption@@par{\setlength\parskip{#1}}}
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+\@ifundefined{scr@caption}{}{%
+%    \end{macrocode}
+%
+% There is an option clash between the \KOMAScript\ document classes
+% and the \package{caption} kernel,
+% both define the options |parindent| and |parskip| but with different meaning.
+% Furthermore the ones defined by the \package{caption} kernel take a
+% value as parameter but the \KOMAScript\ ones do not.
+% So we need special versions of the options |parindent| and |parskip| here,
+% ones who determine if a value is given (and therefore should be treated as
+% our option) or not (and therefore should be ignored by us).
+%
+%    \begin{macrocode}
+  \let\caption@KV@parindent\KV@caption@parindent
+  \DeclareCaptionOption{parindent}[]{%
+    \def\caption@tempa{#1}%
+    \ifx\caption@tempa\@empty
+      \PackageInfo{caption3}{Option `parindent' ignored}%
+    \else
+      \caption@KV@parindent{#1}%
+    \fi}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+  \let\caption@KV@parskip\KV@caption@parskip
+  \DeclareCaptionOption{parskip}[]{%
+    \def\caption@tempa{#1}%
+    \ifx\caption@tempa\@empty
+      \PackageInfo{caption3}{Option `parskip' ignored}%
+    \else
+      \caption@KV@parskip{#1}%
+    \fi}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+}
 %    \end{macrocode}
 %
 % \subsubsection*{Styles}
@@ -2468,7 +2652,7 @@
 %  |  {\RequirePackage{ragged2e}\let\caption@ragged\@firstoftwo}%|\\
 %  |  {\let\caption@ragged\@secondoftwo}}|\par
 %  but with an additional warning if the ragged2e package is not avail.
-%  (This warning will by typeout only one time per option, that's why
+%  (This warning will be typeout only one time per option, that's why
 %  we need the |caption\string#1| stuff.)
 %    \begin{macrocode}
 \newcommand*\caption@ragged[2]{%
@@ -2516,7 +2700,7 @@
 %   \define@key{caption@fnt}{default}[]{%
 %     \global\expandafter\let\expandafter\caption@tempa
 %       \csname caption#1@default\endcsname}%
-    \setkeys{caption@fnt}{#2}%
+    \caption@setkeys{caption@fnt}{#2}%
   \endgroup
   \expandafter\let\csname caption#1\endcsname\caption@tempa}
 %    \end{macrocode}
@@ -2699,48 +2883,18 @@
 %    \begin{macrocode}
 \newcommand\caption@autoposition{%
   \ifvmode
-%    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-    \edef\caption@tempa{\the\prevdepth}%
-    \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%
-%    \begin{macrocode}
+%<+debug>    \edef\caption@tempa{\the\prevdepth}%
+%<+debug>    \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
 %   \caption@setposition{\ifdim\prevdepth>-\p@ b\else t\fi}%
     \ifdim\prevdepth>-\p@
       \let\caption@position\@secondoftwo
     \else
       \let\caption@position\@firstoftwo
     \fi
-%    \end{macrocode}
-%
-%    \begin{macrocode}
   \else
-%    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-    \PackageInfo{caption}{no \protect\prevdepth}%
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%
-%    \begin{macrocode}
+%<+debug>    \PackageInfo{caption}{no \protect\prevdepth}%
 %   \caption@setposition{b}%
     \let\caption@position\@secondoftwo
-%    \end{macrocode}
-%
-%    \begin{macrocode}
   \fi}
 %    \end{macrocode}
 % \end{macro}
@@ -2772,18 +2926,12 @@
 %    \end{macrocode}
 %
 % \subsubsection*{Debug options}
-% {\small Please not that these options are usually not available.}
+% {\small Please note that these options are usually not available.}
 %
-% \ifdebug*
-%<*debug>
-% \fi
 %    \begin{macrocode}
-\DeclareCaptionOption{showposition}{\caption@setbool{showpos}{#1}}
-\captionsetup{showposition=0}
+%<+debug>\DeclareCaptionOption{showposition}{\caption@setbool{showpos}{#1}}
+%<+debug>\captionsetup{showposition=0}
 %    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
 %
 % \subsubsection*{Initialization of parameters}
 %
@@ -2818,45 +2966,46 @@
 % \changes{v3.0d}{2005/02/12}{Single-line-check moved up so it can affect margins now}
 % \changes{v3.0d}{2005/02/09}{Improvement: \cs{caption@ifh} added}
 % \changes{v3.0d}{2005/02/09}{Bugfix: \cs{leavevmode} added}
-% \changes{v3.0h}{2005/08/24}{Use \cs{sbox} instead of \cs{setbox} in single-line-check}
+% \changes{v3.0h}{2005/08/24}{Uses \cs{sbox} instead of \cs{setbox} in single-line-check}
+% \changes{v3.0i}{2005/12/04}{Uses \cs{caption@slc}}
+% \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@calcmargin} inside single-line-check replaced by \cs{relax}}
+% \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be typeset in horizontal mode}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
-% \begingroup
+  \begingroup
   \caption@beginhook
   \caption@calcmargin
 %    \end{macrocode}
 %
-% Special single-line treatment (|singlelinecheck|)
+% Special single-line treatment (option |singlelinecheck=|)
 %
 %    \begin{macrocode}
-  \caption@ifslc{%
-    \ifx\caption@sls\@empty\else
-      \caption@startslc
-      \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-      \ifdim\wd\@tempboxa >\captionwidth
-        \caption@endslc
-      \else
-        \caption@endslc
-        \caption@esetup\caption@sls
-        \caption@calcmargin
-      \fi
-    \fi}{}%
+  \caption@ifslc{\ifx\caption@sls\@empty\else
+    \caption@slc{#1}{#2}\captionwidth\relax
+  \fi}{}%
 %    \end{macrocode}
+%
+% Typeset the left margin (option |margin=|)
 %
 %    \begin{macrocode}
   \@tempdima\captionmargin
   \caption@ifh{\advance\@tempdima by \captionindent}%
-  \ifdim\@tempdima=\z@\else
-    \hskip\@tempdima
-  \fi
+  \hskip\@tempdima
 %    \end{macrocode}
+%
+% We actually use a |\vbox| of width |\captionwidth - \captionindent|
+% to typeset the caption
+% (Note: |\captionindent| is \emph{not} supported if the caption format
+% was defined with |\DeclareCaptionFormat*|.)
 %
 %    \begin{macrocode}
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima by -\captionindent}%
   \caption@startbox\@tempdima
 %    \end{macrocode}
+%
+% Typeset the indention (option |indention=|)
 %
 %    \begin{macrocode}
     \caption@ifh{%
@@ -2867,6 +3016,8 @@
       \fi}%
 %    \end{macrocode}
 %
+% Typeset the caption itself
+%
 %    \begin{macrocode}
     \caption@@@make{#1}{#2}%
 %    \end{macrocode}
@@ -2875,17 +3026,17 @@
   \caption@endbox
 %    \end{macrocode}
 %
+% Typeset the right margin (option |margin=|)
+%
 %    \begin{macrocode}
   \@tempdima\captionmargin
   \advance\@tempdima by \captionmarginx
-  \ifdim\@tempdima=\z@\else
-    \hskip\@tempdima
-  \fi
+  \hskip\@tempdima
 %    \end{macrocode}
 %
 %    \begin{macrocode}
   \caption@endhook
-% \endgroup
+  \endgroup
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -2894,37 +3045,61 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@calcmargin}
-%  Calculate |\captionmargin| \& |\captionwidth|, so both contain valid values.
-% \changes{v3.0h}{2005/10/24}{\cs{ifcaption@width} replaced by \cs{ifdim}\cs{captionwidth=}\cs{z@}}
+%  Calculate |\captionmargin| \& |\captionwidth|, so both contain valid
+%  values.
+% \changes{v3.0h}{2005/10/24}{Internal: \cs{ifcaption@width} replaced by \cs{ifdim}\cs{captionwidth=}\cs{z@}}
+% \changes{v3.0i}{2006/01/12}{Improvement: Takes care of list environment now}
 %    \begin{macrocode}
 \newcommand\caption@calcmargin{%
+%    \end{macrocode}
+%  \emph{Note:} Inside a |list| environment |\linewidth| do not contain
+%  the proper value, because |\@caption| calls |\@parboxrestore| which
+%  resets |\linewidth| to |\hsize|. Therefore we have to calculate the
+%  proper line width on our own in this case.
+%    \begin{macrocode}
+  \@tempdima\hsize
+  \ifnum\@listdepth>0\relax
+    \advance\@tempdima by -\leftmargin
+    \advance\@tempdima by -\rightmargin
+  \fi
+%    \end{macrocode}
+%    \begin{macrocode}
   \ifdim\captionwidth=\z@
-    \captionwidth\hsize
+    \captionwidth\@tempdima
     \advance\captionwidth by -2\captionmargin
     \advance\captionwidth by -\captionmarginx
   \else
-    \captionmargin\hsize
+    \captionmargin\@tempdima
     \advance\captionmargin by -\captionwidth
     \divide\captionmargin by 2
     \captionmarginx\z@
   \fi
 %    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
 %    \begin{macrocode}
-  \PackageInfo{caption}{%
-    \protect\hsize=\the\hsize,
-    \protect\margin=\the\captionmargin,
-    \protect\marginx=\the\captionmarginx,
-    \protect\width=\the\captionwidth}%
+%<+debug>  \PackageInfo{caption}{%
+%<+debug>    \protect\hsize=\the\hsize,
+%<+debug>    \protect\margin=\the\captionmargin,
+%<+debug>    \protect\marginx=\the\captionmarginx,
+%<+debug>    \protect\width=\the\captionwidth}%
 %    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
 %    \begin{macrocode}
 }
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@slc}
+%  This one does the single-line-check.
+%    \begin{macrocode}
+\newcommand\caption@slc[4]{%
+  \caption@startslc
+  \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
+  \ifdim\wd\@tempboxa >#3%
+    \caption@endslc
+  \else
+    \caption@endslc
+    \caption@esetup\caption@sls
+    #4%
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2933,7 +3108,7 @@
 % \changes{v3.0b}{2004/05/16}{Redefine \cs{stepcounter} instead of \cs{footnote(mark)}}
 % \changes{v3.0d}{2005/02/12}{\cs{let}\cs{caption@hj}\cs{relax} added}
 % \changes{v3.0h}{2005/07/09}{Support of \package{endnotes} package added}
-%  Re-define anything which would disturb the single line check
+%  Re-define anything which would disturb the single-line-check.
 %    \begin{macrocode}
 \newcommand\caption@startslc{%
   \begingroup
@@ -3071,23 +3246,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2005/10/24 v3.0h Customising captions (AR)]
+\ProvidesPackage{caption}[2006/01/12 v3.0i Customising captions (AR)]
+%<+debug>\PackageWarning{caption}{DEBUG VERSION}
 %    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-\PackageWarning{caption}{DEBUG VERSION}
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
 %
 % \subsubsection*{Loading the caption kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2005/10/24]
+\RequirePackage{caption3}[2005/12/04]
 %    \end{macrocode}
 %
 % \subsubsection*{Option for configuration files}
@@ -3159,64 +3325,79 @@
 \DeclareCaptionOption*{ignoreLTcapwidth}[]{}
 %    \end{macrocode}
 %
-% \subsubsection*{Some \KOMAScript\ compatibility options}
+% \subsubsection*{Some \KOMAScript\ compatibility stuff}
 % \changes{v3.0h}{2005/08/22}{\KOMAScript\ compatibility options added}
+% \changes{v3.0i}{2005/11/17}{\KOMAScript\ compatibility commands added}
 %
 %    \begin{macrocode}
 \@ifundefined{scr@caption}{}{%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
-  \DeclareCaptionOption*{onelinecaption}[]{\caption@setbool{slc}{1}}
-  \DeclareCaptionOption*{noonelinecaption}[]{\caption@setbool{slc}{0}}
+  \DeclareCaptionOption*{onelinecaption}[]{\onelinecaptionstrue}
+  \DeclareCaptionOption*{noonelinecaption}[]{\onelinecaptionsfalse}
   \DeclareCaptionOption*{tablecaptionabove}[]{\captionsetup[table]{position=t}}
   \DeclareCaptionOption*{tablecaptionbelow}[]{\captionsetup[table]{position=b}}
 %    \end{macrocode}
 %
-% There is an option clash between the \KOMAScript\ document classes
-% and the \package{caption} package,
-% both define the options |parindent| and |parskip| but with different meaning.
-% Furthermore the ones defined by the \package{caption} kernel take a
-% value as parameter but the \KOMAScript\ ones do not.
-% So we need special versions of the options |parindent| and |parskip| here,
-% ones who determine if a value is given (and therefore should be treated as
-% our option) or not (and therefore should be ignored by us).
-% This special version is only active during package loading, afterwards
-% both options will be restored to their original meaning.
-%
+% \begin{macro}{\onelinecaptionsfalse}
+% \begin{macro}{\onelinecaptionstrue}
 %    \begin{macrocode}
-  \let\caption@KV@parindent\KV@caption@parindent
-  \let\caption@KV@parindent@default\KV@caption@parindent@default
-  \DeclareCaptionOption*{parindent}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption}{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}
-  \AtEndOfPackage{%
-    \let\KV@caption@parindent\caption@KV@parindent
-    \let\KV@caption@parindent@default\caption@KV@parindent@default
-    \let\caption@KV@parindent\@undefined
-    \let\caption@KV@parindent@default\@undefined}
+  \def\onelinecaptionstrue{\caption@setbool{slc}{1}}
+  \def\onelinecaptionsfalse{\caption@setbool{slc}{0}}
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
 %
+% \begin{macro}{\captionabove}
+% \begin{macro}{\captionbelow}
 %    \begin{macrocode}
-  \let\caption@KV@parskip\KV@caption@parskip
-  \let\caption@KV@parskip@default\KV@caption@parskip@default
-  \DeclareCaptionOption*{parskip}[]{%
-    \def\caption@tempa{#1}%
-    \ifx\caption@tempa\@empty
-      \PackageInfo{caption}{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}
-  \AtEndOfPackage{%
-    \let\KV@caption@parskip\caption@KV@parskip
-    \let\KV@caption@parskip@default\caption@KV@parskip@default
-    \let\caption@KV@parskip\@undefined
-    \let\caption@KV@parskip@default\@undefined}
+  \def\captionabove{\caption@setposition{t}\scr@caption}
+  \def\captionbelow{\caption@setposition{b}\scr@caption}
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \iffalse % Not very useful...
+% \begin{macro}{\setcapindent}
+%    \begin{macrocode}
+%  \def\setcapindent{\@ifstar{\@@setcapindent}{\@setcapindent}}
+%  \def\@setcapindent#1{%
+%    \caption@setformat{plain}\setlength\captionindent{#1}}
+%  \def\@@setcapindent#1{%
+%    \PackageError{caption}{\string\setcapindent* is not supported yet}{\caption@eh}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\setcaphanging}
+%    \begin{macrocode}
+%  \def\setcaphanging{%
+%    \caption@setformat{hang}\setlength\captionindent\@z}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\setcapwidth}
+%    \begin{macrocode}
+%  \renewcommand*\setcapwidth[2][]{%
+%    \PackageWarning{caption}{%
+%      Ignoring optional argument of \string\setcapwidth!\MessageBreak
+%      You're using package caption.\MessageBreak}%
+%    \setcaptionwidth{#2}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\setcapmargin}
+%    \begin{macrocode}
+%  \renewcommand*\setcapmargin{\@ifstar\@setcapmargin\@@setcapmargin}
+%  \renewcommand*\@setcapmargin[2][\@tempdimb]{%
+%    \setlength\@tempdimb{#2}%
+%    \setlength\@tempdima{#1}%
+%    \setcaptionmargin{\@tempdima,\@tempdimb}}
+%  \renewcommand*\@@setcapmargin[2][\@tempdimb]{%
+%    \PackageError{caption}{\string\setcapmargin* is not supported yet}{\caption@eh}}
+%    \end{macrocode}
+% \end{macro}
+% \fi
 %
 %    \begin{macrocode}
 }
@@ -3247,22 +3428,14 @@
 %    \begin{macrocode}
 \newcommand\caption@ifpackage[3]{%
 %    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
 %    \begin{macrocode}
-  \edef\caption@tempa{%
-    \caption@ifbool{pkt@#1}%
-      {\@ifundefined{#2}{AtBeginDocument}{firstofone}}%
-      {gobble}}%
-  \PackageInfo{caption}{#1 = \caption@ifbool{pkt@#1}{1}{0} %
-       (\@ifundefined{#2}{not }{}loaded -> \caption@tempa)}%
+%<+debug>  \edef\caption@tempa{%
+%<+debug>    \caption@ifbool{pkt@#1}%
+%<+debug>      {\@ifundefined{#2}{AtBeginDocument}{firstofone}}%
+%<+debug>      {gobble}}%
+%<+debug>  \PackageInfo{caption}{#1 = \caption@ifbool{pkt@#1}{1}{0} %
+%<+debug>       (\@ifundefined{#2}{not }{}loaded -> \caption@tempa)}%
 %    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%
 %    \begin{macrocode}
   \caption@ifbool{pkt@#1}{%
     \@ifundefined{#2}%
@@ -3330,7 +3503,7 @@
     }%
   }%
   \edef\caption@tempa{%
-    \noexpand\setkeys{#1}{%
+    \noexpand\caption@setkeys{#1}{%
       \caption@tempa\@ptionlist{\@currname.\@currext}%
     }%
   }%
@@ -3375,16 +3548,22 @@
 %
 % \begin{macro}{\ContinuedFloat}
 % \changes{v3.0f}{2005/06/11}{Call of \cs{caption@ContinuedFloat} added}
-%  |\ContinuedFloat|\par
+% \changes{v3.0i}{2005/11/12}{Optional argument and call of \cs{caption@@ContinuedFloat} added}
+%  |\ContinuedFloat|\oarg{type}\par
 %  This mainly decreases the appropriate counter by $-1$.
 %    \begin{macrocode}
 \providecommand\ContinuedFloat{%
-  \ifx\@captype\@undefined
-    \@latex@error{\noexpand\ContinuedFloat outside float}\@ehd
-  \else
-    \addtocounter\@captype\m@ne
-    \caption@ContinuedFloat\@captype
-  \fi}%
+  \@ifnextchar[%]
+    \@ContinuedFloat
+    {\ifx\@captype\@undefined
+       \@latex@error{\noexpand\ContinuedFloat outside float}\@ehd
+     \else
+       \@ContinuedFloat[\@captype]%
+     \fi}}
+\def\@ContinuedFloat[#1]{%
+  \addtocounter{#1}\m@ne
+  \caption@ContinuedFloat{#1}%
+  \caption@@ContinuedFloat{#1}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3401,6 +3580,14 @@
 \let\caption@resetContinuedFloat\@gobble
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@@ContinuedFloat}
+% This hook is for foreign packages which link themself into |\ContinuedFloat|,
+% for example the \package{subfig} package\cite{subfig}.
+%    \begin{macrocode}
+\providecommand*\caption@@ContinuedFloat[1]{}
+%    \end{macrocode}
 % \end{macro}
 %
 % \subsubsection*{Internal helpers}
@@ -3619,18 +3806,10 @@
 \renewcommand\@makecaption[2]{%
   \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
 %    \end{macrocode}
-%
-% \ifdebug*
-%<*debug>
-% \fi
 %    \begin{macrocode}
-  \caption@ifbool{showpos}{%
-    \llap{$\caption@iftop\downarrow\uparrow$ }}{}%
+%<+debug>  \caption@ifbool{showpos}{%
+%<+debug>    \llap{$\caption@iftop\downarrow\uparrow$ }}{}%
 %    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%
 %    \begin{macrocode}
   \caption@@make{#1}{#2}%
 %    \end{macrocode}
@@ -3921,30 +4100,10 @@
     \ifx\caption@tempa\float@caption
     \else\ifx\caption@tempa\@caption
     \else\ifx\caption@tempa\caption@@float
-%    \end{macrocode}
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\float@caption}%
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%    \begin{macrocode}
+%<+debug>      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\float@caption}%
       \expandafter\let\csname @float@c@#1\endcsname\float@caption
     \else
-%    \end{macrocode}
-% \ifdebug*
-%<*debug>
-% \fi
-%    \begin{macrocode}
-      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\@caption}%
-%    \end{macrocode}
-% \ifdebug/
-%</debug>
-% \fi
-%    \begin{macrocode}
+%<+debug>      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\@caption}%
       \expandafter\let\csname @float@c@#1\endcsname\@caption
     \fi\fi\fi
 %    \end{macrocode}
@@ -4344,7 +4503,7 @@
 %    \end{macrocode}
 %
 %  The following skip has the purpose to correct the height of the
-%  |\parbox[t]|. Usual it's the height of the very first line, but
+%  |\parbox[t]|. Usually it's the height of the very first line, but
 %  because of our extra skips (|\abovecaptionskip| and |\belowcaptionskip|)
 %  it's always |0pt|.
 %  (A different idea would be typesetting the first skip outside the longtable
@@ -4386,48 +4545,69 @@
 %
 % \begin{macro}{\rotcaption}
 % \changes{v3.0c}{2004/07/16}{Bugfix: Check for \cs{caption@caption} removed}
+% \changes{v3.0i}{2005/12/07}{Rewritten, works with \package{hyperref} now}
 %  Make |\rotcaption*| work.
 %    \begin{macrocode}
-  \let\caption@rot\rotcaption
-  \def\rotcaption{\caption@caption\caption@rot}%
+  \def\rotcaption{\let\@makecaption\@makerotcaption\caption}%
+% \let\@rotcaption\@undefined
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\@rotcaption}
-%  We redefine |\@rotcaption| analogous to |\@caption| here.
+% \begin{macro}{\rotcaptionof}
+% \changes{v3.0i}{2005/12/07}{New}
+%  Make |\rotcaptionof(*)| work.
 %    \begin{macrocode}
-  \let\caption@@rot\@rotcaption
-  \long\def\@rotcaption#1[#2]#3{%
-    \caption@beginex{#1}{#2}%
-      \caption@@rot{#1}[{#2}]{#3}%
-    \caption@end}%
+  \def\rotcaptionof{\@ifstar{\caption@of{\rotcaption*}}{\caption@of\rotcaption}}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\@makerotcaption}
-%  Original code:
+% \changes{v3.0i}{2005/12/06}{Rewritten, should finally work proper now}
+%  Original (bugfixed) code:
 %  \begin{verbatim}
 %  \long\def\@makerotcaption#1#2{%
 %    \setbox\@tempboxa\hbox{#1: #2}%
 %    \ifdim \wd\@tempboxa > .8\vsize
 %      \rotatebox{90}{%
 %      \begin{minipage}{.8\textheight}#1: #2\end{minipage}%
-%      }\par
+%      }%\par   % <== \par removed (AR)
 %    \else%
 %      \rotatebox{90}{\box\@tempboxa}%
 %    \fi
-%    \hspace{12pt}%
+%    \nobreak\hspace{12pt}% <== \nobreak added (AR)
 %  }
 %  \end{verbatim}
-%  Our version looks similar but we use |\caption@@make| to typeset the
-%  caption itself.
+%  Our version emulates this behaviour, but if |width=| is set,
+%  the rotated caption is always typeset as |minipage|.
+%  (Note that |margin=| is not supported here.)
 %    \begin{macrocode}
   \long\def\@makerotcaption#1#2{%
-    \rotatebox{90}{%
-      \begin{minipage}{.8\textheight}\caption@@make{#1}{#2}\end{minipage}%
-      }\par
-    \hspace{12pt}%
-  }%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+    \ifdim\captionwidth=\z@
+      \setcaptionwidth{.8\textheight}%
+      \caption@slc{#1}{#2}{.8\vsize}{%
+        \let\caption@makerot\caption@@make
+        \setcaptionmargin\z@
+%       \setlength\captionindent\z@
+%       \def\caption@startbox##1{\hbox\bgroup\hsize=.8\textheight}%
+%       \def\caption@endbox{\egroup}%
+%         (not needed because \rotatebox uses an \hbox anyway)
+        \let\caption@startbox\@gobble
+        \let\caption@endbox\relax}%
+      \caption@setbool{slc}{0}% been there, done that
+    \fi
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+    \rotatebox{90}{\caption@makerot{#1}{#2}}%
+    \nobreak\hspace{12pt}}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+  \newcommand\caption@makerot[2]{%
+    \begin{minipage}\captionwidth\caption@@make{#1}{#2}\end{minipage}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4492,6 +4672,7 @@
 % \end{macro}
 %
 % \begin{macro}{\endSC@FLOAT}
+% \changes{v3.0i}{2006/01/12}{\cs{@listdepth}\cs{z@} added}
 %  This macro will be called at the end of the environment, here we need to
 %  setup our stuff before the \package{sidecap} package actually typesets
 %  its caption.
@@ -4528,6 +4709,7 @@
 %  \end{tabular}
 %    \begin{macrocode}
     \caption@letfloattype{SC\@captype}{%
+      \@listdepth\z@
       \setcaptionmargin\z@
       \@ifundefined{SC@justify}{}{%
         \ifx\SC@justify\@empty\else

@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2006 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2005/10/24 v3.0h caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2006/01/12 v3.0i caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -79,8 +79,22 @@
   \@ifundefined{\caption@typ@#1}%
     {\@namedef{\caption@typ@#1}{#2}}%
     {\expandafter\l@addto@macro\csname\caption@typ@#1\endcsname{,#2}}}
-\def\caption@setup{\setkeys{caption}}
-\newcommand*\caption@settype[1]{%
+\newcommand\caption@setup{\caption@setkeys{caption}}
+\newcommand*\caption@setkeys[2]{%
+  \let\caption@KV@errx\KV@errx
+  \let\caption@KV@err\KV@err
+  \def\KV@errx##1{\PackageError\caption@package{##1}\@ehc}%
+  \let\KV@err\KV@errx
+  \setkeys{#1}{#2}%
+  \let\KV@errx\caption@KV@errx
+  \let\KV@err\caption@KV@err}
+\newcommand\caption@package{caption}
+\newcommand\caption@settype{\@ifnextchar[\caption@@settype\caption@@@settype}
+\def\caption@@settype[#1]#2{%
+  \def\caption@package{#1}%
+  \caption@@@settype{#2}%
+  \def\caption@package{caption}}
+\newcommand*\caption@@@settype[1]{%
   \@ifundefined{\caption@typ@#1}{}{%
     \caption@esetup{\csname\caption@typ@#1\endcsname}}}
 \newcommand*\caption@esetup[1]{%
@@ -108,8 +122,8 @@
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
 \newcommand*\setcaptionmargin[1]{%
   \captionwidth\z@
-  \caption@setmargin#1,#1,\@nil\@@}
-\def\caption@setmargin#1,#2,#3\@@{%
+  \caption@@setmargin#1,#1,\@nil\@@}
+\def\caption@@setmargin#1,#2,#3\@@{%
   \setlength\captionmargin{#1}%
   \setlength\captionmarginx{#2}%
   \advance\captionmarginx by -\captionmargin}
@@ -120,9 +134,27 @@
 \newdimen\captionhangindent
 \DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}% obsolete!
 \DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
-\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
+\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
 \DeclareCaptionOption{parskip}{\l@addto@macro\caption@@par{\setlength\parskip{#1}}}
+\@ifundefined{scr@caption}{}{%
+  \let\caption@KV@parindent\KV@caption@parindent
+  \DeclareCaptionOption{parindent}[]{%
+    \def\caption@tempa{#1}%
+    \ifx\caption@tempa\@empty
+      \PackageInfo{caption3}{Option `parindent' ignored}%
+    \else
+      \caption@KV@parindent{#1}%
+    \fi}%
+  \let\caption@KV@parskip\KV@caption@parskip
+  \DeclareCaptionOption{parskip}[]{%
+    \def\caption@tempa{#1}%
+    \ifx\caption@tempa\@empty
+      \PackageInfo{caption3}{Option `parskip' ignored}%
+    \else
+      \caption@KV@parskip{#1}%
+    \fi}%
+}
 \newcommand*\DeclareCaptionStyle[1]{%
   \@ifnextchar[{\caption@declarestyle{#1}}{\caption@declarestyle{#1}[]}}
 \def\caption@declarestyle#1[#2]#3{%
@@ -256,7 +288,7 @@
 \newcommand*\caption@setfont[2]{%
   \let\caption@tempa\@empty
   \begingroup
-    \setkeys{caption@fnt}{#2}%
+    \caption@setkeys{caption@fnt}{#2}%
   \endgroup
   \expandafter\let\csname caption#1\endcsname\caption@tempa}
 \DeclareCaptionFont{default}{}
@@ -332,25 +364,15 @@
 \newcommand\caption@make[2]{%
   \caption@@make{\caption@lfmt{#1}{#2}}}
 \newcommand\caption@@make[2]{%
+  \begingroup
   \caption@beginhook
   \caption@calcmargin
-  \caption@ifslc{%
-    \ifx\caption@sls\@empty\else
-      \caption@startslc
-      \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-      \ifdim\wd\@tempboxa >\captionwidth
-        \caption@endslc
-      \else
-        \caption@endslc
-        \caption@esetup\caption@sls
-        \caption@calcmargin
-      \fi
-    \fi}{}%
+  \caption@ifslc{\ifx\caption@sls\@empty\else
+    \caption@slc{#1}{#2}\captionwidth\relax
+  \fi}{}%
   \@tempdima\captionmargin
   \caption@ifh{\advance\@tempdima by \captionindent}%
-  \ifdim\@tempdima=\z@\else
-    \hskip\@tempdima
-  \fi
+  \hskip\@tempdima
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima by -\captionindent}%
   \caption@startbox\@tempdima
@@ -364,23 +386,37 @@
   \caption@endbox
   \@tempdima\captionmargin
   \advance\@tempdima by \captionmarginx
-  \ifdim\@tempdima=\z@\else
-    \hskip\@tempdima
-  \fi
+  \hskip\@tempdima
   \caption@endhook
+  \endgroup
   \global\caption@starfalse}
 \newcommand\caption@calcmargin{%
+  \@tempdima\hsize
+  \ifnum\@listdepth>0\relax
+    \advance\@tempdima by -\leftmargin
+    \advance\@tempdima by -\rightmargin
+  \fi
   \ifdim\captionwidth=\z@
-    \captionwidth\hsize
+    \captionwidth\@tempdima
     \advance\captionwidth by -2\captionmargin
     \advance\captionwidth by -\captionmarginx
   \else
-    \captionmargin\hsize
+    \captionmargin\@tempdima
     \advance\captionmargin by -\captionwidth
     \divide\captionmargin by 2
     \captionmarginx\z@
   \fi
 }
+\newcommand\caption@slc[4]{%
+  \caption@startslc
+  \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
+  \ifdim\wd\@tempboxa >#3%
+    \caption@endslc
+  \else
+    \caption@endslc
+    \caption@esetup\caption@sls
+    #4%
+  \fi}
 \newcommand\caption@startslc{%
   \begingroup
   \let\label\@gobble
