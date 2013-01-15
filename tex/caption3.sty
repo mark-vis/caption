@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfeldt.net)
+%% Copyright (C) 1994-2005 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2005/06/11 v3.0f caption3 kernel (AS)]
+\ProvidesPackage{caption3}[2005/10/24 v3.0h caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -62,6 +62,7 @@
     \PackageError{caption}{Undefined boolean value `#2'}{\caption@eh}%
   }}}
 \def\caption@ifbool#1{\@nameuse{caption@if#1}}
+\def\caption@undefbool#1{\@nameundef{caption@if#1}}
 \RequirePackage{keyval}[1997/11/10]
 \providecommand*\undefine@key[2]{%
   \@nameundef{KV@#1@#2}\@nameundef{KV@#1@#2@default}}
@@ -72,27 +73,28 @@
   #1{\undefine@key{caption}{#2}}\define@key{caption}{#2}}
 \@onlypreamble\DeclareCaptionOption
 \@onlypreamble\caption@declareoption
-\def\captionsetup{\@ifnextchar[\caption@setuptype\caption@setup}
+\newcommand\captionsetup{\@ifnextchar[\caption@setuptype\caption@setup}
+\newcommand\caption@typ@{caption@typ@} % This saves 74 words of TeX memory
 \def\caption@setuptype[#1]#2{%
-  \@ifundefined{caption@typ@#1}%
-    {\@namedef{caption@typ@#1}{#2}}%
-    {\expandafter\l@addto@macro\csname caption@typ@#1\endcsname{,#2}}}
+  \@ifundefined{\caption@typ@#1}%
+    {\@namedef{\caption@typ@#1}{#2}}%
+    {\expandafter\l@addto@macro\csname\caption@typ@#1\endcsname{,#2}}}
 \def\caption@setup{\setkeys{caption}}
-\def\caption@settype#1{%
-  \@ifundefined{caption@typ@#1}{}{%
-    \caption@esetup{\csname caption@typ@#1\endcsname}}}
-\def\caption@esetup#1{%
+\newcommand*\caption@settype[1]{%
+  \@ifundefined{\caption@typ@#1}{}{%
+    \caption@esetup{\csname\caption@typ@#1\endcsname}}}
+\newcommand*\caption@esetup[1]{%
   \edef\caption@tempa{\noexpand\caption@setup{#1}}%
   \caption@tempa}
-\newcommand*\clearcaptionsetup[1]{\@nameundef{caption@typ@#1}}
+\newcommand*\clearcaptionsetup[1]{\@nameundef{\caption@typ@#1}}
 \newcommand*\showcaptionsetup[2][\@firstofone]{%
   \GenericWarning{}{%
     #1 Caption Info: KV list on `#2'\MessageBreak
     #1 Caption Data: (%
-    \@ifundefined{caption@typ@#2}{%
-      % Empty -- print nothing.
+    \@ifundefined{\caption@typ@#2}{%
+      % empty -- print nothing
     }{%
-      \@nameuse{caption@typ@#2}%
+      \@nameuse{\caption@typ@#2}%
     }%
     )}}
 \newcommand\caption@eh{%
@@ -100,23 +102,27 @@
   at the documentation of the `caption' package.\MessageBreak
   \@ehc}
 \newdimen\captionmargin
+\newdimen\captionmarginx
 \newdimen\captionwidth
-\newif\ifcaption@width
-\DeclareCaptionOption{margin}{\caption@setmargin{#1}}
-\DeclareCaptionOption{width}{\caption@setwidth{#1}}
-\newcommand\caption@setmargin{%
-  \caption@widthfalse
-  \setlength\captionmargin}
-\newcommand\caption@setwidth{%
-  \caption@widthtrue
+\DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
+\DeclareCaptionOption{width}{\setcaptionwidth{#1}}
+\newcommand*\setcaptionmargin[1]{%
+  \captionwidth\z@
+  \caption@setmargin#1,#1,\@nil\@@}
+\def\caption@setmargin#1,#2,#3\@@{%
+  \setlength\captionmargin{#1}%
+  \setlength\captionmarginx{#2}%
+  \advance\captionmarginx by -\captionmargin}
+\newcommand\setcaptionwidth{%
   \setlength\captionwidth}
 \newdimen\captionindent
 \newdimen\captionparindent
 \newdimen\captionhangindent
 \DeclareCaptionOption{indent}[\leftmargini]{\setlength\captionindent{#1}}% obsolete!
 \DeclareCaptionOption{indention}[\leftmargini]{\setlength\captionindent{#1}}
-\DeclareCaptionOption{parindent}[\parindent]{\setlength\captionparindent{#1}}% changed v3.0b
-\DeclareCaptionOption{hangindent}[0pt]{\setlength\captionhangindent{#1}}% changed v3.0b
+\DeclareCaptionOption{parindent}{\setlength\captionparindent{#1}}
+\DeclareCaptionOption{hangindent}{\setlength\captionhangindent{#1}}
+\DeclareCaptionOption{parskip}{\l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 \newcommand*\DeclareCaptionStyle[1]{%
   \@ifnextchar[{\caption@declarestyle{#1}}{\caption@declarestyle{#1}[]}}
 \def\caption@declarestyle#1[#2]#3{%
@@ -130,18 +136,20 @@
 \newcommand*\caption@@setstyle[2]{%
   \@ifundefined{caption@sty@#2}%
     {#1{\PackageError{caption}{Undefined caption style `#2'}{\caption@eh}}}%
-{\expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
+    {\expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
      \caption@setdefault\caption@esetup{\csname caption@sty@#2\endcsname}}}
 \newcommand\caption@setdefault{\captionsetup{%
-  format=default,labelformat=default,labelsep=default,justification=default,%
-  font=default,labelfont=default,textfont=default,%
-  margin=0pt,indention=0pt,parindent=0pt,hangindent=0pt,singlelinecheck}}
+  format=default,labelformat=default,labelsep=default,%
+  justification=default,font=default,labelfont=default,textfont=default,%
+  margin=0pt,indent=0pt,parindent=0pt,hangindent=0pt,%
+  singlelinecheck=1,strut=1}}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{}
-\def\DeclareCaptionFormat{%
-  \@ifstar{\caption@declareformat\@gobble}{\caption@declareformat\@firstofone}}
+\newcommand\DeclareCaptionFormat{%
+  \@ifstar{\caption@declareformat\@gobble}%
+          {\caption@declareformat\@firstofone}}
 \newcommand\caption@declareformat[3]{%
   \global\expandafter\let\csname caption@ifh@#2\endcsname#1%
-  \global\long\expandafter\def\csname caption@fmt@#2\endcsname##1##2##3{#3}}
+  \global\long\@namedef{caption@fmt@#2}##1##2##3{#3}}
 \@onlypreamble\DeclareCaptionFormat
 \@onlypreamble\caption@declareformat
 \DeclareCaptionOption{format}{\caption@setformat{#1}}
@@ -150,17 +158,17 @@
     {\PackageError{caption}{Undefined caption format `#1'}{\caption@eh}}%
     {\expandafter\let\expandafter\caption@ifh\csname caption@ifh@#1\endcsname
      \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
-\DeclareCaptionFormat{@normal}{#1#2#3\par}
+\DeclareCaptionFormat{plain}{#1#2#3\par}
 \DeclareCaptionFormat{hang}{%
   \@hangfrom{#1#2}%
   \advance\captionparindent\hangindent
   \advance\captionhangindent\hangindent
   \caption@@par
   #3\par}
-\def\caption@fmt@default{\caption@fmt@@normal}
-\def\caption@ifh@default{\caption@ifh@@normal}% bugfix v3.0e (05-04-28)
+\def\caption@fmt@default{\caption@fmt@plain}
+\def\caption@ifh@default{\caption@ifh@plain}
 \newcommand*\DeclareCaptionLabelFormat[2]{%
-  \global\expandafter\def\csname caption@lfmt@#1\endcsname##1##2{#2}}
+  \global\@namedef{caption@lfmt@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionLabelFormat
 \DeclareCaptionOption{labelformat}{\caption@setlabelformat{#1}}
 \newcommand*\caption@setlabelformat[1]{%
@@ -171,22 +179,30 @@
 \DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{\nobreakspace}#2}
 \DeclareCaptionLabelFormat{parens}{\bothIfFirst{#1}{\nobreakspace}(#2)}
 \def\caption@lfmt@default{\caption@lfmt@simple}
-\newcommand\DeclareCaptionLabelSeparator[2]{%
-  \global\long\@namedef{caption@lsep@#1}{#2}}
+\newcommand\DeclareCaptionLabelSeparator{%
+  \@ifstar{\caption@declarelabelseparator\@gobble}%
+          {\caption@declarelabelseparator\@firstofone}}
+\newcommand\caption@declarelabelseparator[3]{%
+  \global\expandafter\let\csname caption@iflf@#2\endcsname#1%
+  \global\long\@namedef{caption@lsep@#2}{#3}}
 \@onlypreamble\DeclareCaptionLabelSeparator
+\@onlypreamble\caption@declarelabelseparator
 \DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
 \newcommand*\caption@setlabelseparator[1]{%
   \@ifundefined{caption@lsep@#1}%
     {\PackageError{caption}{Undefined caption label separator `#1'}{\caption@eh}}%
-    {\expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
+    {\expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
+     \expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
 \DeclareCaptionLabelSeparator{none}{}
 \DeclareCaptionLabelSeparator{colon}{: }
 \DeclareCaptionLabelSeparator{period}{. }
 \DeclareCaptionLabelSeparator{space}{ }
-\DeclareCaptionLabelSeparator{quad}{\quad}
-\DeclareCaptionLabelSeparator{newline}{\\}% 05-03-23 (v3.0f)
+\DeclareCaptionLabelSeparator*{quad}{\quad}
+\DeclareCaptionLabelSeparator*{newline}{\\}
+\DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 \def\caption@lsep@default{\caption@lsep@colon}
+\def\caption@iflf@default{\caption@iflf@colon}
 \newcommand*\DeclareCaptionJustification[2]{%
   \global\@namedef{caption@hj@#1}{#2}}
 \@onlypreamble\DeclareCaptionJustification
@@ -260,14 +276,16 @@
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
 \providecommand\captionsize{}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}% changed v3.0a
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
+%% \caption@setdefaultfont{labelfont}{\scshape}
+%%   \caption@setdefaultfont{labelfont}{\scshape}
 \@ifundefined{abovecaptionskip}{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
 \@ifundefined{belowcaptionskip}{%
   \newlength\belowcaptionskip\setlength\belowcaptionskip{0\p@}}{}
 \DeclareCaptionOption{aboveskip}{\setlength\abovecaptionskip{#1}}
 \DeclareCaptionOption{belowskip}{\setlength\belowcaptionskip{#1}}
-\DeclareCaptionOption{skip}{\setlength\abovecaptionskip{#1}}% new 3.0d
+\DeclareCaptionOption{skip}{\setlength\abovecaptionskip{#1}}
 \DeclareCaptionOption{position}{\caption@setposition{#1}}
 \newcommand*\caption@setposition[1]{%
   \caption@ifinlist{#1}{d,default}{%
@@ -282,7 +300,7 @@
     \PackageError{caption}{Undefined caption position `#1'}{\caption@eh}%
   }}}}}
 \let\caption@defaultpos\@secondoftwo
-\newcommand\caption@iftop{% bugfixed v3.0a, improved v3.0d
+\newcommand\caption@iftop{%
   \ifx\caption@position\@undefined
     \expandafter\@secondoftwo
   \else
@@ -292,33 +310,24 @@
   \ifx\caption@position\@undefined
     \caption@autoposition
   \fi}
-\newcommand\caption@autoposition{% bugfixed v3.0a
+\newcommand\caption@autoposition{%
   \ifvmode
-    \ifodd\caption@debug\relax
-      \edef\caption@tempa{\the\prevdepth}%
-      \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
-    \fi
     \ifdim\prevdepth>-\p@
       \let\caption@position\@secondoftwo
     \else
       \let\caption@position\@firstoftwo
     \fi
   \else
-    \ifodd\caption@debug\relax
-      \PackageInfo{caption}{no \protect\prevdepth}%
-    \fi
     \let\caption@position\@secondoftwo
   \fi}
 \newcommand\caption@beginhook{}
 \newcommand\caption@endhook{}
 \newcommand\AtBeginCaption{\l@addto@macro\caption@beginhook}
 \newcommand\AtEndCaption{\l@addto@macro\caption@endhook}
-\DeclareCaptionOption{parskip}[5pt]{\AtBeginCaption{\setlength\parskip{#1}}}
-\DeclareCaptionOption{listof}{\caption@setbool{lof}{#1}}% new v3.0b
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@setbool{slc}{#1}}
-\DeclareCaptionOption{strut}{\caption@setbool{strut}{#1}}% new v3.0d
-\DeclareCaptionOption{debug}{\def\caption@debug{#1}}
-\captionsetup{style=default,position=default,listof=1,strut=1,debug=0}
+\DeclareCaptionOption{listof}{\caption@setbool{lof}{#1}}
+\DeclareCaptionOption{singlelinecheck}{\caption@setbool{slc}{#1}}
+\DeclareCaptionOption{strut}{\caption@setbool{strut}{#1}}
+\captionsetup{style=default,position=default,listof=1}
 \newif\ifcaption@star
 \newcommand\caption@make[2]{%
   \caption@@make{\caption@lfmt{#1}{#2}}}
@@ -328,7 +337,7 @@
   \caption@ifslc{%
     \ifx\caption@sls\@empty\else
       \caption@startslc
-      \setbox\@tempboxa\hbox{\caption@@@make{#1}{#2}}%
+      \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
       \ifdim\wd\@tempboxa >\captionwidth
         \caption@endslc
       \else
@@ -353,28 +362,29 @@
       \fi}%
     \caption@@@make{#1}{#2}%
   \caption@endbox
-  \ifdim\captionmargin=\z@\else
-    \hskip\captionmargin
+  \@tempdima\captionmargin
+  \advance\@tempdima by \captionmarginx
+  \ifdim\@tempdima=\z@\else
+    \hskip\@tempdima
   \fi
   \caption@endhook
   \global\caption@starfalse}
 \newcommand\caption@calcmargin{%
-  \ifcaption@width
+  \ifdim\captionwidth=\z@
+    \captionwidth\hsize
+    \advance\captionwidth by -2\captionmargin
+    \advance\captionwidth by -\captionmarginx
+  \else
     \captionmargin\hsize
     \advance\captionmargin by -\captionwidth
     \divide\captionmargin by 2
-  \else
-    \captionwidth\hsize
-    \advance\captionwidth by -2\captionmargin
+    \captionmarginx\z@
   \fi
-  \ifodd\caption@debug\relax
-    \PackageInfo{caption}{\protect\hsize=\the\hsize,
-      \protect\margin=\the\captionmargin,
-      \protect\width=\the\captionwidth}%
-  \fi}
+}
 \newcommand\caption@startslc{%
   \begingroup
-  \let\label\@gobble\let\@footnotetext\@gobble
+  \let\label\@gobble
+  \let\@footnotetext\@gobble\let\@endnotetext\@gobble
   \def\stepcounter##1{\advance\csname c@##1\endcsname\@ne\relax}%
   \let\caption@hj\relax}
 \newcommand\caption@endslc{%
@@ -382,22 +392,23 @@
 \newcommand*\caption@startbox[1]{\vbox\bgroup\hsize#1}%
 \newcommand*\caption@endbox{\egroup}
 \newcommand\caption@@@make[2]{%
-  \caption@ifempty{#2}{% changed v3.0e
+  \sbox\@tempboxa{#1}%
+  \ifdim\wd\@tempboxa=\z@
     \let\caption@lsep\relax
-    \let\caption@ifstrut\@secondoftwo % added v3.0e
+  \fi
+  \caption@ifempty{#2}{%
+    \let\caption@lsep\relax
   }%
-  \def\caption@@par{%
-    \parindent\captionparindent\hangindent\captionhangindent}%
   \@setpar{\@@par\caption@@par}\caption@@par
-  \caption@hj\captionsize\captionfont
-  \caption@fmt{\ifcaption@star\else{\captionlabelfont#1}\fi}%
-              {\ifcaption@star\else{\captionlabelfont\caption@lsep}\fi}%
-              {{\captiontextfont
-                \caption@ifstrut{\vrule\@height\ht\strutbox\@width\z@}{}%
-                \nobreak\hskip\z@skip
-                #2%
-                \caption@ifstrut{\@finalstrut\strutbox}{}%
-                \par}}}
+  \caption@hj\captionsize\captionfont\caption@fmt
+    {\ifcaption@star\else{\captionlabelfont#1}\fi}%
+    {\ifcaption@star\else{\caption@iflf\captionlabelfont\caption@lsep}\fi}%
+    {{\captiontextfont
+      \caption@ifstrut{\vrule\@height\ht\strutbox\@width\z@}{}%
+      \nobreak\hskip\z@skip
+      #2%
+      \caption@ifstrut{\@finalstrut\strutbox}{}%
+      \par}}}
 \newcommand\caption@ifempty[1]{%
   \def\caption@tempa{#1}%
   \def\caption@tempb{\ignorespaces}%
@@ -409,6 +420,8 @@
   \else
     \expandafter\@gobble
   \fi}
+\newcommand*\caption@@par{%
+  \parindent\captionparindent\hangindent\captionhangindent}%
 \endinput
 %%
 %% End of file `caption3.sty'.
