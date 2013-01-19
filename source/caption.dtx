@@ -23,7 +23,7 @@
 % caption.sty, caption2.sty, caption3.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{1956}
+% \CheckSum{1971}
 %
 % \iffalse
 %<*driver>
@@ -58,7 +58,7 @@
 \DeclareCaptionLabelSeparator{endash}{\space\textendash\space}
 \usepackage{hyperref}
 %
-\DeclareCaptionFont{singlespacing}{\singlespacing}
+\DeclareCaptionFont{singlespacing}{\setstretch{1}}
 \DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
 \DeclareCaptionFont{doublespacing}{\doublespacing}
 \DeclareCaptionFont{red}{\color{red}}
@@ -115,7 +115,7 @@
 %        \thispackage\ package\thanks{This package has version number
 %        \fileversion, last revised \filedate.}}
 % \author{Axel Sommerfeldt\\\href{mailto:caption@sommerfee.de}{\texttt{caption@sommerfee.de}}}
-% \date{2006/01/12}
+% \date{2006/06/12}
 % \maketitle
 % 
 % \begin{abstract}
@@ -322,7 +322,7 @@
 %   (This is the default behaviour.)
 %
 %   \item[empty]
-%   The caption label will be empty. This option only makes sense when used
+%   The caption label will be empty. This option makes sense when used
 %   together with other options like \texttt{labelsep=none}.
 % 
 %   \item[simple]
@@ -355,7 +355,7 @@
 % 
 % \begin{Options}{\OptionLabel}
 %   \item[none]
-%   There is no caption separator. This option only makes sense when used
+%   There is no caption separator. This option makes sense when used
 %   together with other options like \texttt{labelformat=empty}.
 % 
 %   \item[colon]
@@ -1123,10 +1123,11 @@
 % \end{quote}
 % The line spacing could be customized using the \package{setspace} package,
 % for example:\NEWdescription{v3.0h}
-% regeln:
 % \begin{quote}
 %   |\usepackage{setspace}|\\
-%   |\DeclareCaptionFont{singlespacing}{\singlespacing}|\\
+%   |\DeclareCaptionFont{singlespacing}{\setstretch{1}}|\quad\footnote{%
+%   \emph{Note:} Using \cs{singlespacing} does not work here since it contains
+%   a \cs{vskip} command.}\\
 %   |\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}|\\
 %   |\DeclareCaptionFont{doublespacing}{\doublespacing}|\\
 %   |\captionsetup{font={onehalfspacing,small},labelfont=bf}|
@@ -1790,7 +1791,7 @@
 % 
 % I would like to thank Katja Melzner,
 % Steven D. Cochran, Frank Mittelbach,
-% David Carlisle, Carsten Hinz, Olga Lapko, and Keith Reckdahl.
+% David Carlisle, Carsten Heinz, Olga Lapko, and Keith Reckdahl.
 % Thanks a lot for all your help, ideas, patience, spirit, and support!
 % 
 % Also I would like to thank
@@ -1806,8 +1807,9 @@
 % Geoff Vallis,
 % Florian Keiler,
 % J\"urgen G\"obel,
+% Uwe Siart,
 % and
-% Uwe Siart
+% Sang-Heon Shim
 % who all helped to make this package a better one.
 % 
 % \iffalse
@@ -1979,7 +1981,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2006/03/16 v3.0j caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/01/07 v3.0k caption3 kernel (AR)]
 %<+debug>\PackageWarning{caption3}{DEBUG VERSION}
 %    \end{macrocode}
 %
@@ -1999,9 +2001,10 @@
 % \begin{macro}{\l@addto@macro}
 %  The \LaTeXe\ kernel offers the internal helper macro |\g@addto@macro| which
 %  globally adds commands to any existising macro, like in |\AtBeginDocument|.
-%  This is the same but it works local, not global.
+%  This is the same but it works local, not global
+%  (using \cs{edef} instead of \cs{xdef}).
 %    \begin{macrocode}
-\providecommand\l@addto@macro[2]{%
+\providecommand{\l@addto@macro}[2]{%
   \begingroup
     \toks@\expandafter{#1#2}%
     \edef\@tempa{\endgroup\def\noexpand#1{\the\toks@}}%
@@ -2029,6 +2032,26 @@
   \fi}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\AtBeginEnvironment}
+% \changes{v3.0k}{2007/01/07}{This macro added}
+%  |\AtBeginEnvironment|\marg{environment}\marg{code}\par
+%  Allows code to be saved and executed at begin of given environments.
+%    \begin{macrocode}
+\providecommand*\AtBeginEnvironment[1]{%
+  \@ifundefined{#1}%
+    {\@latex@error{Environment #1 undefined}\@ehc
+     \@gobble}%
+    {\@ifundefined{caption@env@#1}%
+       {\expandafter\let\csname caption@env@#1\expandafter\endcsname
+          \csname #1\endcsname
+        \expandafter\let\csname caption@hook@#1\endcsname\@empty
+        \@namedef{#1}{\@nameuse{caption@hook@#1}\@nameuse{caption@env@#1}}}%
+       {}%
+     \expandafter\g@addto@macro\csname caption@hook@#1\endcsname}}
+\@onlypreamble\AtBeginEnvironment
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@ifinlist}
@@ -2132,7 +2155,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@setkeys}
-% \changes{v3.0i}{2006/01/03}{\cs{caption@setkeys} introduced}
+% \changes{v3.0i}{2006/01/03}{This macro added}
 % This one simply calls |\setkeys| but lets error messages refer to
 % the \package{caption} package instead of the \package{keyval} package.
 %    \begin{macrocode}
@@ -2914,6 +2937,7 @@
 % \changes{v3.0i}{2005/12/04}{Uses \cs{caption@slc}}
 % \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@calcmargin} inside single-line-check replaced by \cs{relax}}
 % \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be typeset in horizontal mode}
+% \changes{v3.0k}{2006/05/13}{Uses \cs{captionbox} instead of \cs{caption@start/endbox}}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -2946,7 +2970,7 @@
 %    \begin{macrocode}
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima by -\captionindent}%
-  \caption@startbox\@tempdima
+  \captionbox\@tempdima{%
 %    \end{macrocode}
 %
 % Typeset the indention (option |indention=|)
@@ -2960,14 +2984,10 @@
 %     \fi}%
 %    \end{macrocode}
 %
-% Typeset the caption itself
+% Typeset the caption itself and close the |\captionbox|
 %
 %    \begin{macrocode}
-    \caption@@@make{#1}{#2}%
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-  \caption@endbox
+    \caption@@@make{#1}{#2}}%
 %    \end{macrocode}
 %
 % Typeset the right margin (option |margin=|)
@@ -3071,16 +3091,12 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@startbox}
-% \begin{macro}{\caption@endbox}
-%  These macros start and end the box which surrounds the caption paragraph.
+% \begin{macro}{\captionbox}
+% \changes{v3.0k}{2006/05/13}{We define \cs{captionbox} instead of \cs{caption@start/endbox}}
+%  This macro defines the box which surrounds the caption paragraph.
 %    \begin{macrocode}
-\newcommand*\caption@startbox[1]{\vbox\bgroup\hsize#1}%
-%\newcommand*\caption@startbox[1]{\vbox\bgroup\setlength\hsize{#1}\@parboxrestore}%
-\newcommand*\caption@endbox{\egroup}
-%\newcommand*\caption@endbox{\@finalstrut\strutbox\@@par\egroup}
+\newcommand\captionbox{\parbox[t]}
 %    \end{macrocode}
-% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@@@make}
@@ -3189,7 +3205,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2006/03/21 v3.0j Customising captions (AR)]
+\ProvidesPackage{caption}[2007/01/07 v3.0k Customising captions (AR)]
 %<+debug>\PackageWarning{caption}{DEBUG VERSION}
 %    \end{macrocode}
 %
@@ -3306,7 +3322,7 @@
     \scr@caption}
   \def\captionbelow{%
     \caption@setposition{b}\let\caption@setposition\@gobble
-	\scr@caption}
+    \scr@caption}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -3547,6 +3563,16 @@
 % for example the \package{subfig} package\cite{subfig}.
 %    \begin{macrocode}
 \providecommand*\caption@@ContinuedFloat[1]{}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionEnvironment}
+% \changes{v3.0k}{2007/01/07}{This macro added}
+%  |\DeclareCaptionEnvironment|\oarg{extra code}\marg{environment}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionEnvironment[2][]{%
+  \AtBeginEnvironment{#2}{\caption@letfloattype{#2}{#1}}}
+\@onlypreamble\DeclareCaptionEnvironment
 %    \end{macrocode}
 % \end{macro}
 %

@@ -27,10 +27,10 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2006/03/16 v3.0j caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/01/07 v3.0k caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
-\providecommand\l@addto@macro[2]{%
+\providecommand{\l@addto@macro}[2]{%
   \begingroup
     \toks@\expandafter{#1#2}%
     \edef\@tempa{\endgroup\def\noexpand#1{\the\toks@}}%
@@ -45,6 +45,18 @@
   \ifx\caption@tempa\@empty\else
     #1#2%
   \fi}
+\providecommand*\AtBeginEnvironment[1]{%
+  \@ifundefined{#1}%
+    {\@latex@error{Environment #1 undefined}\@ehc
+     \@gobble}%
+    {\@ifundefined{caption@env@#1}%
+       {\expandafter\let\csname caption@env@#1\expandafter\endcsname
+          \csname #1\endcsname
+        \expandafter\let\csname caption@hook@#1\endcsname\@empty
+        \@namedef{#1}{\@nameuse{caption@hook@#1}\@nameuse{caption@env@#1}}}%
+       {}%
+     \expandafter\g@addto@macro\csname caption@hook@#1\endcsname}}
+\@onlypreamble\AtBeginEnvironment
 \def\caption@ifinlist#1#2{%
   \let\next\@secondoftwo
   \edef\caption@tempa{#1}%
@@ -354,11 +366,10 @@
   \hskip\@tempdima
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima by -\captionindent}%
-  \caption@startbox\@tempdima
+  \captionbox\@tempdima{%
     \caption@ifh{%
         \hskip-\captionindent}%
-    \caption@@@make{#1}{#2}%
-  \caption@endbox
+    \caption@@@make{#1}{#2}}%
   \@tempdima\captionmargin
   \advance\@tempdima by \captionmarginx
   \hskip\@tempdima
@@ -400,8 +411,7 @@
   \let\caption@hj\relax}
 \newcommand\caption@endslc{%
   \endgroup}
-\newcommand*\caption@startbox[1]{\vbox\bgroup\hsize#1}%
-\newcommand*\caption@endbox{\egroup}
+\newcommand\captionbox{\parbox[t]}
 \newcommand\caption@@@make[2]{%
   \sbox\@tempboxa{#1}%
   \ifdim\wd\@tempboxa=\z@
