@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2006 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2007 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/01/07 v3.0k caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/02/18 v3.0l caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand{\l@addto@macro}[2]{%
@@ -71,10 +71,17 @@
   }{\caption@ifinlist{#2}{0,false,no,off}{%
     \expandafter\let\csname caption@if#1\endcsname\@secondoftwo
   }{%
-    \PackageError{caption}{Undefined boolean value `#2'}{\caption@eh}%
+    \caption@error{Undefined boolean value `#2'}%
   }}}
 \def\caption@ifbool#1{\@nameuse{caption@if#1}}
 \def\caption@undefbool#1{\@nameundef{caption@if#1}}
+\newcommand\caption@package{caption}
+\newcommand*\caption@error[1]{%
+  \PackageError\caption@package{#1}\caption@eh}
+\newcommand\caption@eh{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `\caption@package' package.\MessageBreak
+  \@ehc}
 \RequirePackage{keyval}[1997/11/10]
 \providecommand*\undefine@key[2]{%
   \@nameundef{KV@#1@#2}\@nameundef{KV@#1@#2@default}}
@@ -92,22 +99,28 @@
     {\@namedef{\caption@typ@#1}{#2}}%
     {\expandafter\l@addto@macro\csname\caption@typ@#1\endcsname{,#2}}}
 \newcommand\caption@setup{\caption@setkeys{caption}}
-\newcommand*\caption@setkeys[2]{%
-  \let\caption@KV@errx\KV@errx
-  \let\caption@KV@err\KV@err
-  \def\KV@errx##1{\PackageError\caption@package{##1}\@ehc}%
-  \let\KV@err\KV@errx
-  \setkeys{#1}{#2}%
-  \let\KV@errx\caption@KV@errx
-  \let\KV@err\caption@KV@err}
-\newcommand\caption@package{caption}
-\newcommand\caption@settype{%
-  \@ifnextchar[\caption@@settype{\caption@@settype[caption]}}
-\def\caption@@settype[#1]#2{%
-  \@ifundefined{\caption@typ@#2}{}{%
-    \def\caption@package{#1}%
-    \caption@esetup{\csname\caption@typ@#2\endcsname}%
-    \def\caption@package{caption}}}
+\newcount\caption@keydepth \caption@keydepth=0
+\newcommand*\caption@setkeys{%
+  \@dblarg\caption@@setkeys}
+\long\def\caption@@setkeys[#1]#2#3{%
+  \ifnum\caption@keydepth =0\relax
+    \let\caption@KV@errx\KV@errx
+    \let\caption@KV@err\KV@err
+    \let\KV@errx\caption@error
+    \let\KV@err\caption@error
+  \fi
+  \advance\caption@keydepth\@ne
+  \def\caption@package{#1}%
+  \setkeys{#2}{#3}%
+  \def\caption@package{caption}%
+  \advance\caption@keydepth\m@ne
+  \ifnum\caption@keydepth =0\relax
+    \let\KV@errx\caption@KV@errx
+    \let\KV@err\caption@KV@err
+  \fi}
+\newcommand*\caption@settype[1]{%
+  \@ifundefined{\caption@typ@#1}{}{%
+    \caption@esetup{\csname\caption@typ@#1\endcsname}}}
 \newcommand*\caption@esetup[1]{%
   \edef\caption@tempa{\noexpand\caption@setup{#1}}%
   \caption@tempa}
@@ -122,10 +135,31 @@
       \@nameuse{\caption@typ@#2}%
     }%
     )}}
-\newcommand\caption@eh{%
-  If you do not understand this error, please take a closer look\MessageBreak
-  at the documentation of the `caption' package.\MessageBreak
-  \@ehc}
+\newcommand*\caption@ProcessOptions[1]{%
+  \let\@tempc\relax
+  \let\caption@tempa\@empty
+  \@for\CurrentOption:=\@classoptionslist\do{%
+    \@ifundefined{KV@#1@\CurrentOption}{%
+    }{%
+      \@ifundefined{KV@#1@\CurrentOption @default}{%
+        \PackageInfo{#1}{Global option `\CurrentOption' ignored}%
+      }{%
+        \PackageInfo{#1}{Global option `\CurrentOption' processed}%
+        \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+        \@expandtwoargs\@removeelement\CurrentOption
+          \@unusedoptionlist\@unusedoptionlist
+      }%
+    }%
+  }%
+  \edef\caption@tempa{%
+    \noexpand\caption@setkeys{#1}{%
+      \caption@tempa\@ptionlist{\@currname.\@currext}%
+    }%
+  }%
+  \caption@tempa
+  \let\CurrentOption\@empty
+  \AtEndOfPackage{\let\@unprocessedoptions\relax}}
+\@onlypreamble\caption@ProcessOptions
 \newdimen\captionmargin
 \newdimen\captionmarginx
 \newdimen\captionwidth
@@ -160,11 +194,11 @@
   \@ifstar{\caption@@setstyle\@gobble}{\caption@@setstyle\@firstofone}}
 \newcommand*\caption@@setstyle[2]{%
   \@ifundefined{caption@sty@#2}%
-    {#1{\PackageError{caption}{Undefined caption style `#2'}{\caption@eh}}}%
+    {#1{\caption@error{Undefined caption style `#2'}}}%
     {\expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
      \caption@setdefault\caption@esetup{\csname caption@sty@#2\endcsname}}}
 \newcommand\caption@setdefault{\captionsetup{%
-  format=default,labelformat=default,labelsep=default,%
+  format=default,labelformat=default,labelsep=default,textformat=default,%
   justification=default,font=default,labelfont=default,textfont=default,%
   margin=0pt,indent=0pt,parindent=0pt,hangindent=0pt,%
   singlelinecheck=1,strut=1}}
@@ -180,7 +214,7 @@
 \DeclareCaptionOption{format}{\caption@setformat{#1}}
 \newcommand*\caption@setformat[1]{%
   \@ifundefined{caption@fmt@#1}%
-    {\PackageError{caption}{Undefined caption format `#1'}{\caption@eh}}%
+    {\caption@error{Undefined caption format `#1'}}%
     {\expandafter\let\expandafter\caption@ifh\csname caption@ifh@#1\endcsname
      \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
@@ -198,7 +232,7 @@
 \DeclareCaptionOption{labelformat}{\caption@setlabelformat{#1}}
 \newcommand*\caption@setlabelformat[1]{%
   \@ifundefined{caption@lfmt@#1}%
-    {\PackageError{caption}{Undefined caption label format `#1'}{\caption@eh}}%
+    {\caption@error{Undefined caption label format `#1'}}%
     {\expandafter\let\expandafter\caption@lfmt\csname caption@lfmt@#1\endcsname}}
 \DeclareCaptionLabelFormat{empty}{}
 \DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{\nobreakspace}#2}
@@ -216,7 +250,7 @@
 \DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
 \newcommand*\caption@setlabelseparator[1]{%
   \@ifundefined{caption@lsep@#1}%
-    {\PackageError{caption}{Undefined caption label separator `#1'}{\caption@eh}}%
+    {\caption@error{Undefined caption label separator `#1'}}%
     {\expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
      \expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
 \DeclareCaptionLabelSeparator{none}{}
@@ -228,22 +262,34 @@
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 \def\caption@lsep@default{\caption@lsep@colon}
 \def\caption@iflf@default{\caption@iflf@colon}
+\newcommand*\DeclareCaptionTextFormat[2]{%
+  \global\long\@namedef{caption@tfmt@#1}##1{#2}}
+\@onlypreamble\DeclareCaptionTextFormat
+\DeclareCaptionOption{textformat}{\caption@settextformat{#1}}
+\newcommand*\caption@settextformat[1]{%
+  \@ifundefined{caption@tfmt@#1}%
+    {\caption@error{Undefined caption text format `#1'}}%
+    {\expandafter\let\expandafter\caption@tfmt\csname caption@tfmt@#1\endcsname}}
+\DeclareCaptionTextFormat{simple}{#1}
+\DeclareCaptionTextFormat{period}{#1.}
+\def\caption@tfmt@default{\caption@tfmt@simple}
 \newcommand*\DeclareCaptionJustification[2]{%
   \global\@namedef{caption@hj@#1}{#2}}
 \@onlypreamble\DeclareCaptionJustification
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
 \newcommand*\caption@setjustification[1]{%
   \@ifundefined{caption@hj@#1}%
-    {\PackageError{caption}{Undefined caption justification `#1'}{\caption@eh}}%
+    {\caption@error{Undefined caption justification `#1'}}%
     {\expandafter\let\expandafter\caption@hj\csname caption@hj@#1\endcsname}}
 \DeclareCaptionJustification{justified}{}
 \DeclareCaptionJustification{centering}{\centering}
-\DeclareCaptionJustification{centerfirst}{\caption@centerfirst}
-\DeclareCaptionJustification{centerlast}{\caption@centerlast}
+\DeclareCaptionJustification{centerfirst}{\centerfirst}
+\DeclareCaptionJustification{centerlast}{\centerlast}
 \DeclareCaptionJustification{raggedleft}{\raggedleft}
 \DeclareCaptionJustification{raggedright}{\raggedright}
 \def\caption@hj@default{\caption@hj@justified}
-\newcommand\caption@centerfirst{%
+\providecommand\centerfirst{%
+  \let\\\@centercr
   \edef\caption@normaladjust{%
     \leftskip\the\leftskip
     \rightskip\the\rightskip
@@ -253,7 +299,8 @@
   \parfillskip\z@skip
   \noindent\hskip\z@\@plus 2fil%
   \@setpar{\@@par\@restorepar\caption@normaladjust}}
-\newcommand\caption@centerlast{%
+\providecommand\centerlast{%
+  \let\\\@centercr
   \leftskip\z@\@plus 1fil%
   \rightskip\z@\@plus -1fil%
   \parfillskip\z@\@plus 2fil\relax}
@@ -281,7 +328,7 @@
 \newcommand*\caption@setfont[2]{%
   \let\caption@tempa\@empty
   \begingroup
-    \caption@setkeys{caption@fnt}{#2}%
+    \caption@setkeys[caption]{caption@fnt}{#2}%
   \endgroup
   \expandafter\let\csname caption#1\endcsname\caption@tempa}
 \DeclareCaptionFont{default}{}
@@ -320,7 +367,7 @@
   }{\caption@ifinlist{#1}{a,auto}{%
     \let\caption@position\@undefined
   }{%
-    \PackageError{caption}{Undefined caption position `#1'}{\caption@eh}%
+    \caption@error{Undefined caption position `#1'}%
   }}}}}
 \let\caption@defaultpos\@secondoftwo
 \newcommand\caption@iftop{%
@@ -368,7 +415,11 @@
   \caption@ifh{\advance\@tempdima by -\captionindent}%
   \captionbox\@tempdima{%
     \caption@ifh{%
-        \hskip-\captionindent}%
+      \ifdim\captionindent=\z@
+        \leavevmode
+      \else
+        \hskip-\captionindent
+      \fi}%
     \caption@@@make{#1}{#2}}%
   \@tempdima\captionmargin
   \advance\@tempdima by \captionmarginx
@@ -427,7 +478,7 @@
     {{\captiontextfont
       \caption@ifstrut{\vrule\@height\ht\strutbox\@width\z@}{}%
       \nobreak\hskip\z@skip
-      #2%
+      \caption@tfmt{#2}%
       \caption@ifstrut{\@finalstrut\strutbox}{}%
       \par}}}
 \newcommand\caption@ifempty[1]{%
