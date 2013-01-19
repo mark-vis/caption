@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/03/30 v3.0o caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/04/09 v3.0p caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand{\l@addto@macro}[2]{%
@@ -45,18 +45,6 @@
   \ifx\caption@tempa\@empty\else
     #1#2%
   \fi}
-\providecommand*\AtBeginEnvironment[1]{%
-  \@ifundefined{#1}%
-    {\@latex@error{Environment #1 undefined}\@ehc
-     \@gobble}%
-    {\@ifundefined{caption@env@#1}%
-       {\expandafter\let\csname caption@env@#1\expandafter\endcsname
-          \csname #1\endcsname
-        \expandafter\let\csname caption@hook@#1\endcsname\@empty
-        \@namedef{#1}{\@nameuse{caption@hook@#1}\@nameuse{caption@env@#1}}}%
-       {}%
-     \expandafter\g@addto@macro\csname caption@hook@#1\endcsname}}
-\@onlypreamble\AtBeginEnvironment
 \def\caption@ifinlist#1#2{%
   \let\next\@secondoftwo
   \edef\caption@tempa{#1}%
@@ -75,6 +63,15 @@
   }}}
 \def\caption@ifbool#1{\@nameuse{caption@if#1}}
 \def\caption@undefbool#1{\@nameundef{caption@if#1}}
+\def\caption@newcounter#1{\gdef#1{0}}
+\def\caption@setcounter#1#2{\xdef#1{#2}}
+\def\caption@addtocounter#1#2{%
+  \begingroup
+    \@tempcnta#1%
+    \advance\@tempcnta#2%
+    \xdef#1{\the\@tempcnta}%
+  \endgroup}
+\def\caption@stepcounter#1{\caption@addtocounter#1\@ne}
 \newcommand\caption@package{caption}
 \newcommand*\caption@error[1]{%
   \PackageError\caption@package{#1}\caption@eh}
@@ -99,26 +96,26 @@
     {\@namedef{\caption@typ@#1}{#2}}%
     {\expandafter\l@addto@macro\csname\caption@typ@#1\endcsname{,#2}}}
 \newcommand\caption@setup{\caption@setkeys{caption}}
-\newcount\caption@keydepth \caption@keydepth=0
 \newcommand*\caption@setkeys{%
   \@dblarg\caption@@setkeys}
 \long\def\caption@@setkeys[#1]#2#3{%
-  \ifnum\caption@keydepth =0\relax
+  \ifnum\caption@keydepth=0\relax
     \let\caption@KV@errx\KV@errx
     \let\caption@KV@err\KV@err
     \let\KV@errx\caption@error
     \let\KV@err\caption@error
   \fi
-  \advance\caption@keydepth\@ne
+  \caption@stepcounter\caption@keydepth
   \def\caption@package{#1}%
   \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \def\caption@package{caption}%
-  \advance\caption@keydepth\m@ne
-  \ifnum\caption@keydepth =0\relax
+  \caption@addtocounter\caption@keydepth\m@ne
+  \ifnum\caption@keydepth=0\relax
     \let\KV@errx\caption@KV@errx
     \let\KV@err\caption@KV@err
   \fi}
+\caption@newcounter\caption@keydepth
 \newcommand*\caption@settype[1]{%
   \@ifundefined{\caption@typ@#1}{}{%
     \caption@esetup{\csname\caption@typ@#1\endcsname}}}
@@ -162,19 +159,42 @@
   \AtEndOfPackage{\let\@unprocessedoptions\relax}}
 \@onlypreamble\caption@ProcessOptions
 \newdimen\captionmargin
-\newdimen\captionmarginx
+\newdimen\captionmargin@
 \newdimen\captionwidth
 \DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
+\DeclareCaptionOption{twoside}[1]{\caption@setbool{twoside}{#1}}
 \newcommand*\setcaptionmargin[1]{%
   \captionwidth\z@
   \caption@@setmargin#1,#1,\@nil\@@}
 \def\caption@@setmargin#1,#2,#3\@@{%
   \setlength\captionmargin{#1}%
-  \setlength\captionmarginx{#2}%
-  \advance\captionmarginx by -\captionmargin}
+  \setlength\captionmargin@{#2}%
+  \advance\captionmargin@ by -\captionmargin}
 \newcommand\setcaptionwidth{%
   \setlength\captionwidth}
+\caption@newcounter\caption@count
+\newcommand*\caption@newlabel{\@newl@bel{caption}}
+\newcommand*\caption@thepage{\the\c@page}
+\def\caption@ifoddpage{%
+  \caption@iftwoside{%
+   \caption@stepcounter\caption@count
+    \protected@write\@auxout{\let\caption@thepage\relax}%
+           {\string\caption@newlabel{\caption@count}{\caption@thepage}}%
+    \expandafter\ifx\csname caption@\caption@count\endcsname\relax
+      \G@refundefinedtrue % => 'There are undefined references.'
+      \PackageWarning{caption3}{Reference on page \thepage \space undefined}%
+    \else
+      \expandafter\let\expandafter\caption@thepage
+                                  \csname caption@\caption@count\endcsname
+    \fi
+    \ifodd\caption@thepage
+      \let\caption@ifoddpage\@firstoftwo
+    \else
+      \let\caption@ifoddpage\@secondoftwo
+    \fi
+  }{\let\caption@ifoddpage\@firstoftwo}%
+  \caption@ifoddpage}
 \newdimen\captionindent
 \newdimen\captionparindent
 \newdimen\captionhangindent
@@ -329,15 +349,24 @@
   \caption@ragged\RaggedLeft\raggedleft}
 \DeclareCaptionJustification{RaggedRight}{%
   \caption@ragged\RaggedRight\raggedright}
-\newcommand*\caption@ragged[2]{%
+\newcommand*\caption@ragged{%
+  \caption@Info{We need ragged2e}%
+  \protected@write\@auxout{}{\string\caption@newlabel{ragged2e}{}}%
+  \global\let\caption@ragged\caption@@ragged
+  \caption@@ragged}
+\newcommand*\caption@@ragged[2]{%
   \@ifundefined{caption\string#1}{%
-    \PackageWarning{caption}{%
-      Cannot locate the `ragged2e' package, therefore\MessageBreak
+    \PackageWarning{caption3}{%
+      `ragged2e' package not loaded, therefore\MessageBreak
       substituting \string#2 for \string#1\MessageBreak}%
     \global\@namedef{caption\string#1}}{}%
   #2}
-\AtBeginDocument{\IfFileExists{ragged2e.sty}{%
-  \RequirePackage{ragged2e}\let\caption@ragged\@firstoftwo}{}}
+\AtBeginDocument{%
+  \@ifundefined{caption@ragged2e}{}{%
+    \caption@Info{We load ragged2e}%
+    \IfFileExists{ragged2e.sty}{%
+      \RequirePackage{ragged2e}\let\caption@@ragged\@firstoftwo}{}%
+  }}
 \newcommand\DeclareCaptionFont[2]{%
   \define@key{caption@fnt}{#1}[]{\g@addto@macro\caption@tempa{#2}}}
 \@onlypreamble\DeclareCaptionFont
@@ -366,6 +395,9 @@
 \DeclareCaptionFont{rm}{\rmfamily}
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
+\DeclareCaptionFont{singlespacing}{\setstretch{\setspace@singlespace}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
 \providecommand\captionsize{}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 \@ifundefined{abovecaptionskip}{%
@@ -421,13 +453,14 @@
 \DeclareCaptionOption{strut}{\caption@setbool{strut}{#1}}
 \DeclareCaptionOption{debug}[1]{%
   \caption@setbool{debug}{#1}%
-  \caption@ifbool{debug}{%
+  \caption@ifdebug{%
     \def\caption@Debug{\PackageInfo{caption3}}%
   }{%
     \let\caption@Debug\@gobble
   }}
 \setkeys{caption}{debug=0}
-\captionsetup{style=default,position=default,listof=1}
+\captionsetup{style=default,position=default,listof=1,%
+              twoside=\if@twoside 1\else 0\fi}
 \newif\ifcaption@star
 \newcommand\caption@make[2]{%
   \caption@@make{\caption@lfmt{#1}{#2}}}
@@ -439,7 +472,10 @@
     \caption@slc{#1}{#2}\captionwidth\relax
   \fi}{}%
   \@tempdima\captionmargin
-  \caption@ifh{\advance\@tempdima by \captionindent}%
+  \ifdim\captionmargin@=\z@\else
+    \caption@ifoddpage{}{\advance\@tempdima\captionmargin@}%
+  \fi
+  \caption@ifh{\advance\@tempdima\captionindent}%
   \hskip\@tempdima
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima by -\captionindent}%
@@ -452,7 +488,9 @@
       \fi}%
     \caption@@@make{#1}{#2}}%
   \@tempdima\captionmargin
-  \advance\@tempdima by \captionmarginx
+  \ifdim\captionmargin@=\z@\else
+    \caption@ifoddpage{\advance\@tempdima\captionmargin@}{}%
+  \fi
   \hskip\@tempdima
   \caption@endhook
   \endgroup
@@ -466,17 +504,17 @@
   \ifdim\captionwidth=\z@
     \captionwidth\@tempdima
     \advance\captionwidth by -2\captionmargin
-    \advance\captionwidth by -\captionmarginx
+    \advance\captionwidth by -\captionmargin@
   \else
     \captionmargin\@tempdima
     \advance\captionmargin by -\captionwidth
     \divide\captionmargin by 2
-    \captionmarginx\z@
+    \captionmargin@\z@
   \fi
   \caption@Debug{%
     \protect\hsize=\the\hsize,
     \protect\margin=\the\captionmargin,
-    \protect\marginx=\the\captionmarginx,
+    \protect\marginx=\the\captionmargin@,
     \protect\width=\the\captionwidth}%
 }
 \newcommand\caption@slc[4]{%

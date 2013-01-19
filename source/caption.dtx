@@ -23,7 +23,7 @@
 % caption.sty, caption2.sty, caption3.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{2073}
+% \CheckSum{2182}
 %
 % \iffalse
 %<*driver>
@@ -58,9 +58,6 @@
 \DeclareCaptionLabelSeparator{endash}{\space\textendash\space}
 \usepackage{hyperref}
 %
-\DeclareCaptionFont{singlespacing}{\setstretch{1}}
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
 \DeclareCaptionFont{red}{\color{red}}
 \DeclareCaptionFont{green}{\color{green}}
 \DeclareCaptionFont{blue}{\color{blue}}
@@ -115,7 +112,7 @@
 %        \thispackage\ package\thanks{This package has version number
 %        \fileversion, last revised \filedate.}}
 % \author{Axel Sommerfeldt\\\href{mailto:caption@sommerfee.de}{\texttt{caption@sommerfee.de}}}
-% \date{2007/02/20}
+% \date{2007/04/09}
 % \maketitle
 % 
 % \begin{abstract}
@@ -1128,11 +1125,13 @@
 % for example:\NEWdescription{v3.0h}
 % \begin{quote}
 %   |\usepackage{setspace}|\\
+% \iffalse
 %   |\DeclareCaptionFont{singlespacing}{\setstretch{1}}|\quad\footnote{%
 %   \emph{Note:} Using \cs{singlespacing} does not work here since it contains
 %   a \cs{vskip} command.}\\
 %   |\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}|\\
 %   |\DeclareCaptionFont{doublespacing}{\doublespacing}|\\
+% \fi
 %   |\captionsetup{font={onehalfspacing,small},labelfont=bf}|
 % \end{quote}
 % \example{font={onehalfspacing,small},labelfont=bf,singlelinecheck=off}\figuretext
@@ -1279,29 +1278,32 @@
 % \pagebreak[3]
 % \section{Using non-standard document classes}
 % 
-% \NEWdescription{v3.0d}
+% \NEWdescription{v3.0p}
 % The \thispackage\ package was developed using the standard document classes
-% |article|, |report| and |book|.
-% 
-% If you would like to use the \thispackage\ package with the
-% \KOMAScript\ classes or with the \package{memoir} class, you have to take
-% into consideration that all the possibilities for customization of the
-% captions the \KOMAScript\ classes or \package{memoir} class have
-% to offer will get lost. (And they have a lot of possibilities to offer!)
-% So class commands like |\captionformat|, |\figureformat|, |\tableformat|,
-% |\setcapindent|, |\setcaphanging|, |\captionstyle| etc.\ will not work
-% anymore. So make a wise decision!
-% 
-% Using the \thispackage\ package together with document classes not mentioned
-% so far is not recommended at the moment -- unwanted layout changes,
-% side effects or failures could occur. (But future versions of the
-% \thispackage\ package will contain adaptations for more document classes!)
-% 
+% |article|, |report| and |book|, it also works with the Dutch document classes
+% |artikel|, |rapport| and |boek|. It is \emph{incompatible} with all other
+% document classes, except the ones based on one of the above.
+%
+% If you are unsure if your document class is supported or not, it's better
+% \emph{not} to use this package. You could try if your document will compile
+% fine with the \thispackage\ package anyway, but you should watch carefully
+% if side-effects occur, i.e. the look and feel of your captions should
+% \emph{not} change if you just include the caption package without options.
+% (If it does, you can carry on, but you should be warned that the output
+% could change with upcoming versions of the \thispackage\ package.)
+% If this is fine, you can start setting options with
+% |\usepackage[|\ldots|]{caption}| or |\captionsetup| and keep your fingers
+% crossed.
+%
+% The upcoming version \version{3.1} of the \thispackage\ package will be
+% adapted to several document classes, e.g. the \package{beamer} class and
+% the \KOMAScript\ ones. It's planned for release during Summer 2007.
+%
 % \iffalse
 % --------------------------------------------------------------------------- %
 % \fi
 % 
-% \section{Using other packages}
+% \section{Compatibility to other packages}
 % \label{packages}
 % 
 % The \thispackage\ package contains special adaptations to other packages,
@@ -1519,7 +1521,7 @@
 %     \parbox[b]{\scboxwidth}{\unhbox\scbox}
 %     \hspace\marginparsep
 %     \parbox[b]{1.5\scboxwidth}{
-%       \captionsetup{justification=RaggedRight,labelfont=bf}
+%       \captionsetup{justification=raggedright,labelfont=bf}
 %       \captionof{figure}[]{A small example with the caption beside the figure.}
 %     }
 %   }
@@ -1774,7 +1776,7 @@
 % --------------------------------------------------------------------------- %
 % \fi
 % 
-% \pagebreak[3]
+% \pagebreak[4]
 % \section{Further reading}
 % 
 % I recommend the following documents for further reading:
@@ -1998,7 +2000,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/03/30 v3.0o caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/04/09 v3.0p caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsubsection*{Generic helpers}
@@ -2050,26 +2052,6 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\AtBeginEnvironment}
-% \changes{v3.0k}{2007/01/07}{This macro added}
-%  |\AtBeginEnvironment|\marg{environment}\marg{code}\par
-%  Allows code to be saved and executed at begin of given environments.
-%    \begin{macrocode}
-\providecommand*\AtBeginEnvironment[1]{%
-  \@ifundefined{#1}%
-    {\@latex@error{Environment #1 undefined}\@ehc
-     \@gobble}%
-    {\@ifundefined{caption@env@#1}%
-       {\expandafter\let\csname caption@env@#1\expandafter\endcsname
-          \csname #1\endcsname
-        \expandafter\let\csname caption@hook@#1\endcsname\@empty
-        \@namedef{#1}{\@nameuse{caption@hook@#1}\@nameuse{caption@env@#1}}}%
-       {}%
-     \expandafter\g@addto@macro\csname caption@hook@#1\endcsname}}
-\@onlypreamble\AtBeginEnvironment
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\caption@ifinlist}
 %  This helper macro checks if the first argument is in the comma separated
 %  list which is offered as second argument. So for example
@@ -2115,6 +2097,28 @@
 %    \begin{macrocode}
 \def\caption@undefbool#1{\@nameundef{caption@if#1}}
 %    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@newcounter}
+% \changes{v3.0p}{2007/04/08}{\cs{caption@XXXcounter} added}
+% \begin{macro}{\caption@setcounter}
+% \begin{macro}{\caption@addtocounter}
+% \begin{macro}{\caption@stepcounter}
+% To save counter space we use commands instead of counters.
+%    \begin{macrocode}
+\def\caption@newcounter#1{\gdef#1{0}}
+\def\caption@setcounter#1#2{\xdef#1{#2}}
+\def\caption@addtocounter#1#2{%
+  \begingroup
+    \@tempcnta#1%
+    \advance\@tempcnta#2%
+    \xdef#1{\the\@tempcnta}%
+  \endgroup}
+\def\caption@stepcounter#1{\caption@addtocounter#1\@ne}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 % \end{macro}
@@ -2197,32 +2201,37 @@
 % \changes{v3.0i}{2006/01/03}{This macro added}
 % \changes{v3.0l}{2007/01/20}{Bugfix: Usage of \cs{caption@keydepth} added}
 % \changes{v3.0l}{2007/01/30}{Optional argument added}
+% \changes{v3.0p}{2007/04/08}{\cs{caption@keydepth} is now a command instead of a counter}
 % This one simply calls |\setkeys|\marg{package}\marg{args} but lets the
 % error messages refer to the \meta{package} package instead of the
 % \package{keyval} package.
 %    \begin{macrocode}
-\newcount\caption@keydepth \caption@keydepth=0
 \newcommand*\caption@setkeys{%
   \@dblarg\caption@@setkeys}
+%    \end{macrocode}
+%    \begin{macrocode}
 \long\def\caption@@setkeys[#1]#2#3{%
-  \ifnum\caption@keydepth =0\relax
+  \ifnum\caption@keydepth=0\relax
     \let\caption@KV@errx\KV@errx
     \let\caption@KV@err\KV@err
     \let\KV@errx\caption@error
     \let\KV@err\caption@error
   \fi
-  \advance\caption@keydepth\@ne
+  \caption@stepcounter\caption@keydepth
 %
   \def\caption@package{#1}%
   \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \def\caption@package{caption}%
 %
-  \advance\caption@keydepth\m@ne
-  \ifnum\caption@keydepth =0\relax
+  \caption@addtocounter\caption@keydepth\m@ne
+  \ifnum\caption@keydepth=0\relax
     \let\KV@errx\caption@KV@errx
     \let\KV@err\caption@KV@err
   \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@newcounter\caption@keydepth
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2324,9 +2333,10 @@
 % \end{macro}
 %
 % \subsubsection*{Margin resp. width}
+% \changes{v3.0p}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
+% \changes{v3.0p}{2007/04/03}{Option `twoside' added to kernel}
 %
 % \begin{macro}{\captionmargin}
-% \begin{macro}{\captionmarginx}
 % \begin{macro}{\captionwidth}
 %  |\captionmargin| and |\captionwidth| contain the extra margin
 %  resp. the total width used for captions. Please never set these values in
@@ -2334,19 +2344,19 @@
 %  compatibility to |caption.sty| \version{1.x}.\par
 %  Note that we can only set one value at a time, `margin' \emph{or} `width'.
 %  If |\captionwidth| is not zero we will take this value afterwards,
-%  otherwise |\captionmargin| and |\captionmarginx|.
+%  otherwise |\captionmargin| and |\captionmargin@|.
 %    \begin{macrocode}
 \newdimen\captionmargin
-\newdimen\captionmarginx
+\newdimen\captionmargin@
 \newdimen\captionwidth
 %    \end{macrocode}
-% \end{macro}
 % \end{macro}
 % \end{macro}
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
+\DeclareCaptionOption{twoside}[1]{\caption@setbool{twoside}{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\setcaptionmargin}
@@ -2362,8 +2372,8 @@
   \caption@@setmargin#1,#1,\@nil\@@}
 \def\caption@@setmargin#1,#2,#3\@@{%
   \setlength\captionmargin{#1}%
-  \setlength\captionmarginx{#2}%
-  \advance\captionmarginx by -\captionmargin}
+  \setlength\captionmargin@{#2}%
+  \advance\captionmargin@ by -\captionmargin}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2379,7 +2389,77 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@count}
+% \changes{v3.0p}{2007/04/03}{This counter added}
+% This counter numbers the captions. It will be used inside |\caption@ifoddpage| only.
+%    \begin{macrocode}
+\caption@newcounter\caption@count
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@newlabel}
+% \changes{v3.0p}{2007/04/03}{This macro added}
+%  This command is a modified version of |\newlabel| from \LaTeX2e.
+%  It will be written to the \texttt{.aux} file to
+%  pass label information from one run to another.
+%  It will be used inside |\caption@ifoddpage| and |\caption@ragged|.
+%    \begin{macrocode}
+\newcommand*\caption@newlabel{\@newl@bel{caption}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@thepage}
+% \changes{v3.0p}{2007/04/03}{This macro added}
+%  This command is a modified version of |\thepage| from \LaTeX2e.
+%  It will be used inside |\caption@ifoddpage| only.
+%    \begin{macrocode}
+\newcommand*\caption@thepage{\the\c@page}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifoddpage}
+% \changes{v3.0p}{2007/04/03}{This macro added}
+% \emph{Note:} This macro re-defines itself so the \texttt{.aux} file will
+% only be used once per group.
+%    \begin{macrocode}
+\def\caption@ifoddpage{%
+  \caption@iftwoside{%
+%    \end{macrocode}
+% |\refstepcounter{caption@count}|
+%    \begin{macrocode}
+   \caption@stepcounter\caption@count
+%    \end{macrocode}
+% |\label{\the\caption@count}|
+%    \begin{macrocode}
+    \protected@write\@auxout{\let\caption@thepage\relax}%
+           {\string\caption@newlabel{\caption@count}{\caption@thepage}}%
+%    \end{macrocode}
+% |\edef\caption@thepage{\pageref{\the\caption@count}}|
+%    \begin{macrocode}
+    \expandafter\ifx\csname caption@\caption@count\endcsname\relax
+      \G@refundefinedtrue % => 'There are undefined references.'
+      \PackageWarning{caption3}{Reference on page \thepage \space undefined}%
+    \else
+      \expandafter\let\expandafter\caption@thepage
+                                  \csname caption@\caption@count\endcsname
+    \fi
+%    \end{macrocode}
+% |\ifodd\caption@thepage|\ldots
+%    \begin{macrocode}
+    \ifodd\caption@thepage
+      \let\caption@ifoddpage\@firstoftwo
+    \else
+      \let\caption@ifoddpage\@secondoftwo
+    \fi
+  }{\let\caption@ifoddpage\@firstoftwo}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@ifoddpage}
+%    \end{macrocode}
+% \end{macro}
+%
 % \subsubsection*{Indentions}
+%
 % \begin{macro}{\captionindent}
 % \begin{macro}{\captionparindent}
 % \begin{macro}{\captionhangindent}
@@ -2813,25 +2893,38 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@ragged}
+% \changes{v3.0p}{2007/04/07}{The `ragged2e' package will now only been loaded when needed}
 %  |\caption@ragged| will be basically defined as\par
 %  |\AtBeginDocument{\IfFileExists{ragged2e.sty}%|\\
 %  |  {\RequirePackage{ragged2e}\let\caption@ragged\@firstoftwo}%|\\
 %  |  {\let\caption@ragged\@secondoftwo}}|\par
-%  but with an additional warning if the ragged2e package is not avail.
+%  but with an additional warning if the ragged2e package is not loaded (yet).
 %  (This warning will be typeout only one time per option, that's why
 %  we need the |caption\string#1| stuff.)
+%  Furthermore we load the \package{ragged2e} package, if needed and available.
 %    \begin{macrocode}
-\newcommand*\caption@ragged[2]{%
+\newcommand*\caption@ragged{%
+  \caption@Info{We need ragged2e}%
+  \protected@write\@auxout{}{\string\caption@newlabel{ragged2e}{}}%
+  \global\let\caption@ragged\caption@@ragged
+  \caption@@ragged}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@ragged[2]{%
   \@ifundefined{caption\string#1}{%
-    \PackageWarning{caption}{%
-      Cannot locate the `ragged2e' package, therefore\MessageBreak
+    \PackageWarning{caption3}{%
+      `ragged2e' package not loaded, therefore\MessageBreak
       substituting \string#2 for \string#1\MessageBreak}%
     \global\@namedef{caption\string#1}}{}%
   #2}
 %    \end{macrocode}
 %    \begin{macrocode}
-\AtBeginDocument{\IfFileExists{ragged2e.sty}{%
-  \RequirePackage{ragged2e}\let\caption@ragged\@firstoftwo}{}}
+\AtBeginDocument{%
+  \@ifundefined{caption@ragged2e}{}{%
+    \caption@Info{We load ragged2e}%
+    \IfFileExists{ragged2e.sty}{%
+      \RequirePackage{ragged2e}\let\caption@@ragged\@firstoftwo}{}%
+  }}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2898,6 +2991,15 @@
 \DeclareCaptionFont{rm}{\rmfamily}
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
+%    \end{macrocode}
+%
+% \subsubsection*{\package{setspace} package support}
+% \changes{v3.0p}{2007/04/02}{\package{setspace} package support added to kernel}
+%
+%    \begin{macrocode}
+\DeclareCaptionFont{singlespacing}{\setstretch{\setspace@singlespace}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
 %    \end{macrocode}
 %
 % \begin{macro}{\captionsize}
@@ -3073,12 +3175,12 @@
 %    \end{macrocode}
 %
 % \subsubsection*{Debug option}
-% \changes{v3.1}{2007/03/04}{Debug option added to kernel}
+% \changes{v3.0m}{2007/03/04}{Debug option added to kernel}
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{debug}[1]{%
   \caption@setbool{debug}{#1}%
-  \caption@ifbool{debug}{%
+  \caption@ifdebug{%
     \def\caption@Debug{\PackageInfo{caption3}}%
   }{%
     \let\caption@Debug\@gobble
@@ -3089,7 +3191,8 @@
 % \subsubsection*{Initialization of parameters}
 %
 %    \begin{macrocode}
-\captionsetup{style=default,position=default,listof=1}
+\captionsetup{style=default,position=default,listof=1,%
+              twoside=\if@twoside 1\else 0\fi}
 %    \end{macrocode}
 %
 % \begin{macro}{\ifcaption@star}
@@ -3125,6 +3228,7 @@
 % \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be typeset in horizontal mode}
 % \changes{v3.0k}{2006/05/13}{Uses \cs{captionbox} instead of \cs{caption@start/endbox}}
 % \changes{v3.0l}{2007/01/04}{Oops, bugfix 04-05-05 got lost in v3.0j, re-added}
+% \changes{v3.0p}{2007/04/03}{Usage of \cs{caption@ifoddpage} added}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -3145,7 +3249,10 @@
 %
 %    \begin{macrocode}
   \@tempdima\captionmargin
-  \caption@ifh{\advance\@tempdima by \captionindent}%
+  \ifdim\captionmargin@=\z@\else
+    \caption@ifoddpage{}{\advance\@tempdima\captionmargin@}%
+  \fi
+  \caption@ifh{\advance\@tempdima\captionindent}%
   \hskip\@tempdima
 %    \end{macrocode}
 %
@@ -3182,7 +3289,9 @@
 %
 %    \begin{macrocode}
   \@tempdima\captionmargin
-  \advance\@tempdima by \captionmarginx
+  \ifdim\captionmargin@=\z@\else
+    \caption@ifoddpage{\advance\@tempdima\captionmargin@}{}%
+  \fi
   \hskip\@tempdima
 %    \end{macrocode}
 %
@@ -3219,19 +3328,19 @@
   \ifdim\captionwidth=\z@
     \captionwidth\@tempdima
     \advance\captionwidth by -2\captionmargin
-    \advance\captionwidth by -\captionmarginx
+    \advance\captionwidth by -\captionmargin@
   \else
     \captionmargin\@tempdima
     \advance\captionmargin by -\captionwidth
     \divide\captionmargin by 2
-    \captionmarginx\z@
+    \captionmargin@\z@
   \fi
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@Debug{%
     \protect\hsize=\the\hsize,
     \protect\margin=\the\captionmargin,
-    \protect\marginx=\the\captionmarginx,
+    \protect\marginx=\the\captionmargin@,
     \protect\width=\the\captionwidth}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -3392,13 +3501,24 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/03/09 v3.0o Customising captions (AR)]
+\ProvidesPackage{caption}[2007/04/09 v3.0p Customising captions (AR)]
 %    \end{macrocode}
 %
-% \subsubsection*{Loading the caption kernel}
+% \subsubsection*{Loading the kernel}
 %
 %    \begin{macrocode}
 \RequirePackage{caption3}[2007/01/31] % needs v3.0l or newer
+\def\caption@package{caption}%
+%    \end{macrocode}
+%
+% \subsection*{Check against the obsolete \package{caption2} package}
+% \changes{v3.0p}{2007/04/06}{Check against obsolete \package{caption2} package added}
+%
+%    \begin{macrocode}
+\@ifpackageloaded{caption2}{%
+  \caption@error{You can't use both the caption *and* caption2 package}%
+  \endinput
+}{}
 %    \end{macrocode}
 %
 % \subsubsection*{Option for configuration files}
@@ -3571,7 +3691,7 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{verbose}[1]{%
   \caption@setbool{verbose}{#1}%
-  \caption@ifbool{verbose}{%
+  \caption@ifverbose{%
     \def\caption@Info{\PackageInfo{caption}}%
   }{%
     \let\caption@Info\@gobble
@@ -4396,6 +4516,7 @@
 %
 % \begin{macro}{\caption@ContinuedFloat}
 % \changes{v3.0g}{2005/06/28}{Bugfix: \cs{newcounter} replaced by \cs{newcount}}
+% \changes{v3.0p}{2007/04/08}{\cs{newcount} replaced by \cs{caption@newcounter}}
 %  If |\theH|\meta{type} is defined, we extend it with |.|\meta{continue \#}.
 %  Furthermore we set |\caption@resetContinuedFloat| to |\@gobble| so the
 %  continuation counter will not be reset to zero inside |\caption|.
@@ -4403,11 +4524,11 @@
   \def\caption@ContinuedFloat#1{%
     \@ifundefined{theH#1}{}{%
       \@ifundefined{CF@#1}{%
-        \expandafter\newcount\csname CF@#1\endcsname
+        \expandafter\caption@newcounter\csname CF@#1\endcsname
         \caption@resetContinuedFloat{#1}}{}%
-      \global\advance\csname CF@#1\endcsname\@ne\relax
+      \expandafter\caption@stepcounter\csname CF@#1\endcsname
       \expandafter\l@addto@macro\csname theH#1\endcsname{%
-        .\expandafter\@arabic\csname CF@#1\endcsname}%
+        .\csname CF@#1\endcsname}%
       \let\caption@resetContinuedFloat\@gobble
     }}%
 %    \end{macrocode}
@@ -4417,7 +4538,8 @@
 %  If a continuation counter is defined, we reset it.
 %    \begin{macrocode}
   \def\caption@resetContinuedFloat#1{%
-    \@ifundefined{CF@#1}{}{\global\csname CF@#1\endcsname\z@\relax}}%
+    \@ifundefined{CF@#1}{}{%
+      \expandafter\caption@setcounter\csname CF@#1\endcsname0}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4428,11 +4550,13 @@
 % \subsubsection*{\package{hypcap} package support}
 % \changes{v3.0f}{2005/06/22}{Support of the \package{hypcap} package added}
 % \changes{v3.0l}{2007/02/20}{Adapted to \package{hypcap} v1.6}
+% \changes{v3.0p}{2007/04/09}{Adapted to \package{hypcap} v1.7}
 % 
 % When the \package{hypcap} package is used the following problems occur:
 % \begin{enumerate}
 %   \item The \package{hypcap} package uses |\capstart|, |\hc@caption|, and
-%   |\hc@@caption| instead of |\caption| and |\@caption|.
+%   |\hc@@caption| instead of |\caption| and |\@caption|.\footnote{This issue
+%   was fixed in \package{hypcap} \version{1.7}}
 %   So we have to patch these macros, too.
 %   \item |\caption| will be saved to |\hc@org@caption| when the
 %   \package{hypcap} package is loaded.
@@ -4483,6 +4607,8 @@
       \let\H@refstepcounter\@gobble
       \Hy@hypertexnamesfalse
       \caption@capstart
+      \@ifundefined{hc@hyperref}{}{% hypcap v1.7
+        \global\advance\csname c@\@captype\endcsname\@ne}%
       \global\let\hc@currentHref\@currentHref
     \endgroup
 %    \end{macrocode}
@@ -4496,11 +4622,20 @@
 %  Additionally we increase the float counter here (since we have suppressed this
 %  in |\capstart|) and use |\caption@caption| here, so |\caption*| will work as
 %  expected.
+%  (This is surrounded by |\hc@hyperref| so it does not make any harm when used
+%   with \package{hypcap} \version{1.7}.)
 %    \begin{macrocode}
-    \def\caption{%
+    \@ifundefined{hc@hyperref}%
+      {\let\next\@firstofone}{\let\next\hc@hyperref}% hypcap v1.7
+    \next{\def\caption{%
       \let\caption\hc@org@caption
       \H@refstepcounter\@captype
+      \@ifundefined{hc@hyperref}{}{% hypcap v1.7
+        \global\advance\csname c@\@captype\endcsname\m@ne}%
       \caption@caption\hc@caption}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  }%
 %    \end{macrocode}
 % \end{macro}
 %

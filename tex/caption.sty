@@ -27,8 +27,13 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/03/09 v3.0n Customising captions (AR)]
+\ProvidesPackage{caption}[2007/04/09 v3.0p Customising captions (AR)]
 \RequirePackage{caption3}[2007/01/31] % needs v3.0l or newer
+\def\caption@package{caption}%
+\@ifpackageloaded{caption2}{%
+  \caption@error{You can't use both the caption *and* caption2 package}%
+  \endinput
+}{}
 \DeclareCaptionOption{config}[caption]{%
    \InputIfFileExists{#1.cfg}{\typeout{*** Local configuration file
                                        #1.cfg used ***}}%
@@ -104,7 +109,7 @@
 \caption@declarepackage{supertabular}
 \DeclareCaptionOption{verbose}[1]{%
   \caption@setbool{verbose}{#1}%
-  \caption@ifbool{verbose}{%
+  \caption@ifverbose{%
     \def\caption@Info{\PackageInfo{caption}}%
   }{%
     \let\caption@Info\@gobble
@@ -294,15 +299,16 @@
   \def\caption@ContinuedFloat#1{%
     \@ifundefined{theH#1}{}{%
       \@ifundefined{CF@#1}{%
-        \expandafter\newcount\csname CF@#1\endcsname
+        \expandafter\caption@newcounter\csname CF@#1\endcsname
         \caption@resetContinuedFloat{#1}}{}%
-      \global\advance\csname CF@#1\endcsname\@ne\relax
+      \expandafter\caption@stepcounter\csname CF@#1\endcsname
       \expandafter\l@addto@macro\csname theH#1\endcsname{%
-        .\expandafter\@arabic\csname CF@#1\endcsname}%
+        .\csname CF@#1\endcsname}%
       \let\caption@resetContinuedFloat\@gobble
     }}%
   \def\caption@resetContinuedFloat#1{%
-    \@ifundefined{CF@#1}{}{\global\csname CF@#1\endcsname\z@\relax}}%
+    \@ifundefined{CF@#1}{}{%
+      \expandafter\caption@setcounter\csname CF@#1\endcsname0}}%
 }
 \caption@ifpackage{hypcap}{hc@caption}{%
   \caption@Info{hypcap package v1.0 (or newer) detected}%
@@ -313,12 +319,19 @@
       \let\H@refstepcounter\@gobble
       \Hy@hypertexnamesfalse
       \caption@capstart
+      \@ifundefined{hc@hyperref}{}{% hypcap v1.7
+        \global\advance\csname c@\@captype\endcsname\@ne}%
       \global\let\hc@currentHref\@currentHref
     \endgroup
-    \def\caption{%
+    \@ifundefined{hc@hyperref}%
+      {\let\next\@firstofone}{\let\next\hc@hyperref}% hypcap v1.7
+    \next{\def\caption{%
       \let\caption\hc@org@caption
       \H@refstepcounter\@captype
+      \@ifundefined{hc@hyperref}{}{% hypcap v1.7
+        \global\advance\csname c@\@captype\endcsname\m@ne}%
       \caption@caption\hc@caption}}%
+  }%
   \let\caption@hc@@caption\hc@@caption
   \long\def\hc@@caption#1[#2]#3{%
     \caption@beginex{#1}{#2}{#3}%
