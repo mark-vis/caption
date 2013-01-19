@@ -6,7 +6,7 @@
 %%
 %% ltcaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 2007 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2007 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -22,35 +22,81 @@
 %% 
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
-%% This work consists of the files ltcaption.ins and ltcaption.dtx,
-%% and the derived file ltcaption.sty.
+%% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
+%% and ltcaption.dtx, the derived files caption.sty, caption2.sty,
+%% caption3.sty, and ltcaption.sty, and the user manuals caption-deu.tex,
+%% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{ltcaption}[2007/04/15 v1.0 longtable captions (AR)]
-\newskip\LTcapleft \LTcapleft=\fill
-\newskip\LTcapright \LTcapright=\fill
-\newif\ifLTcapmargins \LTcapmarginstrue
-  % default: use these skips (and not \LTleft & \LTright)
-\renewcommand*\LT@makecaption[3]{%
+\ProvidesPackage{ltcaption}[2007/09/01 v1.1 longtable captions (AR)]
+\providecommand*\LTcaptype{table}
+\providecommand*\ext@table{lot}
+\@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
+  \@ifpackageloaded{listings}{%
+    \providecommand*\ext@lstlisting{lol}%
+  }{}}
+\@ifpackageloaded{caption}{}{%
+  \newskip\LTcapleft \LTcapleft=\fill
+  \newskip\LTcapright \LTcapright=\fill
+  \newif\ifLTcapmargins \LTcapmarginstrue
+  \providecommand*\CaptionLabelFont{}
+  \providecommand*\CaptionTextFont{}
+}
+\@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
+  \let\ltcaption@ORI@LT@array\LT@array
+  \renewcommand*\LT@array{%
+    \let\ltcaption@ORI@refstepcounter\refstepcounter
+    \let\ltcaption@ORI@H@refstepcounter\H@refstepcounter
+    \def\refstepcounter##1{%
+      \let\refstepcounter\ltcaption@ORI@refstepcounter
+      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
+      \refstepcounter\LTcaptype}%
+    \def\H@refstepcounter##1{%
+      \let\refstepcounter\ltcaption@ORI@refstepcounter
+      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
+      \H@refstepcounter\LTcaptype}%
+    \let\ltcaption@ORI@hyper@makecurrent\hyper@makecurrent
+    \def\hyper@makecurrent##1{%
+      \let\hyper@makecurrent\ltcaption@ORI@hyper@makecurrent
+      \hyper@makecurrent\LTcaptype}%
+    \def\lst@@caption{\relax}%
+    \ltcaption@ORI@LT@array}%
+}
+\def\LT@c@ption#1[#2]#3{%
+  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+  \def\@tempa{#2}%
+  \ifx\@tempa\@empty\else
+     {\let\\\space
+     \addcontentsline{\csname ext@\LTcaptype\endcsname}{\LTcaptype}%
+       {\protect\numberline{\csname the\LTcaptype\endcsname}{#2}}}%
+  \fi}
+\renewcommand\LT@makecaption[3]{%
+  \LT@@makecaption{%
+    \sbox\@tempboxa{#1{{\CaptionLabelFont#2:} }\CaptionTextFont#3}%
+    \ifdim\wd\@tempboxa>\hsize
+      #1{\CaptionLabelFont{#2:} }\CaptionTextFont#3%
+    \else
+      \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+    \fi
+    \endgraf\vskip\baselineskip}}
+\newcommand\LT@@makecaption[1]{%
   \caption@LT@make{\hb@xt@\hsize{%
     \ifLTcapmargins
       \hspace\LTcapleft
+      \FBifLTcapwidth{\advance\LTcapwidth-\LTcapleft}%
     \else
       \hspace\LTleft
+      \FBifLTcapwidth{\advance\LTcapwidth-\LTleft}%
     \fi
-    \parbox[t]\LTcapwidth{%
-      \sbox\@tempboxa{#1{#2: }#3}%
-      \ifdim\wd\@tempboxa>\hsize
-        #1{#2: }#3%
-      \else
-        \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
-      \fi
-      \endgraf\vskip\baselineskip}%
+    \FBifLTcapwidth{\advance\LTcapwidth-%
+       \ifLTcapmargins\LTcapright\else\LTright\fi}%
+    \parbox[t]\LTcapwidth{#1}%
     \ifLTcapmargins
       \hskip\LTcapright
     \else
       \hskip\LTright
     \fi}}}
+\AtBeginDocument{\providecommand*\FBifLTcapwidth[1]{}}
 \newcommand\caption@LT@make[1]{%
   \noalign{\caption@LT@config}%
   \expandafter\LT@mcol\expandafter\LT@cols\expandafter{\caption@LTfmt}{%
@@ -74,14 +120,11 @@
     \ifx\@pluspart\@undefined\else
       \space\@minus\space\@pluspart
     \fi}%
+  \let#3\@firstoftwo
   \ifx\@pluspart\@undefined
     \ifx\@minuspart\@undefined
       \let#3\@secondoftwo
-    \else
-      \let#3\@firstoftwo
     \fi
-  \else
-    \let#3\@firstoftwo
   \fi}
 \def\caption@LT@parse@#1#2 {%
   \edef\@tempa{\@car#2\@nil}%
@@ -96,6 +139,24 @@
     \def\next{\caption@LT@parse@ @}%
   \fi\fi\fi
   \next}
+\newenvironment{longtable*}%
+  {\let\refstepcounter\@gobble
+   \let\H@refstepcounter\@gobble
+   \let\hyper@makecurrent\@gobble
+   \let\Hy@raisedlink\@gobble
+   \let\ltcaption@ORI@LT@c@ption\LT@c@ption
+   \def\LT@c@ption##1[##2]##3{%
+     \ifx##1\@firstofone
+       \PackageError{ltcaption}%
+         {Not allowed in longtable* environment}%
+         {If you do not understand this error, please take a closer
+          look\MessageBreak at the documentation of the `ltcaption'
+          package.\MessageBreak \@ehc}%
+     \else
+       \ltcaption@ORI@LT@c@ption{##1}[{##2}]{##3}%
+     \fi}%
+   \longtable}%
+  {\endlongtable}
 \@ifundefined{@komalongtablefalse}{}{%
   \if@komalongtable
     \renewcommand{\LT@makecaption}[3]{%
@@ -116,6 +177,7 @@
         \fi
       }%
     }%
+    \let\LT@@makecaption\@undefined
   \fi}
 \endinput
 %%

@@ -18,15 +18,22 @@
 % 
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
-% This work consists of the files ltcaption.ins and ltcaption.dtx,
-% and the derived file ltcaption.sty.
+% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
+% and ltcaption.dtx, the derived files caption.sty, caption2.sty,
+% caption3.sty, and ltcaption.sty, and the user manuals caption-deu.tex,
+% caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{191}
+% \CheckSum{333}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+\ProvidesFile{ltcaption.drv}%
+  [2007/09/01 v1.1 This package fixes caption problems with
+                   other-than-centered aligned longtables]
+\hbadness=9999 \newcount\hbadness \hfuzz=48pt % Make TeX shut up.
+%
 \documentclass{ltxdoc}
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
@@ -35,14 +42,18 @@
   \ifcase\pdfoutput\else
     \usepackage{mathptmx,courier}
     \usepackage[scaled=0.90]{helvet}
-    \addtolength\marginparwidth{15pt}
+%   \addtolength\marginparwidth{15pt}
   \fi
 \fi
 %
-\usepackage{hyperref,longtable}
-\makeatletter
-\let\LT@makecaption@ORI\LT@makecaption
-\usepackage{ltcaption}[2007/04/15]
+\usepackage{longtable}
+\makeatletter\let\LT@makecaption@ORI\LT@makecaption\makeatother
+%
+\usepackage{hypdoc}
+\hypersetup{pdfkeywords={LaTeX, package, ltcaption},pdfstartview={}}
+%
+\usepackage{ltcaption}[2007/09/01]
+%\usepackage[LTcapwidthtotable]{fr-longtable}
 %
 \DeclareRobustCommand{\KOMAScript}{\textsf{K\kern.05em O\kern.05em%
     M\kern.05em A\kern.1em-\kern.1em Script}}
@@ -61,19 +72,25 @@
 %
 % \def\thispackage{the \package{ltcaption} package}
 % \def\Thispackage{The \package{ltcaption} package}
-% \newcommand*\version[2][]{$v#2$}
+% \newcommand*\version[2][]{\textit{v#2}}
 % 
+% \GetFileInfo{ltcaption.drv}
+% \let\docdate\filedate
 % \GetFileInfo{ltcaption.sty}
-% \title{\Thispackage\thanks{%
-%        This package has version number \fileversion, last revised \filedate.}}
+%
+% \title{\texorpdfstring{\Thispackage\thanks{%^^A
+%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%        {The ltcaption package}}
 % \author{Axel Sommerfeldt\\
 %         \href{mailto:caption@sommerfee.de}{\texttt{caption@sommerfee.de}}}
-% \date{2007/04/15}
+% \date{\docdate}
 % \maketitle
 % 
 % \begin{abstract}
-% This package fixes caption problems with other-than-centered aligned longtables.
-% (solves \LaTeX\ PR |tools/3387|)
+% \centering
+% \mbox{This package fixes caption problems with other-than-centered aligned longtables.}\\
+% (solves \href{http://www.latex-project.org/cgi-bin/ltxbugs2html?pr=tools/3387}%^^A
+%  {\LaTeX\ PR \texttt{tools/3387}})
 % \end{abstract}
 % 
 % \tableofcontents
@@ -81,25 +98,68 @@
 % \clearpage
 % \section{The user interface}
 %
-% Just include this package \emph{after} the longtable package, e.g.:
+% Just include this package \emph{after} the \package{longtable} package\cite{longtable}, e.g.:
 % \begin{quote}
 %   |\usepackage{longtable,ltcaption}|
 % \end{quote}
 %
-% There are two possibilities for adaption:
+% \bigskip
 %
+% \DescribeMacro{\LTcapleft}
+% \DescribeMacro{\LTcapright}
 % You can alter the centering of the caption box (of width |\LTcapwidth|)
 % by setting the lengths |\LTcapleft| \& |\LTcapright| to appropriate values.
 % These are set to |\fill| by default, just like the values |\LTleft| \& |\LTright|.
 %
+% \DescribeMacro{\LTcapmarginsfalse}
 % Another option is the usage of the command |\LTcapmarginsfalse| which makes
-% \thispackage\ to use the values |\LTleft| \& |\LTright| instead of
+% \thispackage\ using the values |\LTleft| \& |\LTright| instead of
 % |\LTcapleft| \& |\LTcapright|.
 %
 % \emph{Note:}
-% These adaptions do not work when used with one of the \KOMAScript\ classes
-% |scrartcl|, |scrreprt| or |scrbook|, the \KOMAScript\ settings for captions
-% are used instead. Same with the \package{caption} package.
+% If \thispackage\ will be used with one of the \package{NTG} document
+% classes\cite{NTGclasses}, |\CaptionLabelFont| \& |\CaptionTextFont| will
+% not only be used for |figure| \& |table| captions, but for |longtable|
+% captions as well.
+%
+% \emph{Note:}
+% These adaptions do not work when used with one of the \KOMAScript\
+% classes\cite{KOMAScript} |scrartcl|, |scrreprt| or |scrbook|,
+% the \KOMAScript\ settings for captions are used instead.
+% Same with the \package{caption} package which also uses its own options
+% and settings.
+%
+% \bigskip
+%
+% \DescribeMacro{\LTcaptype}
+% As a bonus feature this package patches the \package{longtable} package
+% so |\LTcaptype| will be used internally instead of the fixed caption type
+% `table'. So for example this code snipped:
+% \begin{quote}
+%   |\renewcommand\LTcaptype{figure}|\\
+%   |\begin{longtable}{ll}|\\
+%   |\caption{An example longtable}\\|\\
+%   |  A & B \\|\\
+%   |  C & D \\|\\
+%   |\end{longtable}|
+% \end{quote}
+% will result in a longtable like this:
+% \setcounter{figure}{6}
+% \begingroup
+%   \renewcommand\LTcaptype{figure}
+%   \begin{longtable}{ll}
+%   \caption{An example longtable}\\
+%     A & B \\
+%     C & D \\
+%   \end{longtable}
+% \endgroup
+%
+% \bigskip
+%
+% \DescribeEnv{longtable*}
+% Another bonus feature is the addition of the environment |longtable*| which
+% does not increment the |table| counter. (As a consequence, |\caption| is not
+% available for such longtables, but |\caption*| still is.)
 %
 % \clearpage
 % \section{Spot the difference}
@@ -227,14 +287,14 @@
 % \noindent\rule{\textwidth}{1pt}
 %
 % \LTcapleft=\tabcolsep
-% \LTcapright=\fill
+% \LTcapright=\tabcolsep plus 1fill
 % \begin{longtable}[l]{l}
 % \caption{Left aligned longtable left aligned longtable left aligned
 %   longtable}\\
 % This is only a test\\
 % \end{longtable}
 %
-% \LTcapleft=\fill
+% \LTcapleft=\tabcolsep plus 1fill
 % \LTcapright=\tabcolsep
 % \begin{longtable}[r]{l}
 % \caption{Right aligned longtable right aligned longtable right aligned
@@ -274,27 +334,56 @@
 % \noindent\rule{\textwidth}{1pt}
 % \end{minipage}
 %
-% \StopEventually{}
-% \clearpage
-% 
 % \iffalse
 % --------------------------------------------------------------------------- %
 % \fi
-% 
+%
+% \StopEventually{%^^A
+% \begin{thebibliography}{9}
+%   \bibitem{longtable}
+%   David Carlisle:
+%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/required/tools/longtable.pdf}%
+%        {\emph{The longtable package}},
+%   2004/02/01
+%
+%   \bibitem{NTGclasses}
+%   Victor Eijkhout:
+%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/ntgclass/classdoc.pdf}%
+%        {\emph{An introduction to the Dutch \LaTeX\ document classes}},\\
+%   \mbox{3~September~1989}
+%
+%   \bibitem{KOMAScript}
+%   Markus Kohm \& Jens-Uwe-Morawski:
+%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/koma-script/scrguien.pdf}%
+%        {\emph{KOMA-Script -- a versatile \LaTeXe\ bundle}},\\
+%   2007-01-09
+%
+%   \bibitem{floatrow}
+%   Olga Lapko:
+%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/floatrow/floatrow.pdf}%
+%        {\emph{The floatrow package documentation}},
+%   2006/07/24
+% \end{thebibliography}
+% }
+%
+% \iffalse
+% --------------------------------------------------------------------------- %
+% \fi
+%
 % \DoNotIndex{\\,\_,\ ,\@@par}
 % \DoNotIndex{\@classoptionslist,\@currext,\@currname}
 % \DoNotIndex{\@ehc,\@ehd,\@empty,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
-% \DoNotIndex{\@ifnextchar,\@ifstar,\@ifundefined,\@latex@error}
-% \DoNotIndex{\@namedef,\@nameuse}
+% \DoNotIndex{\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
+% \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
 % \DoNotIndex{\@removeelement,\@restorepar,\@secondoftwo,\@setpar}
 % \DoNotIndex{\@tempa,\@tempboxa,\@tempdima,\@tempdimb,\@tempdimc,\@tempb,\@tempc}
 % \DoNotIndex{\@testopt}
 % \DoNotIndex{\@undefined,\@unprocessedoptions,\@unusedoptionlist}
 % \DoNotIndex{\p@,\z@}
-% \DoNotIndex{\active,\addtocounter,\addtolength,\advance}
+% \DoNotIndex{\active,\addtocounter,\addtolength,\advance,\aftergroup}
 % \DoNotIndex{\baselineskip,\begin,\begingroup,\bfseries,\box}
 % \DoNotIndex{\catcode,\centering,\changes,\csname,\def,\divide,\do,\downarrow}
 % \DoNotIndex{\edef,\else,\empty,\end,\endcsname,\endgraf,\endgroup,\expandafter}
@@ -306,7 +395,7 @@
 % \DoNotIndex{\llap,\long,\m@ne,\margin,\mdseries,\message}
 % \DoNotIndex{\newcommand,\newdimen,\newlength,\newline,\newif,\newsavebox}
 % \DoNotIndex{\next,\nobreak,\nobreakspace,\noexpand,\noindent,\numberline}
-% \DoNotIndex{\normalsize,\or,\par,\parbox,\parfillskip}
+% \DoNotIndex{\normalcolor,\normalfont,\normalsize,\or,\par,\parbox,\parfillskip}
 % \DoNotIndex{\parindent,\parskip,\prevdepth,\protect,\protected@edef,\protected@write}
 % \DoNotIndex{\providecommand,\quad}
 % \DoNotIndex{\raggedleft,\raggedright,\relax,\renewcommand,\RequirePackage}
@@ -320,15 +409,15 @@
 % \DoNotIndex{\ExecuteOptions,\GenericWarning,\IfFileExists,\InputIfFileExists}
 % \DoNotIndex{\NeedsTeXFormat,\MessageBreak}
 % \DoNotIndex{\PackageError,\PackageInfo,\PackageWarning,\PackageWarningNoLine}
-% \DoNotIndex{\ProcessOptions,\ProvidesPackage}
+% \DoNotIndex{\PassOptionsToPackage,\ProcessOptions,\ProvidesPackage}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
 % \fi
-% 
-% \setlength{\parskip}{0pt plus 1pt}
 %
+% \setlength{\parskip}{0pt plus 1pt}
 % \changes{v1.0}{2007/04/15}{First release}
+% \changes{v1.1}{2007/07/06}{Support of |\LTcaptype| added}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -344,28 +433,148 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{ltcaption}[2007/04/15 v1.0 longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2007/09/01 v1.1 longtable captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{User interface}
 %
+% \begin{macro}{\LTcaptype}
+%  |\LTcaptype| is preset to |table|.
+%    \begin{macrocode}
+\providecommand*\LTcaptype{table}
+\providecommand*\ext@table{lot}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ext@lstlisting}
+% Since the \package{listings} package do not define |\ext@lstlisting|,
+% but we needed it when |\renewcommand\LTcaptype{lstlisting}| was done
+% by the end user, we define it here.
+%    \begin{macrocode}
+\@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
+  \@ifpackageloaded{listings}{%
+    \providecommand*\ext@lstlisting{lol}%
+  }{}}
+%    \end{macrocode}
+% \end{macro}
+%
+% To save \TeX\ memory some stuff will not be defined if the
+% \package{caption} package is loaded.
+%
+%    \begin{macrocode}
+\@ifpackageloaded{caption}{}{%
+%    \end{macrocode}
+%
+% \changes{v1.1}{2007/04/20}{The skips will not be defined if the
+%        \package{caption} package is loaded}
+%
 % \begin{macro}{\LTcapleft}
 % \begin{macro}{\LTcapright}
 % \begin{macro}{\ifLTcapmargins}
-% Our skips and the flag belonging to them.
+%  Our skips and the flag belonging to them.\\
+%  (Default: Use these skips (and not |\LTleft| \& |\LTright|.)\par
 %    \begin{macrocode}
-\newskip\LTcapleft \LTcapleft=\fill
-\newskip\LTcapright \LTcapright=\fill
-\newif\ifLTcapmargins \LTcapmarginstrue
-  % default: use these skips (and not \LTleft & \LTright)
+  \newskip\LTcapleft \LTcapleft=\fill
+  \newskip\LTcapright \LTcapright=\fill
+  \newif\ifLTcapmargins \LTcapmarginstrue
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 % \end{macro}
 %
+% \changes{v1.1}{2007/05/05}{Usage of \cs{CaptionLabelFont} \&
+%        \cs{CaptionTextFont} added}
+%
+% \begin{macro}{\CaptionLabelFont}
+% \begin{macro}{\CaptionTextFont}
+%  These commands are provided by the \package{NTG} document classes.
+%  To make this package work with other document classes as well,
+%  we need to define |\CaptionLabelFont| \& |\CaptionTextFont| here.
+%    \begin{macrocode}
+  \providecommand*\CaptionLabelFont{}
+  \providecommand*\CaptionTextFont{}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+%
 % \subsection{The longtable patch}
 %
+% \begin{macro}{\LT@array}
+%  We insert our stuff into the definition of |\LT@array| here.
+%  Since the \package{hyperref} package patches |\LT@array| as well
+%  and since this only works with the original definition of |\LT@array|,
+%  we have to do this after the \package{hyperref} package,
+%  i.e. |\AtBeginDocument|.
+%    \begin{macrocode}
+\@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \let\ltcaption@ORI@LT@array\LT@array
+  \renewcommand*\LT@array{%
+%    \end{macrocode}
+%  We modify the next |\refstepcounter| resp. |\H@refstepcounter| \&
+%  |\hyper@makecurrent|, so |\LTcaptype| is used instead of |{table}|.
+%    \begin{macrocode}
+    \let\ltcaption@ORI@refstepcounter\refstepcounter
+    \let\ltcaption@ORI@H@refstepcounter\H@refstepcounter
+    \def\refstepcounter##1{%
+      \let\refstepcounter\ltcaption@ORI@refstepcounter
+      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
+      \refstepcounter\LTcaptype}%
+    \def\H@refstepcounter##1{%
+      \let\refstepcounter\ltcaption@ORI@refstepcounter
+      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
+      \H@refstepcounter\LTcaptype}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \let\ltcaption@ORI@hyper@makecurrent\hyper@makecurrent
+    \def\hyper@makecurrent##1{%
+      \let\hyper@makecurrent\ltcaption@ORI@hyper@makecurrent
+      \hyper@makecurrent\LTcaptype}%
+%    \end{macrocode}
+%  We redefine |\lst@@caption| so |\thelstlisting| will
+%  printout its counter, too.
+%    \begin{macrocode}
+    \def\lst@@caption{\relax}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \ltcaption@ORI@LT@array}%
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\LT@c@ption}
+%  The original implementation:
+%  \begin{verbatim}
+%  \def\LT@c@ption#1[#2]#3{%
+%    \LT@makecaption#1\fnum@table{#3}%
+%    \def\@tempa{#2}%
+%    \ifx\@tempa\@empty\else
+%       {\let\\\space
+%       \addcontentsline{lot}{table}{\protect\numberline{\thetable}{#2}}}%
+%    \fi}
+%  \end{verbatim}%^^A
+%  Our implementation simply uses |\LTcaptype| instead of |{table}|:
+%    \begin{macrocode}
+\def\LT@c@ption#1[#2]#3{%
+  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+  \def\@tempa{#2}%
+  \ifx\@tempa\@empty\else
+     {\let\\\space
+     \addcontentsline{\csname ext@\LTcaptype\endcsname}{\LTcaptype}%
+       {\protect\numberline{\csname the\LTcaptype\endcsname}{#2}}}%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\LT@makecaption}
+% \changes{v1.1}{2007/04/20}{\cs{LT@@makecaption} added}
 %  |\LT@makecaption|\marg{cmd}\marg{label}\marg{text}\par
 % \smallskip
 %  Original code:
@@ -382,29 +591,43 @@
 %      \fi
 %      \endgraf\vskip\baselineskip}%
 %    \hss}}}
-%  \end{verbatim}
-%  Our code:
+%  \end{verbatim}%^^A
+%  Our code:\footnote{Adapted to the \package{floatrow} package by Olga Lapko}
+%  \changes{v1.1}{2007/06/27}{Adapted to the \package{floatrow} package by Olga Lapko}
 %    \begin{macrocode}
-\renewcommand*\LT@makecaption[3]{%
+\renewcommand\LT@makecaption[3]{%
+  \LT@@makecaption{%
+    \sbox\@tempboxa{#1{{\CaptionLabelFont#2:} }\CaptionTextFont#3}%
+    \ifdim\wd\@tempboxa>\hsize
+      #1{\CaptionLabelFont{#2:} }\CaptionTextFont#3%
+    \else
+      \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+    \fi
+    \endgraf\vskip\baselineskip}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\LT@@makecaption[1]{%
   \caption@LT@make{\hb@xt@\hsize{%
     \ifLTcapmargins
       \hspace\LTcapleft
+      \FBifLTcapwidth{\advance\LTcapwidth-\LTcapleft}%
     \else
       \hspace\LTleft
+      \FBifLTcapwidth{\advance\LTcapwidth-\LTleft}%
     \fi
-    \parbox[t]\LTcapwidth{%
-      \sbox\@tempboxa{#1{#2: }#3}%
-      \ifdim\wd\@tempboxa>\hsize
-        #1{#2: }#3%
-      \else
-        \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
-      \fi
-      \endgraf\vskip\baselineskip}%
+    \FBifLTcapwidth{\advance\LTcapwidth-%
+       \ifLTcapmargins\LTcapright\else\LTright\fi}%
+    \parbox[t]\LTcapwidth{#1}%
     \ifLTcapmargins
       \hskip\LTcapright
     \else
       \hskip\LTright
     \fi}}}
+%    \end{macrocode}
+% This one will be usually defined by the \package{fr-longtable} package,
+% which is part of the \package{floatrow} package\cite{floatrow}:
+%    \begin{macrocode}
+\AtBeginDocument{\providecommand*\FBifLTcapwidth[1]{}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -475,21 +698,21 @@
       \space\@minus\space\@pluspart
     \fi}%
 %    \end{macrocode}
+% \changes{v1.1}{2007/04/17}{Made it 5 token shorter}
 %    \begin{macrocode}
+  \let#3\@firstoftwo
   \ifx\@pluspart\@undefined
     \ifx\@minuspart\@undefined
       \let#3\@secondoftwo
-    \else
-      \let#3\@firstoftwo
     \fi
-  \else
-    \let#3\@firstoftwo
   \fi}
 %    \end{macrocode}
-%  Note: |\def\@tempa{#2}\ifx\@tempa\@plus| does not work
-%  because of different catcodes.
 %    \begin{macrocode}
 \def\caption@LT@parse@#1#2 {%
+%    \end{macrocode}
+%  Note: |\def\@tempa{#2}\ifx\@tempa\@plus|\ldots would not work here
+%  because of different catcodes.
+%    \begin{macrocode}
   \edef\@tempa{\@car#2\@nil}%
   \if p\@tempa
     \def\next{\caption@LT@parse@\@pluspart}%
@@ -505,11 +728,41 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Adaption for \KOMAScript}
+% \subsection{The \texttt{longtable*} environment}
+% \changes{v1.1}{2007/09/01}{Environment \env{longtable*} added}
+%
+% \begin{environment}{longtable*}
+% We simply supress anything which has to do with reference counters
+% or hyper links here.
+%    \begin{macrocode}
+\newenvironment{longtable*}%
+  {\let\refstepcounter\@gobble
+   \let\H@refstepcounter\@gobble
+   \let\hyper@makecurrent\@gobble
+   \let\Hy@raisedlink\@gobble
+   \let\ltcaption@ORI@LT@c@ption\LT@c@ption
+   \def\LT@c@ption##1[##2]##3{%
+     \ifx##1\@firstofone
+       \PackageError{ltcaption}%
+         {Not allowed in longtable* environment}%
+         {If you do not understand this error, please take a closer
+          look\MessageBreak at the documentation of the `ltcaption'
+          package.\MessageBreak \@ehc}%
+     \else
+       \ltcaption@ORI@LT@c@ption{##1}[{##2}]{##3}%
+     \fi}%
+   \longtable}%
+  {\endlongtable}
+%    \end{macrocode}
+% \end{environment}
+%
+% \subsection{Adaption for \texorpdfstring{\KOMAScript}{KOMA Script}}
 %
 %    \begin{macrocode}
 \@ifundefined{@komalongtablefalse}{}{%
   \if@komalongtable
+%    \end{macrocode}
+%    \begin{macrocode}
     \renewcommand{\LT@makecaption}[3]{%
       \noalign{%
         \if@captionabove
@@ -528,6 +781,11 @@
         \fi
       }%
     }%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \let\LT@@makecaption\@undefined
+%    \end{macrocode}
+%    \begin{macrocode}
   \fi}
 %    \end{macrocode}
 %
@@ -539,21 +797,6 @@
 % --------------------------------------------------------------------------- %
 % \fi
 %
-% \begin{thebibliography}{9}
-%   \iffalse
-%     TODO: \href{...}{...}
-%   \fi
-%   \bibitem{longtable}
-%   David Carlisle:
-%   \emph{The longtable package},
-%   2004/02/01
-% \end{thebibliography}
-%
-% \iffalse
-% --------------------------------------------------------------------------- %
-% \fi
-%
-% \clearpage
 % \Finale
 %
 \endinput
