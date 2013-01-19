@@ -23,7 +23,7 @@
 % caption.sty, caption2.sty, caption3.sty, and manual.tex.
 % 
 % \fi
-% \CheckSum{2039}
+% \CheckSum{2042}
 %
 % \iffalse
 %<*driver>
@@ -91,7 +91,7 @@
 % \let\package\puresf\def\thispackage{\package{caption}}
 % \let\env\purett \let\opt\purett
 %
-% \newcommand*\version[1]{$v#1$}
+% \newcommand*\version[2][]{$v#2$}
 % 
 % \newenvironment{Options}[1]%
 %   {\list{}{\renewcommand{\makelabel}[1]{\texttt{##1}\hfil}%
@@ -1997,8 +1997,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/02/18 v3.0l caption3 kernel (AR)]
-%<+debug>\PackageWarning{caption3}{DEBUG VERSION}
+\ProvidesPackage{caption3}[2007/03/04 v3.0m caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsubsection*{Generic helpers}
@@ -2214,6 +2213,7 @@
   \advance\caption@keydepth\@ne
 %
   \def\caption@package{#1}%
+  \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \def\caption@package{caption}%
 %
@@ -2982,8 +2982,8 @@
 %    \begin{macrocode}
 \newcommand\caption@autoposition{%
   \ifvmode
-%<+debug>    \edef\caption@tempa{\the\prevdepth}%
-%<+debug>    \PackageInfo{caption}{\protect\prevdepth=\caption@tempa}%
+    \edef\caption@tempa{\the\prevdepth}%
+    \caption@Debug{\protect\prevdepth=\caption@tempa}%
 %   \caption@setposition{\ifdim\prevdepth>-\p@ b\else t\fi}%
     \ifdim\prevdepth>-\p@
       \let\caption@position\@secondoftwo
@@ -2991,7 +2991,7 @@
       \let\caption@position\@firstoftwo
     \fi
   \else
-%<+debug>    \PackageInfo{caption}{no \protect\prevdepth}%
+    \caption@Debug{no \protect\prevdepth}%
 %   \caption@setposition{b}%
     \let\caption@position\@secondoftwo
   \fi}
@@ -3024,12 +3024,18 @@
 \DeclareCaptionOption{strut}{\caption@setbool{strut}{#1}}
 %    \end{macrocode}
 %
-% \subsubsection*{Debug options}
-% {\small Please note that these options are usually not available.}
+% \subsubsection*{Debug option}
+% \changes{v3.1}{2007/03/04}{Debug option added to kernel}
 %
 %    \begin{macrocode}
-%<+debug>\DeclareCaptionOption{showposition}{\caption@setbool{showpos}{#1}}
-%<+debug>\captionsetup{showposition=0}
+\DeclareCaptionOption{debug}[1]{%
+  \caption@setbool{debug}{#1}%
+  \caption@ifbool{debug}{%
+    \def\caption@Debug{\PackageInfo{caption3}}%
+  }{%
+    \let\caption@Debug\@gobble
+  }}
+\setkeys{caption}{debug=0}
 %    \end{macrocode}
 %
 % \subsubsection*{Initialization of parameters}
@@ -3174,11 +3180,11 @@
   \fi
 %    \end{macrocode}
 %    \begin{macrocode}
-%<+debug>  \PackageInfo{caption}{%
-%<+debug>    \protect\hsize=\the\hsize,
-%<+debug>    \protect\margin=\the\captionmargin,
-%<+debug>    \protect\marginx=\the\captionmarginx,
-%<+debug>    \protect\width=\the\captionwidth}%
+  \caption@Debug{%
+    \protect\hsize=\the\hsize,
+    \protect\margin=\the\captionmargin,
+    \protect\marginx=\the\captionmarginx,
+    \protect\width=\the\captionwidth}%
 %    \end{macrocode}
 %    \begin{macrocode}
 }
@@ -3257,10 +3263,7 @@
   \fi
 %    \end{macrocode}
 %
-% If the text is empty, we use no caption label separator, too.\par
-% \emph{Note:} Unfortunately this only works under certain circumstances.
-% Therefore an additional check inside |\@caption| will be introduced
-% in the upcoming version \version{3.1} of the caption package.
+% If the text is empty, we use no caption label separator, too.
 %
 %    \begin{macrocode}
   \caption@ifempty{#2}{%
@@ -3340,8 +3343,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/02/20 v3.0l Customising captions (AR)]
-%<+debug>\PackageWarning{caption}{DEBUG VERSION}
+\ProvidesPackage{caption}[2007/03/04 v3.0m Customising captions (AR)]
 %    \end{macrocode}
 %
 % \subsubsection*{Loading the caption kernel}
@@ -3429,12 +3431,10 @@
 % \changes{v3.0h}{2005/08/22}{\KOMAScript\ compatibility options added}
 %
 %    \begin{macrocode}
-\@ifundefined{scr@caption}{}{%
-  \DeclareCaptionOption*{onelinecaption}[]{\caption@setbool{slc}{1}}
-  \DeclareCaptionOption*{noonelinecaption}[]{\caption@setbool{slc}{0}}
-  \DeclareCaptionOption*{tablecaptionabove}[]{\captionsetup[table]{position=t}}
-  \DeclareCaptionOption*{tablecaptionbelow}[]{\captionsetup[table]{position=b}}
-}
+\DeclareCaptionOption*{onelinecaption}[]{\caption@setbool{slc}{1}}
+\DeclareCaptionOption*{noonelinecaption}[]{\caption@setbool{slc}{0}}
+\DeclareCaptionOption*{tablecaptionabove}[]{\captionsetup[table]{position=t}}
+\DeclareCaptionOption*{tablecaptionbelow}[]{\captionsetup[table]{position=b}}
 %    \end{macrocode}
 %
 % \subsubsection*{Generic package support}
@@ -3463,12 +3463,12 @@
 \newcommand\caption@ifpackage[3]{%
 %    \end{macrocode}
 %    \begin{macrocode}
-%<+debug>  \edef\caption@tempa{%
-%<+debug>    \caption@ifbool{pkt@#1}%
-%<+debug>      {\@ifundefined{#2}{AtBeginDocument}{firstofone}}%
-%<+debug>      {gobble}}%
-%<+debug>  \PackageInfo{caption}{#1 = \caption@ifbool{pkt@#1}{1}{0} %
-%<+debug>       (\@ifundefined{#2}{not }{}loaded -> \caption@tempa)}%
+  \edef\caption@tempa{%
+    \caption@ifbool{pkt@#1}%
+      {\@ifundefined{#2}{AtBeginDocument}{firstofone}}%
+      {gobble}}%
+  \caption@Info{#1=\caption@ifbool{pkt@#1}{1}{0} %
+       (\@ifundefined{#2}{not }{}loaded->\caption@tempa)}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@ifbool{pkt@#1}{%
@@ -3514,6 +3514,20 @@
 \caption@declarepackage{rotating}
 \caption@declarepackage{sidecap}
 \caption@declarepackage{supertabular}
+%    \end{macrocode}
+%
+% \subsubsection*{Processing of options}
+%
+% \changes{v3.0m}{2007/03/04}{Verbose option added to package}
+%    \begin{macrocode}
+\DeclareCaptionOption{verbose}[1]{%
+  \caption@setbool{verbose}{#1}%
+  \caption@ifbool{verbose}{%
+    \def\caption@Info{\PackageInfo{caption}}%
+  }{%
+    \let\caption@Info\@gobble
+  }}
+\setkeys{caption}{verbose=0}
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -3589,16 +3603,6 @@
 % for example the \package{subfig} package\cite{subfig}.
 %    \begin{macrocode}
 \providecommand*\caption@@ContinuedFloat[1]{}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\DeclareCaptionEnvironment}
-% \changes{v3.0k}{2007/01/07}{This macro added}
-%  |\DeclareCaptionEnvironment|\oarg{extra code}\marg{environment}
-%    \begin{macrocode}
-\newcommand*\DeclareCaptionEnvironment[2][]{%
-  \AtBeginEnvironment{#2}{\caption@letfloattype{#2}{#1}}}
-\@onlypreamble\DeclareCaptionEnvironment
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3803,7 +3807,7 @@
 % We define |\caption@caption| here so it's there but does not make any harm.
 %
 %    \begin{macrocode}
-    \PackageInfo{caption}{captcont package v2.0 detected}%
+    \caption@Info{captcont package v2.0 detected}%
     \def\caption@caption#1{#1}%
   }%
 }
@@ -3830,16 +3834,7 @@
 %    \begin{macrocode}
 \renewcommand\@makecaption[2]{%
   \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
-%    \end{macrocode}
-%    \begin{macrocode}
-%<+debug>  \caption@ifbool{showpos}{%
-%<+debug>    \llap{$\caption@iftop\downarrow\uparrow$ }}{}%
-%    \end{macrocode}
-%    \begin{macrocode}
   \caption@@make{#1}{#2}%
-%    \end{macrocode}
-%
-%    \begin{macrocode}
   \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
 %    \end{macrocode}
 % \end{macro}
@@ -3852,22 +3847,19 @@
 %
 %    \begin{macrocode}
 \@ifundefined{scr@caption}{}{%
-  \PackageInfo{caption}{KOMA-Script class detected}%
+  \caption@Info{KOMA-Script class detected}%
 %    \end{macrocode}
-%
-% \begin{macro}{\scr@caption}
-%  We update the definition of |\scr@caption| so it actually reflects
-%  our definition of |\caption|.
-%    \begin{macrocode}
-  \AtBeginDocument{\let\scr@caption\caption}
-%    \end{macrocode}
-% \end{macro}
 %
 % \begin{macro}{\onelinecaptionsfalse}
 % \begin{macro}{\onelinecaptionstrue}
 %    \begin{macrocode}
   \def\onelinecaptionstrue{\caption@setbool{slc}{1}}
   \def\onelinecaptionsfalse{\caption@setbool{slc}{0}}
+  \ifonelinecaptions
+    \onelinecaptionstrue
+  \else
+    \onelinecaptionsfalse
+  \fi
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -3883,10 +3875,10 @@
 %    \begin{macrocode}
   \def\captionabove{%
     \caption@setposition{t}\let\caption@setposition\@gobble
-    \scr@caption}
+    \caption}
   \def\captionbelow{%
     \caption@setposition{b}\let\caption@setposition\@gobble
-    \scr@caption}
+    \caption}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -3941,7 +3933,7 @@
 %
 %    \begin{macrocode}
 \AtBeginDocument{\@ifundefined{f@ffrench}{}{%
-  \PackageInfo{caption}{french(le) package detected}%
+  \caption@Info{french(le) package detected}%
 %    \end{macrocode}
 %
 % If |\GOfrench| is defined as |\relax| all the re-definitions regarding
@@ -3965,7 +3957,7 @@
 %
 % \begin{macro}{\@tablescaption}
 %  The \package{french(le)} package sets |\caption| to |\@tablescaption| at
-%  |\begin{table}| for special a treatment of footnotes.
+%  |\begin{table}| for special treatment of footnotes.
 %  Therefore we have to patch |\@tablescaption| so |\caption*| will work
 %  inside the |table| environment.
 %    \begin{macrocode}
@@ -4052,7 +4044,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{float}{@float@setevery}{%
-  \PackageInfo{caption}{float package v1.3 (or newer) detected}%
+  \caption@Info{float package v1.3 (or newer) detected}%
 %    \end{macrocode}
 %
 % Since |\float@caption| puts the float contents into a savebox we need
@@ -4142,7 +4134,6 @@
 %    \begin{macrocode}
   \let\caption@float@setevery\@float@setevery
   \def\@float@setevery#1{%
-    \caption@float@setevery{#1}%
 %    \end{macrocode}
 %
 %  \LaTeX{} and most packages use |\|\meta{type}|name|
@@ -4184,10 +4175,10 @@
     \ifx\caption@tempa\float@caption
     \else\ifx\caption@tempa\@caption
     \else\ifx\caption@tempa\caption@@float
-%<+debug>      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\float@caption}%
+      \caption@Info{\protect\@float@c@#1\space := \protect\float@caption}%
       \expandafter\let\csname @float@c@#1\endcsname\float@caption
     \else
-%<+debug>      \PackageInfo{caption}{\protect\@float@c@#1\space := \protect\@caption}%
+      \caption@Info{\protect\@float@c@#1\space := \protect\@caption}%
       \expandafter\let\csname @float@c@#1\endcsname\@caption
     \fi\fi\fi
 %    \end{macrocode}
@@ -4241,7 +4232,11 @@
 %    \end{macrocode}
 %
 %    \begin{macrocode}
-    \fi}%
+    \fi
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+    \caption@float@setevery{#1}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4290,13 +4285,13 @@
 % \subsubsection*{\package{floatrow} package support}
 % \changes{v3.0f}{2005/06/01}{Support of the \package{floatrow} package added}
 %
-% The \package{floatrow} package is adapted for usage with the
-% \package{caption} package. So the main work has already been done,
-% there are only two little things we have to take care about:
+% The \package{floatrow} package is already adapted for usage with the
+% \package{caption} package. So the main work has already been done by
+% Mrs.Lapko, there are only two little things we have to take care about:
 %
 %    \begin{macrocode}
 \caption@ifpackage{floatrow}{flrow@setlist}{%
-  \PackageInfo{caption}{floatrow package v0.1f (or newer) detected}%
+  \caption@Info{floatrow package v0.1f (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@of}
@@ -4318,6 +4313,8 @@
 %    \begin{macrocode}
   \renewcommand*\caption@floatname[1]{%
     \@nameuse{\@ifundefined{fname@#1}{#1name}{fname@#1}}}%
+  \renewcommand*\caption@setfloatname[1]{%
+    \@namedef{\@ifundefined{fname@#1}{#1name}{fname@#1}}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4343,7 +4340,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{hyperref}{theHfigure}{%
-  \PackageInfo{caption}{hyperref package v6.74m (or newer) detected}%
+  \caption@Info{hyperref package v6.74m (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@ContinuedFloat}
@@ -4401,14 +4398,14 @@
 %   it locally to avoid duplicated \package{hyperref} labels which could
 %   occur if |\ContinuedFloat| will be used.)}
 %   \item |\capstart| will call |\H@refstepcounter| to increase the float
-%   number. This collides with a following|\ContinuedFloat|, too, so we have
+%   number. This collides with a following |\ContinuedFloat|, too, so we have
 %   to move this call from here to |\caption|. (Since we set
 %   |\Hy@hypertexnamesfalse| we can do this without problems.)
 % \end{enumerate}
 %
 %    \begin{macrocode}
 \caption@ifpackage{hypcap}{hc@caption}{%
-  \PackageInfo{caption}{hypcap package v1.0 (or newer) detected}%
+  \caption@Info{hypcap package v1.0 (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\capstart}
@@ -4489,7 +4486,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{listings}{lst@MakeCaption}{%
-  \PackageInfo{caption}{listings package v1.2 (or newer) detected}%
+  \caption@Info{listings package v1.2 (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\lst@MakeCaption}
@@ -4525,7 +4522,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{longtable}{LT@makecaption}{%
-  \PackageInfo{caption}{longtable package v3.15 (or newer) detected}%
+  \caption@Info{longtable package v3.15 (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\LT@makecaption}
@@ -4628,7 +4625,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{picins}{piccaption}{%
-  \PackageInfo{caption}{picins package v3.0 (or newer) detected}%
+  \caption@Info{picins package v3.0 (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\piccaption}
@@ -4652,7 +4649,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{rotating}{@rotcaption}{%
-  \PackageInfo{caption}{rotating package v2.0 (or newer) detected}%
+  \caption@Info{rotating package v2.0 (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\rotcaption}
@@ -4669,12 +4666,14 @@
 % \changes{v3.0i}{2005/12/07}{New}
 %  Make |\rotcaptionof(*)| work.
 %    \begin{macrocode}
-  \def\rotcaptionof{\@ifstar{\caption@of{\rotcaption*}}{\caption@of\rotcaption}}%
+  \def\rotcaptionof{%
+    \@ifstar{\caption@of{\rotcaption*}}{\caption@of\rotcaption}}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\@makerotcaption}
 % \changes{v3.0i}{2005/12/06}{Rewritten, should finally work proper now}
+% \changes{v3.0m}{2007/03/04}{Uses \cs{captionbox} instead of \cs{caption@start/endbox} now}
 %  Original (bugfixed) code:
 %  \begin{verbatim}
 %  \long\def\@makerotcaption#1#2{%
@@ -4703,11 +4702,9 @@
         \let\caption@makerot\caption@@make
         \setcaptionmargin\z@
 %       \setlength\captionindent\z@
-%       \def\caption@startbox##1{\hbox\bgroup\hsize=.8\textheight}%
-%       \def\caption@endbox{\egroup}%
+%       \long\def\captionbox##1##2{\hbox{\hsize=.8\textheight\relax##2}}%
 %         (not needed because \rotatebox uses an \hbox anyway)
-        \let\caption@startbox\@gobble
-        \let\caption@endbox\relax}%
+        \let\captionbox\@secondoftwo}%
       \caption@setbool{slc}{0}% been there, done that
     \fi
 %    \end{macrocode}
@@ -4731,7 +4728,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{sidecap}{endSC@FLOAT}{%
-  \PackageInfo{caption}{sidecap package v1.4d (or newer) detected}%
+  \caption@Info{sidecap package v1.4d (or newer) detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\SC@caption}
@@ -4776,9 +4773,9 @@
 %
 %  Make |\caption*| work.
 %    \begin{macrocode}
-    \let\caption@old\caption
-%   \def\caption{\renewcommand\captionsetup[1]{}\caption@caption\caption@old}%
-    \def\caption{\caption@caption\caption@old}%
+    \let\caption@SC\caption
+%   \def\caption{\renewcommand\captionsetup[1]{}\caption@caption\caption@SC}%
+    \def\caption{\caption@caption\caption@SC}%
   }%
 %    \end{macrocode}
 % \end{macro}
@@ -4879,7 +4876,7 @@
 %
 %    \begin{macrocode}
 \caption@ifpackage{supertabular}{ST@caption}{%
-  \PackageInfo{caption}{supertabular package detected}%
+  \caption@Info{supertabular package detected}%
 %    \end{macrocode}
 %
 % \begin{macro}{\tablecaption}
@@ -4908,7 +4905,6 @@
 %    \endgroup}
 %  \end{verbatim}
 %    \begin{macrocode}
-  \let\caption@ST\ST@caption
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@letfloattype{supertabular}{}%
     \let\caption@fixposition\caption@setSTposition

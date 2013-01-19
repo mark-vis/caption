@@ -27,7 +27,7 @@
 %% caption.sty, caption2.sty, caption3.sty, and manual.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/02/18 v3.0l caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/03/04 v3.0m caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand{\l@addto@macro}[2]{%
@@ -111,6 +111,7 @@
   \fi
   \advance\caption@keydepth\@ne
   \def\caption@package{#1}%
+  \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \def\caption@package{caption}%
   \advance\caption@keydepth\m@ne
@@ -382,12 +383,15 @@
   \fi}
 \newcommand\caption@autoposition{%
   \ifvmode
+    \edef\caption@tempa{\the\prevdepth}%
+    \caption@Debug{\protect\prevdepth=\caption@tempa}%
     \ifdim\prevdepth>-\p@
       \let\caption@position\@secondoftwo
     \else
       \let\caption@position\@firstoftwo
     \fi
   \else
+    \caption@Debug{no \protect\prevdepth}%
     \let\caption@position\@secondoftwo
   \fi}
 \newcommand\caption@beginhook{}
@@ -397,6 +401,14 @@
 \DeclareCaptionOption{listof}{\caption@setbool{lof}{#1}}
 \DeclareCaptionOption{singlelinecheck}{\caption@setbool{slc}{#1}}
 \DeclareCaptionOption{strut}{\caption@setbool{strut}{#1}}
+\DeclareCaptionOption{debug}[1]{%
+  \caption@setbool{debug}{#1}%
+  \caption@ifbool{debug}{%
+    \def\caption@Debug{\PackageInfo{caption3}}%
+  }{%
+    \let\caption@Debug\@gobble
+  }}
+\setkeys{caption}{debug=0}
 \captionsetup{style=default,position=default,listof=1}
 \newif\ifcaption@star
 \newcommand\caption@make[2]{%
@@ -443,6 +455,11 @@
     \divide\captionmargin by 2
     \captionmarginx\z@
   \fi
+  \caption@Debug{%
+    \protect\hsize=\the\hsize,
+    \protect\margin=\the\captionmargin,
+    \protect\marginx=\the\captionmarginx,
+    \protect\width=\the\captionwidth}%
 }
 \newcommand\caption@slc[4]{%
   \caption@startslc
