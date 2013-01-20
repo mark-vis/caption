@@ -25,7 +25,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3649}
+% \CheckSum{3655}
 %
 % \iffalse
 %<*driver>
@@ -220,7 +220,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/08/17 v3.2a Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/08/18 v3.2b Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -345,8 +345,8 @@
 % \changes{v3.1f}{2007/12/21}{Options \opt{figurewithin} and \opt{tablewithin} added}
 % \changes{v3.1i}{2008/04/13}{Option \opt{within} added}
 % \changes{v3.1l}{2010/01/09}{The \opt{within} options are now available within the document, too}
-% \changes{v3.1l}{2010/01/09}{The global \opt{within} option will now affect user-defined floats
-%                             declared with \cs{DeclareCaptionType}, too}
+% \changes{v3.1l}{2010/01/09}{The global \opt{within} option will now affect user-defined
+%                             floats declared with \cs{DeclareCaptionType}, too}
 %
 % \begin{macro}{\caption@DeclareWithinOption}
 % \changes{v3.1l}{2010/01/09}{This macro and its usage added}
@@ -2432,6 +2432,8 @@
 % \changes{v3.1g}{2008/01/29}{Starred variants of \cs{ContinuedFloat} and \cs{captionsetup} added}
 % \changes{v3.2}{2010/10/26}{Bugfix 10-09-01a: Uses \cs{ignorespaces} instead of `space hack' again}
 % \changes{v3.2a}{2011/08/17}{Starred variant of \cs{caption@freeze} removed}
+% \changes{v3.2b}{2011/08/18}{Redefines \cs{caption@setup} instead of \cs{captionsetup} now}
+% \changes{v3.2b}{2011/08/18}{Redefinition of \cs{label} revised}
 %  |\caption@freeze|\par
 %  Used by the \package{fltpage} \& \package{sidecap} package support.
 %    \begin{macrocode}
@@ -2455,13 +2457,10 @@
       \global\let\caption@SCcontinued\caption@frozen@ContinuedFloat
       \let\setcounter\caption@frozen@setcounter
       \let\addtocounter\caption@frozen@addtocounter}%
-    \let\caption@frozen@setup\captionsetup
-    \def\captionsetup{%
-% TODO: Wenn optionales Argument vorhanden, dann nur \caption@ORI@setup##1{##2}
-      \caption@withoptargs\caption@SC@setup}%
-    \def\caption@SC@setup##1##2{%
-      \caption@g@addto@list\caption@SCsetup{##2}%
-      \caption@frozen@setup##1{##2}}%
+    \let\caption@frozen@setup\caption@setup
+    \def\caption@setup##1{%
+      \caption@g@addto@list\caption@SCsetup{##1}%
+      \caption@frozen@setup{##1}}%
     \let\caption@frozen\caption
     \def\caption{%
       \def\caption{\caption@Error{%
@@ -2474,10 +2473,17 @@
 %     \@bsphack
         \gdef\caption@SClentry{##2}%
         \gdef\caption@SCtext{##3}%
+        \let\@currentlabel\caption@SCcurrentlabel
 %     \@esphack}%
       \ignorespaces}%
     \let\caption@frozen@label\label
-    \def\label##1{\@bsphack\gdef\caption@SClabel{##1}\@esphack}%
+    \def\label##1{%
+      \ifx\@currentlabel\caption@SCcurrentlabel
+        \@bsphack\gdef\caption@SClabel{##1}\@esphack
+      \else
+        \caption@frozen@label{##1}%
+      \fi}%
+    \def\caption@SCcurrentlabel{???}%
 %    \end{macrocode}
 %    \begin{macrocode}
   }%
@@ -2490,7 +2496,7 @@
 %    \begin{macrocode}
   \newcommand*\caption@warmup{%
     \ifx\caption@frozen\@undefined\else
-      \let\captionsetup\caption@frozen@setup
+      \let\caption@setup\caption@frozen@setup
       \let\caption\caption@frozen
       \let\@caption\caption@frozen@
       \let\label\caption@frozen@label

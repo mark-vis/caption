@@ -29,7 +29,7 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/08/17 v3.2a Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/08/18 v3.2b Customizing captions (AR)]
 \RequirePackage{caption3}[2011/08/01] % needs v1.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -1077,12 +1077,10 @@
       \global\let\caption@SCcontinued\caption@frozen@ContinuedFloat
       \let\setcounter\caption@frozen@setcounter
       \let\addtocounter\caption@frozen@addtocounter}%
-    \let\caption@frozen@setup\captionsetup
-    \def\captionsetup{%
-      \caption@withoptargs\caption@SC@setup}%
-    \def\caption@SC@setup##1##2{%
-      \caption@g@addto@list\caption@SCsetup{##2}%
-      \caption@frozen@setup##1{##2}}%
+    \let\caption@frozen@setup\caption@setup
+    \def\caption@setup##1{%
+      \caption@g@addto@list\caption@SCsetup{##1}%
+      \caption@frozen@setup{##1}}%
     \let\caption@frozen\caption
     \def\caption{%
       \def\caption{\caption@Error{%
@@ -1094,13 +1092,20 @@
     \long\def\@caption##1[##2]##3{%
         \gdef\caption@SClentry{##2}%
         \gdef\caption@SCtext{##3}%
+        \let\@currentlabel\caption@SCcurrentlabel
       \ignorespaces}%
     \let\caption@frozen@label\label
-    \def\label##1{\@bsphack\gdef\caption@SClabel{##1}\@esphack}%
+    \def\label##1{%
+      \ifx\@currentlabel\caption@SCcurrentlabel
+        \@bsphack\gdef\caption@SClabel{##1}\@esphack
+      \else
+        \caption@frozen@label{##1}%
+      \fi}%
+    \def\caption@SCcurrentlabel{???}%
   }%
   \newcommand*\caption@warmup{%
     \ifx\caption@frozen\@undefined\else
-      \let\captionsetup\caption@frozen@setup
+      \let\caption@setup\caption@frozen@setup
       \let\caption\caption@frozen
       \let\@caption\caption@frozen@
       \let\label\caption@frozen@label
