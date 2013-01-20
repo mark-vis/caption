@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2009 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2010 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2009/10/09 v3.1k caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2010/01/14 v3.1m caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -150,17 +150,16 @@
 \def\caption@AtBeginDocument{%
   \caption@teststar\g@addto@macro
     \caption@@begindocumenthook\caption@begindocumenthook}
-\@onlypreamble\caption@AtBeginDocument
 \AtBeginDocument{%
    \PackageInfo{caption}{Begin \noexpand\AtBeginDocument code\@gobble}%
    \def\caption@AtBeginDocument{%
      \@ifstar{\g@addto@macro\caption@@begindocumenthook}\@firstofone}%
    \caption@begindocumenthook
-   \let\caption@begindocumenthook\@undefined
+   \let\caption@begindocumenthook\relax
    \def\caption@AtBeginDocument{%
      \@ifstar\@firstofone\@firstofone}%
    \caption@@begindocumenthook
-   \let\caption@@begindocumenthook\@undefined
+   \let\caption@@begindocumenthook\relax
    \PackageInfo{caption}{End \noexpand\AtBeginDocument code\@gobble}}
 \newcommand*\caption@Warning[1]{%
   \caption@WarningNoLine{#1\on@line}}
@@ -414,7 +413,10 @@
        \setlength\caption@hangindent{#1}}
 \DeclareCaptionOption{parskip}{%
        \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
-\@ifundefined{scr@caption}{}{%
+\providecommand*\caption@ifkomaclass{%
+  \@ifundefined{scr@caption}\@gobble\@firstofone}
+\@onlypreamble\caption@ifkomaclass
+\caption@ifkomaclass{%
   \let\caption@KV@parindent\KV@caption@parindent
   \DeclareCaptionOption{parindent}[]{%
     \ifx,#1,%
@@ -803,7 +805,10 @@
       \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
     \fi
     \vskip\belowcaptionskip}}
-\@ifundefined{@captionheadfont}{}{%
+\providecommand*\caption@ifamsclass{%
+  \@ifundefined{@captionheadfont}\@gobble\@firstofone}
+\@onlypreamble\caption@ifamsclass
+\caption@ifamsclass{%
   \caption@CheckCommand\@makecaption{%
     % amsart|amsproc|amsbook [2004/08/06 v2.20]
     \long\def\@makecaption#1#2{%
@@ -878,7 +883,10 @@
   \captionsetup[figure]{position=b}
   \captionsetup[table]{position=t}
 }
-\@ifclassloaded{beamer}{%
+\providecommand*\caption@ifbeamerclass{%
+  \@ifclassloaded{beamer}\@firstofone\@gobble}
+\@onlypreamble\caption@ifbeamerclass
+\caption@ifbeamerclass{%
   \caption@CheckCommand\beamer@makecaption{%
     % beamerbaselocalstructure.sty,v 1.53 2007/01/28 20:48:21 tantau
     \long\def\beamer@makecaption#1#2{%
@@ -908,8 +916,11 @@
     % \usebeamertemplate**{caption} will set font
     \DeclareCaptionDefaultFont{font}{}%
     \setbeamertemplate{caption}[caption3]}
-}{}
-\@ifundefined{scr@caption}{}{%
+}
+\providecommand*\caption@ifkomaclass{%
+  \@ifundefined{scr@caption}\@gobble\@firstofone}
+\@onlypreamble\caption@ifkomaclass
+\caption@ifkomaclass{%
   \caption@CheckCommand\@makecaption{%
     % scrartcl|scrreprt|scrbook [2007/03/07 v2.97a KOMA-Script document class]
     \long\def\@makecaption#1#2{%
@@ -945,7 +956,10 @@
   \DeclareCaptionDefaultFont{font}{\scr@fnt@caption}
   \DeclareCaptionDefaultFont{labelfont}{\scr@fnt@captionlabel}
 }
-\@ifundefined{CaptionFonts}{}{%
+\providecommand*\caption@ifntgclass{%
+  \@ifundefined{CaptionFonts}\@gobble\@firstofone}
+\@onlypreamble\caption@ifntgclass
+\caption@ifntgclass{%
   \caption@CheckCommand\@makecaption{%
     % artikel|rapport|boek [2004/06/07 v2.1a NTG LaTeX document class]
     \long\def\@makecaption#1#2{%
@@ -961,7 +975,9 @@
   \DeclareCaptionDefaultFont{labelfont}{\CaptionLabelFont}
   \DeclareCaptionDefaultFont{textfont}{\CaptionTextFont}
 }
-\@ifclassloaded{thesis}{%
+\providecommand*\caption@ifthesisclass{%
+  \@ifundefined{cph@font}{\@gobble}{\@ifundefined{cpb@font}\@gobble\@firstofone}}
+\caption@ifthesisclass{%
   \caption@CheckCommand\@makecaption{%
     % thesis.cls 1996/25/01 1.0g LaTeX document class (wm).
     \long\def\@makecaption#1#2{%
@@ -976,7 +992,7 @@
   \DeclareCaptionDefaultFormat{hang}
   \DeclareCaptionDefaultFont{labelfont}{\cph@font}
   \DeclareCaptionDefaultFont{textfont}{\cpb@font}
-}{}
+}
 \@ifundefined{FB@makecaption}{}{%
   \caption@CheckCommand\@makecaption{%
     % frenchb.ldf [2005/02/06 v1.6g French support from the babel system]
@@ -1232,6 +1248,7 @@
   \caption@Debug{New type `#2'}%
   \newcounter{#2}\@namedef{theH#2}{}%
   \KV@caption@DCT@within\caption@within@default
+  \caption@DeclareWithinOption{#2}%
   \KV@caption@DCT@placement{tbp}%
   \@ifundefined{c@float@type}%
     {\newcounter{float@type}%
@@ -1303,29 +1320,23 @@
   \begingroup
     \caption@setkeys[caption]{caption@within}{#1}%
   \endgroup}
-\@onlypreamble@key{caption@DCT}{within}
 \define@key{caption@DCT}{without}{\KV@caption@DCT@within{none}}
-\@onlypreamble@key{caption@DCT}{without}
 \define@key{caption@within}{none}[]{%
   \caption@within{}{}}
-\@onlypreamble@key{caption@within}{none}
 \define@key{caption@within}{section}[]{%
   \@addtoreset\caption@type{section}%
   \caption@within{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}}
-\@onlypreamble@key{caption@within}{section}
 \@ifundefined{c@chapter}{}{%
   \define@key{caption@within}{chapter}[]{%
     \@addtoreset\caption@type{chapter}%
     \caption@within{\ifnum\c@chapter>\z@ \thechapter.\fi}{\theHchapter.}}
-  \@onlypreamble@key{caption@within}{chapter}}
+}%  \@onlypreamble@key{caption@within}{chapter}}
 \newcommand*\caption@within{%
   \expandafter\caption@within@\expandafter{\caption@type}}
-\@onlypreamble\caption@within
 \newcommand*\caption@within@[3]{%
   \global\@namedef{the#1}{#2\arabic{#1}}%
   \@ifundefined{theH#1}\caption@AtBeginDocument\@firstofone
     {\global\@namedef{theH#1}{#3\arabic{#1}}}}
-\@onlypreamble\caption@within@
 \providecommand*\@removefromreset[2]{{%
   \expandafter\let\csname c@#1\endcsname\@removefromreset
   \def\@elt##1{%
@@ -1622,7 +1633,6 @@
       or \noexpand\@chapter was redefined by another package}%
   \fi
   \let\caption@PatchChapter\@undefined}
-\@onlypreamble\caption@PatchChapter
 \newcommand\caption@patch@chapter[3]{%
   \begingroup
     \let\if@mainmatter\iffalse
@@ -1634,7 +1644,6 @@
       \global\let\caption@patch@chapter\@gobblethree
     \fi
   \endgroup}
-\@onlypreamble\caption@patch@chapter
 \long\def \@gobblethree #1#2#3{}
 \newcommand*\caption@patch@stpelt{%
   \let\caption@stpelt\@stpelt
@@ -1704,13 +1713,11 @@
 \@onlypreamble\@@DeclareCaptionSubType
 \newcommand*\caption@subtypelist{}
 \newcommand*\caption@For{\caption@withoptargs\caption@@For}
-\@onlypreamble\caption@For
 \newcommand\caption@@For[3]{%
   \caption@AtBeginDocument#1{%
     \def\@elt##1{#3}%
     \@nameuse{caption@#2}%
     \let\@elt\relax}}%
-\@onlypreamble\caption@@For
 \caption@AtBeginDocument{%
   \def\@tempa{\@ifstar\sf@@subref\sf@subref}%
   \ifx\subref\@tempa

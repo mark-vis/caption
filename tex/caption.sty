@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2009 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2010 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2009/10/09 v3.1k Customizing captions (AR)]
+\ProvidesPackage{caption}[2010/01/09 v3.1m Customizing captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
 \RequirePackage{caption3}[2008/08/24] % needs v3.1j or newer
@@ -77,23 +77,18 @@
   \endgroup}
 \newcommand*\caption@setname[2]{\@namedef{#1name}{#2}}
 \caption@AtBeginDocument{\let\caption@SetName\caption@setname}
-\DeclareCaptionOption{figurewithin}{\caption@Within{figure}{#1}}
-\@onlypreamble@key{caption}{figurewithin}
-\DeclareCaptionOption{figurewithout}{\KV@caption@figurewithin{none}}
-\@onlypreamble@key{caption}{figurewithout}
-\DeclareCaptionOption{tablewithin}{\caption@Within{table}{#1}}
-\@onlypreamble@key{caption}{tablewithin}
-\DeclareCaptionOption{tablewithout}{\KV@caption@tablewithin{none}}
-\@onlypreamble@key{caption}{tablewithout}
+\newcommand*\caption@DeclareWithinOption[1]{%
+  \DeclareCaptionOption{#1within}{\caption@Within{#1}{##1}}%
+  \DeclareCaptionOption{#1without}{\caption@Within{#1}{none}}}
+\caption@DeclareWithinOption{figure}
+\caption@DeclareWithinOption{table}
 \DeclareCaptionOption{within}{%
   \@ifundefined{c@figure}{}{\caption@Within{figure}{#1}}%
   \@ifundefined{c@table}{}{\caption@Within{table}{#1}}%
+  \caption@For{typelist}{\caption@Within{##1}{#1}}%
   \def\caption@within@default{#1}}
-\@onlypreamble@key{caption}{within}
 \DeclareCaptionOption{without}{\KV@caption@within{none}}
-\@onlypreamble@key{caption}{without}
 \newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
-\@onlypreamble\caption@Within
 \DeclareCaptionOption*{config}[caption]{%
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
@@ -169,11 +164,11 @@
 \DeclareCaptionOption{hypcap}[1]{\caption@setbool{hypcap}{#1}}
 \DeclareCaptionOption{hypcapspace}{\def\caption@hypcapspace{#1}}
 \captionsetup{hypcap=1,hypcapspace=.5\baselineskip}
-\@ifundefined{@captionheadfont}{}{%
+\caption@ifamsclass{%
   \caption@Info{AMS or SMF document class}%
   \setlength\belowcaptionskip{0pt}% set to 12pt by AMS class
 }
-\@ifundefined{scr@caption}{}{%
+\caption@ifkomaclass{%
   \caption@Info{KOMA-Script document class}%
   \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}
   \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}
@@ -340,7 +335,7 @@
   \@testopt{\caption@listentry{#1}}\@captype}
 \def\caption@listentry#1[#2]#3{%
   \@bsphack
-    #1{\def\@currentlabelname{#3}}%
+    #1{\caption@gettitle{#3}}%
       {\caption@refstepcounter{#2}%
        \caption@makecurrent{#2}{#3}}%
     \caption@addcontentsline{#2}{#3}%
@@ -430,6 +425,10 @@
 \let\caption@@start\relax
 \let\caption@freezeHref\relax
 \let\caption@defrostHref\relax
+\newcommand\caption@gettitle[1]{%
+  \@ifundefined{NR@gettitle}%
+    {\def\@currentlabelname{#1}}%
+    {\NR@gettitle{#1}}}
 \def\caption@caption{%
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
@@ -643,9 +642,100 @@
       \endgroup
     }}%
   \caption@CheckCommand\@caption{%
+    % hyperref.sty [2009/11/27 v6.79k Hypertext links for LaTeX]
+    \long\def\@caption#1[#2]#3{%
+      \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                      \csname iftrue\endcsname
+        \global\let\@currentHref\hc@currentHref
+      \else
+        \hyper@makecurrent{\@captype}%
+      \fi
+      \def\@currentlabelname{#2}%
+      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
+        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
+      }%
+      \begingroup
+        \@parboxrestore
+        \if@minipage
+          \@setminipage
+        \fi
+        \normalsize
+        \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                        \csname iftrue\endcsname
+          \global\@capstartfalse
+          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
+        \else
+          \@makecaption{\csname fnum@#1\endcsname}{%
+            \ignorespaces
+            \ifHy@nesting
+              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
+            \else
+              \Hy@raisedlink{%
+                \expandafter\hyper@@anchor\expandafter{\@currentHref}{\relax}%
+              }%
+              #3%
+            \fi
+          }%
+        \fi
+        \par
+      \endgroup
+    }}%
+  \caption@CheckCommand\@caption{%
+    % hyperref.sty [2009/12/09 v6.79m Hypertext links for LaTeX]
+    % hyperref.sty [2009/12/28 v6.79z Hypertext links for LaTeX]
+    \long\def\@caption#1[#2]#3{%
+      \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                      \csname iftrue\endcsname
+        \global\let\@currentHref\hc@currentHref
+      \else
+        \hyper@makecurrent{\@captype}%
+      \fi
+      \@ifundefined{NR@gettitle}{%
+        \def\@currentlabelname{#2}%
+      }{%
+        \NR@gettitle{#2}%
+      }%
+      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
+        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
+      }%
+      \begingroup
+        \@parboxrestore
+        \if@minipage
+          \@setminipage
+        \fi
+        \normalsize
+        \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                        \csname iftrue\endcsname
+          \global\@capstartfalse
+          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
+        \else
+          \@makecaption{\csname fnum@#1\endcsname}{%
+            \ignorespaces
+            \ifHy@nesting
+              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
+            \else
+              \Hy@raisedlink{%
+                \expandafter\hyper@@anchor\expandafter{%
+                  \@currentHref
+                }{\relax}%
+              }%
+              #3%
+            \fi
+          }%
+        \fi
+        \par
+      \endgroup
+    }}%
+  \caption@CheckCommand\@caption{%
     % nameref.sty [2006/12/27 v2.28 Cross-referencing by name of section]
     \long\def\@caption#1[#2]{%
       \def\@currentlabelname{#2}%
+      \NR@@caption{#1}[{#2}]%
+    }}%
+  \caption@CheckCommand\@caption{%
+    % nameref.sty [2009/11/27 v2.32 Cross-referencing by name of section]
+    \long\def\@caption#1[#2]{%
+      \NR@gettitle{#2}%
       \NR@@caption{#1}[{#2}]%
     }}%
   \caption@CheckCommand\@caption{%
@@ -1090,15 +1180,17 @@
     \renewcommand*\caption@makecurrent[2]{%
       \caption@makecurrentHref{#1}%
       \caption@Debug{hyperref current=\@currentHref}%
-      \def\@currentlabelname{#2}}%
+      \caption@gettitle{#2}}%
     \newcommand*\caption@makecurrentHref{\hyper@makecurrent}%
     \renewcommand\caption@makeanchor[1]{%
       \caption@Debug{hyperref anchor: \@currentHref}%
       % If we cannot have nesting, the anchor is empty.
       \ifHy@nesting
-        \hyper@@anchor{\@currentHref}{#1}%
+        \expandafter\hyper@@anchor\expandafter{\@currentHref}{#1}%
       \else
-        \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#1%
+        \Hy@raisedlink{%
+          \expandafter\hyper@@anchor\expandafter{\@currentHref}{\relax}%
+        }#1%
       \fi}%
     \g@addto@macro\caption@prepareslc{\let\caption@makeanchor\@firstofone}%
     \newif\if@capstart
@@ -1408,7 +1500,7 @@
       {\caption@dblarg{\@xtablecaption}}}%
   \let\caption@ORI@xtablecaption\@xtablecaption
   \long\def\@xtablecaption[#1]#2{%
-    \def\@currentlabelname{#2}%
+    \caption@gettitle{#2}%
     \caption@ORI@xtablecaption[#1]{#2}}%
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@settype*{#1}%
@@ -1428,7 +1520,7 @@
       {\caption@dblarg{\@xtablecaption}}}%
   \let\caption@ORI@xtablecaption\@xtablecaption
   \long\def\@xtablecaption[#1]#2{%
-    \def\@currentlabelname{#2}%
+    \caption@gettitle{#2}%
     \caption@ORI@xtablecaption[#1]{#2}}%
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@settype*{#1}%

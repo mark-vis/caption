@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2009 Axel Sommerfeldt (caption@sommerfee.de)
+% Copyright (C) 1994-2010 Axel Sommerfeldt (caption@sommerfee.de)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -24,12 +24,12 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{7024}
+% \CheckSum{7218}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2009/10/09 v3.1k Implementation of the caption package]
+\ProvidesFile{caption.drv}[2010/01/14 v3.1m Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -233,7 +233,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2009/10/09 v3.1k caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2010/01/14 v3.1m caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -526,6 +526,7 @@
 %
 % \begin{macro}{\caption@AtBeginDocument}
 % \changes{v3.1}{2007/04/13}{This macro and its usage added}
+% \changes{v3.1l}{2010/01/09}{Adapted to the combine document class}
 %  |\caption@AtBeginDocument*|\marg{code}\\
 %  Same as |\AtBeginDocument| but the execution of code
 %  will be surrounded by two |\PackageInfo|s.
@@ -539,7 +540,7 @@
 \def\caption@AtBeginDocument{%
   \caption@teststar\g@addto@macro
     \caption@@begindocumenthook\caption@begindocumenthook}
-\@onlypreamble\caption@AtBeginDocument
+%\@onlypreamble\caption@AtBeginDocument
 %    \end{macrocode}
 %    \begin{macrocode}
 \AtBeginDocument{%
@@ -549,13 +550,13 @@
    \def\caption@AtBeginDocument{%
      \@ifstar{\g@addto@macro\caption@@begindocumenthook}\@firstofone}%
    \caption@begindocumenthook
-   \let\caption@begindocumenthook\@undefined
+   \let\caption@begindocumenthook\relax
 %    \end{macrocode}
 %    \begin{macrocode}
    \def\caption@AtBeginDocument{%
      \@ifstar\@firstofone\@firstofone}%
    \caption@@begindocumenthook
-   \let\caption@@begindocumenthook\@undefined
+   \let\caption@@begindocumenthook\relax
 %    \end{macrocode}
 %    \begin{macrocode}
    \PackageInfo{caption}{End \noexpand\AtBeginDocument code\@gobble}}
@@ -1239,7 +1240,12 @@
 % these options would otherwise still collide with the current version $1.3$
 % of the \package{subfig} package (Sigh!)}
 %    \begin{macrocode}
-\@ifundefined{scr@caption}{}{%
+\providecommand*\caption@ifkomaclass{%
+  \@ifundefined{scr@caption}\@gobble\@firstofone}
+\@onlypreamble\caption@ifkomaclass
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifkomaclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@KV@parindent\KV@caption@parindent
@@ -2231,7 +2237,12 @@
 % \changes{v3.1}{2007/07/29}{\AmS\ \& \SmF\ classes support added (kernel)}
 %
 %    \begin{macrocode}
-\@ifundefined{@captionheadfont}{}{%
+\providecommand*\caption@ifamsclass{%
+  \@ifundefined{@captionheadfont}\@gobble\@firstofone}
+\@onlypreamble\caption@ifamsclass
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifamsclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\@makecaption{%
@@ -2320,7 +2331,12 @@
 % \changes{v3.1}{2007/03/10}{beamer class support added (kernel)}
 %
 %    \begin{macrocode}
-\@ifclassloaded{beamer}{%
+\providecommand*\caption@ifbeamerclass{%
+  \@ifclassloaded{beamer}\@firstofone\@gobble}
+\@onlypreamble\caption@ifbeamerclass
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifbeamerclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\beamer@makecaption{%
@@ -2364,14 +2380,19 @@
     \setbeamertemplate{caption}[caption3]}
 %    \end{macrocode}
 %    \begin{macrocode}
-}{}
+}
 %    \end{macrocode}
 %
 % \subsubsection{The \KOMAScript{} classes}
 % \changes{v3.1}{2007/03/31}{\KOMAScript\ classes support added (kernel)}
 %
 %    \begin{macrocode}
-\@ifundefined{scr@caption}{}{%
+\providecommand*\caption@ifkomaclass{%
+  \@ifundefined{scr@caption}\@gobble\@firstofone}
+\@onlypreamble\caption@ifkomaclass
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifkomaclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\@makecaption{%
@@ -2419,7 +2440,12 @@
 % \changes{v3.1}{2007/04/06}{NTG classes support added (kernel)}
 %
 %    \begin{macrocode}
-\@ifundefined{CaptionFonts}{}{%
+\providecommand*\caption@ifntgclass{%
+  \@ifundefined{CaptionFonts}\@gobble\@firstofone}
+\@onlypreamble\caption@ifntgclass
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifntgclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\@makecaption{%
@@ -2445,9 +2471,14 @@
 %
 % \subsubsection{The thesis class}
 % \changes{v3.1g}{2008/01/31}{thesis class support added (kernel)}
+% \changes{v3.1l}{2009/11/15}{Bugfix 09-11-14: thesis class support revised (kernel)}
 %
 %    \begin{macrocode}
-\@ifclassloaded{thesis}{%
+\providecommand*\caption@ifthesisclass{%
+  \@ifundefined{cph@font}{\@gobble}{\@ifundefined{cpb@font}\@gobble\@firstofone}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifthesisclass{%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\@makecaption{%
@@ -2468,7 +2499,7 @@
   \DeclareCaptionDefaultFont{textfont}{\cpb@font}
 %    \end{macrocode}
 %    \begin{macrocode}
-}{}
+}
 %    \end{macrocode}
 %
 % \subsubsection{The frenchb Babel option}
@@ -3005,6 +3036,7 @@
 % \changes{v3.1f}{2007/12/21}{Optional argument revised, uses key-value syntax now}
 % \changes{v3.1i}{2008/04/13}{Uses \cs{caption@within@default} now}
 % \changes{v3.1i}{2008/08/02}{Support of \cs{float@exts} and \cs{float@addtolists} added}
+% \changes{v3.1l}{2010/01/09}{Usage of \cs{caption@DeclareWithinOption} added}
 %  |\DeclareCaptionType|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionType{%
@@ -3017,6 +3049,7 @@
   \caption@Debug{New type `#2'}%
   \newcounter{#2}\@namedef{theH#2}{}%
   \KV@caption@DCT@within\caption@within@default
+  \caption@DeclareWithinOption{#2}%
   \KV@caption@DCT@placement{tbp}%
   \@ifundefined{c@float@type}%
     {\newcounter{float@type}%
@@ -3134,24 +3167,24 @@
   \begingroup
     \caption@setkeys[caption]{caption@within}{#1}%
   \endgroup}
-\@onlypreamble@key{caption@DCT}{within}
+%\@onlypreamble@key{caption@DCT}{within}
 \define@key{caption@DCT}{without}{\KV@caption@DCT@within{none}}
-\@onlypreamble@key{caption@DCT}{without}
+%\@onlypreamble@key{caption@DCT}{without}
 %    \end{macrocode}
 % \changes{v3.1k}{2009/03/29}{Bugfix 08-09-25: \texttt{within=section} fixed}
 %    \begin{macrocode}
 \define@key{caption@within}{none}[]{%
   \caption@within{}{}}
-\@onlypreamble@key{caption@within}{none}
+%\@onlypreamble@key{caption@within}{none}
 \define@key{caption@within}{section}[]{%
   \@addtoreset\caption@type{section}%
   \caption@within{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}}
-\@onlypreamble@key{caption@within}{section}
+%\@onlypreamble@key{caption@within}{section}
 \@ifundefined{c@chapter}{}{%
   \define@key{caption@within}{chapter}[]{%
     \@addtoreset\caption@type{chapter}%
     \caption@within{\ifnum\c@chapter>\z@ \thechapter.\fi}{\theHchapter.}}
-  \@onlypreamble@key{caption@within}{chapter}}
+}%  \@onlypreamble@key{caption@within}{chapter}}
 %    \end{macrocode}
 % \begin{macro}{\caption@within}
 % \changes{v3.1f}{2007/12/21}{This macro added}
@@ -3159,12 +3192,12 @@
 %    \begin{macrocode}
 \newcommand*\caption@within{%
   \expandafter\caption@within@\expandafter{\caption@type}}
-\@onlypreamble\caption@within
+%\@onlypreamble\caption@within
 \newcommand*\caption@within@[3]{%
   \global\@namedef{the#1}{#2\arabic{#1}}%
   \@ifundefined{theH#1}\caption@AtBeginDocument\@firstofone
     {\global\@namedef{theH#1}{#3\arabic{#1}}}}
-\@onlypreamble\caption@within@
+%\@onlypreamble\caption@within@
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3494,7 +3527,7 @@
       or \noexpand\@chapter was redefined by another package}%
   \fi
   \let\caption@PatchChapter\@undefined}
-\@onlypreamble\caption@PatchChapter
+%\@onlypreamble\caption@PatchChapter
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@patch@chapter[3]{%
@@ -3509,7 +3542,7 @@
       \global\let\caption@patch@chapter\@gobblethree
     \fi
   \endgroup}
-\@onlypreamble\caption@patch@chapter
+%\@onlypreamble\caption@patch@chapter
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def \@gobblethree #1#2#3{}
@@ -3640,7 +3673,7 @@
 %  |\caption@For*|\marg{elt-list}\marg{code with \#1}
 %    \begin{macrocode}
 \newcommand*\caption@For{\caption@withoptargs\caption@@For}
-\@onlypreamble\caption@For
+%\@onlypreamble\caption@For
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@@For[3]{%
@@ -3648,7 +3681,7 @@
     \def\@elt##1{#3}%
     \@nameuse{caption@#2}%
     \let\@elt\relax}}%
-\@onlypreamble\caption@@For
+%\@onlypreamble\caption@@For
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3724,7 +3757,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2009/10/09 v3.1k Customizing captions (AR)]
+\ProvidesPackage{caption}[2010/01/09 v3.1m Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -3858,32 +3891,34 @@
 %
 % \changes{v3.1f}{2007/12/21}{Options \opt{figurewithin} and \opt{tablewithin} added}
 % \changes{v3.1i}{2008/04/13}{Option \opt{within} added}
+% \changes{v3.1l}{2010/01/09}{The \opt{within} options are now available within the document, too}
+% \changes{v3.1l}{2010/01/09}{The global \opt{within} option will now affect user-defined floats
+%                             declared with \cs{DeclareCaptionType}, too}
+%
+% \begin{macro}{\caption@DeclareWithinOption}
+% \changes{v3.1l}{2010/01/09}{This macro and its usage added}
 %    \begin{macrocode}
-\DeclareCaptionOption{figurewithin}{\caption@Within{figure}{#1}}
-\@onlypreamble@key{caption}{figurewithin}
-\DeclareCaptionOption{figurewithout}{\KV@caption@figurewithin{none}}
-\@onlypreamble@key{caption}{figurewithout}
+\newcommand*\caption@DeclareWithinOption[1]{%
+  \DeclareCaptionOption{#1within}{\caption@Within{#1}{##1}}%
+  \DeclareCaptionOption{#1without}{\caption@Within{#1}{none}}}
 %    \end{macrocode}
+% \end{macro}
 %    \begin{macrocode}
-\DeclareCaptionOption{tablewithin}{\caption@Within{table}{#1}}
-\@onlypreamble@key{caption}{tablewithin}
-\DeclareCaptionOption{tablewithout}{\KV@caption@tablewithin{none}}
-\@onlypreamble@key{caption}{tablewithout}
+\caption@DeclareWithinOption{figure}
+\caption@DeclareWithinOption{table}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{within}{%
   \@ifundefined{c@figure}{}{\caption@Within{figure}{#1}}%
   \@ifundefined{c@table}{}{\caption@Within{table}{#1}}%
+  \caption@For{typelist}{\caption@Within{##1}{#1}}%
   \def\caption@within@default{#1}}
-\@onlypreamble@key{caption}{within}
 \DeclareCaptionOption{without}{\KV@caption@within{none}}
-\@onlypreamble@key{caption}{without}
 %    \end{macrocode}
 % \begin{macro}{\caption@within}
 % \changes{v3.1}{2007/12/21}{This macro added}
 %    \begin{macrocode}
 \newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
-\@onlypreamble\caption@Within
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4041,7 +4076,7 @@
 % \changes{v3.1}{2007/07/29}{\AmS\ \& \SmF\ document classes support added (package)}
 %
 %    \begin{macrocode}
-\@ifundefined{@captionheadfont}{}{%
+\caption@ifamsclass{%
   \caption@Info{AMS or SMF document class}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -4060,7 +4095,7 @@
 % \changes{v3.1}{2007/04/05}{\KOMAScript\ compatibility revised \& enhanced (package)}
 %
 %    \begin{macrocode}
-\@ifundefined{scr@caption}{}{%
+\caption@ifkomaclass{%
   \caption@Info{KOMA-Script document class}%
 %    \end{macrocode}
 %
@@ -4456,6 +4491,7 @@
 % \changes{v3.1}{2007/07/28}{This macro added}
 % \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 % \changes{v3.1g}{2008/01/20}{Starred variant added}
+% \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 %  |\captionlistentry|\oarg{float type}\marg{list entry}\\
 %  |\captionlistentry*|\oarg{float type}\marg{list entry}
 %    \begin{macrocode}
@@ -4469,7 +4505,7 @@
 %    \begin{macrocode}
 \def\caption@listentry#1[#2]#3{%
   \@bsphack
-    #1{\def\@currentlabelname{#3}}%
+    #1{\caption@gettitle{#3}}%
       {\caption@refstepcounter{#2}%
        \caption@makecurrent{#2}{#3}}%
     \caption@addcontentsline{#2}{#3}%
@@ -4777,6 +4813,17 @@
 % \end{macro}
 % \end{macro}
 %
+% \begin{macro}{\caption@gettitle}
+% \changes{v3.1}{2007/05/05}{This macro and its usage added}
+%  This one is needed for support of the \package{nameref} package.
+%    \begin{macrocode}
+\newcommand\caption@gettitle[1]{%
+  \@ifundefined{NR@gettitle}%
+    {\def\@currentlabelname{#1}}%
+    {\NR@gettitle{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \subsection{\cs{caption}, \cs{@caption}, and \cs{@makecaption}}
 %
 % \begin{macro}{\caption@caption}
@@ -4967,7 +5014,6 @@
       {\@dblarg{\Hy@tempa\@captype}}%
     }}%
 %    \end{macrocode}
-%
 %    \begin{macrocode}
   \caption@CheckCommand\caption{%
     % hyperref.sty [2007/08/05 v6.76j Hypertext links for LaTeX]
@@ -5110,9 +5156,107 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@CheckCommand\@caption{%
+    % hyperref.sty [2009/11/27 v6.79k Hypertext links for LaTeX]
+    \long\def\@caption#1[#2]#3{%
+      \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                      \csname iftrue\endcsname
+        \global\let\@currentHref\hc@currentHref
+      \else
+        \hyper@makecurrent{\@captype}%
+      \fi
+      \def\@currentlabelname{#2}%
+      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
+        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
+      }%
+      \begingroup
+        \@parboxrestore
+        \if@minipage
+          \@setminipage
+        \fi
+        \normalsize
+        \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                        \csname iftrue\endcsname
+          \global\@capstartfalse
+          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
+        \else
+          \@makecaption{\csname fnum@#1\endcsname}{%
+            \ignorespaces
+            \ifHy@nesting
+              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
+            \else
+              \Hy@raisedlink{%
+                \expandafter\hyper@@anchor\expandafter{\@currentHref}{\relax}%
+              }%
+              #3%
+            \fi
+          }%
+        \fi
+        \par
+      \endgroup
+    }}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
+    % hyperref.sty [2009/12/09 v6.79m Hypertext links for LaTeX]
+    % hyperref.sty [2009/12/28 v6.79z Hypertext links for LaTeX]
+    \long\def\@caption#1[#2]#3{%
+      \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                      \csname iftrue\endcsname
+        \global\let\@currentHref\hc@currentHref
+      \else
+        \hyper@makecurrent{\@captype}%
+      \fi
+      \@ifundefined{NR@gettitle}{%
+        \def\@currentlabelname{#2}%
+      }{%
+        \NR@gettitle{#2}%
+      }%
+      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
+        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
+      }%
+      \begingroup
+        \@parboxrestore
+        \if@minipage
+          \@setminipage
+        \fi
+        \normalsize
+        \expandafter\ifx\csname if@capstart\expandafter\endcsname
+                        \csname iftrue\endcsname
+          \global\@capstartfalse
+          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
+        \else
+          \@makecaption{\csname fnum@#1\endcsname}{%
+            \ignorespaces
+            \ifHy@nesting
+              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
+            \else
+              \Hy@raisedlink{%
+                \expandafter\hyper@@anchor\expandafter{%
+                  \@currentHref
+                }{\relax}%
+              }%
+              #3%
+            \fi
+          }%
+        \fi
+        \par
+      \endgroup
+    }}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
     % nameref.sty [2006/12/27 v2.28 Cross-referencing by name of section]
     \long\def\@caption#1[#2]{%
       \def\@currentlabelname{#2}%
+      \NR@@caption{#1}[{#2}]%
+    }}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
+    % nameref.sty [2009/11/27 v2.32 Cross-referencing by name of section]
+    \long\def\@caption#1[#2]{%
+      \NR@gettitle{#2}%
       \NR@@caption{#1}[{#2}]%
     }}%
 %    \end{macrocode}
@@ -5391,7 +5535,7 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@addsubcontentsline}
-% \changes{v3.1i}{2008/08/02}{Bugfix:
+% \changes{v3.1i}{2008/08/02}{Bugfix 08-07-28:
 %    \cs{label}, \cs{index}, and \cs{glossary} are allowed inside the list entry now}
 % Add a pending sub-caption list entry.
 %    \begin{macrocode}
@@ -6269,6 +6413,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@makecurrent}
+% \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 % We redefine |\caption@makecurrent| so a \package{hyperref} label
 % will be defined inside |\@caption|.
 % \Note{Will be redefined by \cs{caption@start}.}
@@ -6276,7 +6421,7 @@
     \renewcommand*\caption@makecurrent[2]{%
       \caption@makecurrentHref{#1}%
       \caption@Debug{hyperref current=\@currentHref}%
-      \def\@currentlabelname{#2}}%
+      \caption@gettitle{#2}}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \newcommand*\caption@makecurrentHref{\hyper@makecurrent}%
@@ -6284,6 +6429,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@makeanchor}
+% \changes{v3.1l}{2010/01/09}{Adapted to the current hyperref package}
 % We redefine |\caption@makeanchor| so a \package{hyperref} anchor
 % will be set inside |\@caption|.
 % \Note{Will be redefined by \cs{caption@start}.}
@@ -6292,9 +6438,11 @@
       \caption@Debug{hyperref anchor: \@currentHref}%
       % If we cannot have nesting, the anchor is empty.
       \ifHy@nesting
-        \hyper@@anchor{\@currentHref}{#1}%
+        \expandafter\hyper@@anchor\expandafter{\@currentHref}{#1}%
       \else
-        \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#1%
+        \Hy@raisedlink{%
+          \expandafter\hyper@@anchor\expandafter{\@currentHref}{\relax}%
+        }#1%
       \fi}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -7335,11 +7483,12 @@
 %
 % \begin{macro}{\@xtablecaption}
 % \changes{v3.1h}{2008/04/01}{Made \cs{nameref} \& \cs{autoref} work}
+% \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 %  Make |\nameref| and |\autoref| work.
 %    \begin{macrocode}
   \let\caption@ORI@xtablecaption\@xtablecaption
   \long\def\@xtablecaption[#1]#2{%
-    \def\@currentlabelname{#2}%
+    \caption@gettitle{#2}%
     \caption@ORI@xtablecaption[#1]{#2}}%
 %    \end{macrocode}
 % \end{macro}
@@ -7402,11 +7551,12 @@
 % \end{macro}
 %
 % \begin{macro}{\@xtablecaption}
+% \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 %  Make |\nameref| and |\autoref| work.
 %    \begin{macrocode}
   \let\caption@ORI@xtablecaption\@xtablecaption
   \long\def\@xtablecaption[#1]#2{%
-    \def\@currentlabelname{#2}%
+    \caption@gettitle{#2}%
     \caption@ORI@xtablecaption[#1]{#2}}%
 %    \end{macrocode}
 % \end{macro}
