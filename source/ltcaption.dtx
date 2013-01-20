@@ -2,7 +2,7 @@
 % 
 % This is file `ltcaption.dtx'.
 % 
-% Copyright (C) 2007 Axel Sommerfeldt (caption@sommerfee.de)
+% Copyright (C) 2007-2008 Axel Sommerfeldt (caption@sommerfee.de)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -24,7 +24,7 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{333}
+% \CheckSum{336}
 %
 % \iffalse
 %<*driver>
@@ -45,6 +45,7 @@
 % \addtolength\marginparwidth{15pt}
 \fi
 %
+\usepackage[bottom]{footmisc}
 \usepackage{longtable}
 \makeatletter\let\LT@makecaption@ORI\LT@makecaption\makeatother
 %
@@ -438,7 +439,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{ltcaption}[2007/09/01 v1.1 longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2008/03/21 v1.1a longtable captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{User interface}
@@ -509,6 +510,7 @@
 % \subsection{The longtable patch}
 %
 % \begin{macro}{\LT@array}
+% \changes{v1.1a}{2008/03/21}{Improved redefinition of \cs{refstepcounter} etc.}
 %  We insert our stuff into the definition of |\LT@array| here.
 %  Since the \package{hyperref} package patches |\LT@array| as well
 %  and since this only works with the original definition of |\LT@array|,
@@ -521,25 +523,18 @@
   \let\ltcaption@ORI@LT@array\LT@array
   \renewcommand*\LT@array{%
 %    \end{macrocode}
-%  We modify the next |\refstepcounter| resp. |\H@refstepcounter| \&
-%  |\hyper@makecurrent|, so |\LTcaptype| is used instead of |{table}|.
+%  We modify |\ref|\-|step|\-|counter| resp.~|\H@ref|\-|step|\-|counter| and
+%  |\hyper@make|\-|current|, so |\LT|\-|cap|\-|type| is used instead of |table|.
 %    \begin{macrocode}
-    \let\ltcaption@ORI@refstepcounter\refstepcounter
-    \let\ltcaption@ORI@H@refstepcounter\H@refstepcounter
-    \def\refstepcounter##1{%
-      \let\refstepcounter\ltcaption@ORI@refstepcounter
-      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
-      \refstepcounter\LTcaptype}%
-    \def\H@refstepcounter##1{%
-      \let\refstepcounter\ltcaption@ORI@refstepcounter
-      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
-      \H@refstepcounter\LTcaptype}%
-%    \end{macrocode}
-%    \begin{macrocode}
-    \let\ltcaption@ORI@hyper@makecurrent\hyper@makecurrent
-    \def\hyper@makecurrent##1{%
-      \let\hyper@makecurrent\ltcaption@ORI@hyper@makecurrent
-      \hyper@makecurrent\LTcaptype}%
+    \let\caption@LT@refstepcounter\refstepcounter
+    \def\refstepcounter{%
+      \caption@LTtype\caption@LT@refstepcounter}%
+    \let\caption@LT@Hrefstepcounter\H@refstepcounter
+    \def\H@refstepcounter{%
+      \caption@LTtype\caption@LT@Hrefstepcounter}%
+    \let\caption@LT@makecurrent\hyper@makecurrent
+    \def\hyper@makecurrent{%
+      \caption@LTtype\caption@LT@makecurrent}%
 %    \end{macrocode}
 %  We redefine |\lst@@caption| so |\thelstlisting| will
 %  printout its counter, too.
@@ -552,9 +547,26 @@
 %    \begin{macrocode}
 }
 %    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@LTtype[2]{%
+  \edef\caption@LT@tempa{#2}%
+  \ifx\caption@LT@tempa\caption@LT@table
+    \caption@LT@type#1%
+  \else
+    #1{#2}%
+  \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@LT@type[1]{%
+  \expandafter#1\expandafter{\LTcaptype}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@LT@table{table}%
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\LT@c@ption}
+% \changes{v1.1a}{2008/01/22}{Made it \cs{long}}
 %  The original implementation:
 %  \begin{verbatim}
 %  \def\LT@c@ption#1[#2]#3{%
@@ -567,7 +579,7 @@
 %  \end{verbatim}%^^A
 %  Our implementation simply uses |\LTcaptype| instead of |{table}|:
 %    \begin{macrocode}
-\def\LT@c@ption#1[#2]#3{%
+\long\def\LT@c@ption#1[#2]#3{%
   \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
   \def\@tempa{#2}%
   \ifx\@tempa\@empty\else
@@ -737,14 +749,26 @@
 % \changes{v1.1}{2007/09/01}{Environment \env{longtable*} added}
 %
 % \begin{environment}{longtable*}
-% We simply supress anything which has to do with reference counters
-% or hyper links here.
+% \changes{v1.1a}{2008/03/21}{Improved redefinition of \cs{refstepcounter} etc.}
+% A |longtable| environment without reference counter and hyperlink anchors.
 %    \begin{macrocode}
-\newenvironment{longtable*}%
-  {\let\refstepcounter\@gobble
-   \let\H@refstepcounter\@gobble
-   \let\hyper@makecurrent\@gobble
-   \let\Hy@raisedlink\@gobble
+\newenvironment{longtable*}{%
+%    \end{macrocode}
+%  We simply supress anything which has to do with reference counters here.
+%    \begin{macrocode}
+  \let\caption@LT@type\@gobble
+%    \end{macrocode}
+%  Unfortunately this is not so easy with |\Hy@raisedlink| (which actually sets
+%  the hyperlink anchor), so we assume that we have to supress the first usage.
+%    \begin{macrocode}
+   \let\caption@LT@raisedlink\Hy@raisedlink
+   \def\Hy@raisedlink{%
+     \let\Hy@raisedlink\caption@LT@raisedlink
+     \@gobble}%
+%    \end{macrocode}
+%  Finally we are redefining |\caption| so the non-starred variant
+%  issues an error.
+%    \begin{macrocode}
    \let\ltcaption@ORI@LT@c@ption\LT@c@ption
    \def\LT@c@ption##1[##2]##3{%
      \ifx##1\@firstofone
@@ -756,8 +780,10 @@
      \else
        \ltcaption@ORI@LT@c@ption{##1}[{##2}]{##3}%
      \fi}%
-   \longtable}%
-  {\endlongtable}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \longtable}%
+ {\endlongtable}
 %    \end{macrocode}
 % \end{environment}
 %

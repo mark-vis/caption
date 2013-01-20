@@ -6,7 +6,7 @@
 %%
 %% ltcaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2007 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2008 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{ltcaption}[2007/09/01 v1.1 longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2008/03/21 v1.1a longtable captions (AR)]
 \providecommand*\LTcaptype{table}
 \providecommand*\ext@table{lot}
 \@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
@@ -45,24 +45,29 @@
 \@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
   \let\ltcaption@ORI@LT@array\LT@array
   \renewcommand*\LT@array{%
-    \let\ltcaption@ORI@refstepcounter\refstepcounter
-    \let\ltcaption@ORI@H@refstepcounter\H@refstepcounter
-    \def\refstepcounter##1{%
-      \let\refstepcounter\ltcaption@ORI@refstepcounter
-      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
-      \refstepcounter\LTcaptype}%
-    \def\H@refstepcounter##1{%
-      \let\refstepcounter\ltcaption@ORI@refstepcounter
-      \let\H@refstepcounter\ltcaption@ORI@H@refstepcounter
-      \H@refstepcounter\LTcaptype}%
-    \let\ltcaption@ORI@hyper@makecurrent\hyper@makecurrent
-    \def\hyper@makecurrent##1{%
-      \let\hyper@makecurrent\ltcaption@ORI@hyper@makecurrent
-      \hyper@makecurrent\LTcaptype}%
+    \let\caption@LT@refstepcounter\refstepcounter
+    \def\refstepcounter{%
+      \caption@LTtype\caption@LT@refstepcounter}%
+    \let\caption@LT@Hrefstepcounter\H@refstepcounter
+    \def\H@refstepcounter{%
+      \caption@LTtype\caption@LT@Hrefstepcounter}%
+    \let\caption@LT@makecurrent\hyper@makecurrent
+    \def\hyper@makecurrent{%
+      \caption@LTtype\caption@LT@makecurrent}%
     \def\lst@@caption{\relax}%
     \ltcaption@ORI@LT@array}%
 }
-\def\LT@c@ption#1[#2]#3{%
+\newcommand*\caption@LTtype[2]{%
+  \edef\caption@LT@tempa{#2}%
+  \ifx\caption@LT@tempa\caption@LT@table
+    \caption@LT@type#1%
+  \else
+    #1{#2}%
+  \fi}%
+\newcommand*\caption@LT@type[1]{%
+  \expandafter#1\expandafter{\LTcaptype}}
+\newcommand*\caption@LT@table{table}%
+\long\def\LT@c@ption#1[#2]#3{%
   \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
   \def\@tempa{#2}%
   \ifx\@tempa\@empty\else
@@ -139,11 +144,12 @@
     \def\next{\caption@LT@parse@ @}%
   \fi\fi\fi
   \next}
-\newenvironment{longtable*}%
-  {\let\refstepcounter\@gobble
-   \let\H@refstepcounter\@gobble
-   \let\hyper@makecurrent\@gobble
-   \let\Hy@raisedlink\@gobble
+\newenvironment{longtable*}{%
+  \let\caption@LT@type\@gobble
+   \let\caption@LT@raisedlink\Hy@raisedlink
+   \def\Hy@raisedlink{%
+     \let\Hy@raisedlink\caption@LT@raisedlink
+     \@gobble}%
    \let\ltcaption@ORI@LT@c@ption\LT@c@ption
    \def\LT@c@ption##1[##2]##3{%
      \ifx##1\@firstofone
@@ -155,8 +161,8 @@
      \else
        \ltcaption@ORI@LT@c@ption{##1}[{##2}]{##3}%
      \fi}%
-   \longtable}%
-  {\endlongtable}
+  \longtable}%
+ {\endlongtable}
 \@ifundefined{@komalongtablefalse}{}{%
   \if@komalongtable
     \renewcommand{\LT@makecaption}[3]{%

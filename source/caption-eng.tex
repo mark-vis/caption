@@ -23,35 +23,40 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-eng.tex}[2007/12/23 v3.1f The caption package]
+\ProvidesFile{caption-eng.tex}[2008/03/16 v3.1g The caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=20pt % Make TeX shut up.
 %\errorcontextlines=3
 
-\documentclass{ltxdoc}
+\documentclass[USenglish]{ltxdoc}
+\usepackage{fixltx2e}
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 \setlength\leftmargini{2em}% default = 2.5em
+\makeatletter\g@addto@macro\MacroFont{\normalcolor}\makeatother
 
+\newcommand\LineBreak{\linebreak[3]}
+\newcommand\PageBreak{\pagebreak[3]}
 \usepackage{ifpdf}
 \ifpdf
   \usepackage{mathptmx,courier}
   \usepackage[scaled=0.90]{helvet}
   \addtolength\marginparwidth{15pt}
+  \ifdim\paperheight=297mm % a4paper
+    \renewcommand\LineBreak{\\}
+    \renewcommand\PageBreak{\clearpage}
+  \fi
 \fi
 
-\usepackage[USenglish]{babel}
-\usepackage{longtable,setspace}
-\IfFileExists{cat.eps}%
-  {\usepackage{graphicx}}%
-  {\IfFileExists{test/tlc2/cat.eps}%
-    {\usepackage{graphicx}\graphicspath{{test/tlc2/}}}%
-    {\usepackage[demo]{graphicx}}}
+\usepackage[bottom]{footmisc}
+\usepackage{graphicx,longtable,setspace}
+\IfFileExists{test/tlc2/cat.eps}{\graphicspath{{test/tlc2/}}}{}%
 
 \usepackage{hypdoc}
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 \hypersetup{breaklinks=true}
-\usepackage[listof=0,hypcap=false]{caption}[2007/09/01]
+
+\usepackage[listof=0,hypcap=false]{caption}[2008/01/12]
 
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -102,29 +107,24 @@
 \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
 \let\class\puresf \let\package\puresf
-\let\env\purett \let\opt\purett
 
 \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 \newcommand*\version[2][]{$v#2$}
-\newcommand*\x{\discretionary{-}{}{}}
-\newcommand*\xx{\discretionary{}{}{}}
+\newcommand*\x{\discretionary{}{}{}}
 
-\newenvironment{Options}[1]%
-  {\list{}{\renewcommand\makelabel[1]{\texttt{##1}\hfil}%
-   \settowidth\labelwidth{\texttt{#1\space}}%
-   \setlength\leftmargin{10pt}%
-   \addtolength\leftmargin{\labelwidth}%
-   \addtolength\leftmargin{\labelsep}}}%
-  {\endlist}
+\newenvironment{Annotation}%
+  {\ifvmode\else\unskip\par\fi\pagebreak[2]%
+   \smallskip
+   \small(\ignorespaces}{\unskip)\par}
+\newenvironment{Annotation*}%
+  {\ifvmode\else\unskip\par\fi\pagebreak[2]%
+   \small(\ignorespaces}{\unskip)\par}
 
 \newenvironment{Example}%
-  {\ifvmode\else\unskip\par\fi
+  {\ifvmode\else\unskip\par\fi\pagebreak[2]%
    \minipage{\linewidth}\smallskip}%
   {\smallskip\endminipage\par}
-
-\newenvironment{Expert}%
-  {\footnotesize\ignorespaces}{\par}
 
 \makeatletter
 \newcommand\example{\@ifstar
@@ -139,6 +139,37 @@
   \endgroup}
 \makeatother
 
+\newenvironment{Expert}%
+  {\ifvmode\else\unskip\par\fi\pagebreak[3]%
+   \smallskip
+   \footnotesize\ignorespaces}{\par}
+\newenvironment{Expert*}%
+  {\ifvmode\else\unskip\par\fi\pagebreak[3]%
+   \footnotesize\ignorespaces}{\par}
+
+\newenvironment{Note}[1][\DefaultNoteText]%
+  {\ifvmode\else\unskip\par\fi
+   \smallskip
+   \small\emph{#1:}~\ignorespaces}{\par}
+\newenvironment{Note*}[1][\DefaultNoteText]%
+  {\ifvmode\else\unskip\par\fi
+   \small\emph{#1:}~\ignorespaces}{\par}
+
+\newenvironment{Options}[1]%
+  {\list{}{\renewcommand\makelabel[1]{\texttt{##1}\hfil}%
+   \settowidth\labelwidth{\texttt{#1\space}}%
+   \setlength\leftmargin{10pt}%
+   \addtolength\leftmargin{\labelwidth}%
+   \addtolength\leftmargin{\labelsep}}}%
+  {\endlist}
+
+\makeatletter
+\newcommand*\Ref{\@ifstar{\@Ref\ref}{\@Ref\autoref}}
+\newcommand*\@Ref[2]{#1{#2}: \textit{\nameref{#2}}}
+\newcommand*\SEE[3][]{\nopagebreak{#1(#2 #3)}}
+\newcommand*\SeeUserDefined[1][]{\See{\Ref{declare}#1}}
+\makeatother
+
 \begin{document}
 \let\subsectionautorefname\sectionautorefname
 \let\subsubsectionautorefname\sectionautorefname
@@ -146,15 +177,13 @@
 \def\thispackage{the \package{caption} package}
 \def\Thispackage{The \package{caption} package}
 
-\newcommand\NEWfeature{\NEW{New feature}}
-\newcommand\NEWdescription{\NEW{New description}}
-
+\newcommand*\DefaultNoteText{Note}
+\newcommand*\NEWfeature{\NEW{New feature}}
+\newcommand*\NEWdescription{\NEW{New description}}
 \makeatletter
-\newcommand*\Ref{\@ifstar{\@Ref\ref}{\@Ref\autoref}}
-\newcommand*\@Ref[2]{#1{#2}: \textit{\nameref{#2}}}
+\newcommand*\See{\@ifstar{\SEE{See}}{\SEE[\small]{See}}}
+\newcommand*\see{\@ifstar{\SEE{see}}{\SEE[\small]{see}}}
 \makeatother
-\newcommand*\See[1]{\nopagebreak{\small(See #1)}}
-\newcommand*\SeeUserDefined[1][]{\See{\Ref{declare}#1}}
 
 % --------------------------------------------------------------------------- %
 
@@ -162,7 +191,8 @@
 \let\docdate\filedate
 \GetFileInfo{caption.sty}
 
-\title{Customizing captions in floating environments\texorpdfstring{\thanks{%
+\title{Customizing captions of floating environments
+       using the caption package\texorpdfstring{\thanks{%
          This package has version number \fileversion,
          last revised \filedate.}}{}}
 \author{Axel Sommerfeldt\\
@@ -206,28 +236,22 @@ caption formatting options, but you are free to define your very own stuff, too.
 
 \bigskip
 
-\INFO
+\INFO\begin{minipage}[t]{\textwidth}
+\small
 Please note that \thispackage\ is only controlling the look \& feel of the
 captions. It does \emph{not} control the placement of the captions.
+(But you could do so by using other packages like the \package{floatrow}
+ package\cite{floatrow}.)
+\end{minipage}
 
 % --------------------------------------------------------------------------- %
 
-\iffalse
-\section*{PRELIMINARY DOCUMENTATION}
-Please note that this document is inconsistent and not finished yet.
-It'll try to update it within the next months; the actual version can always be found
-\href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/caption/caption-eng.pdf}%
-{here}.\par\bigskip
-\fi
-
-% --------------------------------------------------------------------------- %
-
-\vfill\clearpage
+\clearpage
 \tableofcontents
 
 % --------------------------------------------------------------------------- %
 
-\vfill\clearpage
+\clearpage
 \section{Using this package}
 \label{usage}
 
@@ -237,7 +261,7 @@ Insert
   |\usepackage|\oarg{options}|{caption}[|\texttt{\filedate}|]|
 \end{quote}
 into the preamble of your document, i.e.~the part of your document
-between |\document|\x|class| and |\begin{doc|\x|u|\x|ment}|.
+between |\document|\-|class| and |\begin{doc|\-|u|\-|ment}|.
 The options control how your captions will look like; e.g.,
 \begin{quote}
   |\usepackage[margin=10pt,font=small,labelfont=bf,|\\
@@ -262,9 +286,9 @@ and
 \end{quote}
 are equal in their results.
 
-It's good to know that |\captionsetup| has an effect on the current
+It's good to know that |\caption|\-|setup| has an effect on the current
 environment only. So if you want to change settings for the
-current |figure| or |table| only, just place the |\captionsetup| command
+current |figure| or |table| only, just place the |\caption|\-|setup| command
 inside the |figure| or |table| right before the |\caption| command.
 For example
 \begin{quote}
@@ -277,13 +301,13 @@ For example
 switches the single-line-check off, but only for this |figure|,
 so all the other captions remain untouched.
 
-\smallskip
-
-{\small(For a detailed description of |\captionsetup| see \Ref{captionsetup}.)}
+\begin{Annotation}
+For a detailed description of |\caption|\-|setup| see \Ref{captionsetup}.
+\end{Annotation}
 
 % --------------------------------------------------------------------------- %
 
-\vfill\clearpage
+\clearpage
 \section{Options}
 \label{options}
 
@@ -322,7 +346,7 @@ There are two standard caption formats:
   Indents the caption text, so it will `hang' under the first line of the text.
 
   \item[\UserDefined]
-  Own formats can be defined using |\Declare|\x|Caption|\x|Format|.\\
+  Own formats can be defined using |\Declare|\-|Caption|\-|Format|.\LineBreak
   \SeeUserDefined
 \end{Options}
 
@@ -399,7 +423,7 @@ There are five standard caption label formats:
   The number of the caption label will be typeset in parentheses.
 
   \item[\UserDefined]
-  Own label formats can be defined using |\Declare|\x|Caption|\x|Label|\x|Format|.
+  Own label formats can be defined using |\Declare|\-|Caption|\-|Label|\-|Format|.
   \SeeUserDefined
 \end{Options}
 
@@ -414,9 +438,11 @@ There are five standard caption label formats:
 
 \medskip
 
-\emph{Note:} Some environments, e.g.~the \env{algorithm} environment offered
-by the \package{algorithm2e} package, might react allergic to a change of the
+\begin{Note*}
+Some environments, e.g.~the |algorithm| environment offered by the
+\package{algorithm2e} package, might react allergic to a change of the
 caption label format.
+\end{Note*}
 
 \bigskip
 
@@ -426,7 +452,9 @@ With the option
 \begin{quote}
   |labelsep=|\meta{label separator name}
 \end{quote}
-you specify what caption separator will be used.
+you specify what caption separator will be used.\footnote{%
+  If the caption label or the caption text is empty,
+  no separator will be used.}
 You can choose one of the following:
 
 \begin{Options}{\OptionLabel}
@@ -452,7 +480,7 @@ You can choose one of the following:
   \item[newline]
   The caption label and text will be separated by a line break (|\\|).
   Please note that this separator does not work with all caption
-  formats (e.g.~|format=|\xx|hang|), and you'll get an error message
+  formats (e.g.~|format=|\x|hang|), and you'll get an error message
   trying such combination of options.
 
   \item[endash]\NEWfeature{v3.0h}
@@ -461,7 +489,7 @@ You can choose one of the following:
 
 %\showhyphens{separator}
   \item[\UserDefined]
-  Own separators can be defined using |\Declare|\x|Caption|\x|Label|\x|Sep|\x|a|\x|ra|\x|tor|.
+  Own separators can be defined using |\Declare|\-|Caption|\-|Label|\-|Sep|\-|a|\-|ra|\-|tor|.
   \SeeUserDefined
 \end{Options}
 
@@ -500,7 +528,6 @@ With the option
   |textformat=|\meta{text format name}
 \end{quote}
 \nopagebreak[3]
-%\NEWdescription{v3.0e}
 you specify how the caption text will be typeset.
 There are two standard caption text formats:
 
@@ -512,13 +539,13 @@ There are two standard caption text formats:
   The caption text will be followed by a period.
 
   \item[\UserDefined]
-  Own label formats can be defined using |\Declare|\x|Caption|\x|Text|\x|Format|.
+  Own text formats can be defined using |\Declare|\-|Caption|\-|Text|\-|Format|.
   \SeeUserDefined
 \end{Options}
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\PageBreak
 \subsection{Justification}
 \label{justification}
 
@@ -557,12 +584,12 @@ You can choose one of the following:
   \item[RaggedRight]
   Each line of the caption will be moved to the left margin, too.
   But this time the command |\RaggedRight| of the \package{ragged2e}
-  package will be used to achieve this.\footnote{%
+  package will be used to achieve this.
+  The main difference to |raggedright| is that the word breaking
+  algorithm of \TeX\ will work inside captions.\footnote{%
     The need for the \package{ragged2e} package will be detected at
     run-time, therefore you maybe need a second \LaTeX\ run if this
-    option is used.}
-  The main difference to |raggedright| is that the word breaking
-  algorithm of \TeX\ will work inside captions.
+    option is used for the first time.}
 \fi
 
   \item[raggedleft]
@@ -574,7 +601,7 @@ You can choose one of the following:
 
 %\showhyphens{justification}
   \item[\UserDefined]
-  Own justifications can be defined using |\Declare|\x|Caption|\x|Jus|\x|ti|\x|fi|\x|ca|\x|tion|.
+  Own justifications can be defined using |\Declare|\-|Caption|\-|Jus|\-|ti|\-|fi|\-|ca|\-|tion|.
   \SeeUserDefined
 \end{Options}
 
@@ -647,14 +674,15 @@ for \meta{bool}. (The default is on.)
 \DescribeMacro{textfont=}
 There are three font options which affects different parts of the caption:
 One affecting the whole caption (|font|), one which only affects the caption
-label and separator (|labelfont|) and at least one which only affects the
-caption text (|textfont|).
+label and separator (|label|\-|font|) and at least one which only affects the
+caption text (|text|\-|font|).
 You set them up using the options
 \begin{quote}\begin{tabular}{@{}r@{}ll}
   |font=|      & \marg{font options} & ,\\
   |labelfont=| & \marg{font options} & , and\\
-  |textfont=|  & \marg{font options} & .\\
+  |textfont=|  & \marg{font options} & ,\\
 \end{tabular}\end{quote}
+where \meta{font options} is a list of comma separated font options.
 
 And these are the available font options:
 
@@ -698,11 +726,11 @@ And these are the available font options:
 \end{Options}
 \vspace{0pt}\pagebreak[3]
 \begin{Options}{stretch=\meta{amount}}
-  \item[normal] The combination of the options \opt{normalcolor},
-                \opt{normalfont}, \opt{normalsize}, and \opt{singlespacing}
+  \item[normal] The combination of the options |normal|\-|color|,
+                |normal|\-|font|, |normal|\-|size|, and |single|\-|spacing|
 
   \item[\UserDefined]
-  Own font options can be defined using |\DeclareCaptionFont|.\\
+  Own font options can be defined using |\Declare|\-|Caption|\-|Font|.
   \SeeUserDefined
 \end{Options}
 
@@ -742,6 +770,23 @@ Three examples:
   \example{font={small,stretch=0.80}}{\exampletext}
 \end{Example}
 
+\medskip
+
+\pagebreak[3]
+\DescribeMacro{font+=}
+\DescribeMacro{labelfont+=}
+\DescribeMacro{textfont+=}
+\NEWfeature{v3.1f}
+You can also add font options to the current ones, so for example
+\begin{quote}
+  |\captionsetup{font=small}|\\
+  |\captionsetup{font+=it}|
+\end{quote}
+is identical to
+\begin{quote}
+  |\captionsetup{font={small,it}}|
+\end{quote}
+
 % --------------------------------------------------------------------------- %
 
 \subsection{Margins and further paragraph options}
@@ -760,15 +805,16 @@ or \package{threeparttable}\cite{threeparttable} package.}
   |width=|  & \meta{amount} & \\
 \end{tabular}\end{quote}
 \NEWfeature{v3.1}
-If you specify just one \meta{amount} for the margin, it will be used for both,
-the left and right margin, e.g.~|margin=10pt| is equivalent to |margin={10pt,10pt}|.
+If you specify just one \meta{amount} for the margin, it will be used for
+both, the left and right margin, e.g.~|margin=|\x|10pt| is equivalent to
+|margin=|\x|{10pt,10pt}|.
 In two-side documents the left and right margin will be swapped on even pages.
 \DescribeMacro{oneside}
 \DescribeMacro{twoside}
 To prevent this you can specify the option |oneside| additionally,
-e.g.~|\caption|\x|setup|\xx|{margin=|\xx|{0pt,10pt},|\xx|oneside}|.\par
-If you are specifying a width, then both, the left and the right margin, will
-have the same amount.
+e.g.~|\caption|\-|setup{margin=|\x|{0pt,10pt},|\x|oneside}|.\par
+But if you are specifying a width, then both, the left and the right margin,
+will have the same amount.
 
 Three examples will illustrating this:
 \begin{Example}
@@ -795,31 +841,31 @@ Three examples will illustrating this:
   \example{width=.75\textwidth}{\exampletext}
 \end{Example}
 
-\emph{Note:} When the caption is placed beside the contents (for example in
-a |SCfigure| environment offered by the \package{sidecap} package\cite{sidecap})
-or the caption is an in-text caption (for example in a |wrapfigure| environment
+\begin{Note}
+When the caption is placed beside the contents (for example in a |SC|\-|figure|
+environment offered by the \package{sidecap} package\cite{sidecap}) or the
+figure is an in-text figure (for example in a |wrap|\-|figure| environment
 offered by the \package{wrapfig} package\cite{wrapfig}), the margin setting
-will be usually reset to |0pt| at the very beginning of the environment.
+will be automatically reset to |0pt| at the very beginning of the environment.
 But if you really want to setup an extra margin for these environments, you can
 do so by setting this margin either inside the environment itself, of by
 specifying a margin for this particular environment,
-e.g.~|\captionsetup[SCfigure]{margin=10pt}|.
+e.g.~|\caption|\-|setup[SC|\-|figure]{margin=|\x|10pt}|.
+\end{Note}
 
-\pagebreak[3]
-\DescribeMacro{margin*=}\NEWfeature{v3.1}
 \begin{Expert}
+\DescribeMacro{margin*=}\NEWfeature{v3.1}
 There is also a starred variant of the |margin=| option, |margin*=|, which only
 changes the margin if no width was set.
 \end{Expert}
 
-\pagebreak[3]
+\begin{Expert}
 \DescribeMacro{minmargin=}
 \DescribeMacro{maxmargin=}\NEWfeature{v3.1}
-\begin{Expert}
 You can also set a minimum or maximum margin amount. This can be useful for
 limiting the margin amount in smaller environments, e.g.~|minipage|s.
 For example the \SmF\ document classes limit the margin amount to
-|maxmargin=.1\linewidth|. (See \Ref{SMF})
+|maxmargin=|\x|0.1\linewidth|. (See \Ref{SMF})
 \end{Expert}
 
 \medskip
@@ -852,7 +898,8 @@ The option
 \end{quote}
 is for setting up a hanging indention starting from the second line of each
 paragraph. If the caption contains just a single paragraph, using this option
-leads to the same result as the option |indention=| you already know about.
+leads to the same result as the option |indention=|\meta{amount} you already
+know about.
 But if the caption contains multiple paragraphs you will notice the difference:
 
 \begin{Example}
@@ -871,7 +918,7 @@ But if the caption contains multiple paragraphs you will notice the difference:
   \begin{quote}
     |format=hang,hangindent=-.5cm|
   \end{quote}
-  \captionsetup{aboveskip=0pt}
+  \captionsetup{skip=0pt}
   \example{format=hang,hangindent=-.5cm}{%
     First paragraph of the caption. This one contains some test, just to
     show how these options affect the layout of the caption.\par
@@ -879,22 +926,24 @@ But if the caption contains multiple paragraphs you will notice the difference:
     show how these options affect the layout of the caption.}
 \end{Example}
 
-\emph{Note:} If your caption contains more than one paragraph, you have
+\begin{Note}
+If your caption contains more than one paragraph, you have
 to specify an alternative caption for the list-of-figures using the
-optional argument of |\caption| or |\captionof|, otherwise you will get
-an error message.
+optional argument of |\caption| or |\caption|\-|of|, otherwise you will
+get an error message.
+\end{Note}
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\PageBreak
 \subsection{Styles}
 \label{style}
 
 \DescribeMacro{style=}
 A suitable combination of caption options is called \emph{caption style}.
 You can compare them more or less to page styles which you set up with
-|\pagestyle|; the caption style provides all settings for a whole caption
-layout.
+|\page|\-|style|;
+the caption style provides all settings for a whole caption layout.
 
 You switch to an already defined caption style with the option
 \begin{quote}
@@ -917,8 +966,10 @@ has the same effect as specifying all these options:
   |textfont={},margin=0pt,indention=0pt|\\
   |parindent=0pt,hangindent=0pt,singlelinecheck=true|
 \end{quote}
-{\small(But |justification=centering,indention=0pt| will be set if
- the caption fits into a single line.)}
+\begin{Annotation*}
+But |justification=centering,indention=0pt| will be set if
+the caption fits into a single line.
+\end{Annotation*}
 
 In contrast the |default| style follows the default values, reflecting
 the look of the captions given by the document class you actually use.
@@ -929,15 +980,19 @@ This style is selected by default and represents these options:
   |textfont=default,margin=0pt,indention=0pt|\\
   |parindent=0pt,hangindent=0pt,singlelinecheck=true|
 \end{quote}
-{\small(But again |justification=centering,indention=0pt| will be set if
- the caption fits into a single line.)}
+\begin{Annotation*}
+But again |justification=centering,indention=0pt| will be set if
+the caption fits into a single line.
+\end{Annotation*}
 
 So if you use one of the base \LaTeX\ document classes \class{article},
-\class{report}, or \class{book}, both |base| and |default| point to nearly
-the same settings.
+\class{report}, or \class{book}, both caption styles, |base| and |default|,
+point to (nearly) the same settings.
 
-{\small\emph{Note:} Own caption styles can be defined using
- |\DeclareCaptionStyle|. \SeeUserDefined}
+\begin{Note}
+Own caption styles can be defined using |\Declare|\-|Caption|\-|Style|.\LineBreak
+\SeeUserDefined
+\end{Note}
 
 % --------------------------------------------------------------------------- %
 
@@ -951,29 +1006,29 @@ controlled by the option
   |skip=|\meta{amount}\quad.
 \end{quote}
 The standard \LaTeX\ document classes \class{article}, \class{report} and
-\class{book} preset it to |skip=10pt|, but other document classes may use
-a different amount.
+\class{book} preset it to |skip=|\x|10pt|, but other document classes may
+use a different amount.
 
 \bigskip
 
 \pagebreak[3]
 \DescribeMacro{position=}
-The |\caption| command offered by |\LaTeX| has a design flaw:
+The |\caption| command offered by \LaTeX{} has a design flaw:
 The command does not know if it stands on the beginning of the figure or
 table, or at the end. Therefore it does not know where to put the space
 separating the caption from the content of the figure or table.
 While the standard implementation always puts the space above the caption
 in floating environments (and inconsistently below the caption in
-|longtable|s), the implementation offered by this package is more
-flexible.
+|long|\-|table|s), the implementation offered by this package is more
+flexible:
 By giving the option
 \begin{quote}
   |position=top|\quad or\quad |position=above|
 \end{quote}
 it's assumed that the caption is standing at the \emph{top} of the
-environment and therefore the space setup with |skip=|\meta{amount} is
-placed below the caption.
-(Please note that |position=top| does \emph{NOT} mean that the
+environment and therefore the space setup with |skip=|\x\meta{amount}
+is placed below the caption.
+(Please note that |position=|\x|top| does \emph{NOT} mean that the
 caption is actually placed at the top of the figure or table.
 Instead the caption is usually placed where you place the |\caption|
 command.)
@@ -987,7 +1042,7 @@ And finally with
 \begin{quote}
   |position=auto|\quad {\small(which is the default setting)}
 \end{quote}
-the caption package tries its best to determine the actual position of
+\thispackage\ tries its best to determine the actual position of
 the caption on its own. Please note that while this is successfully in
 most cases, it could give wrong results under rare circumstances.
 
@@ -997,8 +1052,8 @@ most cases, it could give wrong results under rare circumstances.
 \DescribeMacro{figureposition=}%\NEWfeature{v3.0a}
 \DescribeMacro{tableposition=}%\NEWfeature{v3.0a}
 The |position| option is especially useful when used together with the
-optional argument of the |\captionsetup| command.
-\See{\Ref{captionsetup} for details}\par
+optional argument of the |\caption|\-|setup| command.
+\See{also \Ref{captionsetup}}\par
 For example
 \begin{quote}
   |\captionsetup[table]{position=above}|
@@ -1006,8 +1061,8 @@ For example
 causes all captions within tables to be treated as captions \emph{above}
 the table (regarding spacing around it).
 Because this is a very common setting, \thispackage\ offers
-the abbreviating options |figure|\x|position=|\xx\meta{pos} and
-|table|\x|position=|\xx\meta{pos}, e.g.
+the abbreviating options |figure|\-|position=|\x\meta{pos} and
+|table|\-|position=|\x\meta{pos}, e.g.
 \begin{quote}
   |\usepackage[|\ldots|,tableposition=top]{caption}|
 \end{quote}
@@ -1016,38 +1071,41 @@ is equivalent to
   |\usepackage[|\ldots|]{caption}|\\
   |\captionsetup[table]{position=top}|
 \end{quote}
-\DANGER
-{\small Please note that the options \opt{skip=}, \opt{position=},
- \opt{figureposition=}, and \opt{tableposition=} do not always have an effect.
- Since it's a matter of the document class to supply the environments
- \env{figure} and \env{table}, it could use its very own spacing, and could
- decide for itself if the caption will be typeset as ``top'' or ``bottom''
- caption.
- For example the \KOMAScript\ document classes support the \opt{skip}
- setting, but will always typeset \env{figure} captions as ``bottom'' captions,
- and \env{table} captions are dependent on the global option
- \opt{tablecaptionsabove} resp.\ \opt{tablecaptionsbelow}.
- \See{\Ref{KOMA}}
 
- Furthermore some packages control the behavior of the spacing above and
- below the caption for themself, e.g.~the \package{float}, the
- \package{floatrow}, and the \package{supertabular} package.}
+\medskip
+
+\DANGER
+Please note that the options |skip=|, |position=|, |figure|\-|position=|,
+and |table|\-|position=| do not always have an effect.
+Since it's a matter of the document class to supply the environments
+|figure| and |table|, it could use its very own spacing, and could
+decide for itself if the caption will be typeset as ``top'' or ``bottom''
+caption.
+For example the \KOMAScript\ document classes support the |skip=|
+setting, but will always typeset |figure| captions as ``bottom'' captions,
+and |table| captions are dependent on the global option
+|table|\-|captions|\-|above| resp.\ |table|\-|captions|\-|below|.
+\See{\Ref{KOMA}}
+
+Furthermore some packages control the behavior of the spacing above and
+below the caption for themself, e.g.~the \package{float}, the
+\package{floatrow}, and the \package{supertabular} package.
 
 \bigskip
 
-\begin{Expert}
+\begin{Expert*}
 Internally the skip between caption and contents is represented by
-|\above|\x|caption|\x|skip| (which is always set above the caption in
+|\above|\-|caption|\-|skip| (which is always set above the caption in
 \LaTeX{}s implementation).
-But there is a second value |\below|\x|caption|\x|skip| (usually set to
+But there is a second value |\below|\-|caption|\-|skip| (usually set to
 |0pt| by default) which is set below the caption in \LaTeX{}s implementation,
-but on the other side than |\above|\x|caption|\x|skip| by this package.
+but on the other side than |\above|\-|caption|\-|skip| by this package.
 So technically speaking, this package swaps the meaning of these two skips
 when |position=top| is set.
 Please note that there are several packages around which do the same trick
 (like the \package{ftcap}, the \package{nonfloat}, and the \package{topcap}
 package) which usage should be avoided when this package is used.
-\end{Expert}
+\end{Expert*}
 
 % --------------------------------------------------------------------------- %
 
@@ -1095,15 +1153,20 @@ There are five standard caption list formats:
   Same as |parens|, but without label prefix.
 
   \item[\UserDefined]
-  Own label formats can be defined using |\Declare|\x|Caption|\x|List|\x|Format|.
+  Own list formats can be defined using |\Declare|\-|Caption|\-|List|\-|Format|.
   \SeeUserDefined
 \end{Options}
 
-The label prefix ($=$|\p@figure| resp.~|\p@table|) is usually empty,
-so |simple| and |subsimple| gives equal results, same with |parens| and
-|subparens|. But this can be different for sub-figures or sub-tables
-listed in the List of Figures resp.~List of Tables, or when the label prefix
-is redefined for a different purpose.
+The prefix ($=$|\p@figure| resp.~|\p@table|), which runs ahead of the
+number ($=$|\the|\-|figure| resp.~|\the|\-|table|) in lists and references,
+is usually empty,
+so the list formats |simple| and |subsimple| gives equal results;
+same with |parens| and |subparens|.
+But this can be different for sub-figures or sub-tables listed in the List of
+Figures resp.~List of Tables, or when the label prefix is redefined for a
+different purpose.\footnote{%
+  Sub-figures and sub-tables can be typeset using the \package{subcaption}
+  or \package{subfig} package.}
 
 % --------------------------------------------------------------------------- %
 
@@ -1112,64 +1175,78 @@ is redefined for a different purpose.
 
 \DescribeMacro{figurename=}
 \DescribeMacro{tablename=}\NEWfeature{v3.0l}
-You can change the name of the figures \& tables with the options
+You can change the name of the figures and tables with the options
 \begin{quote}\begin{tabular}{@{}r@{}l@{\quad}l@{}}
   |figurename=| & \meta{name} & and\\
   |tablename=|  & \meta{name} & .\\
 \end{tabular}\end{quote}
-The document class usually sets them to ``Figure'' \& ``Table', but for
+The document class usually sets them to ``Figure'' and ``Table'', but for
 example with
 \begin{quote}
   |figurename=Fig.|
 \end{quote}
 you can change the figure name to ``Fig''.
 
-\INFO*
+\smallskip\INFO
 If you use the \package{babel} package, please load \thispackage\ \emph{after}
 the \package{babel} package.
 
-\bigskip
+\medskip
 
 \pagebreak[3]
 \DescribeMacro{name=}\NEWfeature{v3.1f}
-Similar to |figurename=| \& |tablename=| you can change the name of the
-\emph{current} environment with the option
+In contrast to the options |figure|\-|name| and |table|\-|name| the option
 \begin{quote}
-  |name=|\meta{name}\quad.
+  |name=|\meta{name}
 \end{quote}
+changes the name of the \emph{current} environment.
 This could be useful in conjunction with the optional argument of
-|\captionsetup|, e.g.
+|\caption|\-|setup|, e.g.
 \begin{quote}
   |\captionsetup[wrapfigure]{name=Fig.}|
 \end{quote}
-changes the name to ``Fig.'' for all |wrapfigure|s (while all the other
+changes the name to ``Fig.'' for all |wrap|\-|figure|s (while all the other
 figure captions will still have ``Figure'' as name).
+
+\medskip
+
+\pagebreak[3]
+\DescribeMacro{listfigurename=}
+\DescribeMacro{listtablename=}\NEWfeature{v3.1g}
+Analogous to the options |figure|\-|name| and |table|\-|name| you can change
+the title of the lists here. So for example
+\begin{quote}
+  |listfigurename=List of images|
+\end{quote}
+changes the title ``List of Figures'' to ``List of images''.
 
 \bigskip
 
 \pagebreak[3]
 \DescribeMacro{figurewithin=}
 \DescribeMacro{tablewithin=}\NEWfeature{v3.1f}
-If a document class providing |\chapter| is used (e.g.~\package{report} or
-\package{book}), usually the \env{figure} and \env{table} caption counters
-are dependent on the |chapter| counter. Otherwise usually the \env{figure} and
-\env{table} counters are continuous throughout the document.
+If a document class providing |\chapter| is used (e.g.~\class{report} or
+\class{book}), usually the |figure| and |table| caption counters
+are dependent on the |chapter| counter. Otherwise usually the |figure| and
+|table| counters are continuous throughout the document.
 
 This can be changed with the options
-\begin{quote}\begin{tabular}{r@{}l}
-  |figurewithin=| & \meta{figure ``within'' counter} \emph{or} \texttt{none}\quad and\\
-  |tablewithin=|  & \meta{table ``within'' counter} \emph{or} \texttt{none}\quad .\\
+\begin{quote}\begin{tabular}{rl}
+  |figurewithin=| & \texttt{chapter} \emph{or} \texttt{section} \emph{or} \texttt{none}\quad and\\
+  |tablewithin=|  & \texttt{chapter} \emph{or} \texttt{section} \emph{or} \texttt{none}\quad .\\
 \end{tabular}\end{quote}
 If ``|none|'' is given as value, the numbering of figures resp. tables will
 be continuous throughout the document.
 Otherwise the numbering will be dependent on the given counter,
-e.g.~|figurewithin=section| gives figures a section-dependent numbering scheme.
+e.g.~|figure|\-|within=|\x|section| gives figures a section-dependent
+numbering scheme.
 
 \bigskip
 
-\begin{Expert}
-The name \& numbering is internally done by the commands |\|\meta{type}|name|
-\& |\the|\meta{type}, e.g.~|\figurename| \& |\thefigure| for figures.
+\begin{Expert*}
+The name and numbering is internally done by the commands
+|\|\meta{type}|name| \& |\the|\meta{type}, e.g.~|\figure|\-|name| \&
+|\the|\-|figure| for figures.
 While usually using the above options are sufficient, sometimes a direct
 re-definition of these two macros is necessary. For example:
 \begin{quote}
@@ -1179,7 +1256,7 @@ re-definition of these two macros is necessary. For example:
 gives you a section-dependent numbering scheme \meta{section}\meta{figure}
 with a numerical section counter and a alphanumerical figure counter,
 e.g.~``|Figure 2b|''.
-\end{Expert}
+\end{Expert*}
 
 % --------------------------------------------------------------------------- %
 
@@ -1196,9 +1273,10 @@ the caption type manually with
   |type=|\meta{float type}
 \end{quote}
 prior to the usage of the |\caption| command (and other commands like
-|\Continued|\x|Float| or |\subfloat| offered by the \package{subfig}
-package\cite{subfig}), for example within an non-floating environment like
-|minipage|:
+|\Continued|\-|Float|, or |\sub|\-|caption|\-|box| offered by the
+\package{subcaption} package, or |\sub|\-|float| offered by the
+\package{subfig} package\cite{subfig}),
+for example within an non-floating environment like |minipage|:
 \begin{quote}
   |\noindent\begin{minipage}{\textwidth}|\\
   |  \captionsetup{type=figure}|\\
@@ -1212,33 +1290,36 @@ package\cite{subfig}), for example within an non-floating environment like
 There is also a starred variant of this option, |type*=|\meta{float type},
 which behaves different than |type=|\meta{float type} if the
 \package{hyperref} package\cite{hyperref} is loaded: While |type=| sets an
-hyperlink anchor (if |hypcap=true| is set), |type*=| does not.
-(See also \Ref{hyperref})
+hyperlink anchor (if |hypcap=|\x|true| is set), |type*=| does not.
+(See also \Ref{hyperref}\,)
+\end{Expert}
+\begin{Expert}
+\emph{\DefaultNoteText:} Please don't re-define the internal macro |\@captype|
+for yourself, like suggested by some documentations, always use
+|\caption|\-|setup{type=|\x\ldots|}| instead.
 \end{Expert}
 
 \medskip
 
-Own float types can be defined with |\Declare|\x|Caption|\x|Type| offered by
-this package, |\new|\x|float| offered by the \package{float}
-package\cite{float}, or |\Declare|\x|New|\x|Float|\x|Type| offered by the
+Own float types can be defined with |\Declare|\-|Caption|\-|Type| offered by
+this package, |\new|\-|float| offered by the \package{float}
+package\cite{float}, or |\Declare|\-|New|\-|Float|\-|Type| offered by the
 \package{floatrow} package\cite{float}.
 
 \medskip
 
 \DANGER % \NEWdescription{v3.1}
 Please note that you should use the option |type=| only
-\emph{inside} boxes or environments (like |\parbox| or |minipage|),
+\emph{inside} boxes or environments (like |\par|\x|box| or |mini|\x|page|),
 at best one where no page break could happen between contents and caption.
 Furthermore some visual side-effects (e.g.~mixed-up figure and table settings
 regarding captions) could occur without using a box or environment,
 therefore a warning message will be issued if you try to do so.\footnote{%
 You only get this warning message if you use \eTeX\ as underlying \TeX\ engine.}
 
-\vfill
-
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\clearpage
 \section{Commands}
 
 \subsection{Typesetting captions}
@@ -1260,34 +1341,36 @@ figures or tables will be made. For example:
 
 \begin{Expert}
 Please remember that the \meta{heading} is a so-called \emph{moving} argument,
-if no \meta{list entry} has been given. If a \meta{list entry} is given,
-this argument is moving instead. ``\emph{Moving} argument''
-means that the argument will be written to the list-of file, make it
-appearing in the ``List of Figures'' resp. ``List of Tables'', too.
+if no \meta{list entry} has been given. But if a \meta{list entry} is given,
+this argument is moving instead.
+``\emph{Moving} argument'' means that the argument will be written to the
+list-of file, make it appearing in the ``List of Figures'' resp.
+``List of Tables'', too.
 \emph{Moving} arguments are not allowed to contain \emph{fragile} commands,
 everything must be \emph{robust}, otherwise the argument could get
-\emph{broken}, resulting in strange \LaTeX\ errors. Some \emph{fragile}
-commands could be \emph{protected} by a leading |\protect|, own definitions
-could get defined with |\DeclareRobustCommand| instead of |\newcommand| to
-make them \emph{robust}.
+\emph{broken}, resulting in strange errors at the next \LaTeX\ run.
+Some \emph{fragile} commands could be \emph{protected} by a leading |\protect|,
+own definitions could get defined with |\Declare|\-|Robust|\-|Command| instead of
+|\new|\-|command| to make them \emph{robust}.
 
 An example: |\caption{${}^{137}_{\phantom{1}55}$Cs}| will cause errors since
-|\phantom| is \emph{fragile}. So we have either have to use the optional
-argument \meta{list entry}
-(e.g.~|\caption[${}^|\xx|{137}_|\xx|{55}$|\xx|Cs]|\xx|{${}^|\xx|{137}_|\xx|{\phantom{1}55}$|\xx|Cs}|)
-or add |\robust| to prevent the |\phantom| command from getting \emph{broken}:
-|\caption{${}^|\xx|{137}_|\xx|{|\textcolor{blue}{\cs{protect}}|\phantom{1}55}$|\xx|Cs}|.
+|\phantom| is \emph{fragile}.
+So we have either have to use the optional argument \meta{list entry}
+(e.g.~|\caption[${}^|\x|{137}_|\x|{55}$|\x|Cs]|\x|{${}^|\x|{137}_|\x|{\phantom{1}55}$|\x|Cs}|)
+or add |\protect| to prevent the |\phantom| command from getting \emph{broken}:
+|\caption{${}^|\x|{137}_|\x|{|\textcolor{blue}{\cs{protect}}|\phantom{1}55}$|\x|Cs}|.
 
 But sometimes even this is not sufficient. The reason behind is the so-called
 single-line-check: It puts the \meta{heading} into a horizontal box to determine
-the width of the caption, and this could cause error messages, too. An example:
-|\caption{A| |schematic.| |\[V_{C}| |\sim| |\left| |\{| |\begin{array}{cc}|
+the width of the caption, and this could cause error messages, too.
+An example:
+|\caption{A| |scheme.| |\[V_{C}| |\sim| |\left| |\{| |\begin{array}{cc}|
 |E_{g}| |&| |\textrm{p-n}| |\\| |e\phi_{B}| |&| |\textrm{M-S}| |\end{array}|
 |\right.| |\]}|.
-Using |\caption[A| |schematic]{|\ldots|}| is not sufficient here, it's still
-leading to errors. (``\texttt{Missing \$ inserted.}'') So we have to put
-a |\captionsetup{singlelinecheck=off}| just in front of the |\caption|
-command additionally.
+Using |\caption[A| |scheme]{|\ldots|}| is not sufficient here, it's still
+leading to errors. (``\texttt{Missing \$ inserted.}'')
+So we have to put a |\caption|\-|setup{single|\-|line|\-|check=|\x|off}|
+just in front of the |\caption| command additionally.
 
 For more information about \emph{moving} arguments and \emph{fragile} \&
 \emph{robust} commands, take a closer look at your \LaTeX\ manual or visit
@@ -1309,14 +1392,20 @@ An example:
 \end{quote}
 looks like
 \DeleteShortVerb{\|}
-\begin{longtable}{r|rr}
-  \caption*{A table}\\
-    & x & y \\\hline
-  a & 1 & 2 \\
-  b & 3 & 4 \\
-\end{longtable}
+\vskip\intextsep
+\begin{minipage}{\linewidth}
+  \captionsetup{type=table,position=t}
+  \caption*{A table}
+  \centering
+  \begin{tabular}{r|rr}
+      & x & y \\\hline
+    a & 1 & 2 \\
+    b & 3 & 4 \\
+  \end{tabular}
+\end{minipage}
+\vskip\intextsep
 \MakeShortVerb{\|}
-This package offers this feature, too, so you can use this command now within
+\Thispackage\ offers this feature, too, so you can use this command now within
 every floating environment like |figure| or |table|, like:
 \begin{quote}
   |\begin{table}|\\
@@ -1332,8 +1421,8 @@ every floating environment like |figure| or |table|, like:
 \DescribeMacro{\captionof}
 \DescribeMacro{\captionof*}
 Sometimes you want to typeset a caption \emph{outside} a floating environment,
-putting a figure within a non-floating |minipage| for instance. For this purpose
-\thispackage\ offers the command
+putting a figure within a non-floating |mini|\-|page| for instance.
+For this purpose \thispackage\ offers the command
 \begin{quote}
   |\captionof|\marg{float type}\oarg{list entry}\marg{heading}\quad.
 \end{quote}
@@ -1342,28 +1431,30 @@ the |\captionof| command needs to know which name to put into the caption label
 (e.g. ``Figure'' or ``Table'') and in which list to put the contents entry.
 An example:
 \begin{quote}
-  |\captionof{figure}{A figure}|\\
+% |\captionof{figure}{A figure}|\\
   |\captionof{table}{A table}|
 \end{quote}
 typesets captions like this:
 \begin{Example}
-  \begingroup
-    \captionof{figure}{A figure}
-  \endgroup
+% \begingroup
+%   \captionof{figure}{A figure}
+% \endgroup
   \captionsetup{position=top}
-  \begingroup
+% \begingroup
     \captionof{table}{A table}
-  \endgroup
+% \endgroup
 \end{Example}
 
-The star variant |\captionof*| has the same behavior as the |\caption*| command:
-it typesets the caption without label and without entry to the list of figures
+The star variant |\caption|\-|of*| has the same behavior as the |\caption*|
+command:
+It typesets the caption without label and without entry to the list of figures
 or tables.
 
 \DANGER % \NEWdescription{v3.1}
-Since |\captionof| uses the |type*=| option internally, the same restrictions
-as for the |type=| option apply here, so you should use both |\captionof|
-and |\captionof*| only \emph{inside} boxes or environments, too.
+Since |\caption|\-|of| uses the option |type| internally, the same
+restrictions as for the |type| option apply here, so you should use both
+|\caption|\-|of| and |\caption|\-|of*| only \emph{inside} boxes or
+environments, too.
 \See{\Ref{types}}
 
 \bigskip
@@ -1376,7 +1467,8 @@ This could be achieved with
 \begin{quote}
   |\captionlistentry|\oarg{float type}\marg{list entry}\quad.
 \end{quote}
-One example: It's quite easy to have a |longtable| with captions above the
+
+One example: It's quite easy to have a |long|\-|table| with captions above the
 contents and a single list entry which points to the first page of the table:
 \begin{quote}
   |\begin{longtable}{|\ldots|}|\\
@@ -1386,10 +1478,11 @@ contents and a single list entry which points to the first page of the table:
   |\endhead|\\
   |  |\ldots
 \end{quote}
-But since the \package{longtable} package does not offer an |\endfirstfoot|
-command, you cannot easily have captions \emph{below} the table
-contents and a single list entry which points to the first page of the table.
-Here is were the |\captionlistentry| command could be used:
+But since the \package{longtable} package does not offer an
+|\end|\-|first|\-|foot| command, you cannot easily have captions \emph{below}
+the table contents and a single list entry which points to the first page of
+the table.
+Here is were the |\caption|\-|list|\-|entry| command could be used:
 \begin{quote}
   |\begin{longtable}{|\ldots|}|\\
   |  \caption[]{|\ldots|}\\|\\
@@ -1397,9 +1490,17 @@ Here is were the |\captionlistentry| command could be used:
   |  \captionlistentry{|\ldots|}|\\
   |  |\ldots
 \end{quote}
-{\small(Another example can be found in \Ref{examples}.)}
 
-\smallskip
+\begin{Annotation*}
+Another example can be found in \Ref{examples}.
+\end{Annotation*}
+
+\begin{Expert}
+There is also a starred variant, |\caption|\-|list|\-|entry*|, which does not
+increment the \meta{float type} counter.
+(Note that inside |long|\-|table| environments |\caption|\-|list|\-|entry|
+never increments the |table| counter. See also \Ref{longtable}.)
+\end{Expert}
 
 \begin{Expert}
 Please note that \meta{list entry} is a \emph{moving} argument, so everything
@@ -1410,7 +1511,7 @@ it contains must be \emph{robust}. (See also explanation of |\caption|)
 \label{captionsetup}
 
 \DescribeMacro{\captionsetup}
-We already know the |\captionsetup| command (see \Ref{usage}),
+We already know the |\caption|\-|setup| command (see \Ref{usage}),
 but this time we get enlighten about its optional argument
 \meta{float type}.
 
@@ -1418,7 +1519,6 @@ Remember, the syntax of this command is
 \begin{quote}
   |\captionsetup|\oarg{float type}\marg{options}\quad.
 \end{quote}
-
 If a \meta{float type} gets specified, all the \meta{options} don't
 change anything at this time. Instead they only get marked for a later use,
 when a caption inside of a floating environment of the particular type
@@ -1446,8 +1546,7 @@ gives captions like this:
     \captionof{table}{A table}
   \endgroup
 \end{Example}
-
-As you see the command |\captionsetup[figure]{|\ldots|}| only changes
+As you see the command |\caption|\-|setup[figure]{|\ldots|}| only changes
 the look of the |figure| caption labels, not touching the other ones.
 
 As \meta{float type} you can usually give one of these two only:
@@ -1458,20 +1557,20 @@ this package offer additional environments with captions and these two
 commands can also be used with them.
 \See{\Ref{declare} and \Ref{packages}}
 
-\smallskip
-
-\pagebreak[3]
-\NEWfeature{v3.1}
 \begin{Expert}
-There is also a starred variant of |\captionsetup|:
+\NEWfeature{v3.1}
+There is also a starred variant of |\caption|\-|setup|:
 \begin{quote}
   |\captionsetup*|\oarg{float type}\marg{options}
 \end{quote}
-While the non-starred variant gives you a warning if the \meta{options} are
-actually not used throughout the document (e.g.~a |\captionsetup[table]{font=sf}|
-without a |table|), the starred variant will not.
-This is quite useful when setting generic options which are independent of a
-specific document.
+While the non-starred variant can give you warnings---for example if the
+\meta{options} are actually not used throughout the document
+(e.g.~a |\caption|\-|setup[table]{font=|\x|sf}| without a |table|)---the
+starred variant will not.
+\iffalse
+This can get quite useful when setting generic options which are independent
+of a specific document.
+\fi
 \end{Expert}
 
 \medskip
@@ -1495,9 +1594,8 @@ for figures in the example above:
   |\clearcaptionsetup{figure}|\\
   \ldots\\
   |  \caption{A figure}|\\
-  \ldots\\
+  \ldots
 \end{quote}
-\pagebreak[3]
 \begin{Example}
   \captionsetup{font=small}
   \captionsetup[figure]{labelfont=bf,textfont=it}
@@ -1517,8 +1615,9 @@ If an optional argument \meta{option} is given, only the settings regarding
 this particular \meta{option} are cleared.\footnote{You can only specify
 \emph{one} option here, not a list of options.
 If you want to clean more than one option, you need to use more than one
-\cs{clearcaptionsetup}s.}
-While the example above not only clears the options |labelfont=bf,textfont=it|
+\cs{clear}\-\texttt{caption}\-\texttt{setup}.}
+While the example above not only clears the options
+|labelfont=bf,|\x|textfont=it|
 for figures (but all options for figures instead),
 this one would only clear the |labelfont=bf| setting, leaving all other
 settings for figures intact:
@@ -1531,7 +1630,7 @@ settings for figures intact:
   |\clearcaptionsetup[labelfont]{figure}|\\
   \ldots\\
   |  \caption{A figure}|\\
-  \ldots\\
+  \ldots
 \end{quote}
 \begin{Example}
   \captionsetup{font=small}
@@ -1546,19 +1645,21 @@ settings for figures intact:
   \endgroup
 \end{Example}
 \begin{Expert}
-Analogous to |\captionsetup*| there is also a starred form
-|\clearcaptionsetup*| which suppresses warnings if the given \meta{option}
-was not setup for the specified \meta{float type}.
+Analogous to |\caption|\-|setup*| there is also a starred form
+|\clear|\-|caption|\-|setup*| which suppresses warnings if the given
+\meta{option} was not setup for the specified \meta{float type}.
 \end{Expert}
 
 \medskip
 
-\vfill\pagebreak[4]
+\pagebreak[3]
 \DescribeMacro{\showcaptionsetup}
-For debugging purposes the command\nopagebreak
+For debugging purposes the command
+\nopagebreak[3]
 \begin{quote}
   |\showcaptionsetup|\marg{float type}
 \end{quote}
+\nopagebreak[3]
 is offered. It generates a log file entry, showing the given options
 for the specified \meta{float type}. For example
 \begin{quote}
@@ -1583,7 +1684,7 @@ their own reference number. This is what the command
 \end{quote}
 is for; it should be used as first command inside the floating environment.
 It prevents the incrementation of the relevant counter (usually done by
-|\caption|), so a figure or table with a |\ContinuedFloat| in it gets the
+|\caption|), so a figure or table with a |\Continued|\-|Float| in it gets the
 same reference number as the figure or table before. An example:
 \begin{quote}
   |\begin{table}|\\
@@ -1609,8 +1710,8 @@ gives the following result:
 \bigskip
 
 \NEWfeature{v3.1}
-Furthermore the |\ContinuedFloat| command executes options associated with
-the type name ``|ContinuedFloat|''. For example this can be used to switch
+Furthermore the |\Continued|\-|Float| command executes options associated with
+the type name ``|Continued|\-|Float|''. For example this can be used to switch
 to a different label format for continued figures or tables, as shown here:
 \begin{quote}
   |\DeclareCaptionLabelFormat{continued}{Continued #1~#2}|\\
@@ -1629,12 +1730,17 @@ to a different label format for continued figures or tables, as shown here:
   \centerline{\ldots}
 \end{Example}
 \medskip
-\See{\Ref{declare} for an explanation of \cs{DeclareCaptionLabelFormat}.}
+\See{\Ref{declare} for an explanation of
+     \cs{Declare}\-\texttt{Caption}\-\texttt{Label}\-\texttt{Format}.}
 
 \bigskip
 
-If you want to have a different caption label in |longtable|s after
-a page break, this can \emph{not} be archived by using |\ContinuedFloat|,
+If you want to have a different caption label in |long|\-|table|s after
+a page break, this can \emph{not} be archived by using |\Continued|\-|Float|,
+\iffalse
+(since |\Continued|\-|Float| is not available for |long|\-|table|s, see
+\Ref{longtable})
+\fi
 but you could write something like:
 \begin{quote}
   |\DeclareCaptionLabelFormat{continued}{Continued #1~#2}|\\
@@ -1648,13 +1754,10 @@ but you could write something like:
   |  |\ldots\\
   |\end{longtable}|
 \end{quote}
-{\small\emph{Note:} |\ContinuedFloat| is not available for |longtable|s.}
-
-\vfill
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\clearpage
 \section{Own enhancements}
 \label{declare}
 
@@ -1663,10 +1766,10 @@ etc.
 This enables information on separators, justification, fonts, and styles to
 be associated with a name and kept in one place.
 (These commands need to appear in the document preamble,
-this is the part between |\documentclass| and |\begin{document}|.)
+this is the part between |\document|\-|class| and |\begin{document}|.)
 
 \pagebreak[3]
-\DescribeMacro{\DeclareCaptionFormat}
+\DescribeMacro{\DeclareCaption-\\Format}
 You can define your own caption formats using the command
 \begin{quote}
   |\DeclareCaptionFormat|\marg{name}\marg{code using \#1, \#2 and \#3}\mbox{\quad.}
@@ -1678,9 +1781,9 @@ pre-defined by \thispackage\ as
   |\DeclareCaptionFormat{plain}{#1#2#3\par}|\quad.
 \end{quote}
 \begin{Expert}
-There is also a starred variant, |\DeclareCaptionFormat*|, which causes
-the code being typeset in \TeX s vertical (instead of horizontal) mode,
-but does not support the |indention=| option.
+There is also a starred variant, |\Declare|\-|Caption|\-|Format*|,
+which causes the code being typeset in \TeX s vertical (instead of
+horizontal) mode, but does not support the |indention=| option.
 \end{Expert}
 
 \pagebreak[3]
@@ -1702,7 +1805,7 @@ An example:
 \DescribeMacro{\bothIfFirst}
 \DescribeMacro{\bothIfSecond}
 If you define your own caption label formats and use the
-\package{subfig}\cite{subfig} or \package{subcaption} package,
+\package{subcaption} or \package{subfig}\cite{subfig} package,
 you should take care of empty caption label names.
 For this purpose the commands
 \begin{quote}
@@ -1751,9 +1854,9 @@ Again an easy example taken from \thispackage\ itself:
   |\DeclareCaptionLabelSeparator{colon}{: }|
 \end{quote}
 \begin{Expert}
-There is also a starred variant, |\DeclareCaptionLabelSeparator*|, which
-causes the code being typeset without using the |labelfont=| setting.
-So for example the label separators |quad|, |newline|, and |endash|
+There is also a starred variant, |\Declare|\-|Caption|\-|Label|\-|Separator*|,
+which causes the code being typeset without using the |label|\-|font=| setting.
+So for example the label separators |quad|, |new|\-|line|, and |en|\-|dash|
 are defined in this way.
 \end{Expert}
 
@@ -1775,7 +1878,7 @@ typesets captions with all lines moved to the left margin.
 \bigskip
 
 \pagebreak[3]
-\DescribeMacro{\DeclareCaptionFont}
+\DescribeMacro{\DeclareCaption-\\Font}
 You can define your own caption fonts with
 \begin{quote}
   |\DeclareCaptionFont|\marg{name}\marg{code}\quad.
@@ -1790,9 +1893,9 @@ The line spacing could be customized using the \package{setspace} package,
 for example:%\NEWdescription{v3.0h}
 \begin{quote}
   |\usepackage{setspace}|\\
-  |\DeclareCaptionFont{singlespacing}{\setstretch{1}}|\quad\footnote{%
-  \emph{Note:} Using \cs{singlespacing} does not work here since it contains
-  a \cs{vskip} command.}\\
+  |\DeclareCaptionFont{singlespacing}{\setstretch{1}}|~\footnote{%
+  \emph{\DefaultNoteText:} Using \cs{singlespacing} does not work here since
+  it contains a \cs{vskip} command.}\\
   |\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}|\\
   |\DeclareCaptionFont{doublespacing}{\doublespacing}|\\
   |\captionsetup{font={onehalfspacing,small},labelfont=bf}|
@@ -1822,7 +1925,7 @@ you can get the same result simply with
 \medskip
 
 \pagebreak[3]
-\DescribeMacro{\DeclareCaptionStyle}
+\DescribeMacro{\DeclareCaption-\\Style}
 You can define your own caption styles with
 \begin{quote}
   |\DeclareCaptionStyle|\marg{name}\oarg{additional options}\marg{options}\mbox{\quad.}
@@ -1837,20 +1940,20 @@ to them.
 
 If you specify \meta{additional options} they get used in addition when
 the caption fits into a single line and this check was not disabled with
-the option |singlelinecheck=off|.
+the option |single|\-|line|\-|check=off|.
 
 Again a very easy example taken from the core of this package: The
 caption style |base| is pre-defined as
 \begin{quote}
   |\DeclareCaptionStyle{base}%|\\
-  |       [justification=centering,indention=0pt]{}|\quad.
+  |        [justification=centering,indention=0pt]{}|\quad.
 \end{quote}
 
 Something more exciting:
 \begin{quote}
   |\DeclareCaptionStyle{mystyle}%|\\
-  |       [margin=5mm,justification=centering]%|\\
-  |       {font=footnotesize,labelfont=sc,margin={10mm,0mm}}|\\
+  |        [margin=5mm,justification=centering]%|\\
+  |        {font=footnotesize,labelfont=sc,margin={10mm,0mm}}|\\
   |\captionsetup{style=mystyle}|
 \end{quote}
 gives you caption like these ones:
@@ -1870,14 +1973,14 @@ You can define your own caption list formats with
 \begin{quote}
   |\DeclareCaptionListFormat|\marg{name}\marg{code using \#1 and \#2}\mbox{\quad.}
 \end{quote}
-At usage \#1 gets replaced with the label prefix (e.g.~|\p@figure|) and \#2
-gets replaced with the reference number (e.g.~|\thefigure|).
+At usage \#1 gets replaced with the label prefix (e.g.~|\p@figure|),
+and \#2 gets replaced with the reference number (e.g.~|\thefigure|).
 
 \bigskip
 
 \pagebreak[3]
 \DescribeMacro{\DeclareCaptionType}\NEWfeature{v3.1f}
-You can define your own floating environments \& caption types with
+You can define your own floating environments and caption types with
 \begin{quote}
   |\DeclareCaptionType|\oarg{options}\marg{type}\oarg{name}\oarg{list name}
 \end{quote}
@@ -1904,7 +2007,8 @@ to \meta{type}, but with an uppercase first letter.
 If no \meta{list name} is given, the list name will be set to ``List of
 \meta{name}s''.
 
-The list will be typeset using the command |\listof|\meta{type}|s|.
+The list will be typeset using the command |\list|\-|of|\meta{type}|s|,
+analogous to |\list|\-|of|\-|figures| and |\list|\-|of|\-|tables|.
 If the \package{fltpage} package is loaded, an environment called
 |FP|\meta{type} will be defined, same for |sideways|\meta{type}
 (\package{rotating} package), |SC|\meta{type} (\package{sidecap} package),
@@ -1918,8 +2022,9 @@ So for example
 \end{quote}
 will define a new caption type and floating environment called |diagram|,
 the list will be stored in a file with the extension |lodiagram|, the name
-(used for the caption) will be ``|Diagram|'' and the list name
-``|List of Diagrams|''. The list could be typeset with |\listofdiagrams|.
+(used for the caption) will be ``Diagram'' and the list name
+``List of Diagrams''.
+The list could be typeset with |\listofdiagrams|.
 Dependent on which packages are loaded, the environments |FPdiagram|,
 |sidewaysdiagram|, |SCdiagram|, and |wrapdiagram| will be defined additionally.
 
@@ -1936,7 +2041,7 @@ you could define it this way:
 \begin{quote}
   |\DeclareCaptionFormat{myformat}{#1#2\\#3}|
 \end{quote}
-If you select this format with |\captionsetup{format=myformat}|
+If you select this format with |\caption|\-|setup{format=|\x|myformat}|
 you get captions like this:
 %\begin{Example}
 %  \captionsetup{skip=0pt}
@@ -1956,7 +2061,7 @@ the caption text? No problem, e.g.
 \begin{quote}
   |\newlength\myindention|\\
   |\DeclareCaptionFormat{myformat}%|\\
-  |       {#1#2\\\hspace*{\myindention}#3}|\\
+  |               {#1#2\\\hspace*{\myindention}#3}|\\
   \ldots\\
   |\setlength\myindention{1cm}|\\
   |\captionsetup{format=myformat}|
@@ -1967,14 +2072,15 @@ would give you captions like
   \example{format=myformat2,myindention=1cm,labelfont=bf}{\exampletext}
 %\end{Example}
 But you want to have an caption option for this indention, so you can use
-it for example with |\captionsetup|\xx|[figure]|\xx|{myindention=|\ldots|}|?
+it for example with
+|\caption|\-|setup|\x|[figure]|\x|{my|\-|indention=|\x\ldots|}|?
 This could be done, too:
 \begin{quote}
   |\newlength\myindention|\\
   |\DeclareCaptionOption{myindention}%|\\
-  |       {\setlength\myindention{#1}}|\\
+  |               {\setlength\myindention{#1}}|\\
   |\DeclareCaptionFormat{myformat}%|\\
-  |       {#1#2\\\hspace\myindention #3}|\\
+  |               {#1#2\\\hspace*{\myindention} #3}|\\
   \ldots\\
   |\captionsetup{format=myformat,myindention=1cm}|
 \end{quote}
@@ -1993,7 +2099,7 @@ You could do it this way:
 \begin{quote}
   |\DeclareCaptionFormat{reverse}{#3#2#1}|\\
   |\DeclareCaptionLabelFormat{fullparens}%|\\
-  |       {(\bothIfFirst{#1}{~}#2)}|\\
+  |               {(\bothIfFirst{#1}{~}#2)}|\\
   |\DeclareCaptionLabelSeparator{fill}{\hfill}|\\
   |\captionsetup{format=reverse,labelformat=fullparens,|\\
   |              labelsep=fill,font=small,labelfont=it}|
@@ -2015,7 +2121,7 @@ If the indention into the margin shall be fixed, you could use a combination
 of |\llap| and |\makebox|, for example:
 \begin{quote}
   |\DeclareCaptionFormat{llapx}%|\\
-  |            {\llap{\makebox[5em][l]{#1}}#3\par}|\\
+  |               {\llap{\makebox[5em][l]{#1}}#3\par}|\\
   |\captionsetup{format=llapx,singlelinecheck=off}|
 \end{quote}
 \example{format=llapx,singlelinecheck=off,skip=0pt,margin=0pt}{\exampletext}
@@ -2024,10 +2130,10 @@ of |\llap| and |\makebox|, for example:
 
 This example puts a figure aside a table, but uses only one common caption for both.
 This will be achieved by a combination of
-|\Declare|\x|Caption|\x|Label|\x|Format| and |\caption|\x|list|\x|entry|:
+|\Declare|\-|Caption|\-|Label|\-|Format| and |\caption|\-|list|\-|entry|:
 \begin{quote}
   |\DeclareCaptionLabelFormat{andtable}%|\\
-  |            {#1~#2 \& \tablename~\thetable}|\\
+  |               {#1~#2 \& \tablename~\thetable}|\\
   \ldots\\
   |\begin{figure}|\\
   |  \centering|\\
@@ -2060,20 +2166,20 @@ This will be achieved by a combination of
   \LaTeX\ Companion\cite{TLC2} examples.}
 \MakeShortVerb{\|}
 
-\vfill
-
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\clearpage
 \section{Document classes \& Babel support}
 \label{classes}
 
 %\NEWdescription{v3.1}
-{\small\emph{Please note:} Many document classes already have build-in options and
-commands for customizing captions. If these possibilities are sufficient for
-you, there is usually no need for you to use the \package{caption} package
-at all. And if you are just interested in using the command \cs{captionof},
-loading of the very small \package{capt-of} package is usually sufficient.}
+\begin{Note*}[Please note]
+Many document classes already have build-in options and commands for
+customizing captions. If these possibilities are sufficient for you, there is
+usually no need for you to use the \package{caption} package at all.
+And if you are just interested in using the command \cs{captionof}, loading of
+the very small \package{capt-of} package is usually sufficient.
+\end{Note*}
 
 \medskip
 
@@ -2088,26 +2194,37 @@ how the class author wanted the captions to look like. So for example
 setting |format=default| can give you different visual designs when used
 with different document classes.
 
+\begingroup\setlength\leftmargini{0.3em}% default = 2.5em
 \DANGER
 If you don't find the document class you use in this section, you usually
-don't have to worry: Many document classes are derived from one of the
-standard document classes \class{article}, \class{report}, or \class{book},
-and behave the same regarding captions.
+don't have to worry: Many document classes (e.g.~the \class{octavo} class)
+are derived from one of the standard document classes \class{article},
+\class{report}, or \class{book}, and behave the same regarding captions.
 \Thispackage\ automatically does a compatibility check against the document
-class used and will give you a clear warning if a incompatibility was detected.
-If you don't get such warning everything is fine, but if you get it the usage of
-\thispackage\ is not recommended and especially not supported.
+class used and will give you the clear warning
+\begin{quote}\footnotesize
+  |Package caption Warning: Unsupported document class (or package) detected,|\\
+  |(caption)                usage of the caption package is not recommended.|\\
+  |See the caption package documentation for explanation.|
+\end{quote}
+if such an incompatibility was detected.
+If you don't get such warning everything is fine, but if you get it the
+usage of \thispackage\ is not recommended and especially not supported.
+\endgroup
 
-{\small(If you get such a compatibility warning but decide to use \thispackage{}
- anyway, you should watch carefully what side-effects occur, usually the
- look and feel of your captions will change by just including \thispackage{}
- without options, meaning they do not look like as intended by the author
- of the document class.
- If this is fine for you, you should first specify the option |style=base|
- via |\usepackage[style=base]{caption}| or |\captionsetup{style=base}|
- to set \thispackage\ into a well-defined state.
- Afterwards you can start setting your own options additionally and
- keep your fingers crossed.)}
+\begin{Expert}
+If you get such a compatibility warning but decide to use \thispackage{}
+anyway, you should watch carefully what side-effects occur, usually the
+look and feel of your captions will change by just including \thispackage{}
+without options, meaning they do not look like as intended by the author
+of the document class.
+If this is fine for you, you should first specify the option |style=|\x|base|
+via |\use|\-|package[style=|\x|base]{caption}| or
+|\caption|\-|setup{style=|\x|base}| to set \thispackage\ into a well-defined
+state.
+Afterwards you can start setting your own options additionally and
+keep your fingers crossed.
+\end{Expert}
 
 \newcommand*\Option{Option}
 \newcommand*\defaultvalue{\texttt{default} value}
@@ -2128,7 +2245,9 @@ If you don't get such warning everything is fine, but if you get it the usage of
 |textfont=|      & \nofont \\
 \end{tabular}
 
-\noindent{\small(\emph{Note:} This also applies to document classes derived from them.)}
+\begin{Annotation}
+This also applies to document classes derived from them.
+\end{Annotation}
 
 \subsection{\AmS: amsart, amsproc, and amsbook}
 \label{AMS}
@@ -2144,18 +2263,22 @@ If you don't get such warning everything is fine, but if you get it the usage of
 |textfont=|      & |\@captionfont\upshape| \\
 \end{tabular}
 
-{\small(|\@captionfont| will be set to |\normalfont|, and |\@captionheadfont| to |\scshape|
- by the \AmS\ document classes.)}
+\begin{Annotation*}
+|\@caption|\-|font| will be set to |\normal|\-|font|, and
+|\@caption|\-|head|\-|font| to |\sc|\-|shape| by the \AmS\ document classes.
+\end{Annotation*}
 
-Furthermore the margin will be set to |\captionindent| for more-than-one-line captions
-(which will be set to |3pc| by the \AmS\ classes),
+Furthermore the margin will be set to |\caption|\-|indent| for
+more-than-one-line captions (which will be set to |3pc| by the \AmS\ classes),
 the margin for single-line captions will be set to the half of it instead.
-If you want to use a common margin for both, insert |\clearcaptionsetup[margin*]{singleline}|
+If you want to use a common margin for both, insert
+|\clear|\-|caption|\-|setup[margin*]{single|\-|line}|
 into the preamble of your document, after loading \thispackage.
 
-Additionally the options |figureposition=b,tableposition=t| will be set.
-You can override these settings by specifying other values for
-|figureposition=| or |tableposition=| in the option list while loading \thispackage.
+Additionally the options |figure|\-|position=b,|\x|table|\-|position=t|
+will be set. You can override these settings by specifying other values for
+|figure|\-|position=| or |table|\-|position=| in the option list while
+loading \thispackage.
 
 \subsection{beamer}
 \label{beamer}
@@ -2171,20 +2294,20 @@ You can override these settings by specifying other values for
 |textfont=|      & \nofont \\
 \end{tabular}
 
-\textbf{Build-in features and side-effects:}\\
+\subsubsection*{Build-in features and side-effects}
 You can setup font and color settings with
-|\setbeamerfont|\xx|{caption}|\xx\marg{options} and
-|\setbeamerfont|\xx|{caption name}|\xx\marg{options}.
+|\set|\-|beamer|\-|font{caption}|\marg{options} and
+|\set|\-|beamer|\-|font{caption name}|\marg{options}.
 This will still work, unless you set a different font with
-|\captionsetup|\xx|{font=|\xx\meta{options}|}| or
-|\captionsetup|\xx|{labelfont=|\xx\meta{options}|}|.\par
+|\caption|\-|setup{font=|\x\meta{options}|}| or
+|\caption|\-|setup{label|\-|font=|\x\meta{options}|}|.\par
 Furthermore the \class{beamer} classes offer different caption templates
 which can be chosen with
-|\set|\x|beamter|\x|template|\xx|{caption}|\xx|[|\meta{template}|]|.
+|\set|\-|beamter|\-|template|\x|{caption}|\x|[|\meta{template}|]|.
 Since \thispackage\ replaces this caption template mechanism,
-|\def|\x|beamer|\x|template*|\xx|{caption}|\xx\marg{template code}
+|\def|\-|beamer|\-|template*|\x|{caption}|\x\marg{template code}
 and
-|\set|\x|beamer|\x|template|\xx|{caption}|\xx|[|\meta{template}|]|
+|\set|\-|beamer|\-|template|\x|{caption}|\x|[|\meta{template}|]|
 will have no effect when \thispackage\ is used.
 
 \subsection{\KOMAScript: scrartcl, scrreprt, and scrbook}
@@ -2193,7 +2316,7 @@ will have no effect when \thispackage\ is used.
 \begin{tabular}{ll}
 \Option          & \defaultvalue \\\hline
 |format=|        & \use\ |\setcapindent| \textit{\&} |\setcaphanging| \settings \\
-|labelformat=|   & |simple| \\
+|labelformat=|   & \textit{like \purett{simple}, but with support of ``autodot''}\\
 |labelsep=|      & \use\ |\captionformat| \\
 |justification=| & |justified| \\
 |font=|          & \use\ |\setkomafont{caption}| \settings \\
@@ -2201,12 +2324,12 @@ will have no effect when \thispackage\ is used.
 |textfont=|      & \nofont \\
 \end{tabular}
 
-\textbf{Build-in features:}\\
+\subsubsection*{Build-in features}
 The \KOMAScript\ document classes offer many ways to customize the look and
 feel of the captions. For an overview and a full description please take a
 look at the \KOMAScript\ documentation, section `Tables and Figures'.
 
-\textbf{Side effects:}\\
+\subsubsection*{Side effects}
 The optional argument of |\setcapwidth| is not supported (yet) and will be
 ignored if used in conjunction with the \package{caption} package.
 Furthermore the \KOMAScript\ options |tablecaptionabove| \&
@@ -2228,10 +2351,11 @@ package.
 |textfont=|      & \use\ |\CaptionTextFont| \\
 \end{tabular}
 
-\textbf{Build-in features and side-effects:}\\
-|\CaptionLabelFont| and |\CaptionTextFont| can be set either directly or
-by using |\CaptionFonts|. Both is still supported unless you use
-one of the two options |labelfont=| or |textfont=| offered by \thispackage.
+\subsubsection*{Build-in features and side-effects}
+|\Caption|\-|Label|\-|Font| and |\Caption|\-|Text|\-|Font| can be set either
+directly or by using |\Caption|\-|Fonts|.
+Both is still supported unless you use one of the two options
+|label|\-|font=| or |text|\-|font=| offered by \thispackage.
 
 \subsection{\SmF{} classes: smfart and smfbook}
 \label{SMF}
@@ -2239,11 +2363,31 @@ one of the two options |labelfont=| or |textfont=| offered by \thispackage.
 Since the \SmF\ document classes are derived from the \AmS\ document classes
 the same default values are valid here.
 
-Additionally the margin is limited up to the tenth of the |\linewidth|.
+Additionally the margin is limited up to the tenth of the |\line|\-|width|.
 If you don't like this limitation, you can switch it off with the option
-|maxmargin=off| or |maxmargin=false| (which both means the same).
+|max|\-|margin=|\x|off| or |max|\-|margin=|\x|false|
+(which both means the same).
 
-\pagebreak[4]
+\subsection{thesis}
+\label{thesis}
+
+\begin{tabular}{ll}
+\Option          & \defaultvalue \\\hline
+|format=|        & |hang| \\
+|labelformat=|   & \textit{like \purett{simple}, but with short name}\\
+|labelsep=|      & |colon| \\
+|justification=| & |justified| \\
+|font=|          & \nofont \\
+|labelfont=|     & \use\ |\captionheaderfont| \\
+|textfont=|      & \use\ |\captionbodyfont| \\
+\end{tabular}
+
+\subsubsection*{Build-in features and side-effects}
+The caption label font can be set with |\caption|\-|header|\-|font|,
+the caption text font with |\caption|\-|body|\-|font|.
+Both is still supported unless you use one of the two options
+|label|\-|font=| or |text|\-|font=| offered by \thispackage.
+
 \subsection{The frenchb Babel option}
 \label{frenchb}
 
@@ -2267,17 +2411,17 @@ by the document class.
 So redefining \cs{captionseparator} will still work, unless you don't
 select a different |labelsep=| than the default one.
 
-Furthermore the default |textfont=| will be set to |textfont=it|,
-since this emulates the default setting of |\captionfont| defined by the
+Furthermore the default |text|\-|font=| will be set to |text|\-|font=|\x|it|,
+since this emulates the default setting of |\caption|\-|font| defined by the
 \package{frenchle} or \package{frenchpro} package.
 %If you redefine |\captionfont| after loading the \package{frenchle} or
 %\package{frenchpro} package, this redefinition gets lost.
-Please note that the command \cs{captionfont} is used by the
+Please note that the command |\caption|\-|font| is used by the
 \package{caption} package internally for a different purpose,
 so you should not change it (anymore).
 
-The command \cs{unnumberedcaptions}\marg{figure or table} will still work,
-but only unless you don't select a different |labelformat=| than the default
+The command |\un|\-|numbered|\-|captions|\marg{figure or table} will still work,
+but only unless you don't select a different |label|\-|format=| than the default
 one.
 
 \INFO*
@@ -2286,9 +2430,10 @@ or \package{frenchpro} package.
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\clearpage
 \section{Package support}
 \label{packages}
+\label{compatibility}
 
 %\NEWdescription{v3.1}
 \Thispackage\ was adapted to the following packages which deals with
@@ -2302,24 +2447,67 @@ captions, too:
   and \package{wrapfig}
 \end{quote}
 
-Furthermore the \package{floatrow} and the \package{subfig} package
-supports \thispackage\ and use its |\captionsetup| interface.
+Furthermore the \package{floatrow} package\cite{floatrow}, the
+\package{subcaption} package (which is part of the \package{caption} package
+bundle), and the \package{subfig} package\cite{subfig} support \thispackage{}
+and use its |\caption|\-|setup| interface.
+
+\bigskip
+
+\begingroup\setlength\leftmargini{0.3em}% default = 2.5em
+\DANGER
+If a package (or document class) unknown to \thispackage\ redefines
+the |\caption| command as well, this redefinition will be preferred
+over the one this package offers, providing maximum compatibility and
+avoiding incompatibilities.
+If such a potential incompatibility is detected, you will see this
+warning message:~\footnote{%
+  You can suppress this warning by specifying the option |compatibility=true|
+  when loading \thispackage.}
+\begin{quote}\footnotesize
+  |Package caption Warning: \caption will not be redefined since it's already|\\
+  |(caption)                redefined by a document class or package which is|\\
+  |(caption)                unknown to the caption package.|\\
+  |See the caption package documentation for explanation.|
+\end{quote}
+\endgroup
+
+As a result, the following features offered by \thispackage\ will not be available:
+\begin{itemize}
+  \item the options |labelformat=|, |position=auto|, and |list=| \& |listformat=|
+  \item |\caption*| (to produce a caption without label)
+  \item |\caption[]{|\ldots|}| (to produce no entry in the List of Figures or Tables)
+  \item |\caption{}| (to produce an empty caption without label separator)
+  \item |\ContinuedFloat|
+  \item correctly justified captions in environments like \texttt{wide} or \texttt{addmargin}
+  \item the \textsf{hypcap} feature \See{\Ref{hyperref}\,}
+  \item the sub-caption feature \See{\package{subcaption} package documentation}
+\end{itemize}
+
+\DescribeMacro{compatibility=}
+You can override this compatibility mode by specifying the option
+\begin{quote}
+  |compatibility=false|
+\end{quote}
+when loading \thispackage.
+But please note that using this option is neither recommended nor supported
+since unwanted side-effects or even errors could occur afterwards.
+(For that reason you will get a warning about this.)
 
 \newcommand\packagedescription[1]{%
   \ifvmode\else\par\fi
   \nopagebreak
   \parbox[b]{\linewidth}{\footnotesize\leftskip=10pt\rightskip=10pt\relax#1}\par
   \nopagebreak\smallskip\nopagebreak}
-\newcommand\Note{\smallskip\emph{Note:}~}
 
-\pagebreak[3]
+\PageBreak
 \subsection{algorithms}
 \label{algorithms}
 \packagedescription{%
-The \package{algorithms} bundle\cite{algorithms} provides two environments:
-The \texttt{algorithmic} environment provides an environment for describing
-algorithms, and the \texttt{algorithm} environment provides a ``float''
-wrapper for algorithms.}
+The \package{algorithms} package bundle\cite{algorithms} provides two
+environments: The \texttt{algorithmic} environment provides an environment
+for describing algorithms, and the \texttt{algorithm} environment provides
+a ``float'' wrapper for algorithms.}
 
 Since the \texttt{algorithm} environment is implemented via |\newfloat|
 provided by the \package{float} package\cite{float}, please see \Ref{float}.
@@ -2335,9 +2523,15 @@ writing algorithms in LaTeX2e.}
 Since the \package{algorithm2e} package does not use some kind of standard
 interface for defining its floating environment (e.g.~|\newfloat| of the
 \package{float} package) and typesetting its caption,
-this package is \emph{not} supported by \thispackage, and never will be.
-Unfortunately it does not offer a simple, non-floating environment, too.
-But you can define it on your own, for example:
+the \package{algorithm2e} package is \emph{not} supported by \thispackage.
+
+So if you want to customize the captions using \thispackage,
+you have to build a new environment which uses a supported interface regarding
+floats (e.g. using the \package{float} or \package{floatrow} package),
+and combine this environment with the internal \package{algorithm2e} code.
+
+As first step you could define a non-floating environment \texttt{algorithmic},
+for example:
 \begin{quote}
   |\usepackage{algorithm2e}|\\
   |% save the "algorithm" environment from the algorithm2e package|\\
@@ -2350,11 +2544,11 @@ But you can define it on your own, for example:
   |  {\ORIGendalgorithm}|\\
   \ldots
 \end{quote}
-Having defined this non-floating \texttt{algorithmic} environment,
-you can define your own new floating environment with |\newfloat| of the
-\package{float} package (or |\DeclareNewFloatType| of the \package{floatrow}
-package), and use the combination of this floating environment
-and \texttt{algorithmic} in its body, just like you would do when you use the
+Having defined this non-floating environment, you could define your own new
+floating environment with |\newfloat| of the \package{float} package
+(or |\DeclareNewFloatType| of the \package{floatrow} package),
+and use the combination of this floating environment and \texttt{algorithmic}
+in its body, just like you would do when you use the
 \package{algorithm}/\package{algorithmic} package tandem.
 
 You could even use the \package{algorithm} package for this purpose, for example:
@@ -2381,7 +2575,9 @@ Now you are finally able to customize the float and caption layout like every
 other floating environment defined with the \package{float} package\cite{float},
 please see \Ref{float}.
 
-%{\small(An alternative would be using the \package{algorithmicx} package.)}
+\begin{Annotation}
+An alternative would be using the \package{algorithmicx} package.
+\end{Annotation}
 \fi
 
 \pagebreak[3]
@@ -2395,7 +2591,7 @@ It also provides the \texttt{H} float placement option of the obsolete
 \package{here} package.}
 
 For floating environments defined with \cs{newfloat} or \cs{restylefloat} the
-|po|\x|si|\x|tion| option has no effect on the main caption anymore, since its
+|po|\-|si|\-|tion| option has no effect on the main caption anymore, since its
 placement and spacing will be controlled by the selected float style instead.
 
 Furthermore a caption style and options defined with the name of the float
@@ -2407,23 +2603,23 @@ Using this mechanism \thispackage\ emulates the default look \& feel of the
   |       {labelfont=bf,labelsep=space,strut=off}|\mbox{\quad.}
 \end{quote}
 So to change this you need either define your own caption style called
-|ruled| or use |\captionsetup[ruled]|\marg{options} to specify additional
+|ruled| or use |\caption|\-|setup[ruled]|\marg{options} to specify additional
 options.%,
-%e.g.~|\captionsetup[ruled]{labelsep=colon}|.
+%e.g.~|\caption|\-|setup[ruled]{labelsep=|\x|colon}|.
 
 Also by using this mechanism the skip between a |boxed| float and its caption
 is specified, overriding its global value:
 \begin{quote}
   |\captionsetup[boxed]{skip=2pt}|
 \end{quote}
-For changing this, just use |\captionsetup[boxed]{skip=|\meta{value}|}|
+For changing this, just use |\caption|\-|setup[boxed]{skip=|\x\meta{value}|}|
 with an appropriate value. Or if you want to use the global |skip| setting
 instead, you can remove the usage of the local setting for these floats with
 |\clearcaptionsetup[skip]{boxed}|.
 
-\Note
+\begin{Note}
 Only one single caption can be typeset inside environments defined with
-|\new|\x|float| or |\re|\x|style|\x|float|, furthermore these environments
+|\new|\-|float| or |\re|\-|style|\-|float|, furthermore these environments
 are not behaving exactly like the pre-defined floats |figure| \& |table|.
 As a consequence many packages do not cooperate well with these.
 Furthermore the float package has some caveats \& limitations, so if you
@@ -2433,6 +2629,7 @@ instead.
 And for defining non-simple floating environments and customization I
 recommend using |\DeclareNewFloatType| offered by the \package{floatrow}
 package\cite{floatrow}.
+\end{Note}
 
 \iffalse
 Please also note that you \emph{don't} need a |\restylefloat| for using
@@ -2443,7 +2640,7 @@ in the foot, since many packages using |table| internally are not working
 correctly afterwards.
 \fi
 
-\pagebreak[4]
+\pagebreak[3]
 \subsection{floatflt}
 \label{floatflt}
 \packagedescription{%
@@ -2451,8 +2648,8 @@ The \package{floatflt} package\cite{floatflt} offers figures and tables
 which do not span the full width of a page and are float around by text.}
 
 \NEWfeature{v3.1}
-If you want to setup special options for the |floatingfigure| \& |floatingtable|
-environments you can use
+If you want to setup special options for the |float|\-|ing|\-|figure| \&
+|float|\-|ing|\-|table| environments you can use
 \begin{quote}
   |\captionsetup[floatingfigure]|\marg{options}\\
   |\captionsetup[floatingtable]|\marg{options}\quad.
@@ -2460,10 +2657,11 @@ environments you can use
 These options will be executed additionally to the regular ones for
 |figure| or |table|.
 
-\Note
-The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\captionsetup[floatingfigure]{|\ldots|}| or
-|\captionsetup[floatingtable]{|\ldots|}|.
+\begin{Note}
+The |margin| resp.~|width| setting will not be used for these figures and tables,
+unless you set it explicit with |\caption|\-|setup[floating|\-|figure]{|\ldots|}|
+or |\caption|\-|setup[floating|\-|table]{|\ldots|}|.
+\end{Note}
 
 \pagebreak[3]
 \subsection{fltpage}
@@ -2500,7 +2698,7 @@ Furthermore \cs{DeclareCaptionType}\marg{name} will also define
 an environment called |FP|\meta{name} which behaves like |FPfigure| and
 |FPtable|.
 
-\pagebreak[4]
+\pagebreak[3]
 \subsection{hyperref}
 \label{hyperref}
 \packagedescription{%
@@ -2508,36 +2706,39 @@ The hyperref package\cite{hyperref} is used to handle cross-referencing
 commands in LaTeX to produce hypertext links in the document.}
 
 \NEWfeature{v3.1}
-There are two options available to control the placement of hyperlink anchors:
+There are two options available to control the placement of hyperlink
+anchors:~\footnote{These options are named after the \package{hypcap} package
+which they supersede.}
 \begin{description}
 \item{\texttt{hypcap=true} or \texttt{hypcap=false}}\\[\smallskipamount]
 If set to |true| all hyperlink anchors -- where entries in the
 List of Figures, |\ref|, and |\autoref| will link to -- are placed at
 the beginning of the (floating) environment.\par
 If set to |false| the hyperlink anchor is (usually) placed at the caption.\par
-(The default setting is |hypcap=true|.)
+(The default setting is |hypcap=|\x|true|.)
 \item{\texttt{hypcapspace=}\meta{amount}}\\[\smallskipamount]
 Because it looks poor if the hyperlink points exactly at the top of
 the figure or table, you can specify a vertical distance between
 the hyperlink anchor and the (floating) environment itself,
-e.g.~|hypcapspace=0pt| removes this distance.\par
-(The default setting is |hypcapspace=0.5\baselineskip|.)
+e.g.~|hyp|\-|cap|\-|space=|\x|0pt| removes this distance.\par
+(The default setting is |hyp|\-|cap|\-|space=|\x|0.5\base|\-|line|\-|skip|.)
 \end{description}
 
-Both settings have no effect in |lstlisting|s (provided by the
-\package{listings} package), |longtable|s (provided by the
-\package{longtable} package), and |supertabular|s (provided by the
+Both settings have no effect in |lst|\-|listing|s (provided by the
+\package{listings} package), |long|\-|table|s (provided by the
+\package{longtable} package), and |super|\-|tabular|s (provided by the
 \package{supertabular} package), within these environments hyperlink
-anchors will always be placed as if |hypcap=true| \& |hypcapspace=0pt|
-would be set.
+anchors will always be placed as if |hyp|\-|cap=|\x|true| and
+|hyp|\-|cap|\-|space=|\x|0pt| would be set.
 
 \pagebreak[3]Please note:\nopagebreak
 \begin{description}
-\item{\cs{captionof}\marg{type}\csmarg\ldots\ vs.
-      \cs{captionsetup}\csmarg{type=\textrm{\meta{type}}}$+$\cs{caption}\csmarg\ldots}\\[\smallskipamount]
+\item{\cs{captionof}\marg{type}\csmarg{\purerm\ldots}
+  vs.~\cs{captionsetup}\csmarg{type=\textrm{\meta{type}}}$+$\cs{caption}\csmarg{\purerm\ldots}}%
+\\[\smallskipamount]
 Without \package{hyperref} loaded, both will give you identical results.
-But with \package{hyperref} loaded, and with |hypcap=true| requested, the
-hyperlink anchor will be placed different.
+But with \package{hyperref} loaded, and with |hyp|\-|cap=|\x|true| requested,
+the hyperlink anchor will be placed different.
 For example:
 \begin{quote}
 |\begin{minipage}{\linewidth}|\\
@@ -2546,7 +2747,7 @@ For example:
 |\end{minipage}|
 \end{quote}
 will place the hyperlink anchor at the caption.
-(And if |hypcap=true| is set, you will get a warning about this.)
+(And if |hypcap=|\x|true| is set, you will get a warning about this.)
 But
 \begin{quote}
 |\begin{minipage}{\linewidth}|\\
@@ -2556,18 +2757,18 @@ But
 |\end{minipage}|
 \end{quote}
 will place the hyperlink anchor at the beginning of the |minipage|,
-since |\caption|\x|setup|\xx|{type=|\xx|figure}| does not only set the caption type
+since |\caption|\-|setup{type=|\x|figure}| does not only set the caption type
 to ``figure'' but does place a hyperlink anchor, too.
 
-\item{\cs{caption}\csoarg{}\csmarg\ldots\ vs.
-      \cs{captionsetup}\csmarg{list=false}$+$\cs{caption}\csmarg\ldots}\\[\smallskipamount]
+\item{\cs{caption}\csoarg{}\csmarg{\purerm\ldots}
+  vs.~\cs{captionsetup}\csmarg{list=false}$+$\cs{caption}\csmarg{\purerm\ldots}}\\[\smallskipamount]
 Again, without \package{hyperref} loaded, both will give you identical results.
 But with \package{hyperref} loaded, the difference is in the nuances.
-So for example the optional argument of \cs{caption} will also be written to
-the |aux| file, and will be used by the \cs{nameref} command.
-So if you choose to use \cs{caption} with empty optional argument,
-\cs{nameref} will also give you an empty result.
-So it's better to use \cs{captionsetup}\csmarg{list=false} if you don't
+So for example the optional argument of |\caption| will also be written to
+the |aux| file, and will be used by the |\name|\-|ref| command.
+So if you choose to use |\caption| with empty optional argument,
+|\name|\-|ref| will also give you an empty result.
+So it's better to use |\caption|\-|setup{list=|\x|false}| if you don't
 want an entry in the List of Figures or List of Tables.
 \end{description}
 
@@ -2575,32 +2776,34 @@ want an entry in the List of Figures or List of Tables.
 \subsection{hypcap}
 \label{hypcap}
 \packagedescription{%
-The \package{hypcap} package\cite{hypcap} offers a solution to the problem
-that links to a float using \package{hyperref} may anchors to the caption
+The \package{hyp\-cap} package\cite{hypcap} offers a solution to the problem
+that links to a float using \package{hyper\-ref} may anchors to the caption
 rather than the beginning of the float.
 Since \thispackage\ \version{3.1} already solves this problem for itself,
 the \package{hypcap} package is usually not needed, at least when you use
 \thispackage.}
 
-If the \package{hypcap} package is loaded additionally to the \package{hyperref}
-package, it takes over the control of the hyperlink anchor placement from \thispackage,
-overriding the options |hypcap=| \& |hypcapspace=|.
+If the \package{hyp\-cap} package is loaded additionally to the
+\package{hyper\-ref} package, it takes over the control of the hyperlink
+anchor placement from \thispackage, overriding the options |hyp|\-|cap|
+and |hyp|\-|cap|\-|space|.
 
-So for a manual placement of hyperlink anchors |\captionsetup{type=|\meta{type}|}|
-is not sufficient anymore, instead you need to use |\capstart|
-(provided by the \package{hypcap} package) for this.
+So for a manual placement of hyperlink anchors
+|\caption|\-|setup{type=|\x\meta{type}|}| is not sufficient anymore,
+instead you need to use |\cap|\-|start| (provided by the \package{hyp\-cap}
+package) for this.
 
 Regarding the automatically placement the \package{hypcap} package offers good
 placement of hyperlink anchors for the floating environments |figure| and
-|table| only. In contrast the |hypcap=true| option of \thispackage\ also
+|table| only. In contrast the |hypcap=|\x|true| option of \thispackage\ also
 offers good placements of hyperlink anchors for
-|floatingfigure|s (provided by the \package{floatflt} package),
-|FPfigure|s \& |FPtable|s (provided by the \package{fltpage} package),
-|figwindow|s (provided by the \package{picinpar} package),
-|parpic|s (provided by the \package{picins} package),
-|SCfigure|s (provided by the \package{sidecap} package),
-|threeparttable|s (provided by the \package{threeparttable} package,
-and |wrapfigure|s (provided by the \package{wrapfig} package).%---%
+|floating|\-|figure|s (provided by the \package{float\-flt} package),
+|FP|\-|figure|s \& |FPtable|s (provided by the \package{flt\-page} package),
+|fig|\-|window|s (provided by the \package{pic\-in\-par} package),
+|par|\-|pic|s (provided by the \package{pic\-ins} package),
+|SC|\-|figure|s (provided by the \package{side\-cap} package),
+|three|\-|part|\-|table|s (provided by the \package{three\-part\-table} package),
+and |wrapfigure|s (provided by the \package{wrap\-fig} package).%---%
 %so by loading the \package{hypcap} package additionally you will
 %loose that.
 
@@ -2615,6 +2818,14 @@ you can use
 \begin{quote}
   |\captionsetup[lstlisting]|\marg{options}\quad.
 \end{quote}
+
+Please note that the \package{listings} package has its very own options
+for controlling the position and the skips of the caption:
+|caption|\-|pos=|, |above|\-|caption|\-|skip=|, and |below|\-|caption|\-|skip=|.
+\See{\package{listings} documentation for details.}
+These \package{listings} options override the \package{caption}'s ones, but
+can be again overwritten by |\caption|\-|setup[lst|\-|listing]{|\ldots|}|,
+e.g.~|\caption|\-|setup[lst|\-|listing]{skip=|\x|10pt}|.
 
 \pagebreak[3]
 \subsection{longtable}
@@ -2632,21 +2843,26 @@ you can use
 These options will be executed additionally to the regular ones for
 |table|.
 
-The |margin| \& |width| settings usually override |\LTcapwidth|, so
-you get an equal look \& feel of the captions in |table|s and
-|longtable|s. But if you set |\LTcapwidth| to a value different from
-its default $=$ |4in|, \thispackage\ will follow that.
-(But |\LTcapwidth| will be overwritten by
-|\captionsetup[longtable]{width=|\meta{value}|}|, even if it is set
-to a value different than |4in|.)
+The |margin| and |width| settings usually override |\LT|\-|cap|\-|width|,
+so you get an equal look \& feel of the captions in |table|s and
+|long|\-|table|s.
+But if you set |\LT|\-|cap|\-|width| to a value different than its default
+$=$ |4in|, \thispackage\ will follow that.
+(But |\LT|\-|cap|\-|width| will be overwritten by
+|\caption|\-|setup[long|\-|table]{width=|\x\meta{value}|}|,
+even if it is set to a value different than |4in|.)
 
-\Note
-\cs{captionof} and \cs{ContinuedFloat} do not work for |longtable|s.
+\begin{Note}
+|\caption|\-|of| and |\Continued|\-|Float| do not work for |long|\-|table|s.
+Furthermore neither |\caption| nor |\caption|\-|list|\-|entry| will increment
+the |table| counter here; it's incremented by the |long|\-|table| environment
+instead.
 \NEWfeature{v3.1}
-If you need a |longtable| which does not increment the |table| counter
-please use the |longtable*| environment offered by the \package{ltcaption}
-package which is part of \thispackage\ bundle and will be loaded
-automatically.
+If you need a |long|\-|table| which does \emph{not} increment the |table|
+counter please use the |long|\-|table*| environment (offered by the
+\package{ltcaption} package which is part of \thispackage\ bundle and will be
+loaded automatically).
+\end{Note}
 
 \pagebreak[3]
 \subsection{picinpar}
@@ -2668,10 +2884,11 @@ environments you can use
 These options will be executed additionally to the regular ones for
 |figure| or |table|.
 
-\Note
-The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\caption|\x|setup|\xx|[figwindow]{|\ldots|}| or
-|\caption|\x|setup|\xx|[figtable]{|\ldots|}|.
+\begin{Note}
+The |margin| resp.~|width| setting will not be used for these figures and tables,
+unless you set it explicit with |\caption|\-|setup[fig|\-|window]{|\ldots|}| or
+|\caption|\-|setup[fig|\-|table]{|\ldots|}|.
+\end{Note}
 
 \pagebreak[3]
 \subsection{picins}
@@ -2693,37 +2910,41 @@ These options will be executed additionally to the regular ones for
 Furthermore |\piccaption[]{|\ldots|}| produce no entry in the List of Figures,
 and |\piccaption*{|\ldots|}| gives an unlabeled \& unnumbered caption.
 
-\Note
-The |margin| resp.~|width| setting will not be used for these figures \& tables
-if \cs{piccaptionside} or \cs{piccaptiontopside} is used.
+\begin{Note}
+The |margin| resp.~|width| setting will not be used for these figures and tables.
+\iffalse
+if |pic|\-|caption|\-|side| or |pic|\-|caption|\-|top|\-|side| is used.
 The |width| setting will not be used (but the |margin| setting will) if
-\cs{piccaptionoutside} or \cs{piccaptioninside} is used.
+|pic|\-|caption|\-|out|\-|side| or |pic|\-|caption|\-|in|\-|side| is used.
+\fi
 But you can override this by setting it explicit with
-|\captionsetup[parpic]{|\ldots|}|.
+|\caption|\-|setup[par|\-|pic]{|\ldots|}|.
+\end{Note}
 
-\Note
-If you want to have a |\piccaption| of another type as |figure|, please do
-\emph{not} re-define |\@captype| as suggested by the \package{picins}
-documentation. Please use the |\piccaptiontype|\marg{type} command which is
-offered by \thispackage\ instead, e.g.:
+\begin{Note}
+If you want to have a |\pic|\-|caption| of another type as |figure|, please
+do \emph{not} re-define |\@cap|\-|type| as suggested by the \package{picins}
+documentation. Please use the |\pic|\-|caption|\-|type|\marg{type} command
+which is offered by \thispackage\ instead, e.g.:
 \begin{quote}
   |\piccaptiontype{table}|\\
   |\piccaption{An example table}|\\
   |\parpic(50mm,10mm)[s]{|\ldots|}|
 \end{quote}
+\end{Note}
 
 \pagebreak[3]
 \subsection{rotating}
 \label{rotating}
 \packagedescription{%
 The \package{rotating} package\cite{rotating} offers the floating
-environments \texttt{sideways\-figure} and \texttt{sideways\-table}
+environments \texttt{side\-ways\-figure} and \texttt{side\-ways\-table}
 which are just like normal figures and tables but rotated by 90 degree.
 Furthermore a command \cs{rotcaption} is offered for rotated captions only.}
 
 \iffalse % No, we don't do that
-If you want to setup special options for the |sidewaysfigure| \& |sidewaystable|
-environments you can use
+If you want to setup special options for the |side|\-|ways|\-|figure| \&
+|side|\-|ways|\-|table| environments you can use
 \begin{quote}
   |\captionsetup[sidewaysfigure]|\marg{options}\\
   |\captionsetup[sidewaystable]|\marg{options}\quad.
@@ -2732,14 +2953,14 @@ These options will be executed additionally to the regular ones for
 |figure| or |table|.
 \fi
 
-The command \cs{rotcaption} will be extended by \thispackage, so
-|\rotcaption*| or |\rotcaptionof| can be used analogous to |\caption| and
-|\captionof|.
+The command |\rot|\-|caption| will be extended by \thispackage, so
+|\rot|\-|caption*| or |\rot|\-|caption|\-|of| can be used analogous to
+|\caption| and |\caption|\-|of|.
 
 \NEWfeature{v3.1}
-Furthermore \cs{DeclareCaptionType}\marg{name} will also define
-an environment called |sideways|\meta{name} which behaves like
-|sideways|\x|figure| and |sideways|\x|table|.
+Furthermore |\Declare|\-|Caption|\-|Type|\marg{name} will also define
+an environment called |side|\-|ways|\meta{name} which behaves like
+|side|\-|ways|\-|figure| and |side|\-|ways|\-|table|.
 
 \pagebreak[3]
 \subsection{setspace}
@@ -2747,13 +2968,14 @@ an environment called |sideways|\meta{name} which behaves like
 \packagedescription{%
 The \package{setspace} package\cite{setspace} offers options and commands
 to change the spacing,
-e.g.\ \cs{usepackage}\xx\csoarg{one\x half\x spacing}\xx\csmarg{set\x space}
+e.g.\ \cs{usepackage}\x\csoarg{one\-half\-spacing}\x\csmarg{set\-space}
 causes the document to be typeset in one-and-a-half spacing.}
 
 If the \package{setspace} package is used in conjunction with \thispackage,
 the caption will be typeset with single spacing as default. This can be changed
-by specifying either |font=onehalfspacing|, |font=doublespacing|, or
-|font={stretch=|\meta{amount}|}|. \See{\Ref{fonts}}
+by specifying either |font=|\x|one|\-|half|\-|spacing|,
+|font=|\x|double|\-|spacing|, or |font={stretch=|\x\meta{amount}|}|.
+\See{\Ref{fonts}}
 
 \pagebreak[3]
 \subsection{sidecap}
@@ -2778,20 +3000,24 @@ Furthermore \cs{DeclareCaptionType}\marg{name} will also define
 an environment called |SC|\meta{name} which behaves like |SCfigure| and
 |SCtable|.
 
-\pagebreak[3]
-\Note
+\begin{Note}
 The \package{sidecap} package offers its own options for justification.
 If set, they will override the one specified with the caption option
 |justification=| for captions beside their contents.
+\end{Note}
 
-\pagebreak[3]
-\Note
-The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\captionsetup|\xx|[SCfigure]|\xx|{|\ldots|}|
-or |\captionsetup|\xx|[SCtable]|\xx|{|\ldots|}|.
+\begin{Note}
+The |margin| resp.~|width| setting will not be used for these figures and tables,
+unless you set it explicit with |\caption|\-|setup[SC|\-|figure]{|\ldots|}|
+or |\caption|\-|setup[SC|\-|table]{|\ldots|}|.
+\end{Note}
 
-\medskip{\small(Instead of using the \package{sidecap} package you can also use
-the more powerful \package{floatrow} package\cite{floatrow} for this purpose.)}
+\medskip
+
+\begin{Annotation*}
+Instead of using the \package{sidecap} package you can also use
+the more powerful \package{floatrow} package\cite{floatrow} for this purpose.
+\end{Annotation*}
 
 \pagebreak[3]
 \subsubsection*{Undocumented features}
@@ -2814,8 +3040,8 @@ The command
 \end{quote}
 sets the vertical position of the side-caption. \meta{pos} can be either `|t|'
 (for top alignment), `|b|' (for bottom alignment), or `|c|' (for center alignment).
-The default setting for \env{table} is `|t|', for \env{figure} and all other
-ones defined with |\Declare|\x|Caption|\x|Type| it's `|b|'.
+The default setting for |table| is `|t|', for |figure| and all other ones
+defined with |\Declare|\-|Caption|\-|Type| it's `|b|'.
 
 \pagebreak[3]
 \subsection{subfigure}
@@ -2845,7 +3071,7 @@ Both offers the typesetting of tables which can span multiple pages.
 For a detailed discussion about the differences between these two powerful
 packages please take a look at The \LaTeX\ Companion\cite{TLC2}.}
 
-If you want to setup special options for the |supertabular| environment
+If you want to setup special options for the |super|\-|tabular| environment
 you can use
 \begin{quote}
   |\captionsetup[supertabular]|\marg{options}\quad.
@@ -2853,8 +3079,9 @@ you can use
 These options will be executed additionally to the regular ones for
 |table|.
 
-\Note
-\cs{ContinuedFloat} does not work for |supertabular|s.
+\begin{Note}
+|\Continued|\-|Float| does not work for |super|\-|tabular|s.
+\end{Note}
 
 \pagebreak[3]
 \subsection{threeparttable}
@@ -2866,8 +3093,8 @@ This scheme provides an answer to the old problem of putting footnotes in
 tables---by making footnotes entirely unnecessary.}
 
 \NEWfeature{v3.1}
-If you want to setup special options for the |threeparttable| \&
-|measuredfigure| environments you can use
+If you want to setup special options for the |three|\-|part|\-|table| \&
+|measured|\-|figure| environments you can use
 \begin{quote}
   |\captionsetup[threeparttable]|\marg{options}\\
   |\captionsetup[measuredfigure]|\marg{options}\quad.
@@ -2875,15 +3102,20 @@ If you want to setup special options for the |threeparttable| \&
 These options will be executed additionally to the regular ones for
 |table| or |figure|.
 
-\Note
+\begin{Note}
 Since the caption will have the same width as the contents here,
-the |margin| resp.~|width| setting will not be used for these figures \& tables,
+the |margin| resp.~|width| setting will not be used for these figures and tables,
 at least unless you set it explicit with
-|\caption|\x|setup|\xx|[threeparttable]|\xx|{|\ldots|}|
-or |\caption|\x|setup|\xx|[measuredfigure]|\xx|{|\ldots|}|.
+|\caption|\-|setup[three|\-|part|\-|table]{|\ldots|}| or
+|\caption|\-|setup[measured|\-|figure]{|\ldots|}|.
+\end{Note}
 
-\medskip{\small(Instead of using the \package{sidecap} package you can also use
-the \package{floatrow} package\cite{floatrow} for this purpose.)}
+\medskip
+
+\begin{Annotation*}
+Instead of using the \package{threeparttable} package you can
+also use the \package{floatrow} package\cite{floatrow} for this purpose.
+\end{Annotation*}
 
 \pagebreak[3]
 \subsection{wrapfig}
@@ -2910,298 +3142,84 @@ Furthermore \cs{DeclareCaptionType}\marg{name} will also define
 an environment called |wrap|\meta{name} which behaves like |wrapfigure| and
 |wraptable|.
 
-\Note
-The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\caption|\x|setup|\xx|[wrapfigure]|\xx|{|\ldots|}|
-or |\caption|\x|setup|\xx|[wraptable]|\xx|{|\ldots|}|.
+\begin{Note}
+The |margin| resp.~|width| setting will not be used for these figures and tables,
+unless you set it explicit with |\caption|\-|setup[wrap|\-|figure]{|\ldots|}|
+or |\caption|\-|setup[wrap|\-|table]{|\ldots|}|.
+\end{Note}
 
-\Note
+\begin{Note}
 If the \package{wrapfig} package should be used in coorperation with the
 \package{float} package, it needs to be loaded \emph{after} the
 \package{float} package. Furthermore \cs{newfloat} or \cs{restylefloat}
 commands \emph{must} be placed after \emph{both} packages have been loaded.
+\end{Note}
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
-\section{History}
-\label{history}
+\clearpage
+\section{Further reading}
 
-The version $1.0$ was written in 1994 and was offering a handful of options
-to customize the look \& feel of the captions. Version $1.2$ added the
-support of the \package{float} package.
-(The other versions $1.x$ were mainly bugfix-releases.)
+I recommend the following documents for further reading:
 
-The \package{caption2} package $2.0$ was an experimental side-version of
-the regular \package{caption} package. It was made public as beta test version
-without proper documentation in 1995 because of the strong demand for new
-features and adaptations to additional packages like the \package{longtable}
-package.
-Furthermore it offered a revised support of the \package{subfigure} package.
-(A version $2.1$ was offered as bugfix-release in 2002.)
+\begin{itemize}
+\item
+  The \TeX\ FAQ -- Frequently asked questions about \TeX\ and \LaTeX:
+  \begin{quote}\url{http://faq.tug.org/}\end{quote}
 
-In 2003 I finally found some time, so a new regular release $3.0$
-of the \package{caption} package could be build in cooperation with
-Frank Mittelbach and Steven Cochran.
-It was released in December 2003 and superseded the neglected
-\package{caption2} package.
-Main parts were re-written and it provided a complete re-work of
-the user interface.
-Furthermore it supported the \package{hyperref}, \package{hypcap},
-\package{listings}, \package{sidecap}, and \package{supertabular} packages
-additionally.
+\item
+  A French FAQ can be found at
+  \begin{quote}\url{http://www.grappa.univ-lille3.fr/FAQ-LaTeX/}\end{quote}
 
-While all the previous versions were designed for usage with the standard
-\LaTeX\ document classes \class{article}, \class{report}, and \class{book},
-the current version $3.1$ released in 2007 also supports the \AmS,
-\KOMAScript, \NTG, and \SmF\ document classes, and the \class{beamer} class
-as well.
-Furthermore it was adapted to the \package{frenchb} Babel option,
-the \package{frenchle} \& \package{frenchpro} packages,
-and the \package{floatflt}, \package{fltpage}, \package{picinpar},
-\package{picins}, \package{setspace}, \package{threeparttable},
-and \package{wrapfig} packages.
-New commands and options were introduced as well, for example
-|\caption|\x|list|\x|entry|, |\Declare|\x|Caption|\x|List|\x|Format|,
-|\Declare|\x|Caption|\x|Type|, \opt{figurewithin=} \& \opt{tablewithin=},
-\opt{list=} \& \opt{listformat=}, and \opt{maxmargin=} \& \opt{minmargin=}.
-Another benefit are the new hypcap and sub-caption features.
-\See{\Ref{hyperref} and the \package{subcaption} package documentation}
+\item
+  ``What is a minimal working example?'' from Christian Faulhammer and Ulrich Schwarz:
+  \begin{quote}\url{http://www.minimalbeispiel.de/mini-en.html}\end{quote}
 
-\pagebreak[4]
-\section{Compatibility to older versions}
-\label{compatibility}
-
-\subsection{caption v\texorpdfstring{$1.x$}{1.x}}
-\label{caption1}
-
-This version of \thispackage\ still supports the old options
-and commands provided by the version $1.x$ of this package. So there
-shouldn't occur any problems compiling old documents, but please don't mix
-old options and commands with the new ones. This isn't supported and can
-cause ugly side effects.
-
-Here comes a short oversight of the obsolete options and how
-they have been replaced within this version of \thispackage:
-
-{\small\begin{longtable}{ll}
-\package{caption} \version{1.x} & \package{caption} \version{3.x}\\
-\hline
-\endhead
-|normal|        & |format=plain|\\
-|hang|          & |format=hang|\\
-|isu|           & |format=hang|\\
-|center|        & |justification=centering|\\
-|centerlast|    & |justification=centerlast|\\
-%|anne|         & |justification=centerlast|\\
-|nooneline|     & |singlelinecheck=off|\\
-|scriptsize|    & |font=scriptsize|\\
-|footnotesize|  & |font=footnotesize|\\
-|small|         & |font=small|\\
-|normalsize|    & |font=normalsize|\\
-|large|         & |font=large|\\
-|Large|         & |font=Large|\\
-|up|            & |labelfont=up|\\
-|it|            & |labelfont=it|\\
-|sl|            & |labelfont=sl|\\
-|sc|            & |labelfont=sc|\\
-|md|            & |labelfont=md|\\
-|bf|            & |labelfont=bf|\\
-|rm|            & |labelfont=rm|\\
-|sf|            & |labelfont=sf|\\
-|tt|            & |labelfont=tt|\\
-\end{longtable}}
-
-Beside the options for setting up the desired font there were also
-the commands |\captionsize| resp.~|\captionfont| and |\captionlabelfont|
-who could be redefined with |\renewcommand| and allowed an alternate and
-more flexible way to change the font used for captions.
-This mechanism was replaced by the commands
-\begin{quote}
-  |\DeclareCaptionFont{|\ldots|}{|\ldots|}|\qquad and\\
-  |\captionsetup{font=|\ldots|,labelfont=|\ldots|}|\qquad.
-\end{quote}\SeeUserDefined
-
-Setting the margin for captions was done in \version{1.x} with
-\begin{quote}
-  |\setlength{\captionmargin}{|\ldots|}|\quad.
-\end{quote}
-This was replaced by
-\begin{quote}
-  |\captionsetup{margin=|\ldots|}|\qquad.
-\end{quote}
-\See{\Ref{margins}}
-
-For example the old-style code
-\begin{quote}
-|\usepackage[hang,bf]{caption}|\\
-|\renewcommand\captionfont{\small\sffamily}|\\
-|\setlength\captionmargin{10pt}|
-\end{quote}
-will still work fine, but should be written today as
-\begin{quote}
-|\usepackage[format=hang,labelfont=bf,font={small,sf},|\\
-|            margin=10pt]{caption}|
-\end{quote}
-or
-\begin{quote}
-|\usepackage{caption}|\\
-|\captionsetup{format=hang,labelfont=bf,font={small,sf},|\\
-|              margin=10pt}|\qquad.
-\end{quote}
-
-The quite exotic option |ruled| which allowed a partial usage of
-the caption settings for |ruled| floats defined with the
-\package{float} package will be emulated by this version of the
-caption package, too.
-But using this option is not recommended anymore since this
-version of \thispackage\ offers a more flexible way
-for changing the captions of these floating environments:
-\begin{quote}
-  |\DeclareCaptionStyle{ruled}{|\ldots|}|
-\end{quote}
-resp.
-\begin{quote}
-  |\captionsetup[ruled]{|\ldots|}|\qquad.
-\end{quote}
-\SeeUserDefined[, \Ref{captionsetup}, and \Ref{float}]
-
-\subsection{caption2 v\texorpdfstring{$2.x$}{2.x}}
-\label{caption2}
-
-Although they do very similar stuff, the packages \package{caption} and
-its experimental and now obsolete variant \package{caption2} have a
-very different implementation design.
-Therefore a full compatibility could not be offered.
-For that reason you will still find a file called |caption2.sty| in
-this package distribution, so old documents using the \package{caption2}
-package will still compile fine.
-
-Newly created documents should use the actual version of
-\thispackage\ instead. In most cases it's sufficient to replace the command
-\begin{quote}
-  |\usepackage[...]{caption2}|
-\end{quote}
-by
-\begin{quote}
-  |\usepackage[...]{caption}|\qquad.
-\end{quote}
-But some options and commands will not be emulated, so you can get
-error messages afterwards. This section will hopefully help you removing
-these errors. If you have problems migrating from \package{caption2}
-to \package{caption} please don't hesitate to send me an e-mail asking
-for help.
-
-In addition to the obsolete options shown in the last section
-these ones will be emulated, too:
-
-{\small\begin{longtable}{ll}
-\package{caption2} \version{2.x} & \package{caption} \version{3.x}\\
-\hline
-\endhead
-|flushleft|   & |justification=raggedright|\\
-|flushright|  & |justification=raggedleft|\\
-|oneline|     & |singlelinecheck=on|\\
-\end{longtable}}
-
-Setting the margin for captions was done in \version{2.x} with
-\begin{quote}\leavevmode\hbox{%
-  |\setcaptionmargin{|\ldots|}| resp.
-  |\setcaptionwidth{|\ldots|}|\quad.
-}\end{quote}
-This was replaced by
-\begin{quote}\leavevmode\hbox{%
-  |\captionsetup{margin=|\ldots|}| resp.
-  |\captionsetup{width=|\ldots|}|\quad.
-}\end{quote}
-\See{\Ref{margins}}
-
-Setting an indention was done in \version{2.x} with
-\begin{quote}
-  |\captionstyle{indent}|\\
-  |\setlength\captionindent{|\ldots|}|\quad.
-\end{quote}
-This is now done with
-\begin{quote}
-  |\captionsetup{format=plain,indention=|\ldots|}|\quad.
-\end{quote}
-
-The so-called single-line-check was controlled by the commands
-|\oneline|\-|captions|\-|false| (for switching the check off) and
-|\oneline|\-|captions|\-|true| (for switching the check on).
-This was replaced by
-|\captionsetup{|\xx|singlelinecheck=|\xx|off}|
-resp.
-|\captionsetup{|\xx|singlelinecheck=|\xx|on}|.
-\See{\Ref{justification}}
-
-The commands
-\begin{quote}
-  |\captionlabeldelim|, |\captionlabelsep|, |\captionstyle|,\\
-  |\defcaptionstyle|, |\newcaptionstyle|, and |\renewcaptionstyle|
-\end{quote}
-do not have a simple replacement and therefore will not be emulated
-by this version of \thispackage. (So using them will
-cause error messages.) Rewriting such code is not always easy and
-straight-ahead, but by conscientious reading of this manual you should
-find appropriate options and commands instead.
-
-\iffalse
-... (some examples)
-\fi
-
-The \version{2.x} option |ignoreLTcapwidth| do not have a replacement, too.
-But in most cases you can simply drop using that option because
-in this version of \thispackage\ the value of |\LTcapwidth|
-will be ignored anyway (unless you set it to a different value than the
-default one which is |4in|).
-\See{\Ref{longtable}}
-
-\subsection{caption v\texorpdfstring{$3.0$}{3.0}}
-\label{caption3}
-
-%\NEWdescription{v3.1}
-\Thispackage\ \version{3.0} did not support any document classes
-other than the standard \LaTeX\ ones: \class{article}, \class{report},
-and \class{book}.
-Therefore the default settings used to be fixed, but now \thispackage{}
-supports more classes, therefore they are now set in dependence on the
-document class used.
-
-For example: While in \version{3.0} the default caption |justification| used
-to be always |justified|, it's now still |justified| when using one of the
-standard document classes, but |raggedright| will be used as default format
-when when used with the \class{beamer} document class.
-
-%An easy way to select the `old' defaults---if desired---is using the option
-An easy way to select the `old' defaults is using the option
-|style=base| when loading \thispackage\ (or later on using |\captionsetup|).
-
-Another new feature is the automatic check for compatibility; if an
-incompatibility will be found, a warning message will be issued and if a strong
-incompatibility was found some features of \thispackage\ will be disabled.
-Please note that only this check was added to \thispackage, so if you get
-such warning message, the previous versions of \thispackage\ were incompatible
-as well, but did not issued such warning, they were ``only'' having
-side-effects or causing problems.
-So these warnings only say that some bad side effects or problems could
-happen, but not that they actually will happen.
-Anyway, if you use \thispackage\ in such circumstances,
-you should use it with care.
-
-\bigskip
-
-\emph{Note:} The option |caption=false|, which used to be a workaround for
-not using the whole \package{caption} package (leaving the caption stuff
-offered by the document class or other packages intact), but keeping the
-\package{subfig} package working. This mechanism is obsolete and not offered
-anymore, please pass this option to the \package{subfig} package instead and
-do not load \thispackage\ anymore.
-%\par\See{the \package{subfig} package\cite{subfig} documentation}
+\item
+  \textsf{epslatex} from Keith Reckdahl contains many tips around
+  including graphics in \LaTeXe\ documents.
+  You will find this document in the directory
+  \begin{quote}\url{ftp://tug.ctan.org/pub/tex/info/epslatex/}\end{quote}
+\end{itemize}
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\pagebreak[3]
+\section{Thanks}
+
+I would like to thank Katja Melzner,
+Steven D. Cochran, Frank Mittelbach, Olga Lapko,
+David Carlisle, Carsten Heinz, and Keith Reckdahl.
+Thanks a lot for all your help, ideas, patience, spirit, and support!
+
+Also I would like to thank
+Harald Harders,
+Peter L\"offler,
+Peng Yu,
+Alexander Zimmermann,
+Matthias Pospiech,
+J\"urgen Wieferink,
+Christoph Bartoschek,
+Uwe St\"ohr,
+Ralf Stubner,
+Geoff Vallis,
+Florian Keiler,
+J\"urgen G\"obel,
+Uwe Siart,
+Sang-Heon Shim,
+Henrik Lundell,
+David Byers,
+William Asquith,
+Prof.~Dr.~Dirk Hoffmann,
+Frank Martini,
+Danie Els,
+and
+Markus Kohm,
+who all helped to make this package a better one.
+
+% --------------------------------------------------------------------------- %
+
+\clearpage\appendix
 \section{Alphabetical Reference}
 
 %\newenvironment{Warnings}%
@@ -3231,9 +3249,87 @@ do not load \thispackage\ anymore.
 }
 \makeatother
 
+\subsection{Options}
+%\enlargethispage{10ex}
+\newcommand\preambleoption{~%
+  \begingroup\def\thefootnote{\fnsymbol{footnote}}%
+    \footnotemark[2]%
+  \endgroup}
+\newcommand\preambleoptiontext{%
+  \begingroup\def\thefootnote{\fnsymbol{footnote}}%
+    \footnotetext[2]{These options are only available in the preamble of the document.}%
+  \endgroup}
+
+\begin{longtable*}{lll}
+Option           & Short description & Section \\
+\hline
+\endhead
+|aboveskip|       & sets the skip above caption & \ref{skips} \\
+|belowskip|       & sets the skip below caption & \ref{skips} \\
+|compatibility|\preambleoption & force (non-)compatibility & \ref{compatibility} \\
+%|config|         &  & \ref{x} \\
+|figurename|\preambleoption & sets the figure name & \ref{names} \\
+|figureposition|\preambleoption & gives a hint about the figure caption position & \ref{skips} \\
+|figurewithin|\preambleoption & sets the figure ``within'' counter & \ref{numbering} \\
+|font|(|+|)       & sets the font & \ref{fonts} \\
+|format|          & sets the format & \ref{formats} \\
+|FPlist|          & To where the list entry of a FPfigure should link? & \ref{fltpage} \\
+|FPref|           & To where a |\ref| to a FPfigure should link? & \ref{fltpage} \\
+|hangindent|      & sets the hang indention & \ref{margins} \\
+|hypcap|          & selects `hypcap' feature & \ref{hyperref} \\
+|hypcapspace|     & sets the distance between hyperlink and contents & \ref{hyperref} \\
+|indention|       & sets the indention & \ref{margins} \\
+|justification|   & sets the justification & \ref{justification} \\
+|labelfont|(|+|)  & sets the font of the caption label & \ref{fonts} \\
+|labelformat|     & sets the format of the caption label & \ref{formats} \\
+|labelsep|        & sets the label separator & \ref{formats} \\
+|labelseparator|  & --same as |labelsep|-- & \ref{formats} \\
+|list|            & switches the entries in the List on or off & \ref{lists} \\
+|listfigurename|  & sets the `List of Figure' name & \ref{names} \\
+|listformat|      & sets the `List of Figure/Table' entry format & \ref{lists} \\
+|listtablename|   & sets the `List of Tables' name & \ref{names} \\
+|margin|          & sets the margin & \ref{margins} \\
+|margin*|         & sets the margin, but only if no width is set & \ref{margins} \\
+|maxmargin|       & sets the max. margin & \ref{margins} \\
+|minmargin|       & sets the min. margin & \ref{margins} \\
+|name|            & sets the name of the current environment & \ref{names} \\
+|oneside|         & selects the one-side mode & \ref{margins} \\
+|options|         & executes the given option list & \\
+|parindent|       & sets the paragraph indention & \ref{margins} \\
+|parskip|         & sets the skip between paragraphs & \ref{margins} \\
+|position|        & gives a hint about the caption position & \ref{skips} \\
+|singlelinecheck| & switches the single-line-check on or off & \ref{justification} \\
+%|size|           & sets the size of font & \ref{x} \\
+|skip|            & sets the skip between content and caption & \ref{skips} \\
+|strut|           & switches the usage of |\strut|s on or off & \ref{formats} \\
+|style|           & sets the caption style & \ref{style} \\
+%|style*|         & sets the caption style & \ref{style} \\
+|subtype|         & sets the sub-caption type & \phantom{t}--~\footnotemark \\
+|tablename|\preambleoption & sets the table name & \ref{names} \\
+|tableposition|\preambleoption & gives a hint about the table caption position & \ref{skips} \\
+|tablewithin|\preambleoption & sets the table ``within'' counter & \ref{numbering} \\
+|textfont|(|+|)   & sets the font of the caption text & \ref{fonts} \\
+|textformat|      & sets the format of the caption text & \ref{formats} \\
+|twoside|         & selects the two-side mode & \ref{margins} \\
+|type|            & sets the caption type \& places a hyperlink anchor & \ref{types} \\
+|type*|           & sets the caption type only & \ref{types} \\
+|width|           & sets a fixed caption width & \ref{margins} \\
+\end{longtable*}
+\preambleoptiontext
+\footnotetext{The option \texttt{subtype} is explained in the
+  \package{subcaption} package documentation.}
+
+\nopagebreak\parbox[t]{\linewidth}{% prevent from page break
+\begin{Note*}
+  Obsolete options are not listed here. See
+  \Ref{caption1} and
+  \Ref{caption2} for a list of these options.
+\end{Note*}}
+
+\pagebreak[3]
 \subsection{Commands}
 
-\begin{longtable}{lll}
+\begin{longtable*}{lll}
 Command                          & & Section \\
 \hline
 \endhead
@@ -3267,86 +3363,11 @@ Command                          & & Section \\
 |\DeclareCaptionTextFormat|      & & \ref{declare} \\
 |\DeclareCaptionType|            & & \ref{declare} \\
 |\showcaptionsetup|              & & \ref{captionsetup} \\
-\end{longtable}
+\end{longtable*}
 \footnotetext{\cs{DeclareCaptionSubType} is explained in the
   \package{subcaption} package documentation.}
 
-\vfill\pagebreak[4]
-\subsection{Options}
-\newcommand\preambleoption{~%
-  \begingroup\def\thefootnote{\fnsymbol{footnote}}%
-    \footnotemark[2]%
-  \endgroup}
-\newcommand\preambleoptiontext{%
-  \begingroup\def\thefootnote{\fnsymbol{footnote}}%
-    \footnotetext[2]{These options are only available in the preamble of the document.}%
-  \endgroup}
-
-\begingroup
-\small
-\begin{longtable}{lll}
-Option & Short description & Section \\
-\hline
-\endhead
-|aboveskip|       & sets the skip above caption & \ref{skips} \\
-|belowskip|       & sets the skip below caption & \ref{skips} \\
-|compatibility|\preambleoption & force (non-)compatibility & \ref{classes} \\
-%|config| &       & \ref{x} \\
-|figurename|\preambleoption & sets the figure name & \ref{names} \\
-|figureposition|\preambleoption & gives a hint about the figure caption position & \ref{skips} \\
-|figurewithin|\preambleoption & sets the figure ``within'' counter & \ref{numbering} \\
-|font|            & sets the font & \ref{fonts} \\
-|format|          & sets the format & \ref{formats} \\
-|FPlist|          & to where the list entry of a FPfigure should link? & \ref{fltpage} \\
-|FPref|           & to where a |\ref| to a FPfigure should link? & \ref{fltpage} \\
-|hangindent|      & sets the hang indention & \ref{margins} \\
-|hypcap|          & select `hypcap' feature & \ref{hyperref} \\
-|hypcapspace|     & sets the distance between hyperlink \& contents & \ref{hyperref} \\
-|indention|       & sets the indention & \ref{margins} \\
-|justification|   & sets the justification & \ref{justification} \\
-|labelfont|       & sets the font of the caption label & \ref{fonts} \\
-|labelformat|     & sets the format of the caption label & \ref{formats} \\
-|labelsep|        & sets the label separator & \ref{formats} \\
-|labelseparator|  & sets the label separator & \ref{formats} \\
-|list|            & switches the entries in the `List of' on or off & \ref{lists} \\
-|listformat|      & sets the `List of' entry format & \ref{lists} \\
-|margin|          & sets the margin & \ref{margins} \\
-|margin*|         & sets the margin, but only if no width is set & \ref{margins} \\
-|maxmargin|       & sets the max. margin & \ref{margins} \\
-|minmargin|       & sets the min. margin & \ref{margins} \\
-|name|            & sets the name of the current environment & \ref{names} \\
-|oneside|         & selects the one-side mode & \ref{margins} \\
-%|options|        & executes the given option list & \ref{x} \\
-|parindent|       & sets the paragraph indention & \ref{margins} \\
-|parskip|         & sets the skip between paragraphs & \ref{margins} \\
-|position|        & gives a hint about the caption position & \ref{skips} \\
-|singlelinecheck| & switches the single-line-check on or off & \ref{justification} \\
-%|size|           & sets the size of font & \ref{x} \\
-|skip|            & sets the skip between content \& caption & \ref{skips} \\
-|strut|           & switches the usage of |\strut|s on or off & \ref{formats} \\
-|style|           & sets the caption style & \ref{style} \\
-|subtype|         & sets the sub-caption type & \phantom{t}--~\footnotemark \\
-|tablename|\preambleoption & sets the table name & \ref{names} \\
-|tableposition|\preambleoption & gives a hint about the table caption position & \ref{skips} \\
-|tablewithin|\preambleoption & sets the table ``within'' counter & \ref{numbering} \\
-|textfont|        & sets the font of the caption text & \ref{fonts} \\
-|textformat|      & sets the format of the caption text & \ref{formats} \\
-|twoside|         & selects the two-side mode & \ref{margins} \\
-|type|            & sets the caption type \& places a hyperlink anchor & \ref{types} \\
-|type*|           & sets the caption type only & \ref{types} \\
-|width|           & sets a fixed caption width & \ref{margins} \\
-\end{longtable}
-\endgroup
-\preambleoptiontext
-\footnotetext{The option \opt{subtype} is explained in the
-  \package{subcaption} package documentation.}
-
-\nopagebreak\parbox[t]{\linewidth}{\small\emph{Note:}
-  Obsolete options are not listed here. See
-  \Ref{caption1} and
-  \Ref{caption2} for a list of these options.}
-
-\vfill\pagebreak[4]
+\clearpage
 \subsection{Warnings}
 
 \begin{Warnings}
@@ -3356,10 +3377,11 @@ Option & Short description & Section \\
 \Or
   |\captionsetup{type=...} outside box or environment.|
 \Or
-  |\captionsetup{type*=...} or \captionof outside box or environment.|
+  |\captionsetup{type*=...} or \captionof outside box|\\
+  | or environment.|
 \Description
-  You have placed a |\caption|, |\caption|\x|of|, or
-  |\caption|\x|setup{type=|\xx\meta{type}|}| command outside an box, group,
+  You have placed a |\caption|, |\caption|\-|of|, or
+  |\caption|\-|setup{type=|\x\meta{type}|}| command outside an box, group,
   or environment.
   You should not do this since it could cause some bad side-effects.
   \par\See{\Ref{types} and \Ref{caption}}
@@ -3372,27 +3394,27 @@ Option & Short description & Section \\
   If \thispackage\ detects that some (unknown) document class or
   package has enhanced |\caption|, it will not redefine
   |\caption|, too, since this would simply kill the enhancement.
-  As a result some features, like |\caption*|, |\ContinuedFloat|,
-  using the optional argument of |\captionsetup|,
+  As a result some features, like |\caption*|, |\Continued|\-|Float|,
+  using the optional argument of |\caption|\-|setup|,
   or the options |list=| and |hypcap=| will not be available.\par
   If you don't care about the original enhancements but would
   like to use the full range of features of \thispackage\ instead
-  you can give the unsupported(!) option |compatibility=false|
+  you can give the unsupported(!) option |compatibility=|\x|false|
   a try and keep your fingers crossed.
   (But you will get the next warning instead.)
-  \par\See{\Ref{classes}}
+  \par\See{\Ref{classes} and \Ref{compatibility}}
 
 \Message
   |Forced redefinition of \caption since the|\\
   |unsupported(!) package option `compatibility=false'|\\
   |was given.|
 \Description
-  Since you were so keen to specify the option |compatibility=false|
+  Since you were so keen to specify the option |compatibility=|\x|false|
   \thispackage\ will try to do its best to fulfill your wishes.
   But depending on the document class or other packages you use that
   can end in non-functional features or even errors. So keep your
   fingers crossed!
-  \par\See{\Ref{classes}}
+  \par\See{\Ref{compatibility}}
 
 \Message
   |Hyperref support is turned off because hyperref has|\\
@@ -3403,7 +3425,7 @@ Option & Short description & Section \\
   \thispackage\ will not be available. As a result you could get
   \package{hyperref} warnings and non-functional hyperlinks to figures
   or tables.
-  \par\See{\Ref{hyperref}}
+  \par\See{\Ref{hyperref}\,}
 
 \Message
   |Ignoring optional argument [|\meta{pos}|] of \setcapwidth.|
@@ -3417,7 +3439,6 @@ Option & Short description & Section \\
 \Message
   |Internal Warning: |\meta{warning message}|.|
 \Description
-% \Thispackage\ can only set hyperlink anchors in \TeX s vertical mode.\par
   You should never see this warning, either you use a package which redefines
   |figure| or |table| and which is unknown to \thispackage, or this is a bug
   in \thispackage.
@@ -3429,29 +3450,31 @@ Option & Short description & Section \\
   Regarding |\label| the floating environments behave differently than its
   non-floating counterparts: The internal reference will not be generated
   at the beginning of the environment, but at |\caption| instead.
-  So you have to place the |\label| command either \emph{after} the
-  |\caption| command or inside the caption text.
+  So you have to place the |\label| command either just \emph{after} or
+  \emph{inside} the caption text (mandatory argument of |\caption|).
 
 \Message
   |Option `|\meta{option}|' was not in list `|\meta{option list}|'.|
 \Description
+%\showhyphens{position}
   If you try to remove a specific option of an option list,
-  for example with\linebreak|\clearcaptionsetup[position]{table}|,
+  for example with |\clear|\-|caption|\-|setup[po|\-|si|\-|tion]{table}|,
   and this option can not be found inside the option list, you will
   get this warning. If this is not because of a typo and you would like
-  to suppress this warning, use |\clearcaptionsetup*| instead of
-  |\clearcaptionsetup|.
+  to suppress this warning, use |\clear|\-|caption|\-|setup*| instead of
+  |\clear|\-|caption|\-|setup|.
   \par\See{\Ref{captionsetup}}
 
 \Message
   |Option list `|\meta{option list}|' undefined.|
 \Description
+%\showhyphens{format}
   If you try to remove a specific option of an option list,
-  for example with\linebreak|\clearcaptionsetup[format]{figure}|,
+  for example with |\clear|\-|caption|\-|setup[for|\-|mat]{figure}|,
   and this option list is not defined (yet), you will
   get this warning. If this is not because of a typo and you would like
-  to suppress this warning, use |\clearcaptionsetup*| instead of
-  |\clearcaptionsetup|.
+  to suppress this warning, use |\clear|\-|caption|\-|setup*| instead of
+  |\clear|\-|caption|\-|setup|.
   \par\See{\Ref{captionsetup}}
 
 \iffalse
@@ -3468,10 +3491,10 @@ Option & Short description & Section \\
   |`ragged2e' package not loaded, therefore|\\
   |substituting \raggedright for \RaggedRight.|
 \Description
-  The caption option |justification=|\xx|RaggedRight| is only full functional
+  The caption option |justification=|\x|RaggedRight| is only full functional
   if you have the \package{ragged2e} package installed in your \TeX\ system.
-  If not, you will get this warning, and |justification=|\xx|RaggedRight|
-  will be treated as |justification=|\xx|raggedright|.
+  If not, you will get this warning, and |justification=|\x|RaggedRight|
+  will be treated as |justification=|\x|raggedright|.
   \par\See{\Ref{justification}}
 
 \Message
@@ -3507,11 +3530,14 @@ Option & Short description & Section \\
   |The caption type was already set to `|\meta{type}|'.|
 \Description
   This warning informs you about mixed caption options. For example if
-  you use a |\captionof{table}{|\ldots|}| inside a |figure| environment,
+  you use a |\caption|\-|setup{type=|\x|table}| or
+  |\caption|\-|of{table}{|\ldots|}| inside a |figure| environment,
   this would result in using both option sets for that specific caption,
-  the ones for |figure| (specified with |\captionsetup[figure]{|\ldots|}|)
-  and the one for |table| (specified with |\captionsetup[table]{|\ldots|}|)
-  as well.
+  the one for |figure| (specified with |\caption|\-|setup[figure]{|\ldots|}|)
+  and the one for |table| (specified with |\caption|\-|setup[table]{|\ldots|}|)
+  as well.\par
+  {\small(You can suppress this warning by using the starred form
+  |\caption|\-|setup*{type=|\x\ldots|}|.)\par}
   \par\See{\Ref{captionsetup}}
 
 \Message
@@ -3519,42 +3545,42 @@ Option & Short description & Section \\
   |particular \caption.|
 \Description
   \Thispackage\ hasn't found a proper hyperlink anchor for this particular
-  caption, so it decides to ignore the setting |hypcap=true| (which is set by
+  caption, so it decides to ignore the setting |hypcap=|\-|true| (which is set by
   default). As a result a link to this caption (e.g.~in the List of Figures,
-  or set by |\ref| or |\autoref|) will link you to the caption of the figure
+  or set by |\ref| or |\auto|\-|ref|) will link you to the caption of the figure
   or table, not to the figure or table itself.\par
-  This can happen if you use |\captionof| inside a non-floating environment,
+  This can happen if you use |\caption|\-|of| inside a non-floating environment,
   but also if you use some package which redefines |figure| or |table|, and
   which is unknown to \thispackage.\par
   If this is ok for you but you want to suppress this warning, simply place a
-  |\captionsetup{|\xx|hypcap=|\xx|false}| just before the |\caption| or
-  |\captionof| command which is causing the warning.
-  If this is not ok for you you can try to set a hyperlink anchor with
-  |\captionsetup{|\xx|type=|\xx\meta{float type}|}| for yourself.
-  \par\See{\Ref{hyperref}}
+  |\caption|\-|setup{hyp|\-|cap=|\x|false}| just before the |\caption| or
+  |\caption|\-|of| command which is causing the warning.
+  If this is not ok for you, you can set a hyperlink anchor with
+  |\caption|\-|setup{type=|\x\meta{float type}|}| for yourself.
+  \par\See{\Ref{hyperref}\,}
 
 \Message
   |Unsupported document class (or package) detected,|\\
   |usage of the caption package is not recommended.|
 \Description
   Either the document class you use is unknown to \thispackage, or you
-  have included a package in your document which redefines |\@makecaption|
-  (which is responsible for typesetting the caption) as well.
+  have included a package in your document which redefines |\@make|\-|caption|
+  (which is responsible for typesetting the caption internally) as well.
   This means \thispackage\ will either change the design of captions in an
   unwanted way, or it even refuses to work correctly at all.
-  \par\See{\Ref{classes}}
+  \par\See{\Ref{classes} and \Ref{compatibility}}
 
 \Message
   |Unused \captionsetup[|\meta{type}|].|
 \Description
-  You have specified options with |\captionsetup[|\meta{type}|]| which are
+  You have specified options with |\caption|\-|setup[|\meta{type}|]| which are
   not used later on.
   This can be because of a typo in \meta{type},
   or because you use a package which redefines |figure| or |table| and
   which is unknown to \thispackage, or simply because you don't have any usage
-  of the environment \meta{type} after this line.\par
-  If you want to suppress this warning you can use |\captionsetup*| instead of
-  |\captionsetup|.
+  of the environment \meta{type} after this line.
+  (If you want to suppress this warning you can use |\caption|\-|setup*|
+   instead of |\caption|\-|setup|.)
   \par\See{\Ref{captionsetup}}
 
 \Message
@@ -3581,7 +3607,7 @@ Option & Short description & Section \\
   |Paragraph ended before \@caption was complete.|
 \Description
   If you want to typeset something special (like a tabular) as caption,
-  you need to give an optional argument to |\caption| resp.~|\captionof|
+  you need to give an optional argument to |\caption| resp.~|\caption|\-|of|
   for the List of Figures resp.~List of Tables, too, even if you don't
   use such list.
   \par\See{\Ref{caption}, \Ref{lists}, and \Ref{hyperref}\,}
@@ -3589,29 +3615,32 @@ Option & Short description & Section \\
 \Message
   |\caption outside float.|
 \Description
-  You have placed a |\caption| command outside a floating environment or
-  a |longtable|. If this is what you want to, please use either
-  |\captionsetup{|\xx|type=|\xx\meta{type}|}| $+$ |\caption| or |\captionof|.
+  You have placed a |\caption| command outside a floating environment, or
+  a |long|\-|table| or |wrap|\-|figure|.
+  If this is what you want to, please use either
+  |\caption|\-|setup{type=|\x\meta{type}|}| $+$ |\caption| or
+  |\caption|\-|of|.
   \par\See{\Ref{caption}}
 
 \Message
   |\ContinuedFloat outside float.|
 \Description
-  You have placed a |\ContinuedFloat| command outside a floating environment.
-%  or |longtable|.
+  You have placed a |\Continued|\-|Float| command outside a floating
+  environment. % or |long|\-|table|.
   If this is what you want to, please use the combination
-  |\captionsetup{|\xx|type=|\xx\meta{type}|}| $+$ |\ContinuedFloat|.\par
-  Please note that |\ContinuedFloat| inside a |longtable| is not working (yet),
-  but maybe using the |longtable*| environment, which typesets a \env{longtable}
-  without incrementing the |table| counter, if sufficient for you.
+  |\caption|\-|setup{type=|\x\meta{type}|}| $+$ |\Continued|\-|Float|.\par
+  Please note that |\Continued|\-|Float| inside a |long|\-|table| is not
+  working, but maybe using the |long|\-|table*| environment, which
+  typesets a |long|\-|table| without incrementing the |table| counter,
+  if sufficient for you.
   \par\See{\Ref{ContinuedFloat} and \Ref{longtable}}
 
 \Message
   |Continued `|\meta{type}|' after `|\meta{type}|'.|
 \Description
-  At the moment continued figures or tables are not allowed to be interrupted
-  by a floating environment of another type, e.g.~a table between a figure and a
-  continued figure.
+  Continued figures or tables are not allowed to be interrupted by a floating
+  environment (or |long|\-|table|) of another type,
+  e.g.~a table between a figure and a continued figure.
   \par\See{\Ref{ContinuedFloat}}
 
 \Message
@@ -3651,20 +3680,21 @@ Option & Short description & Section \\
 \Message
   |No float type '|\meta{type}|' defined.|
 \Description
-  The \meta{type} you have specified in |\captionsetup{type=|\meta{type}|}|,
-  |\captionof|\marg{type}, or |\DeclareCaptionSubType| is not defined.
+  The \meta{type} you have specified in |\caption|\-|setup{type=|\x\meta{type}|}|,
+  |\caption|\-|of|\marg{type}, or |\Declare|\-|Caption|\-|Sub|\-|Type| is
+  not defined.
   \meta{type} should be either `\texttt{figure}' or `\texttt{table}', or
-  any other floating environment defined with |\DeclareCaptionType|,
-  |\newfloat| offered by the \package{float} package\cite{float},
-  or |\DeclareNewFloatType| offered by the \package{floatrow}
+  any other floating environment defined with |\Declare|\-|Caption|\-|Type|,
+  |\new|\-|float| offered by the \package{float} package\cite{float},
+  or |\Declare|\-|New|\-|Float|\-|Type| offered by the \package{floatrow}
   package\cite{floatrow}.
 
 \Message
   |Not allowed in longtable* environment.|
 \Description
-  The usage of |\caption| is not allowed inside the |longtable*| environment.
+  The usage of |\caption| is not allowed inside the |long|\-|table*| environment.
   Please use either |\caption*| for a caption without label or use the regular
-  |longtable| environment instead.
+  |long|\-|table| environment instead.
 
 \Message
   |Not available in compatibility mode.|
@@ -3680,7 +3710,7 @@ Option & Short description & Section \\
   |Only one \caption can be placed in this environment.|
 \Description
   Inside the environments offered by the \package{fltpage} and \package{sidecap}
-  package only one caption can be placed. (This is due implementation design.)
+  package only \emph{one} caption can be placed. (This is due implementation design.)
 
 \Message
   |Option clash for package caption.|
@@ -3691,15 +3721,17 @@ Option & Short description & Section \\
   so you can't do that again specifying different options.
   A candidate causing this could be the \package{subfig} package; if this is
   the case, please load \thispackage\ \emph{before} the \package{subfig}
-  package or specify the option |caption=false| while loading the
+  package or specify the option |caption=|\-|false| while loading the
   \package{subfig} package.
   \par\See{the \package{subfig} package\cite{subfig} documentation}
 
 \Message
   |Paragraph ended before \caption@makecurrent was complete.|
+\Or
+  |Paragraph ended before \caption@prepareanchor was complete.|
 \Description
   If you want to typeset multi-paragraph captions, you need to give an
-  optional argument to |\caption| resp.~|\captionof| for the List of
+  optional argument to |\caption| resp.~|\caption|\-|of| for the List of
   Figures resp.~List of Tables, too, even if you don't use such list.
   \par\See{\Ref{caption}, \Ref{lists}, and \Ref{hyperref}\,}
 
@@ -3718,14 +3750,13 @@ Option & Short description & Section \\
   \par\See{\Ref{float} and \Ref{wrapfig}}
 \fi
 
-\iffalse
 \Message
   |Something's wrong--perhaps a missing \caption|\\
   |in the last figure or table.|
 \Description
-  It seems that you have used a |\subcaption| command without a
-  corresponding |\caption| command. This is not supported.
-\fi
+  It seems that you have used a |\sub|\-|caption| command (or a different one
+  which has typeset a sub-caption) without a corresponding |\caption| command.
+  This is not supported.
 
 \Message
   |The option `labelsep=|\meta{name}|' does not work|\\
@@ -3735,11 +3766,11 @@ Option & Short description & Section \\
   |with \setcaphanging (which is set by default).|
 \Description
   A caption label separator which contains a |\\| command (like
-  |labelsep=|\xx|newline|) can not be combined with a hanging caption format
-  (like |format=|\xx|hang|).
+  |labelsep=|\x|newline|) can not be combined with a hanging caption format
+  (like |format=|\x|hang|).
   Please select either another caption label separator
-  (e.g.~|labelsep=|\xx|colon|) or another caption format
-  (e.g.~|format=|\xx|plain|).
+  (e.g.~|labelsep=|\x|colon|) or another caption format
+  (e.g.~|format=|\x|plain|).
   \par\See{\Ref{formats} resp.~\Ref{KOMA}}
 
 \Message
@@ -3747,7 +3778,7 @@ Option & Short description & Section \\
   |Please pass this option to the subfig package instead|\\
   |and do *not* load the caption package anymore.|
 \Description
-  You have specified the option |caption=false|. This used to be a workaround
+  You have specified the option |caption=|\-|false|. This used to be a workaround
   for not using the whole \package{caption} package (leaving the caption stuff
   offered by the document class or other packages intact), but keeping the
   \package{subfig} package working. This mechanism is obsolete and not offered
@@ -3839,89 +3870,309 @@ Option & Short description & Section \\
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
-\section{Further reading}
+\clearpage
+\section{Version history}
+\label{history}
 
-I recommend the following documents for further reading:
+The version $1.0$ was written in 1994 and was offering a handful of options
+to customize the look \& feel of the captions.
+Furthermore this version already supported the \package{rotating} and
+\package{subfigure} packages.
+Version $1.1$ introduced the |center|\-|last| option;
+version $1.2$ added the support of the \package{float} package.
+Version offered a better support of the \package{subfigure} package,
+while version $1.4$ came with the new option |nooneline|.
 
-\begin{itemize}
-\item
-  The \TeX\ FAQ -- Frequently asked questions about \TeX\ and \LaTeX:
-  \begin{quote}\url{http://faq.tug.org/}\end{quote}
+The \package{caption2} package $2.0$ was an experimental side-version of
+the regular \package{caption} package. It was made public as beta test version
+without proper documentation in 1995 because of the strong demand for new
+features and adaptations to additional packages like the \package{longtable}
+package.
+Furthermore it offered a revised support of the \package{subfigure} package.
+(A version $2.1$ was offered as bugfix-release in 2002.)
 
-\item
-  A French FAQ can be found at
-  \begin{quote}\url{http://www.grappa.univ-lille3.fr/FAQ-LaTeX/}\end{quote}
+In 2003 I finally found some time, so a new regular release $3.0$
+of the \package{caption} package could be build in cooperation with
+Frank Mittelbach and Steven Cochran.
+It was released in December 2003 and superseded the neglected
+\package{caption2} package.
+Main parts were re-written and it provided a complete re-work of
+the user interface.
+Furthermore it supported the \package{hyperref}, \package{hypcap},
+\package{listings}, \package{sidecap}, and \package{supertabular} packages
+additionally.
 
-\item
-  ``What is a minimal working example?'' from Christian Faulhammer and Ulrich Schwarz:
-  \begin{quote}\url{http://www.minimalbeispiel.de/mini-en.html}\end{quote}
-
-\item
-  \textsf{epslatex} from Keith Reckdahl contains many tips around
-  including graphics in \LaTeXe\ documents.
-  You will find this document in the directory
-  \begin{quote}\url{ftp://tug.ctan.org/pub/tex/info/epslatex/}\end{quote}
-\end{itemize}
-
-% --------------------------------------------------------------------------- %
-
-\pagebreak[2]
-\section{Thanks}
-
-I would like to thank Katja Melzner,
-Steven D. Cochran, Frank Mittelbach, Olga Lapko,
-David Carlisle, Carsten Heinz, and Keith Reckdahl.
-Thanks a lot for all your help, ideas, patience, spirit, and support!
-
-Also I would like to thank
-Harald Harders,
-Peter L\"offler,
-Peng Yu,
-Alexander Zimmermann,
-Matthias Pospiech,
-J\"urgen Wieferink,
-Christoph Bartoschek,
-Uwe St\"ohr,
-Ralf Stubner,
-Geoff Vallis,
-Florian Keiler,
-J\"urgen G\"obel,
-Uwe Siart,
-Sang-Heon Shim,
-Henrik Lundell,
-David Byers,
-William Asquith,
-Prof.~Dr.~Dirk Hoffmann,
-Frank Martini,
-and
-Danie Els
-who all helped to make this package a better one.
+While all the previous versions were designed for usage with the standard
+\LaTeX\ document classes \class{article}, \class{report}, and \class{book},
+the current version $3.1$ released in 2007 also supports the \AmS,
+\KOMAScript, \NTG, and \SmF\ document classes, and the \class{beamer} class
+as well.
+Furthermore it was adapted to the \package{frenchb} Babel option,
+the \package{frenchle} \& \package{frenchpro} packages,
+and the \package{floatflt}, \package{fltpage}, \package{picinpar},
+\package{picins}, \package{setspace}, \package{threeparttable},
+and \package{wrapfig} packages.
+New options and commands were introduced as well, among other things
+|font+|, |figure|\-|within| \& |table|\-|within|,
+|list| \& |list|\-|format|, |max|\-|margin| \& |min|\-|margin|,
+|\caption|\-|list|\-|entry|, |\Declare|\-|Caption|\-|List|\-|Format|, and
+|\Declare|\-|Caption|\-|Type|.
+Further benefits are the new compatibility check \see*{\Ref{compatibility}},
+the new ``hypcap'' feature \see*{\Ref{hyperref}\,}, and the sub-caption
+feature \see*{\package{subcaption} package documentation}.
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[4]
+\clearpage
+\section{Compatibility to older versions}
+
+\subsection{caption v\texorpdfstring{$1.x$}{1.x}}
+\label{caption1}
+
+This version of \thispackage\ still supports the old options
+and commands provided by the version $1.0$ to $1.4$ of this package.
+So there shouldn't occur any problems compiling old documents, but please
+don't mix old options and commands with the new ones. This isn't supported
+and can cause ugly side effects.
+
+Here comes a short oversight of the obsolete options and how
+they have been replaced within this version of \thispackage:
+
+\begin{center}\small
+\begin{tabular}{ll}
+\package{caption} \version{1.x} & \package{caption} \version{3.x}\\
+\hline
+%\endhead
+|normal|        & |format=plain|\\
+|hang|          & |format=hang|\\
+|isu|           & |format=hang|\\
+|center|        & |justification=centering|\\
+|centerlast|    & |justification=centerlast|\\
+%|anne|         & |justification=centerlast|\\
+|nooneline|     & |singlelinecheck=off|\\
+|scriptsize|    & |font=scriptsize|\\
+|footnotesize|  & |font=footnotesize|\\
+|small|         & |font=small|\\
+|normalsize|    & |font=normalsize|\\
+|large|         & |font=large|\\
+|Large|         & |font=Large|\\
+|up|            & |labelfont=up|\\
+|it|            & |labelfont=it|\\
+|sl|            & |labelfont=sl|\\
+|sc|            & |labelfont=sc|\\
+|md|            & |labelfont=md|\\
+|bf|            & |labelfont=bf|\\
+|rm|            & |labelfont=rm|\\
+|sf|            & |labelfont=sf|\\
+|tt|            & |labelfont=tt|\\
+\end{tabular}
+\end{center}
+
+Beside the options for setting up the desired font there were also
+the commands |\caption|\-|size| resp.~|\caption|\-|font| and
+|\caption|\-|label|\-|font| who could be redefined with
+|\re|\-|new|\-|command| and allowed an alternate and more flexible way to
+change the font used for captions.
+This mechanism was replaced by the commands
+\begin{quote}
+  |\DeclareCaptionFont{|\ldots|}{|\ldots|}|\qquad and\\
+  |\captionsetup{font=|\ldots|,labelfont=|\ldots|}|\qquad.
+\end{quote}
+\SeeUserDefined
+
+Setting the margin for captions was done in \version{1.x} with
+\begin{quote}
+  |\setlength{\captionmargin}{|\ldots|}|\quad.
+\end{quote}
+This was replaced by
+\begin{quote}
+  |\captionsetup{margin=|\ldots|}|\qquad.
+\end{quote}
+\See{\Ref{margins}}
+
+For example the old-style code
+\begin{quote}
+  |\usepackage[hang,bf]{caption}|\\
+  |\renewcommand\captionfont{\small\sffamily}|\\
+  |\setlength\captionmargin{10pt}|
+\end{quote}
+will still work fine, but should be written today as
+\begin{quote}
+  |\usepackage[format=hang,labelfont=bf,font={small,sf},|\\
+  |            margin=10pt]{caption}|
+\end{quote}
+or
+\begin{quote}
+  |\usepackage{caption}|\\
+  |\captionsetup{format=hang,labelfont=bf,font={small,sf},|\\
+  |              margin=10pt}|\qquad.
+\end{quote}
+
+The quite exotic option |ruled| which allowed a partial usage of
+the caption settings for |ruled| floats defined with the
+\package{float} package will be emulated by this version of the
+caption package, too.
+But using this option is not recommended anymore since this
+version of \thispackage\ offers a more flexible way
+for changing the captions of these floating environments:
+\begin{quote}
+  |\DeclareCaptionStyle{ruled}{|\ldots|}|
+\end{quote}
+resp.
+\begin{quote}
+  |\captionsetup[ruled]{|\ldots|}|\qquad.
+\end{quote}
+\SeeUserDefined[, \Ref{captionsetup}, and \Ref{float}]
+
+\subsection{caption2 v\texorpdfstring{$2.x$}{2.x}}
+\label{caption2}
+
+Although they do very similar stuff, the packages \package{caption} and
+its experimental and now obsolete variant \package{caption2} have a
+very different implementation design.
+Therefore a full compatibility could not be offered.
+For that reason you will still find a file called |caption2.sty| in
+this package distribution, so old documents using the \package{caption2}
+package will still compile fine.
+
+Newly created documents should use the actual version of
+\thispackage\ instead. In most cases it's sufficient to replace the command
+\begin{quote}
+  |\usepackage[...]{caption2}|
+\end{quote}
+by
+\begin{quote}
+  |\usepackage[...]{caption}|\qquad.
+\end{quote}
+But some options and commands will not be emulated, so you can get
+error messages afterwards. This section will hopefully help you removing
+these errors. If you have problems migrating from \package{caption2}
+to \package{caption} please don't hesitate to send me an e-mail asking
+for help.
+
+In addition to the obsolete options shown in the last section
+these ones will be emulated, too:
+
+\begin{center}\small
+\begin{tabular}{ll}
+\package{caption2} \version{2.x} & \package{caption} \version{3.x}\\
+\hline
+%\endhead
+|flushleft|   & |justification=raggedright|\\
+|flushright|  & |justification=raggedleft|\\
+|oneline|     & |singlelinecheck=on|\\
+\end{tabular}
+\end{center}
+
+Setting the margin for captions was done in \version{2.x} with
+\begin{quote}\leavevmode\hbox{%
+  |\setcaptionmargin{|\ldots|}| resp.
+  |\setcaptionwidth{|\ldots|}|\quad.
+}\end{quote}
+This was replaced by
+\begin{quote}\leavevmode\hbox{%
+  |\captionsetup{margin=|\ldots|}| resp.
+  |\captionsetup{width=|\ldots|}|\quad.
+}\end{quote}
+\See{\Ref{margins}}
+
+Setting an indention was done in \version{2.x} with
+\begin{quote}
+  |\captionstyle{indent}|\\
+  |\setlength\captionindent{|\ldots|}|\quad.
+\end{quote}
+\pagebreak[3]
+This is now done with
+\nopagebreak[3]
+\begin{quote}
+  |\captionsetup{format=plain,indention=|\ldots|}|\quad.
+\end{quote}
+
+The so-called single-line-check was controlled by the commands
+|\oneline|\-|captions|\-|false| (for switching the check off) and
+|\oneline|\-|captions|\-|true| (for switching the check on).
+This was replaced by
+|\caption|\-|setup{single|\-|line|\-|check=|\x|off}|
+resp.
+|\caption|\-|setup{single|\-|line|\-|check=|\x|on}|\quad.
+\See{\Ref{justification}}
+
+The commands
+\begin{quote}
+  |\captionlabeldelim|, |\captionlabelsep|, |\captionstyle|,\\
+  |\defcaptionstyle|, |\newcaptionstyle|, and |\renewcaptionstyle|
+\end{quote}
+do not have a simple replacement and therefore will not be emulated
+by this version of \thispackage. (So using them will
+cause error messages.) Rewriting such code is not always easy and
+straight-ahead, but by conscientious reading of this manual you should
+be able to find appropriate options and commands instead.
+
+\iffalse
+... (some examples)
+\fi
+
+The \version{2.x} option |ignore|\-|LT|\-|cap|\-|width| do not have a
+replacement, too.
+But in most cases you can simply drop using that option because
+in this version of \thispackage\ the value of |\LT|\-|cap|\-|width|
+will be ignored anyway (unless you set it to a different value than the
+default one which is |4in|).
+\See{\Ref{longtable}}
+
+\subsection{caption v\texorpdfstring{$3.0$}{3.0}}
+\label{caption3}
+
+%\NEWdescription{v3.1}
+\Thispackage\ \version{3.0} did not support any document classes
+other than the standard \LaTeX\ ones: \class{article}, \class{report},
+and \class{book}.
+Therefore the default settings used to be fixed, but now \thispackage{}
+supports more classes, therefore they are now set in dependence on the
+document class used.
+
+For example: While in \version{3.0} the default caption
+|jus|\-|ti|\-|fi|\-|ca|\-|tion| used to be always |jus|\-|ti|\-|fied|,
+it's now still |jus|\-|ti|\-|fied| when using one of the standard document
+classes, but |ragged|\-|right| will be used as default format when when used
+with the \class{beamer} document class.
+
+%An easy way to select the `old' defaults---if desired---is using the option
+An easy way to select the `old' defaults is using the option
+|style=base| when loading \thispackage\ (or later on using |\caption|\-|setup|).
+
+Another new feature is the automatic check for compatibility; if an
+incompatibility will be found, a warning message will be issued and if a strong
+incompatibility was found some features of \thispackage\ will be disabled.
+Please note that only this check was added to \thispackage, so if you get
+such warning message, the previous versions of \thispackage\ were incompatible
+as well, but did not issued such warning, they were ``only'' having
+side-effects or causing problems.
+So these warnings only say that some bad side effects or problems could
+happen, but not that they actually will happen.
+Anyway, if you use \thispackage\ in such circumstances,
+you should use it with care.
+
+\bigskip
+
+\begin{Note*}
+The option |caption=false|, which used to be a workaround for not using the
+whole \package{caption} package (leaving the caption stuff offered by the
+document class or other packages intact), but keeping the \package{subfig}
+package\cite{subfig} working.
+This mechanism is obsolete and not offered anymore, please pass this option
+to the \package{subfig} package instead and do not load \thispackage\ anymore.
+%\par\See{the \package{subfig} package documentation}
+\end{Note*}
+
+% --------------------------------------------------------------------------- %
+
+\clearpage
 \begin{thebibliography}{99}
   \bibitem{TLC2}
   Frank Mittelbach and Michel Goossens:\\
   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},\\
   \newblock Addison-Wesley, 2004.
-
-  \bibitem{algorithms}
-  Rogério Brito:\\
-  \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/algorithms/}%
-% \href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/algorithms/algorithms.pdf}%
-       {\emph{Algorithms}},\\
-  June 2, 2006
-
-\iffalse
-  \bibitem{algorithm2e}
-  Christophe Fiorio:\\
-  \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/algorithm2e/}%
-% \href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/algorithm2e/algorithm2e.pdf}%
-       {\emph{algorithm2e.sty -- package for algorithms}},\\
-  March 11, 2007
-\fi
 
   \bibitem{beamer}
   Till Tantau:\\
@@ -3944,6 +4195,22 @@ who all helped to make this package a better one.
        {\emph{An introduction to the Dutch \LaTeX\ document classes}},\\
   3 September 1989
 
+  \bibitem{algorithms}
+  Rogério Brito:\\
+  \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/algorithms/}%
+% \href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/algorithms/algorithms.pdf}%
+       {\emph{Algorithms}},\\
+  June 2, 2006
+
+\iffalse
+  \bibitem{algorithm2e}
+  Christophe Fiorio:\\
+  \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/algorithm2e/}%
+% \href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/algorithm2e/algorithm2e.pdf}%
+       {\emph{algorithm2e.sty -- package for algorithms}},\\
+  March 11, 2007
+\fi
+
   \bibitem{float}
   Anselm Lingnau:\\
   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/float/}%
@@ -3963,7 +4230,7 @@ who all helped to make this package a better one.
   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/floatrow/}%
 % \href{ftp://tug.ctan.org/tex-archive/macros/latex/contrib/floatrow/floatrow.pdf}%
        {\emph{The floatrow package documentation}},\\
-  2007/08/24
+  2007/12/24
 
   \bibitem{fltpage}
   Sebastian Gross:\\

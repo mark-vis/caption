@@ -2,7 +2,7 @@
 % 
 % This is file `subcaption.dtx'.
 % 
-% Copyright (C) 2007 Axel Sommerfeldt (caption@sommerfee.de)
+% Copyright (C) 2007-2008 Axel Sommerfeldt (caption@sommerfee.de)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -29,7 +29,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2007/12/06 v0.3 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2008/01/12 v0.3 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -37,19 +37,22 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 %
+\newcommand\LineBreak{\linebreak[3]}
+\newcommand\PageBreak{\pagebreak[3]}
 \usepackage{ifpdf}
 \ifpdf
-    \usepackage{mathptmx,courier}
-    \usepackage[scaled=0.90]{helvet}
-    \addtolength\marginparwidth{15pt}
+  \usepackage{mathptmx,courier}
+  \usepackage[scaled=0.90]{helvet}
+  \addtolength\marginparwidth{15pt}
+  \ifdim\paperheight=297mm % a4paper
+    \renewcommand\LineBreak{\\}
+    \renewcommand\PageBreak{\clearpage}
+  \fi
 \fi
 %
-\usepackage{array,slashbox}
-\IfFileExists{cat.eps}%
-  {\usepackage{graphicx}}%
-  {\IfFileExists{test/tlc2/cat.eps}%
-    {\usepackage{graphicx}\graphicspath{{test/tlc2/}}}%
-    {\usepackage[demo]{graphicx}}}
+\usepackage[bottom]{footmisc}
+\usepackage{array,graphicx,pict2e,slashbox}
+\IfFileExists{test/tlc2/cat.eps}{\graphicspath{{test/tlc2/}}}{}%
 %
 \usepackage{hypdoc}
 \ifpdf\usepackage{hypdestopt}\fi
@@ -69,8 +72,7 @@
 \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 \newcommand*\version[2][]{$v#2$}
-\newcommand*\x{\discretionary{-}{}{}}
-\newcommand*\xx{\discretionary{}{}{}}
+\newcommand*\x{\discretionary{}{}{}}
 %
 \usepackage{marvosym}
 \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
@@ -121,14 +123,14 @@
 %
 % \subsection*{Introduction}
 % \begin{info*}
-% Prepared with either |\Declare|\x|Caption|\x|Sub|\x|Type| (offered by the
-% \package{caption} package) or |\new|\x|sub|\x|float| (offered by the
+% Prepared with either |\Declare|\-|Caption|\-|Sub|\-|Type| (offered by the
+% \package{caption} package) or |\new|\-|sub|\-|float| (offered by the
 % \package{subfig} package), the caption package option |subtype| becames
 % available, causing |\caption| to typeset a sub-caption instead of an
 % ordinary one.\par
-% This package demonstrates the usage of |\Declare|\x|Caption|\x|Sub|\x|Type|,
-% |\caption|\x|setup{sub|\x|type}|, and the internal hook
-% |\caption@sub|\x|type|\x|hook|.
+% This package demonstrates the usage of |\Declare|\-|Caption|\-|Sub|\-|Type|,
+% |\caption|\-|setup{sub|\-|type}|, and the internal hook
+% |\caption@sub|\-|type|\-|hook|.
 % \end{info*}
 % 
 % \setcounter{tocdepth}{2}
@@ -166,15 +168,18 @@
 % The default settings for |sub|captions are:
 % \begin{quote}
 %   |margin=0pt,font+=small,labelformat=parens,labelsep=space,|\\
-%   |skip=6pt,list=false,hypcap=false|
+%   |skip=6pt,list=false,hypcap=false|~\footnote{%^^A
+%     This means that sub-captions are not listed in the List of Figures
+%     or Tables by default, but (of course) you can enable that by
+%     specifying the option \texttt{list=true}.}
 % \end{quote}
 %
-% Options specified with |\usepackage[|\ldots|]{subcaption}| and
-% |\captionsetup[sub]{|\ldots|}| will override the ones specified by
-% |\captionsetup{|\ldots|}| and |\captionsetup[figure]{|\ldots|}|,
-% but are again overwritten by |\captionsetup[subfigure]{|\ldots|}|
+% Options specified with |\usepackage[|\ldots|]{sub|\-|caption}| and
+% |\caption|\-|setup[sub]{|\ldots|}| will override the ones specified by
+% |\caption|\-|setup{|\ldots|}| and |\caption|\-|setup[figure]{|\ldots|}|,
+% but are again overwritten by |\caption|\-|setup[sub|\-|figure]{|\ldots|}|
 % (same for `table'). So finally we have the following order how
-% settings for subcaptions are applied:
+% settings for sub-captions are applied:
 % \begin{enumerate}
 % \item global settings
 %  {\small(|\usepackage[|\ldots|]{caption}| and |\captionsetup{|\ldots|}|)}
@@ -206,7 +211,7 @@
 %   |labelfont=bf,list=true,textfont=sf|\quad.
 % \end{quote}
 %
-% \vfill\clearpage
+% \PageBreak
 % \subsection{The \cs{subcaption} command}
 %
 % \DescribeMacro\subcaption
@@ -253,18 +258,18 @@
 %
 % \begin{info}
 % Actually the |\subcaption| command is just a simple combination of
-% |\caption|\x|setup{sub|\x|type*}| and |\caption|.
+% |\caption|\-|setup{sub|\-|type*}| and |\caption|.
 % Analogous to the |type| option, the |subtype| option (both offered by the
 % \package{caption} package) sets the sub-type of the box or environment
 % (so |\caption| will typeset a sub-caption instead of an ordinary one),
 % places a proper hyperlink anchor (non-starred variant only),
-% executes options associated with the sub-type etc.\iffalse\footnote{\emph{Note:}
+% executes options associated with the sub-type etc.\iffalse~\footnote{\emph{Note:}
 % Since \cs{captionsetup}\csmarg{subtype} is part of the \package{caption}
 % package, it works in coorparation with the \package{subfig} package as
 % well.}\fi
 % \end{info}
 %
-% \vfill\clearpage
+% \PageBreak
 % \subsection{The subfigure \& subtable environments}
 %
 % \DescribeEnv{subfigure}
@@ -312,18 +317,18 @@
 %
 % \begin{info}
 % The |subfigure| \& |subtable| environments are just simple minipage
-% environments with |\caption|\x|setup|\xx|{subtype}| as first contents line.
+% environments with |\caption|\-|setup|\x|{subtype}| as first contents line.
 % These environments are defined with the help of
 % |\caption@For{subtypelist}|, which executes code for every sub-type
 % declared with |\DeclareCaptionSubType|.
 % \end{info}
 %
-% \vfill\clearpage
+% \PageBreak
 % \subsection{The \cs{subcaptionbox} command}
 %
 % \DescribeMacro\subcaptionbox
 % A more powerful (but less flexible) way of setting sub-figures is
-% offered by the |\subcaptionbox| command. Its syntax is:
+% offered by the |\sub|\-|caption|\-|box| command. Its syntax is:
 % \begingroup
 % \leftmargini=12pt
 % \begin{quote}
@@ -334,20 +339,21 @@
 % \begin{small}
 % The arguments \meta{list entry} \& \meta{heading} will be used for
 % typesetting the |\caption|.\par
-% \meta{width} is the width of the resulting |\parbox|; the default value is
+% \meta{width} is the width of the resulting |\par|\-|box|; the default value is
 % the width of the contents.\par
 % \meta{inner-pos} specifies how the contents will be justified inside the
 % resulting |\parbox|;
-% it can be either `c' (for |\centering|), `l' (for |\raggedright|),
-% `r' (for |\raggedleft|), or `s' (for no special justification).
+% it can be either `c' (for |\centering|), `l' (for |\ragged|\-|right|),
+% `r' (for |\ragged|\-|left|), or `s' (for no special justification).
 % The default is `c'.
 % (But you can use any justification defined with
-% |\DeclareCaptionJustification| as well, e.g.~`|centerlast|'.)
+% |\Declare|\-|Caption|\-|Jus|\-|ti|\-|fi|\-|ca|\-|tion| as well,
+% e.g.~`|center|\-|last|'.)
 % \end{small}
 %
 % \bigskip
 %
-% Using |\subcaptionbox|, the baseline of the resulting box will be placed
+% Using |\sub|\-|caption|\-|box|, the baseline of the resulting box will be placed
 % right between contents and heading, so usually you don't have to care about the
 % vertical alignment of the sub-figures for yourself.
 % Also the hyperlink anchor is placed properly with respect to the |hypcap=|
@@ -381,8 +387,8 @@
 %
 % As you see the result is not satisfying;
 % the caption below the cat looks ugly because of the small width of the
-% graphic. This can be solved by using the optional arguments of |\captionbox|,
-% increasing the width of the resulting box:
+% graphic. This can be solved by using the optional arguments of
+% |\caption|\-|box|, increasing the width of the resulting box:
 % \begin{quote}
 %   |  |\ldots\\
 %   |  \subcaptionbox{A cat\label{cat}}|\\
@@ -402,9 +408,9 @@
 % \bigskip
 %
 % Furthermore the main caption, which is centered with respect to the
-% |\textwidth|, looks mis-aligned with respect to the sub-captions.
-% This can (again) be solved by using the optional arguments of |\captionbox|,
-% giving both boxes the same width, for example:
+% |\text|\-|width|, looks mis-aligned with respect to the sub-captions.
+% This can (again) be solved by using the optional arguments of
+% |\caption|\-|box|, giving both boxes the same width, for example:
 % \begin{quote}
 %   |  |\ldots\\
 %   |  \subcaptionbox{A cat\label{cat}}|\\
@@ -426,11 +432,12 @@
 % \bigskip
 %
 % \begin{info}
-% The |\subcaptionbox| is a |\parbox| with |\caption|\x|setup|\xx|{subtype}|
-% as first contents line. \iffalse See implementation for details.\fi
+% The |\sub|\-|caption|\-|box| is a |\par|\-|box| with
+% |\caption|\-|setup{sub|\-|type}| as first contents line.
+% \iffalse See implementation for details.\fi
 % \end{info}
 %
-% \vfill\clearpage
+% \PageBreak
 % \subsection{The \cs{subref} command}
 %
 % While |\ref|\marg{key} (and |\ref*|\marg{key}, if the \package{hyperref}
@@ -449,15 +456,16 @@
 %
 % \begin{small}
 % \emph{Note:} If the sub-caption was defined with the starred variant
-% |\DeclareCaptionSubType*|, both |\ref| and |\subref| gives the same result.
+% |\Declare|\-|Caption|\-|Sub|\-|Type*|, both |\ref| and |\sub|\-|ref| gives
+% the same result.
 % \end{small}
 %
 % \begin{info}
-% The |\subref| command demonstrates the usage of |\caption@subtypehook|
-% which will be called during |\captionsetup{subtype}|.
+% The |\sub|\-|ref| command demonstrates the usage of |\caption@sub|\-|type|\-|hook|
+% which will be called during |\caption|\-|setup{sub|\-|type}|.
 % \end{info}
 %
-% \iffalse\vfill\clearpage\fi
+% \pagebreak[3]
 % \subsection{The \cs{DeclareCaptionSubType} command}
 %
 % \DescribeMacro\DeclareCaptionSubType
@@ -470,9 +478,9 @@
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}
 % \end{quote}
 % For the environments |figure| \& |table| (and all the ones
-% defined with |\Declare|\x|Caption|\x|Type|) this will be done automatically
+% defined with |\Declare|\-|Caption|\-|Type|) this will be done automatically
 % by this package, but for others (e.g.~defined with |\newfloat| offered by the
-% \package{float} package or |\Declare|\x|New|\x|Float|\x|Type| offered by the
+% \package{float} package or |\Declare|\-|New|\-|Float|\-|Type| offered by the
 % \package{floatrow} package) this has to be done manually.
 %
 % \medskip
@@ -513,11 +521,11 @@
 % \end{minipage}
 %
 % \begin{info}
-% |\DeclareCaptionSubType| is an integral part of the \package{caption}
+% |\Declare|\-|Caption|\-|Sub|\-|Type| is an integral part of the \package{caption}
 % package kernel.
 % \end{info}
 %
-% \iffalse\vfill\clearpage\fi
+% \pagebreak[3]
 % \subsection{Where do hyperlinks jump?}
 % \label{hypcap}
 %
@@ -566,6 +574,19 @@
 % --------------------------------------------------------------------------- %
 % \fi
 %
+% \pagebreak[3]
+% \section{Beyond this package}
+% \label{floatrow}
+%
+% For a more advanced usage of the sub-caption feature of the
+% \package{caption} package, please take a look at the \package{floatrow}
+% package\cite{floatrow} which provides the powerful \texttt{subfloatrow}
+% environment for typesetting sub-figures.
+%
+% \iffalse
+% --------------------------------------------------------------------------- %
+% \fi
+%
 % \pagebreak[2]
 % \section{Thanks}
 %
@@ -583,13 +604,11 @@
 %   Frank Mittelbach and Michel Goossens:\\
 %   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},
 %   \newblock Addison-Wesley, 2004.
-% \iffalse
 %   \bibitem{floatrow}
 %   Olga Lapko:\\
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/floatrow/}%
 %        {\emph{The floatrow package documentation}},
-%   2007/08/24
-% \fi
+%   2007/12/24
 %   \bibitem{hyperref}
 %   Sebastian Rahtz \& Heiko Oberdiek:\\
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/hyperref/}%
@@ -669,7 +688,7 @@
 % --------------------------------------------------------------------------- %
 % \fi
 %
-% \vfill\clearpage
+% \clearpage
 % \section{The implementation}
 % \iffalse
 %<*package>
@@ -755,9 +774,9 @@
 % \begin{macro}{subtable}
 % This is just an ordinary \env{minipage} environment with
 % |\captionsetup{subtype}| as first contents line.
-% It will be defined using the helper macro |\caption@For{sub|\x|type|\x|list}|
+% It will be defined using the helper macro |\caption@For{sub|\-|type|\-|list}|
 % offered by the \package{caption} kernel, so for every caption type
-% declared with |\Declare|\x|Caption|\x|Type| a corresponding `sub' environment
+% declared with |\Declare|\-|Caption|\-|Type| a corresponding `sub' environment
 % will be defined automatically.
 %    \begin{macrocode}
 \caption@For{subtypelist}{%
