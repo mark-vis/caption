@@ -28,10 +28,10 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2008/03/20 v3.1g Customizing captions (AR)]
+\ProvidesPackage{caption}[2008/04/01 v3.1h Customizing captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
-\RequirePackage{caption3}[2008/03/01] % needs v3.1g
+\RequirePackage{caption3}[2008/03/20] % needs v3.1g or newer
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -39,28 +39,17 @@
   \endinput
 }{}
 \caption@AtBeginDocument{%
-  \@ifpackageloaded{ftcap}{%
-    \caption@IncompatiblePackage{ftcap}{}%
-  }{}%
-  \@ifpackageloaded{nonfloat}{%
-    \caption@IncompatiblePackage{nonfloat}{.\MessageBreak
-      Furthermore you should use \noexpand\captionof instead of\MessageBreak
-      \noexpand\figcaption or \string\tabcaption}%
-  }{}%
-  \@ifpackageloaded{topcapt}{%
-    \caption@IncompatiblePackage{topcapt}{}%
-  }{}%
-}
-\newcommand*\caption@IncompatiblePackage[2]{%
-  \PackageWarningNoLine{caption}{%
-    Usage of the #1 package together with the\MessageBreak
-    caption package is strongly not recommended.\MessageBreak
-    Instead of loading the #1 package you should\MessageBreak
-    use the caption package option\MessageBreak
-    \space\space`tableposition=top'#2}%
-  \caption@Info{Setting position=b for compatibility reasons}%
-  \caption@setposition b}
-\@onlypreamble\caption@IncompatiblePackage
+  \@ifpackageloaded{ftcap}{\caption@DisablePositionOption{ftcap}}{}%
+  \@ifpackageloaded{nonfloat}{\caption@DisablePositionOption{nonfloat}}{}%
+  \@ifpackageloaded{topcapt}{\caption@DisablePositionOption{topcapt}}{}}
+\newcommand*\caption@DisablePositionOption[1]{%
+  \caption@Info{%
+    `#1' package detected; setting `position=b' for compatibility reasons}%
+  \caption@setposition b%
+  \DeclareCaptionOption{position}{%
+    \caption@Error{Usage of the `position' option is incompatible\MessageBreak
+      to the `#1' package}}}
+\@onlypreamble\caption@DisablePositionOption
 \caption@ifbool{documentclass}{}{%
   \PackageWarningNoLine{caption}{%
     Unsupported document class (or package) detected,\MessageBreak
@@ -76,15 +65,6 @@
   \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}
   \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}
   \if@tablecaptionabove
-    \caption@AtBeginDocument{%
-      \def\caption@tempa#1{%
-        \@ifpackageloaded{#1}{\caption@Error{%
-          You can't use the global option\MessageBreak
-          \space\space`tablecaptionabove'\MessageBreak
-          and use the #1 package, too}}{}}%
-      \caption@tempa{ftcap}%
-      \caption@tempa{nonfloat}%
-      \caption@tempa{topcapt}}%
     \@tablecaptionabovetrue
   \else
     \@tablecaptionabovefalse
@@ -155,15 +135,6 @@
   \captionsetup*[figure]{position=#1}}
 \@onlypreamble@key{caption}{figureposition}
 \DeclareCaptionOption{tableposition}{%
-  \caption@AtBeginDocument{%
-    \def\caption@tempa##1{%
-      \@ifpackageloaded{##1}{\caption@Error{%
-        You can't use the caption package option\MessageBreak
-        \space\space`tableposition=#1'\MessageBreak
-        and use the ##1 package, too}}{}}%
-    \caption@tempa{ftcap}%
-    \caption@tempa{nonfloat}%
-    \caption@tempa{topcapt}}%
   \captionsetup*[table]{position=#1}}
 \@onlypreamble@key{caption}{tableposition}
 \DeclareCaptionOption{figurename}{\caption@SetName{figure}{#1}}
@@ -1387,8 +1358,14 @@
        \fi}}
 }{}
 \caption@IfPackageLoaded{supertabular}[2002/07/19 v4.1e]{%
-  \let\caption@ORI@tablecaption\tablecaption
-  \def\tablecaption{\caption@star\relax\caption@ORI@tablecaption}%
+  \renewcommand*\tablecaption{%
+    \caption@star
+      {\refstepcounter{table}}%
+      {\caption@dblarg{\@xtablecaption}}}%
+  \let\caption@ORI@xtablecaption\@xtablecaption
+  \long\def\@xtablecaption[#1]#2{%
+    \def\@currentlabelname{#2}%
+    \caption@ORI@xtablecaption[#1]{#2}}%
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@settype*{#1}%
     \caption@setoptions{supertabular}%
@@ -1399,9 +1376,30 @@
       \caption@normalsize
       \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
     \caption@end}%
-}{%
-  \let\caption@setSTposition\@undefined
-}
+}{}
+\caption@IfPackageLoaded{xtab}[2000/04/09 v2.3]{%
+  \renewcommand*\tablecaption{%
+    \caption@star
+      {\refstepcounter{table}}%
+      {\caption@dblarg{\@xtablecaption}}}%
+  \let\caption@ORI@xtablecaption\@xtablecaption
+  \long\def\@xtablecaption[#1]#2{%
+    \def\@currentlabelname{#2}%
+    \caption@ORI@xtablecaption[#1]{#2}}%
+  \long\def\ST@caption#1[#2]#3{\par%
+    \caption@settype*{#1}%
+    \caption@setoptions{xtabular}%
+    \def\caption@fixposition{%
+      \caption@setposition{\if@topcaption t\else b\fi}}%
+    \@initisotab
+    \caption@beginex{#1}{#2}{#3}%
+      \caption@boxrestore
+      \caption@normalsize
+      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+    \caption@end
+    \global\advance\ST@pageleft -\PWSTcapht
+    \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}}%
+}{}
 \caption@IfPackageLoaded{threeparttable}[2003/06/13 v3.0]{%
   \let\caption@ORI@threeparttable\threeparttable
   \renewcommand*\threeparttable{%

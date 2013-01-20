@@ -24,12 +24,12 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{6211}
+% \CheckSum{6225}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2008/03/20 v3.1g Implementation of the caption package]
+\ProvidesFile{caption.drv}[2008/04/01 v3.1h Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -56,7 +56,7 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2008/03/01]
+\usepackage[debug]{caption}[2008/04/01]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -233,7 +233,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2008/03/20 v3.1g caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2008/03/20 v3.1h caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -3218,7 +3218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2008/03/20 v3.1g Customizing captions (AR)]
+\ProvidesPackage{caption}[2008/04/01 v3.1h Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -3235,7 +3235,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2008/03/01] % needs v3.1g
+\RequirePackage{caption3}[2008/03/20] % needs v3.1g or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible packages}
@@ -3255,36 +3255,30 @@
 % \changes{v3.1}{2007/06/18}{Check against incompatible \package{topcapt} package added}
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \@ifpackageloaded{ftcap}{%
-    \caption@IncompatiblePackage{ftcap}{}%
-  }{}%
-  \@ifpackageloaded{nonfloat}{%
-    \caption@IncompatiblePackage{nonfloat}{.\MessageBreak
-      Furthermore you should use \noexpand\captionof instead of\MessageBreak
-      \noexpand\figcaption or \string\tabcaption}%
-  }{}%
-  \@ifpackageloaded{topcapt}{%
-    \caption@IncompatiblePackage{topcapt}{}%
-  }{}%
-}
+  \@ifpackageloaded{ftcap}{\caption@DisablePositionOption{ftcap}}{}%
+  \@ifpackageloaded{nonfloat}{\caption@DisablePositionOption{nonfloat}}{}%
+  \@ifpackageloaded{topcapt}{\caption@DisablePositionOption{topcapt}}{}}
 %    \end{macrocode}
-%
-% \begin{macro}{\caption@Incompatible}
+% \begin{macro}{\caption@DisablePositionOption}
 % \changes{v3.1g}{2008/03/20}{\texttt{position=b} added}
-%  Issue an `incompatible' warning.
+% \changes{v3.1h}{2008/03/29}{%
+%   Name changed from \cs{caption@IncompatiblePackage} to \cs{caption@DisablePositionOption};
+%   moved from package to kernel; disables the `position' option now instead of issuing a warning}
+% |\caption@DisablePositionOption|\marg{package}\par
+% disables the `position' option.
 %    \begin{macrocode}
-\newcommand*\caption@IncompatiblePackage[2]{%
-  \PackageWarningNoLine{caption}{%
-    Usage of the #1 package together with the\MessageBreak
-    caption package is strongly not recommended.\MessageBreak
-    Instead of loading the #1 package you should\MessageBreak
-    use the caption package option\MessageBreak
-    \space\space`tableposition=top'#2}%
-  \caption@Info{Setting position=b for compatibility reasons}%
-  \caption@setposition b}
+\newcommand*\caption@DisablePositionOption[1]{%
+  \caption@Info{%
+    `#1' package detected; setting `position=b' for compatibility reasons}%
+  \caption@setposition b%
 %    \end{macrocode}
 %    \begin{macrocode}
-\@onlypreamble\caption@IncompatiblePackage
+  \DeclareCaptionOption{position}{%
+    \caption@Error{Usage of the `position' option is incompatible\MessageBreak
+      to the `#1' package}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\@onlypreamble\caption@DisablePositionOption
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3341,15 +3335,6 @@
 %
 %    \begin{macrocode}
   \if@tablecaptionabove
-    \caption@AtBeginDocument{%
-      \def\caption@tempa#1{%
-        \@ifpackageloaded{#1}{\caption@Error{%
-          You can't use the global option\MessageBreak
-          \space\space`tablecaptionabove'\MessageBreak
-          and use the #1 package, too}}{}}%
-      \caption@tempa{ftcap}%
-      \caption@tempa{nonfloat}%
-      \caption@tempa{topcapt}}%
     \@tablecaptionabovetrue
   \else
     \@tablecaptionabovefalse
@@ -3495,15 +3480,6 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{tableposition}{%
-  \caption@AtBeginDocument{%
-    \def\caption@tempa##1{%
-      \@ifpackageloaded{##1}{\caption@Error{%
-        You can't use the caption package option\MessageBreak
-        \space\space`tableposition=#1'\MessageBreak
-        and use the ##1 package, too}}{}}%
-    \caption@tempa{ftcap}%
-    \caption@tempa{nonfloat}%
-    \caption@tempa{topcapt}}%
   \captionsetup*[table]{position=#1}}
 \@onlypreamble@key{caption}{tableposition}
 %    \end{macrocode}
@@ -6733,7 +6709,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The supertabular package}
+% \subsubsection{The supertabular and xtab packages}
 %
 %    \begin{macrocode}
 \caption@IfPackageLoaded{supertabular}[2002/07/19 v4.1e]{%
@@ -6741,15 +6717,30 @@
 %
 % \begin{macro}{\tablecaption}
 % \changes{v3.0e}{2005/05/05}{Made \cs{topcaption*} and \cs{bottomcaption*} work}
+% \changes{v3.1h}{2008/04/01}{Bugfix: Star variant does not increment table counter anymore}
 %  Make |\topcaption*| and |\bottomcaption*| work.
 %    \begin{macrocode}
-  \let\caption@ORI@tablecaption\tablecaption
-  \def\tablecaption{\caption@star\relax\caption@ORI@tablecaption}%
+  \renewcommand*\tablecaption{%
+    \caption@star
+      {\refstepcounter{table}}%
+      {\caption@dblarg{\@xtablecaption}}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@xtablecaption}
+% \changes{v3.1h}{2008/04/01}{Made \cs{nameref} \& \cs{autoref} work}
+%  Make |\nameref| and |\autoref| work.
+%    \begin{macrocode}
+  \let\caption@ORI@xtablecaption\@xtablecaption
+  \long\def\@xtablecaption[#1]#2{%
+    \def\@currentlabelname{#2}%
+    \caption@ORI@xtablecaption[#1]{#2}}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\ST@caption}
 % \changes{v3.0a}{2004/01/23}{Bugfix: Missing \cs{par} added}
+% \changes{v3.1h}{2008/04/01}{Bugfix: \cs{@currentlabelname} will be set now}
 %  The original code:
 %  \begin{verbatim}
 %  \long\def\ST@caption#1[#2]#3{\par%
@@ -6786,9 +6777,76 @@
 % \end{macro}
 %
 %    \begin{macrocode}
-}{%
-  \let\caption@setSTposition\@undefined
-}
+}{}
+%    \end{macrocode}
+%
+% \changes{v3.1h}{2008/04/01}{Support of the xtab package added}
+%    \begin{macrocode}
+\caption@IfPackageLoaded{xtab}[2000/04/09 v2.3]{%
+%    \end{macrocode}
+%
+% \begin{macro}{\tablecaption}
+%  Make |\topcaption*| and |\bottomcaption*| work.
+%    \begin{macrocode}
+  \renewcommand*\tablecaption{%
+    \caption@star
+      {\refstepcounter{table}}%
+      {\caption@dblarg{\@xtablecaption}}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@xtablecaption}
+%  Make |\nameref| and |\autoref| work.
+%    \begin{macrocode}
+  \let\caption@ORI@xtablecaption\@xtablecaption
+  \long\def\@xtablecaption[#1]#2{%
+    \def\@currentlabelname{#2}%
+    \caption@ORI@xtablecaption[#1]{#2}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ST@caption}
+%  The original code:
+%  \begin{verbatim}
+%  \long\def\ST@caption#1[#2]#3{\par%
+%    \@initisotab
+%    \addcontentsline{\csname ext@#1\endcsname}{#1}%
+%                    {\protect\numberline{%
+%                      \csname the#1\endcsname}{\ignorespaces #2}}
+%    \begingroup
+%      \@parboxrestore
+%      \normalsize
+%    %%  \if@topcaption \vskip -10\p@ \fi
+%      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+%    %%  \if@topcaption \vskip 10\p@ \fi
+%    \endgroup
+%    \global\advance\ST@pageleft -\PWSTcapht
+%    \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}
+%  }
+%  \end{verbatim}%^^A
+%    \begin{macrocode}
+  \long\def\ST@caption#1[#2]#3{\par%
+    \caption@settype*{#1}%
+    \caption@setoptions{xtabular}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \def\caption@fixposition{%
+      \caption@setposition{\if@topcaption t\else b\fi}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \@initisotab
+    \caption@beginex{#1}{#2}{#3}%
+      \caption@boxrestore
+      \caption@normalsize
+      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+    \caption@end
+    \global\advance\ST@pageleft -\PWSTcapht
+    \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}}%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+}{}
 %    \end{macrocode}
 %
 % \subsubsection{The threeparttable package}
@@ -7143,6 +7201,12 @@
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/wrapfig/}%
 %        {\emph{WRAPFIG.STY ver 3.6}},\\
 %   2003/01/31
+%
+%   \bibitem{xtab}
+%   Peter Wilson:\\
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/xtab/}%
+%        {\emph{The xtab package}},\\
+%   2004/05/24
 %
 %   \bibitem{Anne}
 %   Anne Br\"uggemann-Klein:\\

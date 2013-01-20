@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2007/12/06 v0.3 Adding subcaptions (AR)]
+\ProvidesPackage{subcaption}[2008/03/16 v1.0 Adding subcaptions (AR)]
 \@ifundefined{caption@subtypehook}{% we need caption v3.1f or newer
   \PackageError{subcaption}{`caption' package not loaded\MessageBreak
     (which is needed by this package)\@gobble}{%
@@ -86,6 +86,32 @@
 \providecommand*\caption@hj@r{\raggedleft}
 \providecommand*\caption@hj@s{}
 \newcommand*\subcaptionbox@hj@default{c}
+\newcommand*\subfloat{%
+  \@ifnextchar[\@subfloat\subfloat@}
+\long\def\@subfloat[#1]{%
+  \@ifnextchar[{\@@subfloat{#1}}{\subcaptionbox{#1}}}
+\long\def\@@subfloat#1[#2]{\subcaptionbox[{#1}]{#2}}
+\newcommand*\subfloat@{%
+  \caption@teststar\subfloat@@\@firstoftwo\@secondoftwo}
+\newcommand\subfloat@@[2]{%
+  \setbox\@tempboxa\hbox{#2}%
+  \begingroup
+  \captionsetup{subtype*}% set \caption@position
+  \caption@iftop{\subfloat@@@ t}{\subfloat@@@ b}%
+    {#1}\subcaptionbox@hj@default}
+\newcommand\subfloat@@@[3]{%
+  \endgroup
+  \parbox[#1]{\wd\@tempboxa}{%
+    #2% \@firstoftwo in star form, \@secondoftwo otherwise
+      {\captionsetup{subtype*,position=#1}}%
+      {\captionsetup{subtype,position=#1}%
+       \caption@refstepcounter\@subcaptype
+       \caption@prepareanchor\@subcaptype{}%
+       \caption@makeanchor{}}%
+    \caption@iftop{\hrule\@height\z@}{}%
+    \csname caption@hj@#3\endcsname
+    \unhbox\@tempboxa
+    \caption@iftop{}{\hrule\@height\z@}}}%
 \g@addto@macro\caption@subtypehook{%
   \ifx\label\subcaption@label \else
     \let\subcaption@ORI@label\label

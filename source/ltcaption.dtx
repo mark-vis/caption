@@ -24,13 +24,13 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{336}
+% \CheckSum{340}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesFile{ltcaption.drv}%
-  [2007/10/03 v1.1 This package fixes caption problems with
+  [2008/03/28 v1.2 This package fixes caption problems with
                    other-than-centered aligned longtables]
 \hbadness=9999 \newcount\hbadness \hfuzz=48pt % Make TeX shut up.
 %
@@ -114,6 +114,14 @@
 %
 % \subsection{Further justification}
 %
+% \DescribeMacro{\LTcapskip}
+% This length is controlling the skip between the caption and the contents
+% below the caption and can be altered with |\setlength\LTcapskip{|\ldots|}|.
+% When \thispackage\ is loaded it will be set to |\abovecaptionskip| which
+% usually represents the skip between caption and contents in floating
+% environments.
+% (Without this package, the \package{longtable} package uses |\baselineskip| here.)
+%
 % \DescribeMacro{\LTcapleft}
 % \DescribeMacro{\LTcapright}
 % You can alter the centering of the caption box (of width |\LTcapwidth|)
@@ -132,9 +140,9 @@
 % captions as well.
 %
 % \emph{Note:}
-% These commands do not work when used with one of the \KOMAScript\
-% classes\cite{KOMAScript} |scrartcl|, |scrreprt| or |scrbook|,
-% the \KOMAScript\ settings for captions are used instead.
+% These lengths \& commands do not work when \thispackage\ is used with one
+% of the \KOMAScript\ classes\cite{KOMAScript} |scrartcl|, |scrreprt| or
+% |scrbook|, the \KOMAScript\ settings for captions are used instead.
 % Same with the \package{caption} package which also uses its own options
 % and settings.
 %
@@ -155,9 +163,9 @@
 % \setcounter{figure}{6}
 % \begingroup
 %   \renewcommand\LTcaptype{figure}
-%   \begin{longtable}{ll}
+%   \begin{longtable}{l}
 %   \caption{An example longtable}\\
-%     A & B \\
+%     \ldots \\
 %   \end{longtable}
 % \endgroup
 %
@@ -344,6 +352,7 @@
 % \fi
 %
 % \StopEventually{%^^A
+% \pagebreak[3]
 % \begin{thebibliography}{9}
 %   \bibitem{longtable}
 %   David Carlisle:
@@ -439,7 +448,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{ltcaption}[2008/03/21 v1.1a longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2008/03/28 v1.2 longtable captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{User interface}
@@ -459,8 +468,7 @@
 %    \begin{macrocode}
 \@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
   \@ifpackageloaded{listings}{%
-    \providecommand*\ext@lstlisting{lol}%
-  }{}}
+    \providecommand*\ext@lstlisting{lol}}{}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -473,6 +481,13 @@
 %
 % \changes{v1.1}{2007/04/20}{The skips will not be defined if the
 %        \package{caption} package is loaded}
+%
+% \begin{macro}{\LTcapskip}
+% \changes{v1.2}{2007/03/28}{This skip added}
+%    \begin{macrocode}
+  \newskip\LTcapskip \LTcapskip=\abovecaptionskip
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\LTcapleft}
 % \begin{macro}{\LTcapright}
@@ -518,8 +533,6 @@
 %  i.e. |\AtBeginDocument|.
 %    \begin{macrocode}
 \@ifundefined{caption@AtBeginDocument}\AtBeginDocument\caption@AtBeginDocument{%
-%    \end{macrocode}
-%    \begin{macrocode}
   \let\ltcaption@ORI@LT@array\LT@array
   \renewcommand*\LT@array{%
 %    \end{macrocode}
@@ -542,10 +555,7 @@
     \def\lst@@caption{\relax}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \ltcaption@ORI@LT@array}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}
+    \ltcaption@ORI@LT@array}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@LTtype[2]{%
@@ -592,6 +602,8 @@
 %
 % \begin{macro}{\LT@makecaption}
 % \changes{v1.1}{2007/04/20}{\cs{LT@@makecaption} added}
+% \changes{v1.1}{2007/06/27}{Adapted to the \package{floatrow} package by Olga Lapko}
+% \changes{v1.2}{2007/03/28}{Uses \cs{LTcapskip} instead of \cs{baselineskip} now}
 %  |\LT@makecaption|\marg{cmd}\marg{label}\marg{text}\par
 % \smallskip
 %  Original code:
@@ -610,7 +622,6 @@
 %    \hss}}}
 %  \end{verbatim}%^^A
 %  Our code:\footnote{Adapted to the \package{floatrow} package by Olga Lapko}
-%  \changes{v1.1}{2007/06/27}{Adapted to the \package{floatrow} package by Olga Lapko}
 %    \begin{macrocode}
 \renewcommand\LT@makecaption[3]{%
   \LT@@makecaption{%
@@ -620,7 +631,7 @@
     \else
       \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
     \fi
-    \endgraf\vskip\baselineskip}}
+    \endgraf\vskip\LTcapskip}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\LT@@makecaption[1]{%
