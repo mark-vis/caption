@@ -28,7 +28,7 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/09/01 v3.1 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/09/16 v3.1a caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -437,11 +437,14 @@
      \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
 \DeclareCaptionFormat{hang}{%
-  \@hangfrom{#1#2}%
-  \advance\caption@parindent\hangindent
-  \advance\caption@hangindent\hangindent
-  \caption@@par
-  #3\par}
+  \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+    {\caption@Error{%
+       The option `labelsep=\caption@lsepname' does not work\MessageBreak
+       with `format=hang'}}%
+    {\@hangfrom{#1#2}%
+     \advance\caption@parindent\hangindent
+     \advance\caption@hangindent\hangindent
+     \caption@@par#3\par}}
 \def\caption@fmt@default{\caption@fmt@plain}
 \def\caption@ifh@default{\caption@ifh@plain}
 \newcommand*\DeclareCaptionLabelFormat[2]{%
@@ -461,14 +464,21 @@
 \@onlypreamble\DeclareCaptionLabelSeparator
 \newcommand\caption@declarelabelseparator[3]{%
   \global\expandafter\let\csname caption@iflf@#2\endcsname#1%
-  \global\long\@namedef{caption@lsep@#2}{#3}}
+  \global\long\@namedef{caption@lsep@#2}{#3}%
+  \caption@@declarelabelseparator{#2}#3\\\@nil}
 \@onlypreamble\caption@declarelabelseparator
+\long\def\caption@@declarelabelseparator#1#2\\#3\@nil{%
+  \def\@tempa{#3}\ifx\@tempa\@empty \else
+    \caption@g@addto@list\caption@lsepcrlist{#1}%
+  \fi}
+\@onlypreamble\caption@@declarelabelseparator
 \DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
 \newcommand*\caption@setlabelseparator[1]{%
   \@ifundefined{caption@lsep@#1}%
     {\caption@Error{Undefined label separator `#1'}}%
-    {\expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
+    {\edef\caption@lsepname{#1}%
+     \expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
      \expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
 \DeclareCaptionLabelSeparator{none}{}
 \DeclareCaptionLabelSeparator{colon}{: }
@@ -687,11 +697,9 @@
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
   \let\caption@iftypewarning\caption@ifdebug
-  \caption@ifdebug{%
-    \def\caption@Debug{\PackageInfo{caption}}%
-  }{%
-    \let\caption@Debug\@gobble
-  }}
+  \caption@ifdebug
+    {\def\caption@Debug{\PackageInfo{caption}}}%
+    {\let\caption@Debug\@gobble}}
 \DeclareOption{debug}{\setkeys{caption}{debug}}
 \setkeys{caption}{debug=0}
 \caption@CheckCommand\@makecaption{\let\@makecaption\@undefined}
@@ -830,7 +838,11 @@
       \fi}}
   \DeclareCaptionFormat{default}{%
     \ifdofullc@p
-      \caption@fmt@hang{#1}{#2}{#3}%
+      \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+        {\caption@Error{%
+           The option `labelsep=\caption@lsepname' does not work\MessageBreak
+           with \noexpand\setcaphanging (which is set by default)}}%
+        {\caption@fmt@hang{#1}{#2}{#3}}%
     \else
       #1#2%
       \ifdim\cap@indent<\z@
@@ -1061,48 +1073,71 @@
   \caption@ifempty\@unused}
 \newcommand*\caption@@par{%
   \parindent\caption@parindent\hangindent\caption@hangindent}%
-\providecommand*\DeclareFloatingEnvironment[1]{%
+\providecommand*\DeclareFloatingEnvironment{%
+  \@ifnextchar[%]
+    \caption@@DeclareFloatingEnvironment\caption@DeclareFloatingEnvironment}
+\@onlypreamble\DeclareFloatingEnvironment
+\newcommand*\caption@DeclareFloatingEnvironment[1]{%
+  \caption@@DeclareFloatingEnvironment[lo#1]{#1}}
+\@onlypreamble\caption@DeclareFloatingEnvironment
+\def\caption@@DeclareFloatingEnvironment[#1]#2{%
   \@ifundefined{c@chapter}%
-    {\newcounter{#1}%
-     \@namedef{the#1}{\arabic{#1}}%
-     \@namedef{theH#1}{\arabic{#1}}}%
-    {\newcounter{#1}[chapter]%
-     \@namedef{the#1}{\ifnum\c@chapter>\z@ \thechapter.\fi \arabic{#1}}%
-     \@namedef{theH#1}{\theHchapter.\arabic{#1}}}%
-  \@namedef{fps@#1}{tbp}%
-  \@ifundefined{c@float@type}{%
-    \newcounter{float@type}%
-    \setcounter{float@type}{\@ifundefined{c@figure}14}}{}%
-  \expandafter\xdef\csname ftype@#1\endcsname{\the\value{float@type}}%
+    {\newcounter{#2}%
+     \@namedef{the#2}{\arabic{#2}}%
+     \@namedef{theH#2}{\arabic{#2}}}%
+    {\newcounter{#2}[chapter]%
+     \@namedef{the#2}{\ifnum\c@chapter>\z@ \thechapter.\fi \arabic{#2}}%
+     \@namedef{theH#2}{\theHchapter.\arabic{#2}}}%
+  \@namedef{fps@#2}{tbp}%
+  \@ifundefined{c@float@type}%
+    {\newcounter{float@type}%
+     \setcounter{float@type}{\@ifundefined{c@figure}14}}%
+    {}%
+  \caption@Debug{float type `#2'=\the\value{float@type}}%
+  \expandafter\xdef\csname ftype@#2\endcsname{\the\value{float@type}}%
   \addtocounter{float@type}{\value{float@type}}%
-  \@namedef{ext@#1}{lo#1}%
-  \@namedef{fnum@#1}{\@nameuse{#1name}\nobreakspace\@nameuse{the#1}}%
-  \newenvironment{#1}{\@float{#1}}{\end@float}%
-  \newenvironment{#1*}{\@dblfloat{#1}}{\end@dblfloat}%
-  \expandafter\newcommand\csname listof#1s\endcsname{\begingroup
-    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-    \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
+  \@namedef{ext@#2}{#1}%
+  \@namedef{fnum@#2}{\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
+  \newenvironment{#2}{\@float{#2}}{\end@float}%
+  \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+  \expandafter\newcommand\csname listof#2s\endcsname{\begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#2name\endcsname
+    \expandafter\let\expandafter\ext@figure\csname ext@#2\endcsname
     \let\caption@ORI@starttoc\@starttoc
     \renewcommand*\@starttoc[1]{%
       \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
     \listoffigures
     \endgroup}%
   \@ifundefined{l@figure}%
-    {\@namedef{l@#1}{\@dottedtocline{1}{1.5em}{2.3em}}}%
-    {\expandafter\let\csname l@#1\endcsname\l@figure}%
-  \expandafter\newcommand\csname #1name\endcsname{}%
+    {\@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}}%
+    {\expandafter\let\csname l@#2\endcsname\l@figure}%
+  \expandafter\newcommand\csname #2name\endcsname{}%
   \edef\@tempa{%
-    \def\noexpand\@tempa{\expandafter\noexpand\@car#1\@nil}}%
+    \def\noexpand\@tempa{\expandafter\noexpand\@car#2\@nil}}%
   \uppercase\expandafter{\@tempa}%
   \edef\@tempb{%
-    \noexpand\g@addto@macro\noexpand\@tempa{\expandafter\@cdr#1\@nil}}%
+    \noexpand\g@addto@macro\noexpand\@tempa{\expandafter\@cdr#2\@nil}}%
   \@tempb
-  \expandafter\let\csname #1name\endcsname\@tempa
-  \expandafter\newcommand\csname list#1name\endcsname{}%
-  \expandafter\xdef\csname list#1name\endcsname{List of \@tempa s}%
-  \@cons\caption@floatlist{{#1}}}
-\@onlypreamble\DeclareFloatingEnvironment
+  \expandafter\let\csname #2name\endcsname\@tempa
+  \expandafter\newcommand\csname list#2name\endcsname{}%
+  \expandafter\xdef\csname list#2name\endcsname{List of \@tempa s}%
+  \@cons\caption@floatlist{{#2}}%
+  \@ifnextchar[{\caption@@@DeclareFloatingEnvironment{#2}}\relax}
+\@onlypreamble\caption@@DeclareFloatingEnvironment
+\def\caption@@@DeclareFloatingEnvironment#1[#2]{%
+  \@namedef{#1name}{#2}%
+  \@ifnextchar[{\caption@@@@DeclareFloatingEnvironment{#1}}\relax}
+\@onlypreamble\caption@@@DeclareFloatingEnvironment
+\def\caption@@@@DeclareFloatingEnvironment#1[#2]{%
+  \@namedef{list#1name}{#2}}
+\@onlypreamble\caption@@@@DeclareFloatingEnvironment
 \newcommand*\caption@floatlist{}
+\providecommand\ForFloatingEnvironments[1]{%
+  \caption@AtBeginDocument{%
+    \def\@elt##1{#1}%
+    \caption@floatlist
+    \let\@elt\relax}}%
+\@onlypreamble\ForFloatingEnvironments
 \caption@AtBeginDocument{%
   \def\@tempa{\@ifstar\sf@@subref\sf@subref}%
   \ifx\subref\@tempa

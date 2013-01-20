@@ -28,10 +28,10 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/09/01 v3.1 Customising captions (AR)]
+\ProvidesPackage{caption}[2007/09/16 v3.1a Customising captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
-\RequirePackage{caption3}[2007/09/01] % needs v3.1 or newer
+\RequirePackage{caption3}[2007/09/16] % needs v3.1a or newer
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -88,15 +88,15 @@
   \else
     \@tablecaptionabovefalse
   \fi
-  \def\onelinecaptionstrue{\captionsetup{singlelinecheck=1}}
-  \def\onelinecaptionsfalse{\captionsetup{singlelinecheck=0}}
+  \def\onelinecaptionstrue{\let\caption@ifslc\@firstoftwo}
+  \def\onelinecaptionsfalse{\let\caption@ifslc\@secondoftwo}
   \ifonelinecaptions
     \onelinecaptionstrue
   \else
     \onelinecaptionsfalse
   \fi
-  \def\@captionabovetrue{\captionsetup{position=t}}
-  \def\@captionabovefalse{\captionsetup{position=b}}
+  \def\@captionabovetrue{\let\caption@position\@firstoftwo}
+  \def\@captionabovefalse{\let\caption@position\@secondoftwo}
   \let\caption@KOMA@setcapindent\@setcapindent
   \renewcommand*\@setcapindent[1]{%
     \caption@KOMA@setcapindent{#1}\caption@setcapindent}
@@ -924,6 +924,8 @@
          \caption@defrost
        \end\@captype}%
   }%
+  \ForFloatingEnvironments{%
+    \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}%
 }{%
   \let\caption@ifFPlistcap\@undefined
   \let\caption@ifFPrefcap\@undefined
@@ -1038,27 +1040,30 @@
       \caption@ORI@lst@MakeCaption{#1}%
     \caption@end}%
   \providecommand*\ext@lstlisting{lol}%
-  \g@addto@macro\caption@settypehook{\let\lst@@caption\relax}%
 }{}
 \providecommand*\LTcaptype{table}
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
   \RequirePackage{ltcaption}[2007/09/01]%
   \let\LT@@makecaption\@undefined
-  \let\caption@ORI@LT@array\LT@array
-  \renewcommand*\LT@array{%
-    \global\let\caption@opt@@longtable\@undefined
-    \def\captionsetup##1{\noalign{%
-      \@captionsetup\@gobble[@longtable]{##1}%
-      \global\let\caption@opt@@longtable\caption@opt@@longtable}}%
-    \def\captionlistentry##1{\noalign{%
-      \caption@listentry[\LTcaptype]{##1}}}%
-    \def\ContinuedFloat{\noalign{%
-      \caption@Error{\noexpand\ContinuedFloat outside float}}}%
-    \caption@ORI@LT@array}%
-\def\LT@c@ption#1[#2]#3{%
-  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-  \def\@currentlabelname{#2}%
-  \caption@addcontentsline\LTcaptype{#2}}%
+  \caption@AtBeginDocument{%
+    \let\caption@ORI@LT@array\LT@array
+    \renewcommand*\LT@array{%
+      \global\let\caption@opt@@longtable\@undefined
+      \def\captionsetup##1{\noalign{\LT@captionsetup{##1}}}%
+      \def\LT@captionsetup##1{%
+        \@captionsetup\@gobble[@longtable]{##1}%
+        \global\let\caption@opt@@longtable\caption@opt@@longtable}%
+      \def\@captionabovetrue{\LT@captionsetup{position=t}}%
+      \def\@captionabovefalse{\LT@captionsetup{position=b}}%
+      \def\captionlistentry##1{\noalign{%
+        \caption@listentry[\LTcaptype]{##1}}}%
+      \def\ContinuedFloat{\noalign{%
+        \caption@Error{\noexpand\ContinuedFloat outside float}}}%
+      \caption@ORI@LT@array}}%
+  \def\LT@c@ption#1[#2]#3{%
+    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+    \def\@currentlabelname{#2}%
+    \caption@addcontentsline\LTcaptype{#2}}%
   \renewcommand\LT@makecaption[3]{%
     \caption@LT@make{%
       \caption@startrue#1\caption@starfalse
@@ -1169,6 +1174,9 @@
     \nobreak\hspace{12pt}}%
   \newcommand\caption@makerot[2]{%
     \begin{minipage}\captionwidth\caption@@make{#1}{#2}\end{minipage}}%
+  \ForFloatingEnvironments{%
+    \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
+    \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
 }{}
 \caption@IfPackageLoaded{sidecap}[1999/05/11 v1.4d]{%
   \caption@setbool{needfreeze}{1}%
@@ -1198,18 +1206,29 @@
     \def\SC@orig@caption[##1]##2{\caption@defrost}%
     \caption@setSC@justify % for compatibility mode
     \caption@ORI@endSC@FLOAT}%
+  \ForFloatingEnvironments{%
+    \newenvironment{SC#1}%
+      {\SC@float[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@float}%
+    \newenvironment{SC#1*}%
+      {\SC@dblfloat[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@dblfloat}}%
 }{}
 \caption@IfPackageLoaded{subfigure}[2002/01/23 v2.1]{%
   \def\sf@ifpositiontop{%
-    \@ifundefined{if\@captype topcap}{%
-      \@gobbletwo
-    }{%
-      \@nameuse{if\@captype topcap}%
-        \expandafter\@firstoftwo
-      \else
-        \expandafter\@secondoftwo
-      \fi
-    }}%
+    \ifx\@captype\@undefined
+      \expandafter\@gobbletwo
+    \else\ifx\@captype\relax
+      \expandafter\expandafter\expandafter\@gobbletwo
+    \else
+      \expandafter\expandafter\expandafter\sf@if@position@top
+    \fi\fi}
+  \def\sf@if@position@top{%
+    \@ifundefined{if\@captype topcap}%
+      {\@gobbletwo}%
+      {\@nameuse{if\@captype topcap}%
+         \expandafter\@firstoftwo
+       \else
+         \expandafter\@secondoftwo
+       \fi}}
 }{}
 \caption@IfPackageLoaded{supertabular}[2002/07/19 v4.1e]{%
   \let\caption@ORI@tablecaption\tablecaption
@@ -1276,26 +1295,30 @@
     \else
       \expandafter\let\csname caption@ORI@wrap#1\expandafter\endcsname
                       \csname wrap#1\endcsname
-      \@namedef{wrap#1}{%
-        \caption@settype*{#1}%
-        \float@ifstyle{#1}{%
-          \ifx\WF@floatstyhook\@undefined
-            \caption@Error{%
-              For a successful cooperation of the `wrapfig' package\MessageBreak
-              with the `float' package you should use at least\MessageBreak
-              `wrapfig' version 3.6}%
-          \else
-            \float@dostyle{#1}%
-          \fi}{}%
-          \caption@clearmargin
-        \caption@setoptions{wrapfloat}%
-        \caption@setoptions{wrap#1}%
-        \@nameuse{caption@ORI@wrap#1}}%
+      \@namedef{wrap#1}{\caption@wrapfloat{#1}}%
       \expandafter\let\csname caption@OUR@wrap#1\expandafter\endcsname
                       \csname wrap#1\endcsname
     \fi}%
+  \newcommand*\caption@wrapfloat[1]{%
+    \caption@settype*{#1}%
+    \float@ifstyle{#1}{%
+      \ifx\WF@floatstyhook\@undefined
+        \caption@Error{%
+          For a successful cooperation of the `wrapfig' package\MessageBreak
+          with the `float' package you should use at least\MessageBreak
+          `wrapfig' version 3.6}%
+      \else
+        \float@dostyle{#1}%
+      \fi}{}%
+      \caption@clearmargin
+    \caption@setoptions{wrapfloat}%
+    \caption@setoptions{wrap#1}%
+    \@nameuse{caption@ORI@wrap#1}}%
   \caption@restylewrapfloat{figure}%
   \caption@restylewrapfloat{table}%
+  \ForFloatingEnvironments{%
+    \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}%
+    \caption@restylewrapfloat{#1}}%
   \ifx\WF@floatstyhook\@undefined \else % wrapfig v3.6
     \@ifundefined{float@restyle}{}{%
       \toks@=\expandafter{\float@restyle{#1}% (env may or may not be defined)

@@ -24,12 +24,12 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{5248}
+% \CheckSum{5390}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2007/09/01 v3.1 Implementation of the caption package]
+\ProvidesFile{caption.drv}[2007/09/16 v3.1a Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -53,7 +53,7 @@
 \usepackage{hypdoc}
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2007/09/01]
+\usepackage[debug]{caption}[2007/09/16]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -222,7 +222,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/09/01 v3.1 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/09/16 v3.1a caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -1267,12 +1267,17 @@
 % There are two pre-defined formats, called `plain' and `hang'.
 %    \begin{macrocode}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
+%    \end{macrocode}
+%    \begin{macrocode}
 \DeclareCaptionFormat{hang}{%
-  \@hangfrom{#1#2}%
-  \advance\caption@parindent\hangindent
-  \advance\caption@hangindent\hangindent
-  \caption@@par
-  #3\par}
+  \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+    {\caption@Error{%
+       The option `labelsep=\caption@lsepname' does not work\MessageBreak
+       with `format=hang'}}%
+    {\@hangfrom{#1#2}%
+     \advance\caption@parindent\hangindent
+     \advance\caption@hangindent\hangindent
+     \caption@@par#3\par}}
 %    \end{macrocode}
 %
 % \changes{v3.0a}{2004/01/23}{Caption format \opt{default} linked to \opt{normal}}
@@ -1332,6 +1337,7 @@
 % \changes{v3.0a}{2004/01/17}{Pass through argument \#2 so extra spaces
 %         between arguments do make any harm}
 % \changes{v3.0h}{2005/08/25}{Starred variant added}
+% \changes{v3.1}{2007/07/13}{Test for CR added}
 %  |\DeclareCaptionLabelSeparator|\marg{name}\marg{code}\\
 %  |\DeclareCaptionLabelSeparator*|\marg{name}\marg{code}\par
 %  The starred form causes the label separator to be typeset \emph{without} using |\captionlabelfont|.
@@ -1343,8 +1349,16 @@
 %    \begin{macrocode}
 \newcommand\caption@declarelabelseparator[3]{%
   \global\expandafter\let\csname caption@iflf@#2\endcsname#1%
-  \global\long\@namedef{caption@lsep@#2}{#3}}
+  \global\long\@namedef{caption@lsep@#2}{#3}%
+  \caption@@declarelabelseparator{#2}#3\\\@nil}
 \@onlypreamble\caption@declarelabelseparator
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@@declarelabelseparator#1#2\\#3\@nil{%
+  \def\@tempa{#3}\ifx\@tempa\@empty \else
+    \caption@g@addto@list\caption@lsepcrlist{#1}%
+  \fi}
+\@onlypreamble\caption@@declarelabelseparator
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1360,7 +1374,8 @@
 \newcommand*\caption@setlabelseparator[1]{%
   \@ifundefined{caption@lsep@#1}%
     {\caption@Error{Undefined label separator `#1'}}%
-    {\expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
+    {\edef\caption@lsepname{#1}%
+     \expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
      \expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
 %    \end{macrocode}
 % \end{macro}
@@ -1939,11 +1954,9 @@
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
   \let\caption@iftypewarning\caption@ifdebug
-  \caption@ifdebug{%
-    \def\caption@Debug{\PackageInfo{caption}}%
-  }{%
-    \let\caption@Debug\@gobble
-  }}
+  \caption@ifdebug
+    {\def\caption@Debug{\PackageInfo{caption}}}%
+    {\let\caption@Debug\@gobble}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareOption{debug}{\setkeys{caption}{debug}}
@@ -2140,7 +2153,11 @@
 %    \begin{macrocode}
   \DeclareCaptionFormat{default}{%
     \ifdofullc@p
-      \caption@fmt@hang{#1}{#2}{#3}%
+      \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+        {\caption@Error{%
+           The option `labelsep=\caption@lsepname' does not work\MessageBreak
+           with \noexpand\setcaphanging (which is set by default)}}%
+        {\caption@fmt@hang{#1}{#2}{#3}}%
     \else
       #1#2%
       \ifdim\cap@indent<\z@
@@ -2636,55 +2653,94 @@
 %
 % \iffalse\subsection{\cs{DeclareFloatingEnvironment}}\fi
 % \subsection{Bonus features}
-% \changes{v3.1}{2007/08/12}{\cs{DeclareFloatingEnvironment} added}
 %
 % \begin{macro}{\DeclareFloatingEnvironment}
-% |\DeclareFloatingEnvironment|\marg{environment name}
+% \changes{v3.1}{2007/08/12}{This macro added}
+% \changes{v3.1a}{2007/09/07}{Three optional arguments added}
+%  |\DeclareFloatingEnvironment|\oarg{file ext}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
-\providecommand*\DeclareFloatingEnvironment[1]{%
+\providecommand*\DeclareFloatingEnvironment{%
+  \@ifnextchar[%]
+    \caption@@DeclareFloatingEnvironment\caption@DeclareFloatingEnvironment}
+\@onlypreamble\DeclareFloatingEnvironment
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@DeclareFloatingEnvironment[1]{%
+  \caption@@DeclareFloatingEnvironment[lo#1]{#1}}
+\@onlypreamble\caption@DeclareFloatingEnvironment
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@DeclareFloatingEnvironment[#1]#2{%
   \@ifundefined{c@chapter}%
-    {\newcounter{#1}%
-     \@namedef{the#1}{\arabic{#1}}%
-     \@namedef{theH#1}{\arabic{#1}}}%
-    {\newcounter{#1}[chapter]%
-     \@namedef{the#1}{\ifnum\c@chapter>\z@ \thechapter.\fi \arabic{#1}}%
-     \@namedef{theH#1}{\theHchapter.\arabic{#1}}}%
-  \@namedef{fps@#1}{tbp}%
-  \@ifundefined{c@float@type}{%
-    \newcounter{float@type}%
-    \setcounter{float@type}{\@ifundefined{c@figure}14}}{}%
-  \expandafter\xdef\csname ftype@#1\endcsname{\the\value{float@type}}%
+    {\newcounter{#2}%
+     \@namedef{the#2}{\arabic{#2}}%
+     \@namedef{theH#2}{\arabic{#2}}}%
+    {\newcounter{#2}[chapter]%
+     \@namedef{the#2}{\ifnum\c@chapter>\z@ \thechapter.\fi \arabic{#2}}%
+     \@namedef{theH#2}{\theHchapter.\arabic{#2}}}%
+  \@namedef{fps@#2}{tbp}%
+  \@ifundefined{c@float@type}%
+    {\newcounter{float@type}%
+     \setcounter{float@type}{\@ifundefined{c@figure}14}}%
+    {}%
+  \caption@Debug{float type `#2'=\the\value{float@type}}%
+  \expandafter\xdef\csname ftype@#2\endcsname{\the\value{float@type}}%
   \addtocounter{float@type}{\value{float@type}}%
-  \@namedef{ext@#1}{lo#1}%
-  \@namedef{fnum@#1}{\@nameuse{#1name}\nobreakspace\@nameuse{the#1}}%
-  \newenvironment{#1}{\@float{#1}}{\end@float}%
-  \newenvironment{#1*}{\@dblfloat{#1}}{\end@dblfloat}%
-  \expandafter\newcommand\csname listof#1s\endcsname{\begingroup
-    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-    \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
+  \@namedef{ext@#2}{#1}%
+  \@namedef{fnum@#2}{\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
+  \newenvironment{#2}{\@float{#2}}{\end@float}%
+  \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+  \expandafter\newcommand\csname listof#2s\endcsname{\begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#2name\endcsname
+    \expandafter\let\expandafter\ext@figure\csname ext@#2\endcsname
     \let\caption@ORI@starttoc\@starttoc
     \renewcommand*\@starttoc[1]{%
       \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
     \listoffigures
     \endgroup}%
   \@ifundefined{l@figure}%
-    {\@namedef{l@#1}{\@dottedtocline{1}{1.5em}{2.3em}}}%
-    {\expandafter\let\csname l@#1\endcsname\l@figure}%
-  \expandafter\newcommand\csname #1name\endcsname{}%
+    {\@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}}%
+    {\expandafter\let\csname l@#2\endcsname\l@figure}%
+  \expandafter\newcommand\csname #2name\endcsname{}%
   \edef\@tempa{%
-    \def\noexpand\@tempa{\expandafter\noexpand\@car#1\@nil}}%
+    \def\noexpand\@tempa{\expandafter\noexpand\@car#2\@nil}}%
   \uppercase\expandafter{\@tempa}%
   \edef\@tempb{%
-    \noexpand\g@addto@macro\noexpand\@tempa{\expandafter\@cdr#1\@nil}}%
+    \noexpand\g@addto@macro\noexpand\@tempa{\expandafter\@cdr#2\@nil}}%
   \@tempb
-  \expandafter\let\csname #1name\endcsname\@tempa
-  \expandafter\newcommand\csname list#1name\endcsname{}%
-  \expandafter\xdef\csname list#1name\endcsname{List of \@tempa s}%
-  \@cons\caption@floatlist{{#1}}}
-\@onlypreamble\DeclareFloatingEnvironment
+  \expandafter\let\csname #2name\endcsname\@tempa
+  \expandafter\newcommand\csname list#2name\endcsname{}%
+  \expandafter\xdef\csname list#2name\endcsname{List of \@tempa s}%
+  \@cons\caption@floatlist{{#2}}%
+  \@ifnextchar[{\caption@@@DeclareFloatingEnvironment{#2}}\relax}
+\@onlypreamble\caption@@DeclareFloatingEnvironment
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@@DeclareFloatingEnvironment#1[#2]{%
+  \@namedef{#1name}{#2}%
+  \@ifnextchar[{\caption@@@@DeclareFloatingEnvironment{#1}}\relax}
+\@onlypreamble\caption@@@DeclareFloatingEnvironment
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@@@DeclareFloatingEnvironment#1[#2]{%
+  \@namedef{list#1name}{#2}}
+\@onlypreamble\caption@@@@DeclareFloatingEnvironment
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@floatlist{}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ForFloatingEnvironments}
+% \changes{v3.1a}{2007/09/07}{This macro added}
+%  |\ForFloatingEnvironments|\marg{code with \#1}
+%    \begin{macrocode}
+\providecommand\ForFloatingEnvironments[1]{%
+  \caption@AtBeginDocument{%
+    \def\@elt##1{#1}%
+    \caption@floatlist
+    \let\@elt\relax}}%
+\@onlypreamble\ForFloatingEnvironments
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2771,7 +2827,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/09/01 v3.1 Customising captions (AR)]
+\ProvidesPackage{caption}[2007/09/16 v3.1a Customising captions (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@Info}
@@ -2787,7 +2843,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2007/09/01] % needs v3.1 or newer
+\RequirePackage{caption3}[2007/09/16] % needs v3.1a or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible packages}
@@ -2907,9 +2963,10 @@
 %
 % \begin{macro}{\onelinecaptionstrue}
 % \begin{macro}{\onelinecaptionsfalse}
+% \changes{v3.1a}{2007/09/14}{Changed so they work with \cs{global}, too}
 %    \begin{macrocode}
-  \def\onelinecaptionstrue{\captionsetup{singlelinecheck=1}}
-  \def\onelinecaptionsfalse{\captionsetup{singlelinecheck=0}}
+  \def\onelinecaptionstrue{\let\caption@ifslc\@firstoftwo}
+  \def\onelinecaptionsfalse{\let\caption@ifslc\@secondoftwo}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -2929,9 +2986,10 @@
 % \changes{v3.0n}{2006/03/09}{Accidentally this got broken in \version{3.0m}, fixed}
 % \changes{v3.1}{2007/03/31}{We redefine \cs{captionabovetrue/false} now
 %        instead of \cs{captionabove/below}}
+% \changes{v3.1a}{2007/09/14}{Changed so they work with \cs{global}, too}
 %    \begin{macrocode}
-  \def\@captionabovetrue{\captionsetup{position=t}}
-  \def\@captionabovefalse{\captionsetup{position=b}}
+  \def\@captionabovetrue{\let\caption@position\@firstoftwo}
+  \def\@captionabovefalse{\let\caption@position\@secondoftwo}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -4882,6 +4940,12 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines FP-variant, too}
+%    \begin{macrocode}
+  \ForFloatingEnvironments{%
+    \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}%
+%    \end{macrocode}
+%
 %    \begin{macrocode}
 }{%
   \let\caption@ifFPlistcap\@undefined
@@ -5230,14 +5294,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\lst@@caption}
-% We define |\lst@@caption| to non-|\@empty|, so |\fnum@lstlisting| will
-% produce a numbered listing caption, which makes |\captionof{lstlisting}|
-% work correctly.
-%    \begin{macrocode}
-  \g@addto@macro\caption@settypehook{\let\lst@@caption\relax}%
-%    \end{macrocode}
-% \end{macro}
+% \changes{v3.1a}{2007/07/13}{Bugfix 07-09-13: \cs{lst@@caption} will not be re-defined anymore}
 %
 %    \begin{macrocode}
 }{}
@@ -5263,58 +5320,72 @@
 %
 % \begin{macro}{\LT@array}
 % \changes{v3.1}{2007/07/22}{This redefinition added}
+% \changes{v3.1a}{2007/09/14}{Bugfix 07-09-14: Redefinition of \cs{@captionabovetrue} \& \cs{@captionabovefalse} added}
+% \changes{v3.1a}{2007/09/16}{Bugfix: This redefinition will always be done \cs{AtBeginDocument}}
 % We redefine |\LT@array| here to get |\captionsetup|\marg{options}
 % working inside |longtable|s.
+% \Note{Since the \package{hyperref} package patches \cs{LT@array} as well
+%  and since this only works with the original definition of \cs{LT@array},
+%  we have to do this after the \package{hyperref} package,
+%  i.e.~\cs{AtBeginDocument}.}
 %    \begin{macrocode}
-  \let\caption@ORI@LT@array\LT@array
-  \renewcommand*\LT@array{%
+  \caption@AtBeginDocument{%
+    \let\caption@ORI@LT@array\LT@array
+    \renewcommand*\LT@array{%
 %    \end{macrocode}
 % |\captionsetup| for longtable:
 %    \begin{macrocode}
-    \global\let\caption@opt@@longtable\@undefined
-    \def\captionsetup##1{\noalign{%
-      \@captionsetup\@gobble[@longtable]{##1}%
-      \global\let\caption@opt@@longtable\caption@opt@@longtable}}%
+      \global\let\caption@opt@@longtable\@undefined
+      \def\captionsetup##1{\noalign{\LT@captionsetup{##1}}}%
+      \def\LT@captionsetup##1{%
+        \@captionsetup\@gobble[@longtable]{##1}%
+        \global\let\caption@opt@@longtable\caption@opt@@longtable}%
+%    \end{macrocode}
+% |\captionabove| \& |\captionbelow| for longtable: (\KOMAScript\ document class)
+%    \begin{macrocode}
+      \def\@captionabovetrue{\LT@captionsetup{position=t}}%
+      \def\@captionabovefalse{\LT@captionsetup{position=b}}%
 %    \end{macrocode}
 % |\captionlistentry| for longtable:
 %    \begin{macrocode}
-    \def\captionlistentry##1{\noalign{%
-      \caption@listentry[\LTcaptype]{##1}}}%
+      \def\captionlistentry##1{\noalign{%
+        \caption@listentry[\LTcaptype]{##1}}}%
 %    \end{macrocode}
 % |\ContinuedFloat| for longtable:\\
 % {\small(Commented out, since it's not deeply tested and quite useless anyway)}
 % \Note{\package{hyperref} versions $<$ v6.76j uses $2\times$ \cs{hyper@makecurrent}}
 %    \begin{macrocode}
-%   \caption@ifhypcap{%
-%     \let\caption@ORI@hyper@makecurrent\hyper@makecurrent
-%     \def\hyper@makecurrent##1{%
-%       \let\hyper@makecurrent\caption@ORI@hyper@makecurrent
-%       \caption@makestart{##1}%
-%       \let\Hy@LT@currentHlabel\@currentHlabel
-%       \let\Hy@LT@currentHref\@currentHref
-%       \def\hyper@makecurrent####1{%
-%         \let\@currentHlabel\Hy@LT@currentHlabel
-%         \let\@currentHref\Hy@LT@currentHref}}%
-%     \let\caption@ORI@ContinuedFloat\ContinuedFloat
-%     \def\ContinuedFloat{\noalign{%
-%       \gdef\caption@setContinuedFloat{%
-%         \let\caption@resetContinuedFloat\@gobble}%
-%       \def\caption@setoptions####1{%
-%         \g@addto@macro\caption@setContinuedFloat{%
-%           \caption@setoptions{####1}}}%
-%       \let\@captype\LTcaptype
-%       \caption@ORI@ContinuedFloat}}%
-%   }{%
-%     \def\ContinuedFloat{\noalign{%
-%       \caption@Error{\noexpand\ContinuedFloat inside longtables\MessageBreak
-%                      is only available with `hypcap=true'}}}%
-%   }%
-%   \global\let\caption@setContinuedFloat\@empty
-    \def\ContinuedFloat{\noalign{%
-      \caption@Error{\noexpand\ContinuedFloat outside float}}}%
+%     \caption@ifhypcap{%
+%       \let\caption@ORI@hyper@makecurrent\hyper@makecurrent
+%       \def\hyper@makecurrent##1{%
+%         \let\hyper@makecurrent\caption@ORI@hyper@makecurrent
+%         \caption@makestart{##1}%
+%         \let\Hy@LT@currentHlabel\@currentHlabel
+%         \let\Hy@LT@currentHref\@currentHref
+%         \def\hyper@makecurrent####1{%
+%           \let\@currentHlabel\Hy@LT@currentHlabel
+%           \let\@currentHref\Hy@LT@currentHref}}%
+%       \let\caption@ORI@ContinuedFloat\ContinuedFloat
+%       \def\ContinuedFloat{\noalign{%
+%         \gdef\caption@setContinuedFloat{%
+%           \let\caption@resetContinuedFloat\@gobble}%
+%         \def\caption@setoptions####1{%
+%           \g@addto@macro\caption@setContinuedFloat{%
+%             \caption@setoptions{####1}}}%
+%         \let\@captype\LTcaptype
+%         \caption@ORI@ContinuedFloat}}%
+%     }{%
+%       \def\ContinuedFloat{\noalign{%
+%         \caption@Error{%
+%           \noexpand\ContinuedFloat inside longtables\MessageBreak
+%           is only available with `hypcap=true'}}}%
+%     }%
+%     \global\let\caption@setContinuedFloat\@empty
+      \def\ContinuedFloat{\noalign{%
+        \caption@Error{\noexpand\ContinuedFloat outside float}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \caption@ORI@LT@array}%
+      \caption@ORI@LT@array}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -5331,10 +5402,10 @@
 %  \end{verbatim}%^^A
 %  Our implementation uses |\LTcaptype| instead of |{table}|:
 %    \begin{macrocode}
-\def\LT@c@ption#1[#2]#3{%
-  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-  \def\@currentlabelname{#2}%
-  \caption@addcontentsline\LTcaptype{#2}}%
+  \def\LT@c@ption#1[#2]#3{%
+    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+    \def\@currentlabelname{#2}%
+    \caption@addcontentsline\LTcaptype{#2}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -5718,6 +5789,13 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines sideways-variant, too}
+%    \begin{macrocode}
+  \ForFloatingEnvironments{%
+    \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
+    \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
+%    \end{macrocode}
+%
 %    \begin{macrocode}
 }{}
 %    \end{macrocode}
@@ -5827,6 +5905,15 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines SC-variant, too}
+%    \begin{macrocode}
+  \ForFloatingEnvironments{%
+    \newenvironment{SC#1}%
+      {\SC@float[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@float}%
+    \newenvironment{SC#1*}%
+      {\SC@dblfloat[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@dblfloat}}%
+%    \end{macrocode}
+%
 %    \begin{macrocode}
 }{}
 %    \end{macrocode}
@@ -5839,20 +5926,29 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\sf@ifpositiontop}
-% If the \package{subfigure} package is loaded, we map |\sf@ifpositiontop|
-% to |\iffiguretopcap| resp. |\iftabletopcap|, so the \package{subfigure}
-% \version{2.1} options \opt{figbotcap} etc. will still work.
+% \changes{v3.1a}{2007/09/15}{Bugfix 07-09-15: Check for \cs{@captype} added}
+%  If the \package{subfigure} package is loaded, we map |\sf@ifpositiontop|
+%  to |\iffiguretopcap| resp. |\iftabletopcap|, so the \package{subfigure}
+%  \version{2.1} options \opt{figbotcap} etc. will still work.
 %    \begin{macrocode}
   \def\sf@ifpositiontop{%
-    \@ifundefined{if\@captype topcap}{%
-      \@gobbletwo
-    }{%
-      \@nameuse{if\@captype topcap}%
-        \expandafter\@firstoftwo
-      \else
-        \expandafter\@secondoftwo
-      \fi
-    }}%
+    \ifx\@captype\@undefined
+      \expandafter\@gobbletwo
+    \else\ifx\@captype\relax
+      \expandafter\expandafter\expandafter\@gobbletwo
+    \else
+      \expandafter\expandafter\expandafter\sf@if@position@top
+    \fi\fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \def\sf@if@position@top{%
+    \@ifundefined{if\@captype topcap}%
+      {\@gobbletwo}%
+      {\@nameuse{if\@captype topcap}%
+         \expandafter\@firstoftwo
+       \else
+         \expandafter\@secondoftwo
+       \fi}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6026,24 +6122,30 @@
     \else
       \expandafter\let\csname caption@ORI@wrap#1\expandafter\endcsname
                       \csname wrap#1\endcsname
-      \@namedef{wrap#1}{%
-        \caption@settype*{#1}%
-        \float@ifstyle{#1}{%
-          \ifx\WF@floatstyhook\@undefined
-            \caption@Error{%
-              For a successful cooperation of the `wrapfig' package\MessageBreak
-              with the `float' package you should use at least\MessageBreak
-              `wrapfig' version 3.6}%
-          \else
-            \float@dostyle{#1}%
-          \fi}{}%
-          \caption@clearmargin
-        \caption@setoptions{wrapfloat}%
-        \caption@setoptions{wrap#1}%
-        \@nameuse{caption@ORI@wrap#1}}%
+      \@namedef{wrap#1}{\caption@wrapfloat{#1}}%
       \expandafter\let\csname caption@OUR@wrap#1\expandafter\endcsname
                       \csname wrap#1\endcsname
     \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@wrapfloat}
+%    \begin{macrocode}
+  \newcommand*\caption@wrapfloat[1]{%
+    \caption@settype*{#1}%
+    \float@ifstyle{#1}{%
+      \ifx\WF@floatstyhook\@undefined
+        \caption@Error{%
+          For a successful cooperation of the `wrapfig' package\MessageBreak
+          with the `float' package you should use at least\MessageBreak
+          `wrapfig' version 3.6}%
+      \else
+        \float@dostyle{#1}%
+      \fi}{}%
+      \caption@clearmargin
+    \caption@setoptions{wrapfloat}%
+    \caption@setoptions{wrap#1}%
+    \@nameuse{caption@ORI@wrap#1}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6057,6 +6159,13 @@
 %    \begin{macrocode}
   \caption@restylewrapfloat{figure}%
   \caption@restylewrapfloat{table}%
+%    \end{macrocode}
+%
+% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines wrap-variant, too}
+%    \begin{macrocode}
+  \ForFloatingEnvironments{%
+    \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}%
+    \caption@restylewrapfloat{#1}}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
