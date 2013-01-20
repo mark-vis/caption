@@ -29,7 +29,7 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2011/08/18 v1.3b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2011/10/09 v1.4 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -133,6 +133,8 @@
   \caption@@withoptargs#1}
 \def\caption@@@@withoptargs#1{%
   \expandafter#1\expandafter{\caption@tempa}}
+\DeclareRobustCommand*\caption@gobble{%
+  \caption@withoptargs\@gobbletwo}
 \newcommand\caption@DoCheckCommand[2]{%
   \begingroup
     \let\@tempa#1%
@@ -316,18 +318,21 @@
   \@bsphack
   \expandafter\let\csname ORI@KV@err\caption@keydepth\endcsname\KV@err
   \expandafter\let\csname ORI@KV@errx\caption@keydepth\endcsname\KV@errx
+  \expandafter\let\csname ORI@XKV@err\caption@keydepth\endcsname\XKV@err
+  \edef\caption@keydepth{\caption@keydepth i}%
   \expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
   \ifx\KV@err\relax
     \def\KV@err##1{\PackageError{#1}{##1}{%
       See the #1 package documentation for explanation.}}%
   \fi
-  \let\KV@errx\KV@err
-  \edef\caption@keydepth{\caption@keydepth i}%
+  \def\KV@errx{\KV@err}%
+  \def\XKV@err{\let\@tempa\XKV@tkey\KV@err}%
   \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \edef\caption@keydepth{\expandafter\@gobble\caption@keydepth}%
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
   \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
+  \expandafter\let\expandafter\XKV@err\csname ORI@XKV@err\caption@keydepth\endcsname
   \ifx\caption@keydepth\@empty \captionsetup@starfalse \fi
   \@esphack}
 \let\caption@keydepth\@empty
@@ -635,6 +640,7 @@
   \@ifundefined{caption@tfmt@#1}%
     {\caption@Error{Undefined text format `#1'}}%
     {\expandafter\let\expandafter\caption@tfmt\csname caption@tfmt@#1\endcsname}}
+\DeclareCaptionTextFormat{empty}{}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
 \def\caption@tfmt@default{\caption@tfmt@simple}
@@ -828,6 +834,16 @@
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
 \DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
+\DeclareCaptionOption{listtype}{\caption@setlisttype{#1}}
+\DeclareCaptionOption{listtype+}{\caption@setlisttype@ext{#1}}
+\newcommand*\caption@setlisttype{%
+  \caption@setlisttype@ext{}%
+  \caption@@setlisttype\caption@listtype}
+\newcommand*\caption@@setlisttype[2]{%
+  \edef#1{#2}%
+  \ifx#1\@empty \let#1\@undefined \fi}
+\newcommand*\caption@setlisttype@ext{%
+  \caption@@setlisttype\caption@listtype@ext}
 \newcommand*\DeclareCaptionListFormat[2]{%
   \global\@namedef{caption@lstfmt@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionListFormat
@@ -1062,7 +1078,9 @@
   \DeclareCaptionDefaultFont{textfont}{\CaptionTextFont}
 }
 \providecommand*\caption@ifthesisclass{%
-  \caption@ifundefined\cph@font{\@gobble}{\caption@ifundefined\cpb@font\@gobble\@firstofone}}
+  \caption@ifundefined\cph@font
+    {\@gobble}%
+    {\caption@ifundefined\cpb@font\@gobble\@firstofone}}
 \caption@ifthesisclass{%
   \caption@CheckCommand\@makecaption{%
     % thesis.cls 1996/25/01 1.0g LaTeX document class (wm).
@@ -1176,22 +1194,42 @@
 \captionsetup{style=default,position=default,%
               list,listformat=default,twoside=\if@twoside 1\else 0\fi}
 \ProcessOptions*
-\newcommand*\caption@addcontentsline[2]{%
-  \caption@iflist
-    {\def\@tempa{#2}}%
-    {\let\@tempa\@empty}%
-  \ifx\@tempa\@empty \else
-    {\let\\\space
-      \@ifundefined{ext@#1}%
-       {\caption@Error{No float type '#1' defined}}%
-       {\caption@@addcontentsline
-          {\csname ext@#1\endcsname}%
-          {#1}%
-          {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
-          {\ignorespaces #2}}}%
-  \fi}
-\newcommand*\caption@@addcontentsline[4]{%
+\newcommand\caption@addcontentsline[2]{%
+  \caption@ifcontentsline{#2}{%
+    \begingroup
+      \let\@tempa\@gobble
+      \caption@ifundefined\caption@listtype
+        {\edef\caption@listtype{#1}}%
+        {\let\@tempa\@firstofone}%
+      \caption@ifundefined\caption@listtype@ext
+        {}%
+        {\edef\caption@listtype{\caption@listtype\caption@listtype@ext}%
+         \let\@tempa\@firstofone}%
+      \@tempa
+        {\caption@Debug{addcontentsline: #1 => \caption@listtype}%
+         \@namedef{the\caption@listtype}{\@nameuse{the#1}}}%
+      \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
+    \endgroup}}
+\newcommand\caption@@addcontentsline[2]{%
+  {\let\\\space
+   \@ifundefined{ext@#1}%
+     {\caption@Error{No float type '#1' defined}}%
+     {\caption@@@addcontentsline
+       {\csname ext@#1\endcsname}%
+       {#1}%
+       {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+       {\ignorespaces #2}}}}
+\newcommand*\caption@@@addcontentsline[4]{%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
+\newcommand\caption@ifcontentsline[1]{%
+  \caption@iflist
+    {\def\@tempa{#1}}%
+    {\let\@tempa\@empty}%
+  \ifx\@tempa\@empty
+    \expandafter\@gobble
+  \else
+    \expandafter\@firstofone
+  \fi}
 \newif\ifcaption@star
 \newcommand*\caption@fnum[1]{\caption@lfmt{\@nameuse{#1name}}{\@nameuse{the#1}}}
 \newcommand\caption@make[2]{\caption@@make{\caption@lfmt{#1}{#2}}}
@@ -1278,7 +1316,7 @@
   \caption@xsetup\caption@opt@singleline
   \let\caption@fmt\caption@slfmt}
 \newcommand*\caption@prepareslc{%
-  \def\label{\caption@withoptargs\@gobbletwo}%
+  \let\label\caption@gobble
   \let\caption@footnote@ORI\footnote
   \def\footnote{\caption@withoptargs\caption@footnote}%
   \let\caption@footnotemark@ORI\footnotemark
@@ -1396,14 +1434,7 @@
   \expandafter\xdef\csname list#2name\endcsname{List of \@tempa s}%
   \@cons\caption@typelist{{#2}}%
   \caption@setkeys[caption]{caption@DCT}{#1}%
-  \caption@ifundefined\float@exts{\newtoks\float@exts}{}%
-  \let\float@do=\relax
-  \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#2}}}}%
-  \@tempa
-  \caption@ifundefined\float@addtolists{%
-    \newcommand\float@addtolists[1]{%
-      \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}%
-    \caption@ifundefined\@chapter{}{\caption@PatchChapter}}{}%
+  \expandafter\caption@DeclareTypeExt\expandafter{\@nameuse{ext@#2}}{#2}%
   \@ifnextchar[\@@DeclareCaptionType\relax}
 \@onlypreamble\@DeclareCaptionType
 \def\@@DeclareCaptionType[#1]{%
@@ -1415,17 +1446,44 @@
 \@onlypreamble\@@@DeclareCaptionType
 \let\DeclareFloatingEnvironment\DeclareCaptionType % alternative command name
 \@onlypreamble\DeclareFloatingEnvironment
-\newcommand*\caption@within@default{\caption@ifundefined\c@chapter{none}{chapter}}
+\newcommand*\caption@DeclareTypeExt[2]{%
+  \caption@ifundefined\@chapter\relax\caption@PatchChapter
+  \let\caption@PatchChapter\relax
+  \@ifundefined{caption@ext@#1}{%
+    \@namedef{caption@ext@#1}{#2}%
+    \caption@ifundefined\float@exts{\newtoks\float@exts}{}%
+    \let\float@do=\relax
+    \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{#1}}}%
+    \@tempa
+    \caption@ifundefined\caption@addtolists{%
+      \newcommand\caption@addtolists[1]{%
+        \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}}{}%
+    \caption@ifundefined\addtotoclist{}{%
+      \addtotoclist[float]{#1}%
+      \setuptoc{#1}{chapteratlist}%
+      \@namedef{listof#1name}{\list#2name}}%
+  }{}%
+  \caption@ifundefined\contentsuse{}{%
+    \contentsuse{#2}{#1}}%
+}
+\@onlypreamble\caption@DeclareTypeExt
+\newcommand*\caption@within@default{%
+  \caption@ifundefined\c@chapter{none}{chapter}}
 \@onlypreamble\caption@within@default
-\newcommand*\caption@listof[1]{%
-  \begingroup
-    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-    \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
-    \let\caption@ORI@starttoc\@starttoc
-    \renewcommand*\@starttoc[1]{%
-      \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
-    \listoffigures
-  \endgroup}
+\caption@ifundefined\listoftoc{%
+  \newcommand*\caption@listof[1]{%
+    \begingroup
+      \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+      \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
+      \let\caption@ORI@starttoc\@starttoc
+      \renewcommand*\@starttoc[1]{%
+        \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
+      \listoffigures
+    \endgroup}%
+}{%
+  \newcommand*\caption@listof[1]{%
+    \expandafter\listoftoc\expandafter{\@nameuse{ext@#1}}}%
+}
 \newcommand*\caption@typelist{}
 \define@key{caption@DCT}{fileext}{\@namedef{ext@\caption@type}{#1}}
 \@onlypreamble@key{caption@DCT}{fileext}
@@ -1501,7 +1559,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -1549,7 +1607,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -1583,7 +1641,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \@makechapterhead{##2}\@afterheading}%
   % scrreprt/scrbook.cls
@@ -1622,7 +1680,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -1670,7 +1728,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -1740,7 +1798,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -1810,6 +1868,8 @@
         \caption@declaresublistentry{#3}%
         \@cons\caption@subtypelist{{#3}}}%
        {\caption@Debug{Modify caption `sub#3'}}%
+     \caption@ifundefined\contentsuse{}{%
+       \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}%
      \@namedef{sub#3name}{}%
      \@namedef{sub#3autorefname}{\csname #3name\endcsname}%
      #1% is \@firstoftwo in star form, and \@secondoftwo otherwise

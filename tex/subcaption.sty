@@ -29,8 +29,12 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2011/08/18 v1.1a Adding subcaptions (AR)]
+\ProvidesPackage{subcaption}[2011/09/12 v1.1b Sub-captions (AR)]
 \RequirePackage{caption}[2011/08/18] % needs v3.2b or newer
+\caption@AtBeginDocument{\caption@ifcompatibility{%
+  \caption@Error{%
+    The `subcaption' package does not work correctly\MessageBreak
+    in compatibility mode}}{}}
 \caption@ifundefined\subfigure{}{%
   \PackageError{subcaption}{%
     This package can't be used in cooperation\MessageBreak
@@ -52,7 +56,7 @@
   \caption@iftype
     {\setcaptionsubtype*\caption}%
     {\caption@Error{\noexpand\subcaption outside float}%
-     \caption@withoptargs\@gobbletwo}}%
+     \caption@gobble}}%
 \g@addto@macro\caption@subtypehook{%
   \let\subcaption\caption}
 \newcommand*\phantomsubcaption{%
@@ -76,11 +80,14 @@
     \let\subcaption@ORI@label\label
     \let\label\subcaption@label
   \fi}
-\newcommand*\subcaption@label[1]{%
+\newcommand*\subcaption@label{
+  \caption@withoptargs\subcaption@@label}
+\newcommand*\subcaption@@label[2]{%
   \@bsphack\begingroup
-    \subcaption@ORI@label{#1}%
+    \subcaption@ORI@label#1{#2}%
+    \let\SK@\@gobbletwo
     \protected@edef\@currentlabel{\csname thesub\@captype\endcsname}%
-    \subcaption@ORI@label{sub@#1}%
+    \subcaption@ORI@label#1{sub@#2}%
   \endgroup\@esphack}
 \DeclareRobustCommand*\subref{\@ifstar{\subcaption@ref*}\@subref}
 \newcommand*\@subref{%

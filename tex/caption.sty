@@ -29,8 +29,8 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/08/18 v3.2b Customizing captions (AR)]
-\RequirePackage{caption3}[2011/08/01] % needs v1.3 or newer
+\ProvidesPackage{caption}[2011/09/30 v3.2c Customizing captions (AR)]
+\RequirePackage{caption3}[2011/08/30] % needs v1.4 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unsupported document class (or package) detected,\MessageBreak
@@ -92,6 +92,18 @@
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
      {\caption@Warning{Configuration file #1.cfg not found}}}
+\newcommand*\caption@setparboxrestore[1]{%
+  \caption@ifinlist{#1}{full}{%
+    \caption@setfullparboxrestore
+  }{\caption@ifinlist{#1}{default,light,partial}{%
+    \let\caption@parboxrestore\@secondoftwo
+  }{%
+    \caption@Error{Undefined parboxrestore `#1'}%
+  }}}
+\newcommand*\caption@setfullparboxrestore{%
+  \let\caption@parboxrestore\@firstoftwo}
+\DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
+\captionsetup{parboxrestore=default}
 \DeclareCaptionOption{@minipage}{%
   \caption@ifinlist{#1}{auto,default}%
     {\let\caption@if@minipage\@gobbletwo}%
@@ -250,12 +262,13 @@
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
      \caption@star
-       {\caption@refstepcounter\@captype}%
+       {\@nameuse{donemaincaptiontrue}%
+        \caption@refstepcounter\@captype}%
        {\caption@dblarg{\@caption\@captype}}}%
     {\caption@Error{\noexpand\caption outside float}%
-     \caption@withoptargs\@gobbletwo}}
+     \caption@gobble}}
 \newcommand*\caption@star[2]{%
-  \@ifstar{\global\caption@startrue#2[]}{#1#2}}
+  \@ifstar{\caption@startrue#2[]}{#1#2}}
 \long\def\caption@@caption#1[#2]#3{%
   \ifcaption@star \else
     \caption@prepareanchor{#1}{#2}%
@@ -366,6 +379,10 @@
       \fi
       {\@dblarg{\Hy@tempa\@captype}}%
     }}%
+  \caption@CheckCommand\caption{%
+    % memhfixc.sty [2010/08/17 v1.15 nameref/hyperref package fixes for memoir class]
+    % \let\m@moldhypcaption\caption
+    \renewcommand{\caption}{\donemaincaptiontrue\m@moldhypcaption}}%
   \caption@IfCheckCommand{}{%
     \caption@InfoNoLine{%
       Incompatible package detected (regarding \string\caption).\MessageBreak
@@ -709,15 +726,17 @@
 \newcommand*\caption@undefinedlabel{%
   \protect\caption@xref{\caption@labelname}{\on@line}}
 \DeclareRobustCommand*\caption@xref[2]{%
-  \caption@WarningNoLine{\noexpand\label before \string\caption#2}%
+  \caption@WarningNoLine{\noexpand\label without proper \string\caption#2}%
   \@setref\relax\@undefined{#1}}
 \newcommand*\caption@labelname{??}
-\newcommand*\caption@xlabel[1]{%
-  \caption@@xlabel
-  \def\caption@labelname{#1}%
-  \caption@x@label{#1}}
-\newcommand*\caption@@xlabel{%
-  \global\let\caption@@xlabel\@empty
+\newcommand*\caption@xlabel{%
+  \caption@withoptargs\caption@@xlabel}
+\newcommand*\caption@@xlabel[2]{%
+  \caption@@@xlabel
+  \def\caption@labelname{#2}%
+  \caption@x@label#1{#2}}
+\newcommand*\caption@@@xlabel{%
+  \global\let\caption@@@xlabel\@empty
   \@bsphack
     \protected@write\@auxout{}%
       {\string\providecommand*\string\caption@xref[2]{%
@@ -844,18 +863,6 @@
   \@ifundefined{fnum@#1}{\iftrue}{\ifx\caption@lfmt\caption@lfmt@default\else}%
     \@namedef{fnum@#1}{\caption@fnum{#1}}%
   \fi}
-\newcommand*\caption@setparboxrestore[1]{%
-  \caption@ifinlist{#1}{full}{%
-    \let\caption@parboxrestore\@firstoftwo
-  }{\caption@ifinlist{#1}{default,light,partial}{%
-    \let\caption@parboxrestore\@secondoftwo
-  }{%
-    \caption@Error{Undefined parboxrestore `#1'}%
-  }}}
-\newcommand*\caption@setfullparboxrestore{%
-  \let\caption@parboxrestore\@firstoftwo}
-\DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
-\caption@setparboxrestore{default}
 \newcommand*\caption@boxrestore{%
   \caption@parboxrestore{\@parboxrestore}{%
     \let\if@nobreak\iffalse
@@ -903,7 +910,7 @@
       % no \caption or \subcaption in this (floating) environment yet
       \caption@Debug{Increment \@captype\ counter =\the\value\@captype}%
       \caption@l@stepcounter\@captype
-      \let\caption@@addcontentsline\caption@addsubcontentsline}%
+      \let\caption@@@addcontentsline\caption@addsubcontentsline}%
     \ifnum\csname caption@c@\@captype\endcsname=\value\@captype \else
       \caption@Debug{Reset sub\@captype\ counter}%
       \expandafter\xdef\csname caption@c@\@captype\endcsname{%
@@ -920,8 +927,21 @@
     \caption@setoptions{subfloat}% for subfig-package compatibility
     \let\caption\caption@subcaption
     \let\phantomcaption\caption@subphantom
-    \let\@makecaption\caption@makecaption
+    \if@subfloatrow
+      \caption@Debug{Keeping \string\@makecaption}%
+    \else
+      \let\@makecaption\caption@makecaption
+    \fi
   \fi}%
+\caption@AtBeginDocument{%
+  \caption@ifundefined\@subfloatrowtrue
+   {\newif\if@subfloatrow
+    \caption@ifundefined\subfloatrow{}%
+    {\caption@Debug{Patching subfloatrow environment}%
+     \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
+     \g@addto@macro\killfloatstyle{%
+       \ifx\c@FRobj\c@FRsobj\@subfloatrowtrue\fi}}}%
+   {\caption@Debug{\string\if@subfloatrow is already defined}}}%
 \newcommand*\caption@subcaption{%
   \caption@checkgrouplevel{sub}\subcaption
   \caption@star
@@ -931,7 +951,7 @@
   \caption@checkgrouplevel{sub}\phantomsubcaption
   \caption@refstepcounter\@subcaptype}
 \let\caption@kernel@addcontentsline\caption@addcontentsline
-\renewcommand*\caption@addcontentsline[2]{%
+\renewcommand\caption@addcontentsline[2]{%
   \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
   \caption@kernel@addcontentsline{#1}{#2}%
   \sf@ifpositiontop{}{\@listsubcaptions{#1}}%
@@ -943,14 +963,14 @@
   \caption@clearsubcontentslines}%
 \newcommand*\caption@addsubcontentsline[4]{%
   \begingroup
-  \let\label\@gobble \let\index\@gobble \let\glossary\@gobble
+  \let\label\caption@gobble \let\index\caption@gobble \let\glossary\caption@gobble
   \protected@edef\@tempa{\endgroup
     \noexpand\g@addto@macro\noexpand\caption@subcontentslines{%
       \noexpand\@namedef{the#2}{\csname the#2\endcsname}%
       \ifx\@currentHref\@undefined \else
         \noexpand\def\noexpand\@currentHref{\@currentHref}%
       \fi
-      \protect\caption@@addcontentsline{#1}{#2}{#3}{#4}}}%
+      \protect\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
   \@tempa}
 \newcommand*\caption@checksubcontentslines{%
   \ifx\caption@subcontentslines\@empty \else
@@ -1060,80 +1080,71 @@
 \caption@AtBeginDocument*{%
   \caption@ifneedfreeze{%
   \newcommand*\caption@freeze{%
-    \global\let\caption@SCcontinued\relax
-    \global\let\caption@SCsetup\@undefined
-    \global\let\caption@SClentry\@undefined
-    \global\let\caption@SCtext\@undefined
-    \global\let\caption@SClabel\@undefined
     \let\caption@frozen@ContinuedFloat\ContinuedFloat
     \def\ContinuedFloat{%
       \caption@withoptargs\caption@SC@ContinuedFloat}%
     \def\caption@SC@ContinuedFloat##1{%
+      \caption@@freeze{\ContinuedFloat##1}%
       \let\caption@frozen@setcounter\setcounter
       \let\caption@frozen@addtocounter\addtocounter
       \def\setcounter####1####2{\csname c@####1\endcsname####2\relax}%
       \def\addtocounter####1####2{\advance\csname c@####1\endcsname ####2\relax}%
       \caption@frozen@ContinuedFloat##1%
-      \global\let\caption@SCcontinued\caption@frozen@ContinuedFloat
       \let\setcounter\caption@frozen@setcounter
       \let\addtocounter\caption@frozen@addtocounter}%
     \let\caption@frozen@setup\caption@setup
     \def\caption@setup##1{%
-      \caption@g@addto@list\caption@SCsetup{##1}%
+      \caption@@freeze{\caption@setup{##1}}%
       \caption@frozen@setup{##1}}%
-    \let\caption@frozen\caption
+    \let\caption@frozen@caption\caption
     \def\caption{%
-      \def\caption{\caption@Error{%
-        Only one \noexpand\caption can be placed in this environment}}%
-      \let\captionsetup\caption@setup
-      \let\caption@@refstepcounter\caption@l@stepcounter
-      \caption@frozen}%
-    \let\caption@frozen@\@caption
-    \long\def\@caption##1[##2]##3{%
-        \gdef\caption@SClentry{##2}%
-        \gdef\caption@SCtext{##3}%
-        \let\@currentlabel\caption@SCcurrentlabel
+      \def\caption{%
+        \caption@Error{%
+          Only one \noexpand\caption can be placed in this environment}%
+        \caption@gobble}%
+      \@ifstar
+      {\caption@SC@caption*}%
+      {\let\caption@frozen@refstepcounter\caption@@refstepcounter
+       \let\caption@@refstepcounter\caption@l@stepcounter
+       \caption@refstepcounter\@captype
+       \let\caption@@refstepcounter\caption@frozen@refstepcounter
+       \let\@currentlabel\caption@SClabel
+       \caption@withoptargs\caption@SC@caption}}%
+    \long\def\caption@SC@caption##1##2{%
+      \caption@@freeze{\caption##1{##2}}%
       \ignorespaces}%
     \let\caption@frozen@label\label
-    \def\label##1{%
-      \ifx\@currentlabel\caption@SCcurrentlabel
-        \@bsphack\gdef\caption@SClabel{##1}\@esphack
+    \def\label{%
+      \caption@withoptargs\caption@SC@label}%
+    \def\caption@SC@label##1##2{%
+      \ifx\@currentlabel\caption@SClabel
+        \@bsphack
+          \caption@freeze@label{##1}{##2}%
+        \@esphack
       \else
-        \caption@frozen@label{##1}%
+        \caption@frozen@label##1{##2}%
       \fi}%
-    \def\caption@SCcurrentlabel{???}%
-  }%
-  \newcommand*\caption@warmup{%
-    \ifx\caption@frozen\@undefined\else
+    \def\caption@SClabel{\caption@undefinedlabel}%
+    \def\caption@freeze@label##1##2{%
+      \caption@@freeze{\label##1{##2}}}%
+    \global\let\caption@frozen@content\@empty
+    \long\def\caption@@freeze{%
+      \g@addto@macro\caption@frozen@content}%
+    \def\caption@warmup{%
+      \let\ContinuedFloat\caption@frozen@ContinuedFloat
       \let\caption@setup\caption@frozen@setup
-      \let\caption\caption@frozen
-      \let\@caption\caption@frozen@
-      \let\label\caption@frozen@label
-    \fi}
+      \let\caption\caption@frozen@caption
+      \let\label\caption@frozen@label}}%
   \newcommand*\caption@defrost{%
-    \ifx\caption@frozen\@undefined
-      \caption@defrost@setup
-      \ifx\caption@SCtext\@undefined \else
-        \expandafter\expandafter\expandafter\caption
-          \expandafter\expandafter\expandafter[%
-          \expandafter\expandafter\expandafter{%
-          \expandafter\caption@SClentry\expandafter}\expandafter]%
-          \expandafter{\caption@SCtext}%
-      \fi
-      \ifx\caption@SClabel\@undefined \else
-        \expandafter\label\expandafter{\caption@SClabel}%
-      \fi
+    \ifx\caption@frozen@caption\@undefined
+      \caption@frozen@content
     \else
       \caption@Error{Internal Error:\MessageBreak
         \noexpand\caption@defrost in same group as \string\caption@freeze}%
     \fi}%
-  \newcommand*\caption@defrost@setup{%
-    \caption@SCcontinued
-    \ifx\caption@SCsetup\@undefined \else
-      \expandafter\captionsetup\expandafter{\caption@SCsetup}%
-    \fi}%
-  }{\let\caption@warmup\relax}%
+  }{}%
   \caption@undefbool{needfreeze}}
+\let\caption@warmup\relax
 \caption@IfPackageLoaded{float}[2001/11/08 v1.3d]{%
  \@ifpackageloaded{floatrow}{%
   \caption@ifpackageloaded{floatrow}[2007/08/24 v0.2a]{}{}%
@@ -1211,47 +1222,56 @@
 }{}
 \caption@IfPackageLoaded{fltpage}[1998/10/29 v.0.3]{%
   \caption@setbool{needfreeze}{1}%
+  \renewcommand\FP@positionLabel{%
+    FP\FP@captype-\number\value{FP@\FP@captype C}-pos}%
   \renewcommand\FP@helpNote[2]{%
     \begingroup % save \caption@thepage
       \caption@pageref{#2}%
       \typeout{FP#1 is inserted on page \caption@thepage!}%
     \endgroup}%
   \renewcommand*\FP@floatBegin[1]{%
-    \def\@captype{#1}%
-    \let\FP@LabelText\@empty
+    \def\FP@captype{#1}%
     \begin{lrbox}{\FP@floatCorpusBOX}%
+    \caption@settype*{#1}%
     \caption@freeze
+    \global\let\FP@Label\@empty
     \caption@ifFPrefcap
       {}%
-      {\def\label##1{\@bsphack\gdef\FP@LabelText{##1}\@esphack}}%
+      {\def\caption@freeze@label##1##2{%
+          \g@addto@macro\FP@Label{\FP@label##1{##2}}}}%
     \ignorespaces}%
   \renewcommand*\FP@floatEnd{%
     \end{lrbox}%
-    \stepcounter{FP@\@captype C}%
+    \stepcounter{FP@\FP@captype C}%
     \caption@label\FP@positionLabel
-    \FP@helpNote\@captype\FP@positionLabel
+    \FP@helpNote\FP@captype\FP@positionLabel
     \edef\FP@RestoreCounter{%
-      \noexpand\setcounter{\@captype}{\the\value\@captype}%
+      \noexpand\setcounter{\FP@captype}{\the\value\FP@captype}%
       \noexpand\setcounter{ContinuedFloat}{\the\value{ContinuedFloat}}}%
     \FP@float
       {\FP@positionLabel}% location label test
-      {\begin\@captype[p!]%
+      {\begin\FP@captype[p!]%
          \usebox\FP@floatCorpusBOX
-         \caption@defrost@setup
+         \let\caption@SClentry\@empty
+         \def\caption{\caption@dblarg{\@caption\@captype}}%
+         \long\def\@caption##1[##2]##3{\def\caption@SClentry{##2}}%
+         \let\FP@label\label
+         \let\label\caption@gobble
+         \caption@defrost
          \caption@ifFPlistcap
            {\caption@refstepcounter\@captype
             \expandafter\caption@makecurrent\expandafter\@captype
                                          \expandafter{\caption@SClentry}}%
-           {\expandafter\captionlistentry\expandafter{\caption@SClentry}}%
+           {\ifx\caption@SClentry\@empty \else
+               \expandafter\captionlistentry\expandafter{\caption@SClentry}%
+             \fi}%
          \caption@makeanchor\relax
-         \ifx\FP@LabelText\@empty \else
-           \expandafter\label\expandafter{\FP@LabelText}%
-         \fi
-       \end\@captype}%
+         \FP@Label
+       \end\FP@captype}%
       {\FP@RestoreCounter
-       \@ifundefined{theH\@captype}{}{%
-         \expandafter\l@addto@macro\csname theH\@captype\endcsname{.FP}}}%
-      {\begin\@captype[b!]%
+       \@ifundefined{theH\FP@captype}{}{%
+         \expandafter\l@addto@macro\csname theH\FP@captype\endcsname{.FP}}}%
+      {\begin\FP@captype[b!]%
          \let\FP@savedSetfnumCommand\caption@setfnum
          \def\caption@setfnum##1{%
            \FP@savedSetfnumCommand{##1}%
@@ -1264,7 +1284,7 @@
          \FP@separatorCaption
          \caption@ifFPlistcap{}{\let\caption@addcontentsline\@gobbletwo}%
          \caption@defrost
-       \end\@captype}%
+       \end\FP@captype}%
   }%
   \caption@For{typelist}{%
     \newcounter{FP@#1C}%
@@ -1275,17 +1295,22 @@
 }
 \caption@IfPackageLoaded{hyperref}[2003/11/30 v6.74m]{%
   % Test if hyperref has stopped early
-  \caption@ifundefined\ifhyp@stoppedearly{%
-    \newif\ifhyp@stoppedearly
-    \caption@ifundefined\H@refstepcounter\hyp@stoppedearlytrue{%
-    \caption@ifundefined\hyper@makecurrent\hyp@stoppedearlytrue{%
-    \caption@ifundefined\measuring@true\hyp@stoppedearlytrue{}}}}{}%
-  \ifhyp@stoppedearly % hyperref has stopped early
+  \caption@ifundefined\IfHyperBoolean{%
+    \caption@set@bool\caption@ifhyp@stoppedearly0%
+    \caption@ifundefined\H@refstepcounter
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{%
+    \caption@ifundefined\hyper@makecurrent
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{%
+    \caption@ifundefined\measuring@true
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{}}}%
+  }{%
+    \def\caption@ifhyp@stoppedearly{\IfHyperBoolean{stoppedearly}}%
+  }%
+  \caption@ifhyp@stoppedearly{% hyperref has stopped early
     \caption@InfoNoLine{%
       Hyperref support is turned off\MessageBreak
       because hyperref has stopped early}%
-  \else
-  %
+  }{%
     \g@addto@macro\caption@prepareslc{\measuring@true}%
     \renewcommand*\caption@@refstepcounter{\H@refstepcounter}%
     \renewcommand*\caption@makecurrent[2]{%
@@ -1372,7 +1397,7 @@
       \renewcommand\float@makebox[1]{%
         \HyOrg@float@makebox{#1\relax \caption@defrostHref}}%
     }%
-  \fi}{}
+  }}{}
 \caption@IfPackageLoaded{hypcap}{% v1.0
   \ifx\caption@start\relax \else % hyperref hasn't stopped early
     \let\caption@ORI@capstart\capstart % save for compatibility mode
@@ -1549,9 +1574,8 @@
     \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
     \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
 }{}
-\caption@IfPackageLoaded{sidecap}[1999/05/11 v1.4d]{%
+\caption@IfPackageLoaded{sidecap}[2003/06/06 v1.6f]{%
   \caption@setbool{needfreeze}{1}%
-  \caption@AtBeginDocument{\let\SC@caption=\caption}%
   \let\caption@ORI@SC@zfloat\SC@zfloat
   \def\SC@zfloat#1#2#3[#4]{%
     \caption@ORI@SC@zfloat{#1}{#2}{#3}[#4]%
@@ -1572,11 +1596,10 @@
       \caption@start}%
     \def\caption@setSC@justify{%
       \caption@clearmargin
-      \caption@ifundefined\SC@justify{}{%
         \ifx\SC@justify\@empty \else
           \let\caption@hj\SC@justify
           \let\SC@justify\@empty
-        \fi}}%
+        \fi}%
     \let\caption\SC@orig@caption
     \def\SC@orig@caption[##1]##2{\caption@defrost}%
     \caption@setSC@justify % for compatibility mode

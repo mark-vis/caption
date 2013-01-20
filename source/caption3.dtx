@@ -25,12 +25,12 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{4127}
+% \CheckSum{4248}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2011/08/06 v1.3 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2011/10/09 v1.4 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -200,7 +200,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2011/08/18 v1.3b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2011/10/09 v1.4 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -459,6 +459,16 @@
 %    \begin{macrocode}
 \def\caption@@@@withoptargs#1{%
   \expandafter#1\expandafter{\caption@tempa}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@gobble}
+% \changes{v1.4}{2011/08/19}{This macro added}
+%  |\caption@gobble*|\oarg{arg}\oarg{\ldots}\marg{arg}\par
+% Same as |\@gobble|, but gobbles optional arguments as well.
+%    \begin{macrocode}
+\DeclareRobustCommand*\caption@gobble{%
+  \caption@withoptargs\@gobbletwo}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -914,6 +924,7 @@
 % \changes{v1.2}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 % \changes{v1.2a}{2008/01/12}{\cs{captionsetup@starfalse} added}
 % \changes{v1.2d}{2009/09/30}{Bugfix 09-09-29: Missing error handler will be defined automatically}
+% \changes{v1.4}{2011/08/24}{Redefinition of \cs{XKV@err} added}
 %  |\caption@setkeys|\oarg{package}\marg{family}\marg{key-values}\par
 %  This one simply calls |\setkeys|\marg{family}\marg{key-values}
 %  but lets the error messages not refer to the \package{keyval} package,
@@ -928,13 +939,17 @@
 %    \begin{macrocode}
   \expandafter\let\csname ORI@KV@err\caption@keydepth\endcsname\KV@err
   \expandafter\let\csname ORI@KV@errx\caption@keydepth\endcsname\KV@errx
+  \expandafter\let\csname ORI@XKV@err\caption@keydepth\endcsname\XKV@err
+  \edef\caption@keydepth{\caption@keydepth i}%
+%    \end{macrocode}
+%    \begin{macrocode}
   \expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
   \ifx\KV@err\relax
     \def\KV@err##1{\PackageError{#1}{##1}{%
       See the #1 package documentation for explanation.}}%
   \fi
-  \let\KV@errx\KV@err
-  \edef\caption@keydepth{\caption@keydepth i}%
+  \def\KV@errx{\KV@err}%
+  \def\XKV@err{\let\@tempa\XKV@tkey\KV@err}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@Debug{\protect\setkeys{#2}{#3}}%
@@ -944,6 +959,7 @@
   \edef\caption@keydepth{\expandafter\@gobble\caption@keydepth}%
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
   \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
+  \expandafter\let\expandafter\XKV@err\csname ORI@XKV@err\caption@keydepth\endcsname
 %    \end{macrocode}
 %    \begin{macrocode}
   \ifx\caption@keydepth\@empty \captionsetup@starfalse \fi
@@ -1737,8 +1753,10 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% There are two pre-defined text formats, called `simple' and `period'.
+% There are three pre-defined text formats, called `empty', `simple' and `period'.
+% \changes{v1.4}{2011/10/05}{Pre-defined text format `empty' added}
 %    \begin{macrocode}
+\DeclareCaptionTextFormat{empty}{}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
 %    \end{macrocode}
@@ -2254,6 +2272,36 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v1.4}{2011/08/30}{Option \opt{listtype=} added}
+% \changes{v1.4}{2011/08/30}{Option \opt{listtype+=} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{listtype}{\caption@setlisttype{#1}}
+\DeclareCaptionOption{listtype+}{\caption@setlisttype@ext{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@setlisttype}
+% \changes{v1.4}{2011/08/30}{This macro added}
+%  |\caption@setlisttype|\marg{type}
+%    \begin{macrocode}
+\newcommand*\caption@setlisttype{%
+  \caption@setlisttype@ext{}%
+  \caption@@setlisttype\caption@listtype}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@setlisttype[2]{%
+  \edef#1{#2}%
+  \ifx#1\@empty \let#1\@undefined \fi}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\caption@setlisttype@ext}
+% \changes{v1.4}{2011/08/30}{This macro added}
+%  |\caption@setlisttype@ext|\marg{type extension}
+%    \begin{macrocode}
+\newcommand*\caption@setlisttype@ext{%
+  \caption@@setlisttype\caption@listtype@ext}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\DeclareCaptionListFormat}
 % \changes{v1.1}{2004/07/15}{This macro added}
 % \changes{v1.2}{2007/11/17}{Renamed from \cs{DeclareCaptionListOfFormat} to \cs{DeclareCaptionListFormat}}
@@ -2635,7 +2683,9 @@
 % \begin{macro}{\caption@ifthesisclass}
 %    \begin{macrocode}
 \providecommand*\caption@ifthesisclass{%
-  \caption@ifundefined\cph@font{\@gobble}{\caption@ifundefined\cpb@font\@gobble\@firstofone}}
+  \caption@ifundefined\cph@font
+    {\@gobble}%
+    {\caption@ifundefined\cpb@font\@gobble\@firstofone}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2823,29 +2873,56 @@
 % \changes{v1.1}{2007/07/01}{This macro added}
 % \changes{v1.3}{2010/10/26}{Error check added}
 % \changes{v1.3}{2011/06/24}{Split into two macros}
+% \changes{v1.4}{2011/08/19}{Split into three macros}
+% \changes{v1.4}{2011/08/30}{Support for option \opt{listtype=} added}
 %  |\caption@addcontentsline|\marg{type}\marg{list entry}\par
 %  Makes an entry in the list-of-whatever, if requested,
 %  i.e.~the argument \meta{list entry} is not empty and
 %  |listof=| was set to |true|.
 %    \begin{macrocode}
-\newcommand*\caption@addcontentsline[2]{%
-  \caption@iflist
-    {\def\@tempa{#2}}%
-    {\let\@tempa\@empty}%
-  \ifx\@tempa\@empty \else
-    {\let\\\space
-      \@ifundefined{ext@#1}%
-       {\caption@Error{No float type '#1' defined}}%
-       {\caption@@addcontentsline
-          {\csname ext@#1\endcsname}%
-          {#1}%
-          {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
-          {\ignorespaces #2}}}%
-  \fi}
+\newcommand\caption@addcontentsline[2]{%
+  \caption@ifcontentsline{#2}{%
+    \begingroup
+      \let\@tempa\@gobble
+      \caption@ifundefined\caption@listtype
+        {\edef\caption@listtype{#1}}%
+        {\let\@tempa\@firstofone}%
+      \caption@ifundefined\caption@listtype@ext
+        {}%
+        {\edef\caption@listtype{\caption@listtype\caption@listtype@ext}%
+         \let\@tempa\@firstofone}%
+      \@tempa
+        {\caption@Debug{addcontentsline: #1 => \caption@listtype}%
+%        \caption@setoptions*\caption@listtype
+         \@namedef{the\caption@listtype}{\@nameuse{the#1}}}%
+      \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
+    \endgroup}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@addcontentsline[4]{%
+\newcommand\caption@@addcontentsline[2]{%
+  {\let\\\space
+   \@ifundefined{ext@#1}%
+     {\caption@Error{No float type '#1' defined}}%
+     {\caption@@@addcontentsline
+       {\csname ext@#1\endcsname}%
+       {#1}%
+       {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+       {\ignorespaces #2}}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@@addcontentsline[4]{%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@ifcontentsline[1]{%
+  \caption@iflist
+    {\def\@tempa{#1}}%
+    {\let\@tempa\@empty}%
+  \ifx\@tempa\@empty
+    \expandafter\@gobble
+  \else
+    \expandafter\@firstofone
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3072,7 +3149,7 @@
 %  Re-define anything which would disturb the single-line-check.
 %    \begin{macrocode}
 \newcommand*\caption@prepareslc{%
-  \def\label{\caption@withoptargs\@gobbletwo}%
+  \let\label\caption@gobble
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@footnote@ORI\footnote
@@ -3313,14 +3390,7 @@
   \caption@setkeys[caption]{caption@DCT}{#1}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \caption@ifundefined\float@exts{\newtoks\float@exts}{}%
-  \let\float@do=\relax
-  \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#2}}}}%
-  \@tempa
-  \caption@ifundefined\float@addtolists{%
-    \newcommand\float@addtolists[1]{%
-      \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}%
-    \caption@ifundefined\@chapter{}{\caption@PatchChapter}}{}%
+  \expandafter\caption@DeclareTypeExt\expandafter{\@nameuse{ext@#2}}{#2}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \@ifnextchar[\@@DeclareCaptionType\relax}
@@ -3343,28 +3413,79 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@DeclareTypeExt}
+% \changes{v1.4}{2011/10/02}{Support of the tocbasic package added}
+% \changes{v1.4}{2011/10/02}{Support of the titletoc package added}
+%    \begin{macrocode}
+\newcommand*\caption@DeclareTypeExt[2]{%
+  \caption@ifundefined\@chapter\relax\caption@PatchChapter
+  \let\caption@PatchChapter\relax
+%    \end{macrocode}
+%    \begin{macrocode}
+  \@ifundefined{caption@ext@#1}{%
+    \@namedef{caption@ext@#1}{#2}%
+%    \end{macrocode}
+% Support of \package{float} package\par
+% TODO: Needs revision
+%    \begin{macrocode}
+    \caption@ifundefined\float@exts{\newtoks\float@exts}{}%
+    \let\float@do=\relax
+    \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{#1}}}%
+    \@tempa
+    \caption@ifundefined\caption@addtolists{%
+      \newcommand\caption@addtolists[1]{%
+        \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}}{}%
+%    \end{macrocode}
+% Support of \package{tocbasic} package
+%    \begin{macrocode}
+    \caption@ifundefined\addtotoclist{}{%
+      \addtotoclist[float]{#1}%
+      \setuptoc{#1}{chapteratlist}%
+      \@namedef{listof#1name}{\list#2name}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  }{}%
+%    \end{macrocode}
+% Support of \package{titletoc} package
+%    \begin{macrocode}
+  \caption@ifundefined\contentsuse{}{%
+    \contentsuse{#2}{#1}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+\@onlypreamble\caption@DeclareTypeExt
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@within@default}
 % \changes{v1.2b}{2008/04/13}{This macro added}
 %  The default `within' value.
 %    \begin{macrocode}
-\newcommand*\caption@within@default{\caption@ifundefined\c@chapter{none}{chapter}}
+\newcommand*\caption@within@default{%
+  \caption@ifundefined\c@chapter{none}{chapter}}
 \@onlypreamble\caption@within@default
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@listof}
 % \changes{v1.2}{2007/12/21}{This macro added}
+% \changes{v1.4}{2011/10/02}{Support of \cs{listoftoc} added}
 % |\caption@listof|\marg{float type}
 %    \begin{macrocode}
-\newcommand*\caption@listof[1]{%
-  \begingroup
-    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-    \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
-    \let\caption@ORI@starttoc\@starttoc
-    \renewcommand*\@starttoc[1]{%
-      \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
-    \listoffigures
-  \endgroup}
+\caption@ifundefined\listoftoc{%
+  \newcommand*\caption@listof[1]{%
+    \begingroup
+      \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+      \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
+      \let\caption@ORI@starttoc\@starttoc
+      \renewcommand*\@starttoc[1]{%
+        \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
+      \listoffigures
+    \endgroup}%
+}{%
+  \newcommand*\caption@listof[1]{%
+    \expandafter\listoftoc\expandafter{\@nameuse{ext@#1}}}%
+}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3452,8 +3573,7 @@
 %
 % \begin{macro}{\caption@PatchChapter}
 % \changes{v1.2b}{2008/08/02}{This macro added}
-% We try to patch \cs{@chapter} so \cs{float@addtolists} will be supported.
-% (Note: The \KOMAScript\ classes already support \cs{float@addtolists}.)
+% We try to patch \cs{@chapter} so \cs{caption@addtolists} will be supported.
 %    \begin{macrocode}
 \newcommand*\caption@PatchChapter{%
   \providecommand*\@chapterlistsgap{10\p@}%
@@ -3491,7 +3611,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -3541,7 +3661,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -3577,7 +3697,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \@makechapterhead{##2}\@afterheading}%
 %    \end{macrocode}
@@ -3620,7 +3740,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -3670,7 +3790,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -3742,7 +3862,7 @@
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
       \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
-      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+      \caption@addtolists{\protect\addvspace{\@chapterlistsgap}}%
     \fi
     \if@twocolumn
       \@topnewpage[\@makechapterhead{##2}]%
@@ -3833,6 +3953,7 @@
 % \changes{v1.2a}{2008/03/11}{Bugfix: \cs{subfigurename} will be defined now}
 % \changes{v1.2d}{2009/10/09}{Bugfix 08-10-01: Usage of \cs{caption@addtoreset} added}
 % \changes{v1.3}{2011/01/01}{\cs{@dottedlofline} will be defined \& used now}
+% \changes{v1.4}{2011/10/09}{Support of the titletoc package added}
 %  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\par
 %  The starred variant provides the numbering format
@@ -3862,6 +3983,11 @@
         \caption@declaresublistentry{#3}%
         \@cons\caption@subtypelist{{#3}}}%
        {\caption@Debug{Modify caption `sub#3'}}%
+%    \end{macrocode}
+% Support of \package{titletoc} package
+%    \begin{macrocode}
+     \caption@ifundefined\contentsuse{}{%
+       \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}%
 %    \end{macrocode}
 %    \begin{macrocode}
      \@namedef{sub#3name}{}%

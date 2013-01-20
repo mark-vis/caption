@@ -25,7 +25,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3655}
+% \CheckSum{3663}
 %
 % \iffalse
 %<*driver>
@@ -220,14 +220,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/08/18 v3.2b Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/09/30 v3.2c Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2011/08/01] % needs v1.3 or newer
+\RequirePackage{caption3}[2011/08/30] % needs v1.4 or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible document classes}
@@ -368,7 +368,7 @@
   \def\caption@within@default{#1}}
 \DeclareCaptionOptionNoValue{without}{\KV@caption@within{none}}
 %    \end{macrocode}
-% \begin{macro}{\caption@within}
+% \begin{macro}{\caption@Within}
 % \changes{v3.1}{2007/12/21}{This macro added}
 %    \begin{macrocode}
 \newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
@@ -382,6 +382,37 @@
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
      {\caption@Warning{Configuration file #1.cfg not found}}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@setparboxrestore}
+% \changes{v3.2}{2010/11/07}{This macro added}
+%  |\caption@setparboxrestore|\marg{\purett{partial} or \purett{full}}
+%    \begin{macrocode}
+\newcommand*\caption@setparboxrestore[1]{%
+  \caption@ifinlist{#1}{full}{%
+    \caption@setfullparboxrestore
+  }{\caption@ifinlist{#1}{default,light,partial}{%
+    \let\caption@parboxrestore\@secondoftwo
+  }{%
+    \caption@Error{Undefined parboxrestore `#1'}%
+  }}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setfullparboxrestore}
+% \changes{v3.2}{2010/11/07}{This macro added}
+%  |\caption@setfullparboxrestore|\par
+%  This is an abbreviation for |\caption@setparboxrestore{full}|.
+%    \begin{macrocode}
+\newcommand*\caption@setfullparboxrestore{%
+  \let\caption@parboxrestore\@firstoftwo}
+%    \end{macrocode}
+% \end{macro}
+%
+% \changes{v3.2}{2010/11/07}{Option \opt{parboxrestore} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
+\captionsetup{parboxrestore=default}
 %    \end{macrocode}
 %
 % \changes{v3.1f}{2007/11/28}{Option \opt{@minipage=} added}
@@ -729,6 +760,7 @@
 % \changes{v3.0f}{2005/06/13}{Support of \cs{caption*[]} removed}
 % \changes{v3.0l}{2007/01/19}{Minimal support of \textsf{combine} package added}
 % \changes{v3.1}{2007/02/04}{Re-written, does not save\&use original definition anymore}
+% \changes{v3.2c}{2011/09/04}{Support of \cs{donemaincaptiontrue} added}
 %  Here comes our definition of |\caption| and |\caption*|.
 %  Beside the support of the starred variant this code was adapted to the
 %  various packages we support.
@@ -740,21 +772,21 @@
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
      \caption@star
-       {\caption@refstepcounter\@captype}%
+       {\@nameuse{donemaincaptiontrue}%
+        \caption@refstepcounter\@captype}%
        {\caption@dblarg{\@caption\@captype}}}%
     {\caption@Error{\noexpand\caption outside float}%
-     \caption@withoptargs\@gobbletwo}}
+     \caption@gobble}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@star}
 % \changes{v3.1}{2007/06/24}{Renamed from \cs{caption@caption} to \cs{caption@star}}
+% \changes{v3.2c}{2011/08/21}{\cs{global} removed}
 %  A helper macro which processes the optional |*| after |\caption|.
-%  \Note{We set \cs{caption@startrue} globally so it works with the
-%  \package{sidecap} package, too.}
 %    \begin{macrocode}
 \newcommand*\caption@star[2]{%
-  \@ifstar{\global\caption@startrue#2[]}{#1#2}}
+  \@ifstar{\caption@startrue#2[]}{#1#2}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -934,7 +966,12 @@
       {\@dblarg{\Hy@tempa\@captype}}%
     }}%
 %    \end{macrocode}
-%
+%    \begin{macrocode}
+  \caption@CheckCommand\caption{%
+    % memhfixc.sty [2010/08/17 v1.15 nameref/hyperref package fixes for memoir class]
+    % \let\m@moldhypcaption\caption
+    \renewcommand{\caption}{\donemaincaptiontrue\m@moldhypcaption}}%
+%    \end{macrocode}
 %    \begin{macrocode}
   \caption@IfCheckCommand{}{%
     \caption@InfoNoLine{%
@@ -1510,6 +1547,7 @@
 % \changes{v3.1b}{2007/09/22}{Contents changed to \texttt{??}}
 % \changes{v3.1i}{2008/04/13}{Contents changed to \cs{caption@xref}(\ldots)}
 % \changes{v3.1k}{2009/03/30}{Bugfix 08-12-08: \cs{caption@xref} is robust now}
+% \changes{v3.2c}{2011/09/13}{Text changed from `before' to `without proper'}
 %  This label will be used for |\currentlabel| inside (floating) environments
 %  as default. (see above)
 %  \iffalse\Note{All commands used have to be robust here.}\fi
@@ -1519,7 +1557,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareRobustCommand*\caption@xref[2]{%
-  \caption@WarningNoLine{\noexpand\label before \string\caption#2}%
+  \caption@WarningNoLine{\noexpand\label without proper \string\caption#2}%
   \@setref\relax\@undefined{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1530,19 +1568,24 @@
 % \changes{v3.1b}{2007/09/22}{This macro and its usage added}
 % \changes{v3.1f}{2007/11/11}{Revised}
 % \changes{v3.1i}{2008/04/13}{Bugfix: \cs{pageref} should always work now}
+% \changes{v3.2c}{2011/08/19}{Works with optional arguments now, too}
 %  The new code of |\label| inside floating environments.
 %  |\label| will be redefined using |\caption@withoptargs|, so
 %  |#1| are the optional arguments (if any), and
 %  |#2| is the mandatory argument here.
 %    \begin{macrocode}
-\newcommand*\caption@xlabel[1]{%
-  \caption@@xlabel
-  \def\caption@labelname{#1}%
-  \caption@x@label{#1}}
+\newcommand*\caption@xlabel{%
+  \caption@withoptargs\caption@@xlabel}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@xlabel{%
-  \global\let\caption@@xlabel\@empty
+\newcommand*\caption@@xlabel[2]{%
+  \caption@@@xlabel
+  \def\caption@labelname{#2}%
+  \caption@x@label#1{#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@@xlabel{%
+  \global\let\caption@@@xlabel\@empty
   \@bsphack
     \protected@write\@auxout{}%
       {\string\providecommand*\string\caption@xref[2]{%
@@ -1882,37 +1925,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@setparboxrestore}
-% \changes{v3.2}{2010/11/07}{This macro added}
-%  |\caption@setparboxrestore|\marg{\purett{partial} or \purett{full}}
-%    \begin{macrocode}
-\newcommand*\caption@setparboxrestore[1]{%
-  \caption@ifinlist{#1}{full}{%
-    \let\caption@parboxrestore\@firstoftwo
-  }{\caption@ifinlist{#1}{default,light,partial}{%
-    \let\caption@parboxrestore\@secondoftwo
-  }{%
-    \caption@Error{Undefined parboxrestore `#1'}%
-  }}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@setfullparboxrestore}
-% \changes{v3.2}{2010/11/07}{This macro added}
-%  |\caption@setfullparboxrestore|\par
-%  This is an abbreviation for |\caption@setparboxrestore{full}|.
-%    \begin{macrocode}
-\newcommand*\caption@setfullparboxrestore{%
-  \let\caption@parboxrestore\@firstoftwo}
-%    \end{macrocode}
-% \end{macro}
-%
-% \changes{v3.2}{2010/11/07}{Option \opt{parboxrestore} added}
-%    \begin{macrocode}
-\DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
-\caption@setparboxrestore{default}
-%    \end{macrocode}
-%
 % \begin{macro}{\caption@boxrestore}
 % \changes{v3.1}{2007/03/03}{This macro and its usage added}
 % \changes{v3.1b}{2007/09/17}{Bugfix: Redefinition of CR added}
@@ -1959,7 +1971,8 @@
 %
 % \begin{macro}{\caption@boxrestore@mini}
 % \changes{v3.2}{2010/10/24}{This macro added}
-% Resets \cs{par} so the very first \cs{par} in \cs{@caption} behaves quite the same as in floating environments. Will be used by \cs{setcaptiontype}.
+% Resets \cs{par} so the very first \cs{par} in \cs{@caption} behaves quite the same as in floating environments.
+% Will be used by \cs{setcaptiontype}.
 %    \begin{macrocode}
 \newcommand\caption@boxrestore@mini{%
   \let\par\@@par
@@ -2059,7 +2072,10 @@
 % \changes{v3.2}{2011/06/26}{Uses \cs{caption@@addcontentsline} instead of \cs{addcontentsline} now}
 % \changes{v3.2a}{2011/08/17}{Redefinition of \cs{phantomcaption} added}
 % \changes{v3.2a}{2011/08/17}{Usage of \cs{caption@warmup} added}
-%  Hook, will be used inside \cs{caption@setsubtype}.
+% \changes{v3.2c}{2011/09/30}{Bugfix 11-09-26: Usage of \cs{if@subfloatrow} added}
+%  Hook, will be used inside \cs{caption@setsubtype}.\par
+% (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
+% the |\@make|\-|caption| code of the \package{floatrow} package intact.)
 %    \begin{macrocode}
 \newcommand*\caption@subtypehook{%
   \ifx\caption\caption@subcaption \else
@@ -2070,7 +2086,7 @@
       % no \caption or \subcaption in this (floating) environment yet
       \caption@Debug{Increment \@captype\ counter =\the\value\@captype}%
       \caption@l@stepcounter\@captype
-      \let\caption@@addcontentsline\caption@addsubcontentsline}%
+      \let\caption@@@addcontentsline\caption@addsubcontentsline}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \ifnum\csname caption@c@\@captype\endcsname=\value\@captype \else
@@ -2095,8 +2111,28 @@
 %    \begin{macrocode}
     \let\caption\caption@subcaption
     \let\phantomcaption\caption@subphantom
-    \let\@makecaption\caption@makecaption
+    \if@subfloatrow
+      \caption@Debug{Keeping \string\@makecaption}%
+    \else
+      \let\@makecaption\caption@makecaption
+    \fi
   \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\if@subfloatrow}
+% \changes{v3.2c}{2011/09/30}{This macro added}
+% This macro tests if we are inside an |sub|\-|float|\-|row| or |sub|\-|float|\-|row*| environment.
+%    \begin{macrocode}
+\caption@AtBeginDocument{%
+  \caption@ifundefined\@subfloatrowtrue
+   {\newif\if@subfloatrow
+    \caption@ifundefined\subfloatrow{}%
+    {\caption@Debug{Patching subfloatrow environment}%
+     \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
+     \g@addto@macro\killfloatstyle{%
+       \ifx\c@FRobj\c@FRsobj\@subfloatrowtrue\fi}}}%
+   {\caption@Debug{\string\if@subfloatrow is already defined}}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2129,7 +2165,7 @@
 %  \package{subfigure} \& \package{subfig} packages.}
 %    \begin{macrocode}
 \let\caption@kernel@addcontentsline\caption@addcontentsline
-\renewcommand*\caption@addcontentsline[2]{%
+\renewcommand\caption@addcontentsline[2]{%
   \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
   \caption@kernel@addcontentsline{#1}{#2}%
   \sf@ifpositiontop{}{\@listsubcaptions{#1}}%
@@ -2148,18 +2184,19 @@
 % \changes{v3.1i}{2008/08/02}{Bugfix 08-07-28:
 %    \cs{label}, \cs{index}, and \cs{glossary} are allowed inside the list entry now}
 % \changes{v3.2}{2011/06/26}{Uses \cs{caption@@addcontentsline} instead of \cs{addcontentsline} now}
+% \changes{v3.2c}{2011/08/19}{Uses \cs{caption@gobble} instead of \cs{@gobble} now}
 % Add a pending sub-caption list entry.
 %    \begin{macrocode}
 \newcommand*\caption@addsubcontentsline[4]{%
   \begingroup
-  \let\label\@gobble \let\index\@gobble \let\glossary\@gobble
+  \let\label\caption@gobble \let\index\caption@gobble \let\glossary\caption@gobble
   \protected@edef\@tempa{\endgroup
     \noexpand\g@addto@macro\noexpand\caption@subcontentslines{%
       \noexpand\@namedef{the#2}{\csname the#2\endcsname}%
       \ifx\@currentHref\@undefined \else
         \noexpand\def\noexpand\@currentHref{\@currentHref}%
       \fi
-      \protect\caption@@addcontentsline{#1}{#2}{#3}{#4}}}%
+      \protect\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
   \@tempa}
 %    \end{macrocode}
 % \end{macro}
@@ -2434,112 +2471,110 @@
 % \changes{v3.2a}{2011/08/17}{Starred variant of \cs{caption@freeze} removed}
 % \changes{v3.2b}{2011/08/18}{Redefines \cs{caption@setup} instead of \cs{captionsetup} now}
 % \changes{v3.2b}{2011/08/18}{Redefinition of \cs{label} revised}
+% \changes{v3.2c}{2011/08/21}{Revised}
 %  |\caption@freeze|\par
 %  Used by the \package{fltpage} \& \package{sidecap} package support.
 %    \begin{macrocode}
   \newcommand*\caption@freeze{%
-    \global\let\caption@SCcontinued\relax
-    \global\let\caption@SCsetup\@undefined
-    \global\let\caption@SClentry\@undefined
-    \global\let\caption@SCtext\@undefined
-    \global\let\caption@SClabel\@undefined
 %    \end{macrocode}
 %    \begin{macrocode}
     \let\caption@frozen@ContinuedFloat\ContinuedFloat
     \def\ContinuedFloat{%
       \caption@withoptargs\caption@SC@ContinuedFloat}%
     \def\caption@SC@ContinuedFloat##1{%
+      \caption@@freeze{\ContinuedFloat##1}%
       \let\caption@frozen@setcounter\setcounter
       \let\caption@frozen@addtocounter\addtocounter
       \def\setcounter####1####2{\csname c@####1\endcsname####2\relax}%
       \def\addtocounter####1####2{\advance\csname c@####1\endcsname ####2\relax}%
       \caption@frozen@ContinuedFloat##1%
-      \global\let\caption@SCcontinued\caption@frozen@ContinuedFloat
       \let\setcounter\caption@frozen@setcounter
       \let\addtocounter\caption@frozen@addtocounter}%
+%    \end{macrocode}
+%    \begin{macrocode}
     \let\caption@frozen@setup\caption@setup
     \def\caption@setup##1{%
-      \caption@g@addto@list\caption@SCsetup{##1}%
+      \caption@@freeze{\caption@setup{##1}}%
       \caption@frozen@setup{##1}}%
-    \let\caption@frozen\caption
+%    \end{macrocode}
+%    \begin{macrocode}
+    \let\caption@frozen@caption\caption
     \def\caption{%
-      \def\caption{\caption@Error{%
-        Only one \noexpand\caption can be placed in this environment}}%
-      \let\captionsetup\caption@setup
-      \let\caption@@refstepcounter\caption@l@stepcounter
-      \caption@frozen}%
-    \let\caption@frozen@\@caption
-    \long\def\@caption##1[##2]##3{%
-%     \@bsphack
-        \gdef\caption@SClentry{##2}%
-        \gdef\caption@SCtext{##3}%
-        \let\@currentlabel\caption@SCcurrentlabel
-%     \@esphack}%
+      \def\caption{%
+        \caption@Error{%
+          Only one \noexpand\caption can be placed in this environment}%
+        \caption@gobble}%
+      \@ifstar
+      {\caption@SC@caption*}%
+      {\let\caption@frozen@refstepcounter\caption@@refstepcounter
+       \let\caption@@refstepcounter\caption@l@stepcounter
+       \caption@refstepcounter\@captype
+       \let\caption@@refstepcounter\caption@frozen@refstepcounter
+       \let\@currentlabel\caption@SClabel
+       \caption@withoptargs\caption@SC@caption}}%
+    \long\def\caption@SC@caption##1##2{%
+      \caption@@freeze{\caption##1{##2}}%
       \ignorespaces}%
+%    \end{macrocode}
+%    \begin{macrocode}
     \let\caption@frozen@label\label
-    \def\label##1{%
-      \ifx\@currentlabel\caption@SCcurrentlabel
-        \@bsphack\gdef\caption@SClabel{##1}\@esphack
+    \def\label{%
+      \caption@withoptargs\caption@SC@label}%
+    \def\caption@SC@label##1##2{%
+      \ifx\@currentlabel\caption@SClabel
+        \@bsphack
+          \caption@freeze@label{##1}{##2}%
+        \@esphack
       \else
-        \caption@frozen@label{##1}%
+        \caption@frozen@label##1{##2}%
       \fi}%
-    \def\caption@SCcurrentlabel{???}%
+    \def\caption@SClabel{\caption@undefinedlabel}%
+    \def\caption@freeze@label##1##2{%
+      \caption@@freeze{\label##1{##2}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  }%
+    \global\let\caption@frozen@content\@empty
+    \long\def\caption@@freeze{%
+      \g@addto@macro\caption@frozen@content}%
 %    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@warmup}
-% \changes{v3.2a}{2011/08/17}{This macro added}
-%  |\caption@warmup|
 %    \begin{macrocode}
-  \newcommand*\caption@warmup{%
-    \ifx\caption@frozen\@undefined\else
+    \def\caption@warmup{%
+      \let\ContinuedFloat\caption@frozen@ContinuedFloat
       \let\caption@setup\caption@frozen@setup
-      \let\caption\caption@frozen
-      \let\@caption\caption@frozen@
-      \let\label\caption@frozen@label
-    \fi}
+      \let\caption\caption@frozen@caption
+      \let\label\caption@frozen@label}}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@defrost}
 % \changes{v3.1}{2007/07/22}{This macro added}
 % \changes{v3.1g}{2008/01/30}{\cs{caption@defrost@setup} added}
+% \changes{v3.2c}{2011/08/21}{Adapted to changes of \cs{caption@freeze}}
+% \changes{v3.2c}{2011/08/21}{\cs{caption@defrost@setup} removed}
 %  |\caption@defrost|
 %    \begin{macrocode}
   \newcommand*\caption@defrost{%
-    \ifx\caption@frozen\@undefined
-      \caption@defrost@setup
-      \ifx\caption@SCtext\@undefined \else
-        \expandafter\expandafter\expandafter\caption
-          \expandafter\expandafter\expandafter[%
-          \expandafter\expandafter\expandafter{%
-          \expandafter\caption@SClentry\expandafter}\expandafter]%
-          \expandafter{\caption@SCtext}%
-      \fi
-      \ifx\caption@SClabel\@undefined \else
-        \expandafter\label\expandafter{\caption@SClabel}%
-      \fi
+    \ifx\caption@frozen@caption\@undefined
+      \caption@frozen@content
     \else
       \caption@Error{Internal Error:\MessageBreak
         \noexpand\caption@defrost in same group as \string\caption@freeze}%
     \fi}%
 %    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\caption@defrost@setup{%
-    \caption@SCcontinued
-    \ifx\caption@SCsetup\@undefined \else
-      \expandafter\captionsetup\expandafter{\caption@SCsetup}%
-    \fi}%
-%    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-  }{\let\caption@warmup\relax}%
+  }{}%
   \caption@undefbool{needfreeze}}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@warmup}
+% \changes{v3.2a}{2011/08/17}{This macro added}
+%  |\caption@warmup|
+%    \begin{macrocode}
+\let\caption@warmup\relax
+%    \end{macrocode}
+% \end{macro}
 %
 % \subsubsection{The float package}
 % \changes{v3.0f}{2005/05/31}{\package{float} package support rewritten and improved}
@@ -2835,12 +2870,12 @@
 % \changes{v3.1c}{2007/10/06}{Bugfix: \cs{caption@clearmargin} added}
 %  Here we do two things:
 %  \begin{enumerate}
-%    \item We use |\caption@setoptions{floating|\meta{type}|}| so
-%       |\captionsetup[floating|\meta{type}|]{|\ldots|}| is supported.
-%    \item |\linewidth| must be set correctly.
-%       Usually this is done by |\@parboxrestore| inside |\@caption|,
-%       but since we use |\@caption@boxrestore| we have to map this to
-%       |\@parboxrestore| instead.
+%    \item We use |\caption@set|\-|options{|\-|floating|\meta{type}|}| so
+%       |\caption|\-|setup[|\-|floating|\meta{type}|]{|\ldots|}| is supported.
+%    \item |\line|\-|width| must be set correctly.
+%       Usually this is done by |\@par|\-|box|\-|restore| inside |\@caption|,
+%       but since we use |\@caption@box|\-|restore| we have to map this to
+%       |\@par|\-|box|\-|restore| instead.
 %  \end{enumerate}
 %    \begin{macrocode}
   \newcommand*\caption@floatflt[1]{%
@@ -2855,33 +2890,6 @@
 }{}
 %    \end{macrocode}
 %
-% \iffalse
-% \subsubsection{The floatrow package}
-% \changes{v3.0f}{2005/06/01}{Support of the \package{floatrow} package added}
-%
-%    \begin{macrocode}
-%\caption@IfPackageLoaded{floatrow}[2007/07/01 v0.1p]{%
-%    \end{macrocode}
-%
-% The \package{floatrow} package is already adapted for usage with
-% \thispackage. So the main work has already been done by
-% Mrs.~Lapko, there is only one little thing we have to take care about:
-%
-% \begin{macro}{\caption@of}
-%  Captions typeset with |\captionof| should have the correct layout,
-%  therefore we have to `activate' this layout here with |\flrow@setlist|.
-%    \begin{macrocode}
-%  \renewcommand*\caption@of[2]{%
-%    \flrow@setlist{{#2}}% TODO: always do this?
-%    \caption@settype*{#2}#1}%
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-%}{}
-%    \end{macrocode}
-% \fi
-%
 % \subsubsection{The fltpage package}
 % \changes{v3.1}{2007/07/22}{Support of the \package{fltpage} package added}
 %
@@ -2889,6 +2897,19 @@
 \caption@IfPackageLoaded{fltpage}[1998/10/29 v.0.3]{%
   \caption@setbool{needfreeze}{1}%
 %    \end{macrocode}
+%
+% \begin{macro}{\FP@positionLabel}
+% \changes{v3.2c}{2011/08/28}{This redefinition added}
+% Original code:
+% \begin{verbatim}
+% \newcommand{\FP@positionLabel}{%
+%   FP\@captype-\number\value{FP@\@captype C}-pos}
+% \end{verbatim}%^^A
+%    \begin{macrocode}
+  \renewcommand\FP@positionLabel{%
+    FP\FP@captype-\number\value{FP@\FP@captype C}-pos}%
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\FP@helpNote}
 % Original code:
@@ -2908,6 +2929,7 @@
 % \begin{macro}{\FP@floatBegin}
 % \changes{v3.1f}{2007/11/16}{Uses `space hack' instead of \cs{ignorespaces} now}
 % \changes{v3.1k}{2009/10/09}{Bugfix 09-09-11: Missing \cs{ignorespaces} added}
+% \changes{v3.2c}{2011/08/28}{Adapted to current version of \cs{caption@freeze}}
 % Original code:
 % \begin{verbatim}
 % \newcommand{\FP@floatBegin}[1]{%
@@ -2928,19 +2950,22 @@
 % \end{verbatim}%^^A
 %    \begin{macrocode}
   \renewcommand*\FP@floatBegin[1]{%
-    \def\@captype{#1}%
-    \let\FP@LabelText\@empty
+    \def\FP@captype{#1}%
     \begin{lrbox}{\FP@floatCorpusBOX}%
+    \caption@settype*{#1}%
     \caption@freeze
+    \global\let\FP@Label\@empty
     \caption@ifFPrefcap
       {}%
-      {\def\label##1{\@bsphack\gdef\FP@LabelText{##1}\@esphack}}%
+      {\def\caption@freeze@label##1##2{%
+          \g@addto@macro\FP@Label{\FP@label##1{##2}}}}%
     \ignorespaces}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\FP@floatEnd}
 % \changes{v3.1g}{2008/01/30}{Some minor bugfixes}
+% \changes{v3.2c}{2011/08/28}{Adapted to current version of \cs{caption@freeze}}
 % Original code:
 % \begin{verbatim}
 % \newcommand{\FP@floatEnd}{%
@@ -2978,35 +3003,40 @@
     \end{lrbox}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \stepcounter{FP@\@captype C}%
+    \stepcounter{FP@\FP@captype C}%
     \caption@label\FP@positionLabel
-    \FP@helpNote\@captype\FP@positionLabel
+    \FP@helpNote\FP@captype\FP@positionLabel
 %    \end{macrocode}
 %    \begin{macrocode}
     \edef\FP@RestoreCounter{%
-      \noexpand\setcounter{\@captype}{\the\value\@captype}%
+      \noexpand\setcounter{\FP@captype}{\the\value\FP@captype}%
       \noexpand\setcounter{ContinuedFloat}{\the\value{ContinuedFloat}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \FP@float
       {\FP@positionLabel}% location label test
-      {\begin\@captype[p!]%
+      {\begin\FP@captype[p!]%
          \usebox\FP@floatCorpusBOX
-         \caption@defrost@setup
+         \let\caption@SClentry\@empty
+         \def\caption{\caption@dblarg{\@caption\@captype}}%
+         \long\def\@caption##1[##2]##3{\def\caption@SClentry{##2}}%
+         \let\FP@label\label
+         \let\label\caption@gobble
+         \caption@defrost
          \caption@ifFPlistcap
            {\caption@refstepcounter\@captype
             \expandafter\caption@makecurrent\expandafter\@captype
                                          \expandafter{\caption@SClentry}}%
-           {\expandafter\captionlistentry\expandafter{\caption@SClentry}}%
+           {\ifx\caption@SClentry\@empty \else
+               \expandafter\captionlistentry\expandafter{\caption@SClentry}%
+             \fi}%
          \caption@makeanchor\relax
-         \ifx\FP@LabelText\@empty \else
-           \expandafter\label\expandafter{\FP@LabelText}%
-         \fi
-       \end\@captype}%
+         \FP@Label
+       \end\FP@captype}%
       {\FP@RestoreCounter
-       \@ifundefined{theH\@captype}{}{%
-         \expandafter\l@addto@macro\csname theH\@captype\endcsname{.FP}}}%
-      {\begin\@captype[b!]%
+       \@ifundefined{theH\FP@captype}{}{%
+         \expandafter\l@addto@macro\csname theH\FP@captype\endcsname{.FP}}}%
+      {\begin\FP@captype[b!]%
          \let\FP@savedSetfnumCommand\caption@setfnum
          \def\caption@setfnum##1{%
            \FP@savedSetfnumCommand{##1}%
@@ -3019,7 +3049,7 @@
          \FP@separatorCaption
          \caption@ifFPlistcap{}{\let\caption@addcontentsline\@gobbletwo}%
          \caption@defrost
-       \end\@captype}%
+       \end\FP@captype}%
   }%
 %    \end{macrocode}
 % \end{macro}
@@ -3044,21 +3074,27 @@
 % \changes{v3.1}{2007/03/09}{Usage of \cs{hyper@makecurrent} instead of
 %   \cs{theHfigure} as indicator for \package{hyperref} package}
 % \changes{v3.2}{2011/07/30}{Test if \package{hyperref} has stopped early revised}
+% \changes{v3.2c}{2011/08/24}{Test if \package{hyperref} has stopped early adapted to current version of \package{hyperref} package: Usage of \cs{IfHyperBoolean} added}
 %
 %    \begin{macrocode}
 \caption@IfPackageLoaded{hyperref}[2003/11/30 v6.74m]{%
   % Test if hyperref has stopped early
-  \caption@ifundefined\ifhyp@stoppedearly{%
-    \newif\ifhyp@stoppedearly
-    \caption@ifundefined\H@refstepcounter\hyp@stoppedearlytrue{%
-    \caption@ifundefined\hyper@makecurrent\hyp@stoppedearlytrue{%
-    \caption@ifundefined\measuring@true\hyp@stoppedearlytrue{}}}}{}%
-  \ifhyp@stoppedearly % hyperref has stopped early
+  \caption@ifundefined\IfHyperBoolean{%
+    \caption@set@bool\caption@ifhyp@stoppedearly0%
+    \caption@ifundefined\H@refstepcounter
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{%
+    \caption@ifundefined\hyper@makecurrent
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{%
+    \caption@ifundefined\measuring@true
+      {\caption@set@bool\caption@ifhyp@stoppedearly1}{}}}%
+  }{%
+    \def\caption@ifhyp@stoppedearly{\IfHyperBoolean{stoppedearly}}%
+  }%
+  \caption@ifhyp@stoppedearly{% hyperref has stopped early
     \caption@InfoNoLine{%
       Hyperref support is turned off\MessageBreak
       because hyperref has stopped early}%
-  \else
-  %
+  }{%
     \g@addto@macro\caption@prepareslc{\measuring@true}%
 %    \end{macrocode}
 %
@@ -3318,7 +3354,7 @@
 % \end{macro}
 %
 %    \begin{macrocode}
-  \fi}{}
+  }}{}
 %    \end{macrocode}
 %
 % \subsubsection{The hypcap package}
@@ -3970,21 +4006,9 @@
 % \subsubsection{The sidecap package}
 %
 %    \begin{macrocode}
-\caption@IfPackageLoaded{sidecap}[1999/05/11 v1.4d]{%
+\caption@IfPackageLoaded{sidecap}[2003/06/06 v1.6f]{%
   \caption@setbool{needfreeze}{1}%
 %    \end{macrocode}
-%
-% \begin{macro}{\SC@caption}
-% \changes{v3.0d}{2004/11/28}{Bugfix: Definition of \cs{@captype} added}
-% \changes{v3.0e}{2005/05/05}{Bugfix: Empty captions are handled correctly now}
-% \changes{v3.0e}{2005/05/05}{Priority of options fixed}
-% \changes{v3.0h}{2005/10/03}{Bugfix: Always use \cs{AtBeginDocument} to set \cs{SC@caption}}
-%  First of all, we let \package{sidecap} use a current definition of |\caption|.\\
-%  (This is only required for version 1.5d of the \package{sidecap} package.)
-%    \begin{macrocode}
-  \caption@AtBeginDocument{\let\SC@caption=\caption}%
-%    \end{macrocode}
-% \end{macro}
 %
 % \begin{macro}{\SC@zfloat}
 % \changes{v3.0b}{2004/05/16}{Local definition of \cs{captionsetup} added}
@@ -4061,11 +4085,10 @@
 %    \begin{macrocode}
     \def\caption@setSC@justify{%
       \caption@clearmargin
-      \caption@ifundefined\SC@justify{}{%
         \ifx\SC@justify\@empty \else
           \let\caption@hj\SC@justify
           \let\SC@justify\@empty
-        \fi}}%
+        \fi}%
 %    \end{macrocode}
 %  Make the original definition of |\endSC@FLOAT| to use our caption
 %  stuff instead of its own.
