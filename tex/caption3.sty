@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `kernel')
 %% 
-%% Copyright (C) 1994-2008 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2009 Axel Sommerfeldt (caption@sommerfee.de)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2008/08/24 v3.1j caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2009/10/09 v3.1k caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -302,6 +302,10 @@
   \expandafter\let\csname ORI@KV@err\caption@keydepth\endcsname\KV@err
   \expandafter\let\csname ORI@KV@errx\caption@keydepth\endcsname\KV@errx
   \expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
+  \ifx\KV@err\relax
+    \def\KV@err##1{\PackageError{#1}{##1}{%
+      See the #1 package documentation for explanation.}}%
+  \fi
   \let\KV@errx\KV@err
   \edef\caption@keydepth{\caption@keydepth i}%
   \caption@Debug{\protect\setkeys{#2}{#3}}%
@@ -380,7 +384,7 @@
 \newcommand*\caption@pageref[1]{%
   \expandafter\ifx\csname caption@r@#1\endcsname\relax
     \G@refundefinedtrue % => 'There are undefined references.'
-    \caption@Warning{Reference on page \thepage \space undefined}%
+    \@latex@warning{Reference `#1' on page \thepage \space undefined}%
   \else
     \expandafter\let\expandafter\caption@thepage\csname caption@r@#1\endcsname
   \fi}
@@ -544,8 +548,17 @@
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\\}
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
-\def\caption@lsep@default{\caption@lsep@colon}
-\def\caption@iflf@default{\caption@iflf@colon}
+\newcommand*\caption@setdefaultlabelsep[1]{%
+  \ifx\caption@lsep\caption@lsep@default
+    \caption@set@default@labelsep{#1}%
+    \caption@setlabelseparator{default}%
+  \else
+    \caption@set@default@labelsep{#1}%
+  \fi}
+\newcommand*\caption@set@default@labelsep[1]{%
+  \def\caption@lsep@default{\@nameuse{caption@lsep@#1}}%
+  \def\caption@iflf@default{\@nameuse{caption@iflf@#1}}}
+\caption@set@default@labelsep{colon}
 \newcommand*\DeclareCaptionTextFormat[2]{%
   \global\long\@namedef{caption@tfmt@#1}##1{#2}}
 \@onlypreamble\DeclareCaptionTextFormat
@@ -611,11 +624,12 @@
 \DeclareCaptionFont{normalsize}{\normalsize}
 \DeclareCaptionFont{large}{\large}
 \DeclareCaptionFont{Large}{\Large}
-\DeclareCaptionFont{singlespacing}{\setstretch\setspace@singlespace}% normally 1
+\DeclareCaptionFont{singlespacing}{%
+  \@ifundefined{setspace@singlespace}{}{%
+    \setstretch\setspace@singlespace}}% normally 1
 \DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
 \DeclareCaptionFont{doublespacing}{\doublespacing}
 \DeclareCaptionFont{stretch}{\setstretch{#1}}
-\caption@AtBeginDocument{\providecommand*\setstretch[1]{}}
 \DeclareCaptionFont{normal}{%
   \caption@font*{%
     \KV@caption@fnt@normalcolor\@unused
@@ -760,7 +774,16 @@
 \DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subsimple}{#2}
 \DeclareCaptionListFormat{subparens}{(#2)}
-\def\caption@lstfmt@default{\caption@lstfmt@subsimple}
+\newcommand*\caption@setdefaultlistformat[1]{%
+  \ifx\caption@lstfmt\caption@lstfmt@default
+    \caption@set@default@listformat{#1}%
+    \caption@setlistformat{default}%
+  \else
+    \caption@set@default@listformat{#1}%
+  \fi}
+\newcommand*\caption@set@default@listformat[1]{%
+  \def\caption@lstfmt@default{\@nameuse{caption@lstfmt@#1}}}
+\caption@set@default@listformat{subsimple}
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
   \caption@ifdebug
@@ -1013,6 +1036,24 @@
   \DeclareCaptionDefaultFont{textfont}{\itshape}%
   \DeclareCaptionLabelSeparator{default}{\captionseparator\space}%
 }
+\DeclareCaptionListFormat{subperiod}{#2.}
+%%% \def\caption@tempa#1{\@ifundefined{extras#1}{}{%
+%%%   \expandafter\addto\csname extras#1\endcsname{%
+%%%      % reverse changes made by magyar.ldf
+%%%      \let\@makecaption\caption@makecaption
+%%%      \babel@save\@makecaption
+%%%      \caption@redefine
+%%%      \babel@save\@caption
+%%%      % change default labelsep and listformat
+%%%      \caption@setdefaultlabelsep{period}%
+%%%      \caption@setdefaultlistformat{subperiod}}%
+%%%   \expandafter\addto\csname noextras#1\endcsname{%
+%%%      % change default labelsep and listformat
+%%%      \caption@setdefaultlabelsep{colon}%
+%%%      \caption@setdefaultlistformat{subsimple}}%
+%%% }}
+%%% \caption@tempa{hungarian}
+%%% \caption@tempa{magyar}
 \captionsetup{style=default,position=default,%
               list,listformat=default,twoside=\if@twoside 1\else 0\fi}
 \ProcessOptions*
@@ -1268,22 +1309,15 @@
 \define@key{caption@within}{none}[]{%
   \caption@within{}{}}
 \@onlypreamble@key{caption@within}{none}
-\@ifundefined{c@chapter}{%
-  \define@key{caption@within}{section}[]{%
-    \@addtoreset\caption@type{section}%
-    \caption@within{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}}
-}{%
+\define@key{caption@within}{section}[]{%
+  \@addtoreset\caption@type{section}%
+  \caption@within{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}}
+\@onlypreamble@key{caption@within}{section}
+\@ifundefined{c@chapter}{}{%
   \define@key{caption@within}{chapter}[]{%
     \@addtoreset\caption@type{chapter}%
     \caption@within{\ifnum\c@chapter>\z@ \thechapter.\fi}{\theHchapter.}}
-  \@onlypreamble@key{caption@within}{chapter}
-  \define@key{caption@within}{section}[]{%
-    \@addtoreset\caption@type{chapter}%
-    \@addtoreset\caption@type{section}%
-    \caption@within{\ifnum\c@chapter>\z@ \thechapter.\fi
-                    \ifnum\c@section>\z@ \thesection.\fi}{%
-                    \theHchapter.\theHsection.}}
-}\@onlypreamble@key{caption@within}{section}
+  \@onlypreamble@key{caption@within}{chapter}}
 \newcommand*\caption@within{%
   \expandafter\caption@within@\expandafter{\caption@type}}
 \@onlypreamble\caption@within
@@ -1602,6 +1636,33 @@
   \endgroup}
 \@onlypreamble\caption@patch@chapter
 \long\def \@gobblethree #1#2#3{}
+\newcommand*\caption@patch@stpelt{%
+  \let\caption@stpelt\@stpelt
+  \def\@stpelt##1{%
+    \caption@stpelt{##1}%
+    \begingroup
+      \let\@elt\caption@stpelt
+      \csname caption@cl@##1\endcsname
+    \endgroup}%
+  \let\caption@patch@stpelt\relax}
+\@onlypreamble\caption@patch@stpelt
+\newcommand*\caption@addtoreset[2]{%
+  \caption@patch@stpelt
+  \@ifundefined{caption@cl@#2}{\@namedef{caption@cl@#2}{}}{}%
+  \expandafter\@cons\csname caption@cl@#2\endcsname{{#1}}}
+\@onlypreamble\caption@addtoreset
+\newcommand*\caption@removefromreset[2]{%
+  \begingroup
+    \expandafter\let\csname c@#1\endcsname\caption@removefromreset
+    \def\@elt##1{%
+      \expandafter\ifx\csname c@##1\endcsname\caption@removefromreset
+      \else
+        \noexpand\@elt{##1}%
+      \fi}%
+    \expandafter\xdef\csname caption@cl@#2\endcsname{%
+      \csname caption@cl@#2\endcsname}%
+  \endgroup}
+\@onlypreamble\caption@removefromreset
 \newcommand*\DeclareCaptionSubType{%
   \caption@teststar\@DeclareCaptionSubType\@firstoftwo\@secondoftwo}
 \@onlypreamble\DeclareCaptionSubType
@@ -1614,6 +1675,7 @@
     {\@ifundefined{c@sub#3}%
        {\caption@Debug{New subtype `sub#3'}%
         \newcounter{sub#3}%
+        \caption@addtoreset{sub#3}{#3}%
         \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
         \@ifundefined{l@chapter}%
           {\edef\@tempa{\expandafter\expandafter\expandafter\noexpand
