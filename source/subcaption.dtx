@@ -24,12 +24,12 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{204}
+% \CheckSum{203}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2008/03/30 v0.3 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2008/08/31 v1.0b Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -59,7 +59,7 @@
 \hypersetup{pdfkeywords={LaTeX, package, subcaption},pdfstartpage={},pdfstartview={}}
 %
 \usepackage{caption}[2007/12/06] % needs v3.1f or newer
-\usepackage{subcaption}[2007/12/06]
+\usepackage{subcaption}[2008/08/31]
 \DeclareCaptionSubType*[arabic]{table}
 \captionsetup[subtable]{labelformat=simple,labelsep=colon}
 %
@@ -401,7 +401,7 @@
 % \begin{quote}
 %   |  |\ldots\\
 %   |  \subcaptionbox{A cat\label{cat}}|\\
-%   |    [2.5cm]{\includegraphics{cat}}|\\
+%   |    |\textcolor{blue}{\csoarg{2.5cm}}|{\includegraphics{cat}}|\\
 %   |  |\ldots
 % \end{quote}
 % \noindent\begin{minipage}{\linewidth}
@@ -423,9 +423,9 @@
 % \begin{quote}
 %   |  |\ldots\\
 %   |  \subcaptionbox{A cat\label{cat}}|\\
-%   |    [.4\linewidth]{\includegraphics{cat}}%|\\
+%   |    |\textcolor{blue}{\csoarg{.4\cs{linewidth}}}|{\includegraphics{cat}}%|\\
 %   |  \subcaptionbox{An elephant\label{elephant}}|\\
-%   |    [.4\linewidth]{\includegraphics{elephant}}|\\
+%   |    |\textcolor{blue}{\csoarg{.4\cs{linewidth}}}|{\includegraphics{elephant}}|\\
 %   |  |\ldots
 % \end{quote}
 % \noindent\begin{minipage}{\linewidth}
@@ -708,7 +708,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2008/03/16 v1.0 Adding subcaptions (AR)]
+\ProvidesPackage{subcaption}[2008/08/31 v1.0b Adding subcaptions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
@@ -806,6 +806,8 @@
 % \subsubsection{The \cs{subcaptionbox} command}
 %
 % \begin{macro}{\subcaptionbox}
+% \changes{v1.0a}{2008/05/06}{Adapted to the \opt{rule} option of the \package{caption} package}
+% \changes{v1.0b}{2008/08/31}{Definition and usage of \cs{subcaption@hrule} added}
 % A |\parbox| with contents and sub-caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
 \newcommand*\subcaptionbox{\caption@withoptargs\subcaption@box}
@@ -828,7 +830,7 @@
     \parbox[t]{#3}{%
       \captionsetup{subtype,position=t}%
       \vbox{\caption#1{#2}}%
-      \hrule\@height\z@
+      \subcaption@hrule
       \csname caption@hj@#4\endcsname
       \unhbox\@tempboxa}%
   }{%
@@ -837,7 +839,7 @@
       \captionsetup{subtype,position=b}%
       \csname caption@hj@#4\endcsname
       \unhbox\@tempboxa
-      \hrule\@height\z@
+      \subcaption@hrule
       \vtop{\caption#1{#2}}}%
   }}
 %    \end{macrocode}
@@ -847,6 +849,7 @@
 \providecommand*\caption@hj@r{\raggedleft}
 \providecommand*\caption@hj@s{}
 \newcommand*\subcaptionbox@hj@default{c}
+\newcommand*\subcaption@hrule{\hrule\@height\z@}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -895,10 +898,10 @@
        \caption@refstepcounter\@subcaptype
        \caption@prepareanchor\@subcaptype{}%
        \caption@makeanchor{}}%
-    \caption@iftop{\hrule\@height\z@}{}%
+    \caption@iftop\subcaption@hrule\@empty
     \csname caption@hj@#3\endcsname
     \unhbox\@tempboxa
-    \caption@iftop{}{\hrule\@height\z@}}}%
+    \caption@iftop\@empty\subcaption@hrule}}%
 %    \end{macrocode}
 % \end{macro}
 %

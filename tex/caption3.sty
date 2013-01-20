@@ -28,7 +28,7 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2008/03/20 v3.1h caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2008/08/24 v3.1j caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -139,12 +139,11 @@
 \@onlypreamble\caption@CheckCommand
 \newcommand*\caption@IfCheckCommand{%
   \ifx\caption@CheckCommand\@gobbletwo
-    \let\next\@firstoftwo
+    \let\caption@CheckCommand\caption@DoCheckCommand
+    \expandafter\@firstoftwo
   \else
-    \let\next\@secondoftwo
-  \fi
-  \let\caption@CheckCommand\caption@DoCheckCommand
-  \next}
+    \expandafter\@secondoftwo
+  \fi}
 \@onlypreamble\caption@IfCheckCommand
 \let\caption@begindocumenthook\@empty
 \let\caption@@begindocumenthook\@empty
@@ -294,7 +293,7 @@
   \endgroup}
 \AtEndDocument{%
   \caption@for@list\caption@optlist{%
-    \PackageWarningNoLine{caption}{%
+    \caption@WarningNoLine{%
       Unused \string\captionsetup[#1]
       on input line \csname caption@opt@#1@lineno\endcsname}}}
 \newcommand*\caption@setkeys{\@dblarg\caption@@setkeys}
@@ -436,7 +435,8 @@
 \@onlypreamble\caption@declarestyle
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
 \DeclareCaptionOption{style*}{\caption@setstyle*{#1}}
-\DeclareCaptionOption{singlelinecheck}{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 \newcommand*\caption@setstyle{%
   \caption@teststar\caption@@setstyle\@gobble\@firstofone}
 \newcommand*\caption@@setstyle[2]{%
@@ -460,7 +460,7 @@
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
     indent=0pt,parindent=0pt,hangindent=0pt,%
-    singlelinecheck=1,strut=1}%
+    slc,rule,strut}%
   \caption@clearsetup{singleline}}
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
@@ -550,7 +550,7 @@
   \global\long\@namedef{caption@tfmt@#1}##1{#2}}
 \@onlypreamble\DeclareCaptionTextFormat
 \DeclareCaptionOption{textformat}{\caption@settextformat{#1}}
-\DeclareCaptionOption{strut}{\caption@set@bool\caption@ifstrut{#1}}
+\DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
 \newcommand*\caption@settextformat[1]{%
   \@ifundefined{caption@tfmt@#1}%
     {\caption@Error{Undefined text format `#1'}}%
@@ -698,6 +698,9 @@
 \DeclareCaptionOption{aboveskip}{\setlength\abovecaptionskip{#1}}
 \DeclareCaptionOption{belowskip}{\setlength\belowcaptionskip{#1}}
 \DeclareCaptionOption{skip}{\setlength\abovecaptionskip{#1}}
+\newcommand*\caption@rule{\caption@ifrule\caption@hrule\relax}
+\newcommand*\caption@hrule{\hrule\@height\z@}
+\DeclareCaptionOption{rule}[1]{\caption@set@bool\caption@ifrule{#1}}
 \DeclareCaptionOption{position}{\caption@setposition{#1}}
 \newcommand*\caption@setposition[1]{%
   \caption@ifinlist{#1}{d,default}{%
@@ -740,8 +743,8 @@
 \newcommand*\caption@endhook{}
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
 \newcommand*\AtEndCaption{\l@addto@macro\caption@endhook}
-\DeclareCaptionOption{list}{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}{\caption@setlist{#1}}
+\DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
 \newcommand*\DeclareCaptionListFormat[2]{%
   \global\@namedef{caption@lstfmt@#1}##1##2{#2}}
@@ -1010,8 +1013,8 @@
   \DeclareCaptionDefaultFont{textfont}{\itshape}%
   \DeclareCaptionLabelSeparator{default}{\captionseparator\space}%
 }
-\captionsetup{style=default,position=default,list=1,listformat=default,%
-              twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,%
+              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
 \ProcessOptions*
 \caption@IfCheckCommand{%
   \caption@setbool{documentclass}{1}%
@@ -1162,7 +1165,17 @@
         \ifx\caption@tempa\caption@tempb
           \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
         \else
-          \let\caption@ifempty\@gobbletwo
+          \def\caption@tempb{\index}%
+          \ifx\caption@tempa\caption@tempb
+            \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+          \else
+            \def\caption@tempb{\glossary}%
+            \ifx\caption@tempa\caption@tempb
+              \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+            \else
+              \let\caption@ifempty\@gobbletwo
+            \fi
+          \fi
         \fi
       \fi
     \fi
@@ -1177,7 +1190,7 @@
   \def\caption@type{#2}%
   \caption@Debug{New type `#2'}%
   \newcounter{#2}\@namedef{theH#2}{}%
-  \KV@caption@DCT@within{\@ifundefined{c@chapter}{none}{chapter}}%
+  \KV@caption@DCT@within\caption@within@default
   \KV@caption@DCT@placement{tbp}%
   \@ifundefined{c@float@type}%
     {\newcounter{float@type}%
@@ -1204,6 +1217,14 @@
   \expandafter\xdef\csname list#2name\endcsname{List of \@tempa s}%
   \@cons\caption@typelist{{#2}}%
   \caption@setkeys[caption]{caption@DCT}{#1}%
+  \@ifundefined{float@exts}{\newtoks\float@exts}{}%
+  \let\float@do=\relax
+  \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#2}}}}%
+  \@tempa
+  \@ifundefined{float@addtolists}{%
+    \newcommand\float@addtolists[1]{%
+      \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}%
+    \@ifundefined{@chapter}{}{\caption@PatchChapter}}{}%
   \@ifnextchar[\@@DeclareCaptionType\relax}
 \@onlypreamble\@DeclareCaptionType
 \def\@@DeclareCaptionType[#1]{%
@@ -1214,6 +1235,9 @@
   \KV@caption@DCT@listname{#1}}
 \@onlypreamble\@@@DeclareCaptionType
 \let\DeclareFloatingEnvironment\DeclareCaptionType % old command name
+\@onlypreamble\DeclareFloatingEnvironment
+\newcommand*\caption@within@default{\@ifundefined{c@chapter}{none}{chapter}}
+\@onlypreamble\caption@within@default
 \newcommand*\caption@listof[1]{%
   \begingroup
     \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
@@ -1277,6 +1301,307 @@
     \fi}%
   \expandafter\xdef\csname cl@#2\endcsname{%
     \csname cl@#2\endcsname}}}
+\newcommand*\caption@PatchChapter{%
+  \providecommand*\@chapterlistsgap{10\p@}%
+  % report.cls [2005/09/16 v1.4f Standard LaTeX document class]
+  \caption@patch@chapter{report}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}##1}%
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}##1}%
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+  % book.cls [2005/09/16 v1.4f Standard LaTeX document class]
+  \caption@patch@chapter{book}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}##1}%
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}##1}%
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+  % amsbook.cls [2004/08/06 v2.20]
+  % smfbook.cls [1999/11/15 v1.2f Classe LaTeX pour les monographies editees par la SMF]
+  \caption@patch@chapter{ams/smfbook}{%
+    \refstepcounter{chapter}%
+    \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+    \else \let\@secnumber\thechapter \fi
+    \typeout{\chaptername\space\@secnumber}%
+    \def\@toclevel{0}%
+    \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{##2}%
+    \else \@tocwriteb\tocchapter{chapter}{##2}\fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \@makechapterhead{##2}\@afterheading
+  }{%
+    \refstepcounter{chapter}%
+    \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+    \else \let\@secnumber\thechapter \fi
+    \typeout{\chaptername\space\@secnumber}%
+    \def\@toclevel{0}%
+    \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{##2}%
+    \else \@tocwriteb\tocchapter{chapter}{##2}\fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \@makechapterhead{##2}\@afterheading}%
+  % scrreprt/scrbook.cls
+  \@ifundefined{KOMAClassName}{}{%
+    \caption@Debug{document class `\KOMAClassName' detected}%
+   \let\caption@patch@chapter\@gobblethree}%
+  % rapport1/3.cls [2004/06/07 v2.1a NTG LaTeX document class]
+  \caption@patch@chapter{rapport}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 ##1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 ##1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+  % boek(3).cls [2004/06/07 v2.1a NTG LaTeX document class]
+  \caption@patch@chapter{boek}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}\toc@font0 ##1}%
+      \else
+        \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}\toc@font0 ##1}%
+      \else
+        \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+  % thesis.cls [1996/25/01 1.0g LaTeX document class (wm).]
+  \caption@patch@chapter{thesis}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\chaptername\space\thechapter.}
+        \if@thema
+          \ifx\@shortauthor\@empty
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}##1}%
+          \else
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}%
+            \@shortauthor\hfill\mbox{}\vskip\normallineskip ##1}%
+          \fi
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}##1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{##1}
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}
+    \fi
+    \chaptermark{##1}
+    \addtocontents{lof}{\protect\addvspace{10pt}}
+    \addtocontents{lot}{\protect\addvspace{10pt}}
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]
+    \else
+      \@makechapterhead{##2}
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\chaptername\space\thechapter.}%
+        \if@thema
+          \ifx\@shortauthor\@empty
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}##1}%
+          \else
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}%
+            \@shortauthor\hfill\mbox{}\vskip\normallineskip ##1}%
+          \fi
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}##1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+  \ifx\caption@patch@chapter\@gobblethree \else
+    \caption@Debug{%
+      Unsupported document class detected,\MessageBreak
+      or \noexpand\@chapter was redefined by another package}%
+  \fi
+  \let\caption@PatchChapter\@undefined}
+\@onlypreamble\caption@PatchChapter
+\newcommand\caption@patch@chapter[3]{%
+  \begingroup
+    \let\if@mainmatter\iffalse
+    \let\if@thema\iffalse
+    \def\@tempa[##1]##2{#2}%
+    \ifx\@tempa\@chapter
+      \caption@Debug{document class `#1' detected}%
+      \gdef\@chapter[##1]##2{#3}%
+      \global\let\caption@patch@chapter\@gobblethree
+    \fi
+  \endgroup}
+\@onlypreamble\caption@patch@chapter
+\long\def \@gobblethree #1#2#3{}
 \newcommand*\DeclareCaptionSubType{%
   \caption@teststar\@DeclareCaptionSubType\@firstoftwo\@secondoftwo}
 \@onlypreamble\DeclareCaptionSubType

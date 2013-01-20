@@ -28,10 +28,10 @@
 %% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2008/04/01 v3.1h Customizing captions (AR)]
+\ProvidesPackage{caption}[2008/08/24 v3.1j Customizing captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
-\RequirePackage{caption3}[2008/03/20] % needs v3.1g or newer
+\RequirePackage{caption3}[2008/08/24] % needs v3.1j or newer
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -51,7 +51,7 @@
       to the `#1' package}}}
 \@onlypreamble\caption@DisablePositionOption
 \caption@ifbool{documentclass}{}{%
-  \PackageWarningNoLine{caption}{%
+  \caption@WarningNoLine{%
     Unsupported document class (or package) detected,\MessageBreak
     usage of the caption package is not recommended}%
   \caption@Info{\string\@makecaption\space=\space\meaning\@makecaption}%
@@ -123,7 +123,7 @@
         \def\hspace##1##{\@firstofone}%
         \edef\@tempa{\endgroup
           \noexpand\captionsetup{%
-            twoside=\@twoside,singlelinecheck=0,%
+            twoside=\@twoside,slc=0,%
             margin={\cap@left,\cap@right}}}%
       \fi\fi
       \@tempa}
@@ -143,23 +143,30 @@
 \DeclareCaptionOption{listfigurename}{\caption@SetName{listfigure}{#1}}
 \DeclareCaptionOption{listtablename}{\caption@SetName{listtable}{#1}}
 \newcommand*\caption@SetName[2]{%
+  \caption@setname{#1}{#2}%
   \begingroup
-    \def\@tempa{\endgroup\@firstofone}%
     \@ifundefined{languagename}{}{%
       \@ifundefined{captions\languagename}{}{%
-        \def\@tempa{\endgroup
-          \expandafter\addto\csname captions\languagename\endcsname}}}%
-    \@tempa{\caption@setname{#1}{#2}}}
+        \expandafter\g@addto@macro\csname captions\languagename\endcsname
+          {\caption@setname{#1}{#2}}}}%
+  \endgroup}
 \newcommand*\caption@setname[2]{\@namedef{#1name}{#2}}
 \caption@AtBeginDocument{\let\caption@SetName\caption@setname}
 \DeclareCaptionOption{figurewithin}{\caption@Within{figure}{#1}}
 \@onlypreamble@key{caption}{figurewithin}
-\DeclareCaptionOption{figurewithout}{\caption@Within{figure}{none}}
+\DeclareCaptionOption{figurewithout}{\KV@caption@figurewithin{none}}
 \@onlypreamble@key{caption}{figurewithout}
 \DeclareCaptionOption{tablewithin}{\caption@Within{table}{#1}}
 \@onlypreamble@key{caption}{tablewithin}
-\DeclareCaptionOption{tablewithout}{\caption@Within{table}{none}}
+\DeclareCaptionOption{tablewithout}{\KV@caption@tablewithin{none}}
 \@onlypreamble@key{caption}{tablewithout}
+\DeclareCaptionOption{within}{%
+  \@ifundefined{c@figure}{}{\caption@Within{figure}{#1}}%
+  \@ifundefined{c@table}{}{\caption@Within{table}{#1}}%
+  \def\caption@within@default{#1}}
+\@onlypreamble@key{caption}{within}
+\DeclareCaptionOption{without}{\KV@caption@within{none}}
+\@onlypreamble@key{caption}{without}
 \newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
 \@onlypreamble\caption@Within
 \DeclareCaptionOption*{config}[caption]{%
@@ -301,14 +308,23 @@
        \fi
     }{}}
 \fi
-\newcommand*\caption@undefinedlabel{??}
-\newcommand*\caption@xlabel{%
-  \ifx\@currentlabel\caption@undefinedlabel
-    \caption@Warning{\noexpand\label before \noexpand\caption ignored}%
-    \expandafter\@gobble
-  \else
-    \expandafter\caption@ORI@label
-  \fi}
+\newcommand*\caption@undefinedlabel{%
+  \protect\caption@xref{\caption@labelname}{\on@line}}
+\newcommand*\caption@xref[2]{%
+  \caption@WarningNoLine{\noexpand\label before \string\caption#2}%
+  \@setref\relax\@undefined{#1}}
+\newcommand*\caption@labelname{??}
+\newcommand*\caption@xlabel[1]{%
+  \caption@@xlabel
+  \def\caption@labelname{#1}%
+  \caption@ORI@label{#1}}
+\newcommand*\caption@@xlabel{%
+  \global\let\caption@@xlabel\@empty
+  \@bsphack
+    \protected@write\@auxout{}%
+      {\string\providecommand*\string\caption@xref[2]{%
+        \string\@setref\string\relax\string\@undefined{\string##1}}}%
+  \@esphack}
 \caption@AtBeginDocument{%
   \def\captionof{\caption@teststar\caption@of{\caption*}\caption}}
 \newcommand*\caption@of[2]{\caption@settype*{#2}#1}
@@ -678,9 +694,13 @@
     \caption@settype{#1}}%
 }
 \long\def\@makecaption#1#2{%
-  \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
+  \caption@iftop
+    {\vskip\belowcaptionskip}%
+    {\caption@rule\vskip\abovecaptionskip}%
   \caption@@make{#1}{#2}%
-  \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
+  \caption@iftop
+    {\vskip\abovecaptionskip\caption@rule}%
+    {\vskip\belowcaptionskip}}
 \def\caption@DeclareSubType sub#1\@nil{%
   \caption@Debug{Initializing subtype for `#1'\@gobble}%
   \@namedef{caption@c@#1}{0}%
@@ -726,8 +746,8 @@
   \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
   \caption@kernel@addcontentsline{#1}{#2}%
   \sf@ifpositiontop{}{\@listsubcaptions{#1}}%
-  \caption@addsubcontentslines}
-\newcommand*\caption@addsubcontentslines{%
+  \caption@addsubcontentslines{#1}}
+\newcommand*\caption@addsubcontentslines[1]{%
   \begingroup
     \caption@subcontentslines
   \endgroup
@@ -738,7 +758,9 @@
   \g@addto@macro\caption@typehook{\caption@checksubcontentslines}%
   \AtEndDocument{\caption@checksubcontentslines}}%
 \newcommand*\caption@addsubcontentsline[3]{%
-  \protected@edef\@tempa{%
+  \begingroup
+  \let\label\@gobble \let\index\@gobble \let\glossary\@gobble
+  \protected@edef\@tempa{\endgroup
     \noexpand\g@addto@macro\noexpand\caption@subcontentslines{%
       \noexpand\@namedef{the#2}{\csname the#2\endcsname}%
       \ifx\@currentHref\@undefined \else
@@ -759,8 +781,8 @@
 \@ifclassloaded{beamer}{%
   \caption@Info{beamer document class}%
   \captionsetup{list=false}
-  \DeclareCaptionOption{list}{}
-  \DeclareCaptionOption{listof}{}
+  \DeclareCaptionOption{list}[1]{}
+  \DeclareCaptionOption{listof}[1]{}
   \expandafter\let\expandafter\caption@ORI@figure
     \csname\string\figure\endcsname
   \@namedef{\string\figure}[#1]{%
@@ -957,7 +979,7 @@
 }
 \captionsetup[boxed]{skip=2pt} % do not issue a warning when not used
 \caption@ifbool{ruled}{%
-  \captionsetup[ruled]{margin=0pt,minmargin=0,singlelinecheck=0}%
+  \captionsetup[ruled]{margin=0pt,minmargin=0,slc=0}%
 }{%
   \DeclareCaptionStyle{ruled}{labelfont=bf,labelsep=space,strut=0}%
 }

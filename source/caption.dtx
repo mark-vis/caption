@@ -24,12 +24,12 @@
 % user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{6225}
+% \CheckSum{6908}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2008/04/01 v3.1h Implementation of the caption package]
+\ProvidesFile{caption.drv}[2008/08/24 v3.1j Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -56,7 +56,7 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2008/04/01]
+\usepackage[debug]{caption}[2008/08/01]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -120,7 +120,7 @@
 % which typesets captions, for example the \package{caption} and
 % \package{subfig} packages.
 %
-% \Thispackage\ itself redefines the \LaTeX\ commands
+% \Thispackage\ redefines the \LaTeX\ commands
 % |\caption|, |\@caption|, and |\@makecaption| and maps the latter one to
 % |\caption@@make|, giving the user the possibility to control the look \& feel
 % of the captions from floating environments like |figure| and |table|.
@@ -233,7 +233,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2008/03/20 v3.1h caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2008/08/24 v3.1j caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -481,6 +481,8 @@
 % \begin{macro}{\caption@CheckCommand}
 % \changes{v3.1}{2007/04/10}{This macro added}
 % \begin{macro}{\caption@IfCheckCommand}
+% \changes{v3.1}{2007/04/10}{This macro added}
+% \changes{v3.1i}{2008/08/02}{Revised so \cs{next} is no longer used}
 %  |\caption@CheckCommand|\marg{macro}\marg{definition of macro}\par
 %  checks if a command already exists, with the same definition.
 %  It can be used more-than-once to check if one of multiple definitions will
@@ -512,12 +514,11 @@
 %    \begin{macrocode}
 \newcommand*\caption@IfCheckCommand{%
   \ifx\caption@CheckCommand\@gobbletwo
-    \let\next\@firstoftwo
+    \let\caption@CheckCommand\caption@DoCheckCommand
+    \expandafter\@firstoftwo
   \else
-    \let\next\@secondoftwo
-  \fi
-  \let\caption@CheckCommand\caption@DoCheckCommand
-  \next}
+    \expandafter\@secondoftwo
+  \fi}
 \@onlypreamble\caption@IfCheckCommand
 %    \end{macrocode}
 % \end{macro}
@@ -852,6 +853,7 @@
 % \changes{v3.1}{2007/07/22}{This macro added}
 % \begin{macro}{\caption@removefromoptlist}
 % \changes{v3.1}{2007/07/22}{This macro added}
+% \changes{v3.1j}{2008/08/24}{Fatal typo corrected}
 % |\caption@addtooptlist|\marg{type}\\
 % |\caption@removefromoptlist|\marg{type}\par
 %  Adds or removes an \meta{type} to the list of unused caption options.
@@ -881,7 +883,7 @@
 %    \begin{macrocode}
 \AtEndDocument{%
   \caption@for@list\caption@optlist{%
-    \PackageWarningNoLine{caption}{%
+    \caption@WarningNoLine{%
       Unused \string\captionsetup[#1]
       on input line \csname caption@opt@#1@lineno\endcsname}}}
 %    \end{macrocode}
@@ -1275,10 +1277,12 @@
 % \end{macro}
 %
 % \changes{v3.1g}{2008/01/20}{Option \opt{style*=} added}
+% \changes{v3.1i}{2008/05/06}{Option \opt{slc=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
 \DeclareCaptionOption{style*}{\caption@setstyle*{#1}}
-\DeclareCaptionOption{singlelinecheck}{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setstyle}
@@ -1322,7 +1326,8 @@
 % \changes{v3.1}{2007/02/04}{%
 %       This macro renamed from \cs{caption@setdefault} to \cs{caption@resetstyle}}
 % \changes{v3.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
-% \changes{v3.1f}{2007/11/17}{\texttt{size=} added}
+% \changes{v3.1f}{2007/11/17}{Usage of \texttt{size=} added}
+% \changes{v3.1i}{2008/05/06}{Usage of \texttt{rule} added}
 %  This resets (nearly) all caption options to the base ones.
 %  \emph{Note that this does not touch the skips and the positioning!}
 %    \begin{macrocode}
@@ -1332,7 +1337,7 @@
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
     indent=0pt,parindent=0pt,hangindent=0pt,%
-    singlelinecheck=1,strut=1}%
+    slc,rule,strut}%
   \caption@clearsetup{singleline}}
 %    \end{macrocode}
 % \end{macro}
@@ -1574,7 +1579,7 @@
 % \changes{v3.0d}{2005/02/12}{Option \opt{strut=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{textformat}{\caption@settextformat{#1}}
-\DeclareCaptionOption{strut}{\caption@set@bool\caption@ifstrut{#1}}
+\DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@settextformat}
@@ -1924,6 +1929,23 @@
 \DeclareCaptionOption{skip}{\setlength\abovecaptionskip{#1}}
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@rule}
+% \changes{v3.1i}{2008/05/06}{This macro added}
+%  |\caption@rule|\par
+%  Draws an invisible rule to adjust the ``skip'' setting.
+%    \begin{macrocode}
+\newcommand*\caption@rule{\caption@ifrule\caption@hrule\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@hrule{\hrule\@height\z@}
+%    \end{macrocode}
+% \end{macro}
+%
+% \changes{v3.1i}{2008/05/06}{Option \opt{rule=} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{rule}[1]{\caption@set@bool\caption@ifrule{#1}}
+%    \end{macrocode}
+%
 % \subsection{Positioning}
 %
 % These macros handle the right position of the caption.
@@ -2070,8 +2092,8 @@
 % \changes{v3.0b}{2004/05/16}{Option \opt{listof=} added}
 % \changes{v3.1f}{2007/11/17}{Option \opt{list=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{list}{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}{\caption@setlist{#1}}
+\DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setlist}
@@ -2493,8 +2515,8 @@
 % \subsection{Execution of options}
 %
 %    \begin{macrocode}
-\captionsetup{style=default,position=default,list=1,listformat=default,%
-              twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,%
+              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 \ProcessOptions*
@@ -2836,6 +2858,7 @@
 % \changes{v3.0e}{2005/05/05}{This macro added}
 % \changes{v3.1}{2007/07/04}{Re-defines itself now}
 % \changes{v3.1g}{2007/01/22}{Revised so \cs{label} will be detected, too}
+% \changes{v3.1i}{2008/08/02}{Revised so \cs{index} and \cs{glossary} will be detected, too}
 %  |\caption@ifempty|\marg{text}\marg{true} (\emph{no} \meta{false})\par
 %  This one tests if the \meta{text} is actually empty.
 %  \Note{This will be done without expanding the text,
@@ -2867,7 +2890,17 @@
         \ifx\caption@tempa\caption@tempb
           \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
         \else
-          \let\caption@ifempty\@gobbletwo
+          \def\caption@tempb{\index}%
+          \ifx\caption@tempa\caption@tempb
+            \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+          \else
+            \def\caption@tempb{\glossary}%
+            \ifx\caption@tempa\caption@tempb
+              \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+            \else
+              \let\caption@ifempty\@gobbletwo
+            \fi
+          \fi
         \fi
       \fi
     \fi
@@ -2895,6 +2928,8 @@
 % \changes{v3.1a}{2007/09/07}{Three optional arguments added}
 % \changes{v3.1f}{2007/12/06}{Renamed from \cs{DeclareFloatingEnvironment} to \cs{DeclareCaptionType}}
 % \changes{v3.1f}{2007/12/21}{Optional argument revised, uses key-value syntax now}
+% \changes{v3.1i}{2008/04/13}{Uses \cs{caption@within@default} now}
+% \changes{v3.1i}{2008/08/02}{Support of \cs{float@exts} and \cs{float@addtolists} added}
 %  |\DeclareCaptionType|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionType{%
@@ -2906,7 +2941,7 @@
   \def\caption@type{#2}%
   \caption@Debug{New type `#2'}%
   \newcounter{#2}\@namedef{theH#2}{}%
-  \KV@caption@DCT@within{\@ifundefined{c@chapter}{none}{chapter}}%
+  \KV@caption@DCT@within\caption@within@default
   \KV@caption@DCT@placement{tbp}%
   \@ifundefined{c@float@type}%
     {\newcounter{float@type}%
@@ -2937,6 +2972,18 @@
 %    \begin{macrocode}
   \@cons\caption@typelist{{#2}}%
   \caption@setkeys[caption]{caption@DCT}{#1}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \@ifundefined{float@exts}{\newtoks\float@exts}{}%
+  \let\float@do=\relax
+  \edef\@tempa{\noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#2}}}}%
+  \@tempa
+  \@ifundefined{float@addtolists}{%
+    \newcommand\float@addtolists[1]{%
+      \def\float@do####1{\addtocontents{####1}{##1}}\the\float@exts}%
+    \@ifundefined{@chapter}{}{\caption@PatchChapter}}{}%
+%    \end{macrocode}
+%    \begin{macrocode}
   \@ifnextchar[\@@DeclareCaptionType\relax}
 \@onlypreamble\@DeclareCaptionType
 %    \end{macrocode}
@@ -2953,6 +3000,16 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \let\DeclareFloatingEnvironment\DeclareCaptionType % old command name
+\@onlypreamble\DeclareFloatingEnvironment
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@within@default}
+% \changes{v3.1i}{2008/04/13}{This macro added}
+%  The default `within' value.
+%    \begin{macrocode}
+\newcommand*\caption@within@default{\@ifundefined{c@chapter}{none}{chapter}}
+\@onlypreamble\caption@within@default
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3057,6 +3114,336 @@
     \fi}%
   \expandafter\xdef\csname cl@#2\endcsname{%
     \csname cl@#2\endcsname}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@PatchChapter}
+% \changes{v3.1i}{2008/08/02}{This macro added}
+% We try to patch \cs{@chapter} so \cs{float@addtolists} will be supported.
+% (Note: The \KOMAScript\ classes already support \cs{float@addtolists}.)
+%    \begin{macrocode}
+\newcommand*\caption@PatchChapter{%
+  \providecommand*\@chapterlistsgap{10\p@}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % report.cls [2005/09/16 v1.4f Standard LaTeX document class]
+  \caption@patch@chapter{report}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}##1}%
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}##1}%
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % book.cls [2005/09/16 v1.4f Standard LaTeX document class]
+  \caption@patch@chapter{book}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}##1}%
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}##1}%
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % amsbook.cls [2004/08/06 v2.20]
+  % smfbook.cls [1999/11/15 v1.2f Classe LaTeX pour les monographies editees par la SMF]
+  \caption@patch@chapter{ams/smfbook}{%
+    \refstepcounter{chapter}%
+    \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+    \else \let\@secnumber\thechapter \fi
+    \typeout{\chaptername\space\@secnumber}%
+    \def\@toclevel{0}%
+    \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{##2}%
+    \else \@tocwriteb\tocchapter{chapter}{##2}\fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \@makechapterhead{##2}\@afterheading
+  }{%
+    \refstepcounter{chapter}%
+    \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
+    \else \let\@secnumber\thechapter \fi
+    \typeout{\chaptername\space\@secnumber}%
+    \def\@toclevel{0}%
+    \ifx\chaptername\appendixname \@tocwriteb\tocappendix{chapter}{##2}%
+    \else \@tocwriteb\tocchapter{chapter}{##2}\fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \@makechapterhead{##2}\@afterheading}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % scrreprt/scrbook.cls
+  \@ifundefined{KOMAClassName}{}{%
+    \caption@Debug{document class `\KOMAClassName' detected}%
+  	\let\caption@patch@chapter\@gobblethree}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % rapport1/3.cls [2004/06/07 v2.1a NTG LaTeX document class]
+  \caption@patch@chapter{rapport}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 ##1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}%
+        {\protect\numberline{\thechapter}\toc@font0 ##1}%
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % boek(3).cls [2004/06/07 v2.1a NTG LaTeX document class]
+  \caption@patch@chapter{boek}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}\toc@font0 ##1}%
+      \else
+        \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \addtocontents{lof}{\protect\addvspace{10\p@}}%
+    \addtocontents{lot}{\protect\addvspace{10\p@}}%
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\@chapapp\space\thechapter.}%
+        \addcontentsline{toc}{chapter}%
+          {\protect\numberline{\thechapter}\toc@font0 ##1}%
+      \else
+        \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{\toc@font0 ##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  % thesis.cls [1996/25/01 1.0g LaTeX document class (wm).]
+  \caption@patch@chapter{thesis}{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\chaptername\space\thechapter.}
+        \if@thema
+          \ifx\@shortauthor\@empty
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}##1}%
+          \else
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}%
+            \@shortauthor\hfill\mbox{}\vskip\normallineskip ##1}%
+          \fi
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}##1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{##1}
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}
+    \fi
+    \chaptermark{##1}
+    \addtocontents{lof}{\protect\addvspace{10pt}}
+    \addtocontents{lot}{\protect\addvspace{10pt}}
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]
+    \else
+      \@makechapterhead{##2}
+      \@afterheading
+    \fi
+  }{%
+    \ifnum \c@secnumdepth >\m@ne
+      \if@mainmatter
+        \refstepcounter{chapter}%
+        \typeout{\chaptername\space\thechapter.}%
+        \if@thema
+          \ifx\@shortauthor\@empty
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}##1}%
+          \else
+            \addcontentsline{toc}{chapter}{%
+            \protect\numberline{\thechapter.}%
+            \@shortauthor\hfill\mbox{}\vskip\normallineskip ##1}%
+          \fi
+        \else
+          \addcontentsline{toc}{chapter}{%
+          \protect\numberline{\thechapter.}##1}%
+        \fi
+      \else
+        \addcontentsline{toc}{chapter}{##1}%
+      \fi
+    \else
+      \addcontentsline{toc}{chapter}{##1}%
+    \fi
+    \chaptermark{##1}%
+    \ifdim \@chapterlistsgap>\z@
+      \addtocontents{lof}{\protect\addvspace{\@chapterlistsgap}}%
+      \addtocontents{lot}{\protect\addvspace{\@chapterlistsgap}}%
+      \float@addtolists{\protect\addvspace{\@chapterlistsgap}}%
+    \fi
+    \if@twocolumn
+      \@topnewpage[\@makechapterhead{##2}]%
+    \else
+      \@makechapterhead{##2}%
+      \@afterheading
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \ifx\caption@patch@chapter\@gobblethree \else
+    \caption@Debug{%
+      Unsupported document class detected,\MessageBreak
+      or \noexpand\@chapter was redefined by another package}%
+  \fi
+  \let\caption@PatchChapter\@undefined}
+\@onlypreamble\caption@PatchChapter
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@patch@chapter[3]{%
+  \begingroup
+%   \let\if@twocolumn\iffalse
+    \let\if@mainmatter\iffalse
+    \let\if@thema\iffalse
+    \def\@tempa[##1]##2{#2}%
+    \ifx\@tempa\@chapter
+      \caption@Debug{document class `#1' detected}%
+      \gdef\@chapter[##1]##2{#3}%
+      \global\let\caption@patch@chapter\@gobblethree
+    \fi
+  \endgroup}
+\@onlypreamble\caption@patch@chapter
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def \@gobblethree #1#2#3{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3218,7 +3605,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2008/04/01 v3.1h Customizing captions (AR)]
+\ProvidesPackage{caption}[2008/08/24 v3.1j Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -3235,7 +3622,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2008/03/20] % needs v3.1g or newer
+\RequirePackage{caption3}[2008/08/24] % needs v3.1j or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible packages}
@@ -3286,7 +3673,7 @@
 %
 %    \begin{macrocode}
 \caption@ifbool{documentclass}{}{%
-  \PackageWarningNoLine{caption}{%
+  \caption@WarningNoLine{%
     Unsupported document class (or package) detected,\MessageBreak
     usage of the caption package is not recommended}%
   \caption@Info{\string\@makecaption\space=\space\meaning\@makecaption}%
@@ -3451,7 +3838,7 @@
         \def\hspace##1##{\@firstofone}%
         \edef\@tempa{\endgroup
           \noexpand\captionsetup{%
-            twoside=\@twoside,singlelinecheck=0,%
+            twoside=\@twoside,slc=0,%
             margin={\cap@left,\cap@right}}}%
       \fi\fi
       \@tempa}
@@ -3505,16 +3892,17 @@
 % \changes{v3.1}{2007/07/04}{This macro added}
 % \changes{v3.1f}{2007/11/18}{After-preamble variant added}
 % \changes{v3.1g}{2008/02/28}{Renamed from \cs{caption@SetFloatName} to \cs{caption@SetName}}
+% \changes{v3.1i}{2008/08/02}{Bugfix: Works now without \cs{addto}, too}
 %  |\caption@SetName|\marg{cmd}\marg{value}
 %    \begin{macrocode}
 \newcommand*\caption@SetName[2]{%
+  \caption@setname{#1}{#2}%
   \begingroup
-    \def\@tempa{\endgroup\@firstofone}%
     \@ifundefined{languagename}{}{%
       \@ifundefined{captions\languagename}{}{%
-        \def\@tempa{\endgroup
-          \expandafter\addto\csname captions\languagename\endcsname}}}%
-    \@tempa{\caption@setname{#1}{#2}}}
+        \expandafter\g@addto@macro\csname captions\languagename\endcsname
+          {\caption@setname{#1}{#2}}}}%
+  \endgroup}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setname[2]{\@namedef{#1name}{#2}}
@@ -3525,17 +3913,27 @@
 % \end{macro}
 %
 % \changes{v3.1f}{2007/12/21}{Options \opt{figurewithin} and \opt{tablewithin} added}
+% \changes{v3.1i}{2008/04/13}{Option \opt{within} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{figurewithin}{\caption@Within{figure}{#1}}
 \@onlypreamble@key{caption}{figurewithin}
-\DeclareCaptionOption{figurewithout}{\caption@Within{figure}{none}}
+\DeclareCaptionOption{figurewithout}{\KV@caption@figurewithin{none}}
 \@onlypreamble@key{caption}{figurewithout}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{tablewithin}{\caption@Within{table}{#1}}
 \@onlypreamble@key{caption}{tablewithin}
-\DeclareCaptionOption{tablewithout}{\caption@Within{table}{none}}
+\DeclareCaptionOption{tablewithout}{\KV@caption@tablewithin{none}}
 \@onlypreamble@key{caption}{tablewithout}
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionOption{within}{%
+  \@ifundefined{c@figure}{}{\caption@Within{figure}{#1}}%
+  \@ifundefined{c@table}{}{\caption@Within{table}{#1}}%
+  \def\caption@within@default{#1}}
+\@onlypreamble@key{caption}{within}
+\DeclareCaptionOption{without}{\KV@caption@within{none}}
+\@onlypreamble@key{caption}{without}
 %    \end{macrocode}
 % \begin{macro}{\caption@within}
 % \changes{v3.1}{2007/12/21}{This macro added}
@@ -3863,28 +4261,45 @@
 % \begin{macro}{\caption@undefinedlabel}
 % \changes{v3.1}{2007/07/03}{This macro and its usage added}
 % \changes{v3.1b}{2007/09/22}{Contents changed to \texttt{??}}
+% \changes{v3.1i}{2008/04/13}{Contents changed to \cs{caption@xref}(\ldots)}
 %  This label will be used for |\currentlabel| inside (floating) environments
 %  as default. (see above)
 %  \iffalse\Note{All commands used have to be robust here.}\fi
 %    \begin{macrocode}
-\newcommand*\caption@undefinedlabel{??}
+\newcommand*\caption@undefinedlabel{%
+  \protect\caption@xref{\caption@labelname}{\on@line}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@xref[2]{%
+  \caption@WarningNoLine{\noexpand\label before \string\caption#2}%
+  \@setref\relax\@undefined{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@labelname{??}
 %    \end{macrocode}
 % \end{macro}
 % \begin{macro}{\caption@xlabel}
 % \changes{v3.1b}{2007/09/22}{This macro and its usage added}
 % \changes{v3.1f}{2007/11/11}{Revised}
+% \changes{v3.1i}{2008/04/13}{Bugfix: \cs{pageref} should always work now}
 %  The new code of |\label| inside floating environments.
 %  |\label| will be redefined using |\caption@withoptargs|, so
 %  |#1| are the optional arguments (if any), and
 %  |#2| is the mandatory argument here.
 %    \begin{macrocode}
-\newcommand*\caption@xlabel{%
-  \ifx\@currentlabel\caption@undefinedlabel
-    \caption@Warning{\noexpand\label before \noexpand\caption ignored}%
-    \expandafter\@gobble
-  \else
-    \expandafter\caption@ORI@label
-  \fi}
+\newcommand*\caption@xlabel[1]{%
+  \caption@@xlabel
+  \def\caption@labelname{#1}%
+  \caption@ORI@label{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@xlabel{%
+  \global\let\caption@@xlabel\@empty
+  \@bsphack
+    \protected@write\@auxout{}%
+      {\string\providecommand*\string\caption@xref[2]{%
+        \string\@setref\string\relax\string\@undefined{\string##1}}}%
+  \@esphack}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4682,6 +5097,7 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\@makecaption}
+% \changes{v3.1i}{2008/05/06}{Usage of \cs{caption@rule} added}
 %  |\@makecaption|\marg{label}\marg{text}\par
 %  We do basically the same as the original code (from the standard
 %  \LaTeX\ document classes), but take care of the |position=| setting
@@ -4689,9 +5105,13 @@
 %  typeset the caption.
 %    \begin{macrocode}
 \long\def\@makecaption#1#2{%
-  \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
+  \caption@iftop
+    {\vskip\belowcaptionskip}%
+    {\caption@rule\vskip\abovecaptionskip}%
   \caption@@make{#1}{#2}%
-  \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
+  \caption@iftop
+    {\vskip\abovecaptionskip\caption@rule}%
+    {\vskip\belowcaptionskip}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4778,6 +5198,7 @@
 %
 % \begin{macro}{\caption@addcontentsline}
 % \changes{v3.1g}{2008/01/12}{Argument of \cs{caption@addsubcontentslines} removed}
+% \changes{v3.1i}{2008/08/02}{Argument of \cs{caption@addsubcontentslines} re-added}
 % We extend |\caption@addcontentsline| so it handles sub-captions, too.
 % \Note{\cs{sf@ifpositiontop} \& \cs{@listsubcaptions} are defined by the
 %  \package{subfigure} \& \package{subfig} packages.}
@@ -4787,10 +5208,10 @@
   \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
   \caption@kernel@addcontentsline{#1}{#2}%
   \sf@ifpositiontop{}{\@listsubcaptions{#1}}%
-  \caption@addsubcontentslines}
+  \caption@addsubcontentslines{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@addsubcontentslines{%
+\newcommand*\caption@addsubcontentslines[1]{%
   \begingroup
     \caption@subcontentslines
   \endgroup
@@ -4807,10 +5228,14 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@addsubcontentsline}
+% \changes{v3.1i}{2008/08/02}{Bugfix:
+%    \cs{label}, \cs{index}, and \cs{glossary} are allowed inside the list entry now}
 % Add a pending sub-caption list entry.
 %    \begin{macrocode}
 \newcommand*\caption@addsubcontentsline[3]{%
-  \protected@edef\@tempa{%
+  \begingroup
+  \let\label\@gobble \let\index\@gobble \let\glossary\@gobble
+  \protected@edef\@tempa{\endgroup
     \noexpand\g@addto@macro\noexpand\caption@subcontentslines{%
       \noexpand\@namedef{the#2}{\csname the#2\endcsname}%
       \ifx\@currentHref\@undefined \else
@@ -4865,8 +5290,8 @@
 % this support in \thispackage\ off.
 %    \begin{macrocode}
   \captionsetup{list=false}
-  \DeclareCaptionOption{list}{}
-  \DeclareCaptionOption{listof}{}
+  \DeclareCaptionOption{list}[1]{}
+  \DeclareCaptionOption{listof}[1]{}
 %    \end{macrocode}
 %
 % \begin{macro}{\figure}
@@ -5411,7 +5836,7 @@
 % `single-line-check'.
 %    \begin{macrocode}
 \caption@ifbool{ruled}{%
-  \captionsetup[ruled]{margin=0pt,minmargin=0,singlelinecheck=0}%
+  \captionsetup[ruled]{margin=0pt,minmargin=0,slc=0}%
 }{%
   \DeclareCaptionStyle{ruled}{labelfont=bf,labelsep=space,strut=0}%
 }
@@ -5754,7 +6179,8 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@makestart}
-% \changes{v3.1c}{2007/09/30}{\cs{@currentHref} will be extended by \texttt{caption} instead of \texttt{xxx} now}
+% \changes{v3.1c}{2007/09/30}{\cs{@currentHref} will be extended by \texttt{caption}
+%        instead of \texttt{xxx} now}
 %  |\caption@makestart|\marg{type}
 %  defines a \package{hyperref} anchor inside |\caption@start|.\par
 %  Since we offer |\ContinuedFloat| the float counter can change between
@@ -6812,7 +7238,7 @@
 %    \@initisotab
 %    \addcontentsline{\csname ext@#1\endcsname}{#1}%
 %                    {\protect\numberline{%
-%                      \csname the#1\endcsname}{\ignorespaces #2}}
+%                      \csname the#1\endcsname}{\ignorespaces #2}}%
 %    \begingroup
 %      \@parboxrestore
 %      \normalsize
@@ -6821,8 +7247,7 @@
 %    %%  \if@topcaption \vskip 10\p@ \fi
 %    \endgroup
 %    \global\advance\ST@pageleft -\PWSTcapht
-%    \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}
-%  }
+%    \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}}
 %  \end{verbatim}%^^A
 %    \begin{macrocode}
   \long\def\ST@caption#1[#2]#3{\par%
