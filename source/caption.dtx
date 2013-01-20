@@ -220,7 +220,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/11/02 v3.2d Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/11/10 v3.2e Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -4305,14 +4305,19 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\wrapfloat}
+% \changes{v3.2d}{2011/11/02}{Redefinition of this macro added}
 % First of all we make the \package{wrapfig} package independent from the package
 % load order regarding the \package{float} package.
-% (|\wrap|\x|float| will usually not be used when used with re-styled floats.)
+% Since the usage of |\@float@set|\x|every| is missing in the code of the \package{wrapfig}
+% package (it should be in the redefinition of |\float@re|\x|style|, right after
+% |\@nameuse{fst@#1}|), we don't use it here, too,
+% especially since |\wrap|\x|float| will usually not be used when used with re-styled floats.
 %    \begin{macrocode}
   \renewcommand*\wrapfloat[1]{%
     \def\@captype{#1}%
     \@ifundefined{fst@#1}{}{%
       \@nameuse{fst@#1}%
+%     \@float@setevery{#1}%
       \def\WF@floatstyhook{\let\@currbox\WF@box 
          \global\setbox\WF@box\float@makebox{\wd\WF@box}}}%
     \@ifnextchar[\WF@wr{\WF@wr[]}}
@@ -4320,6 +4325,7 @@
 % \end{macro}
 %
 % \begin{macro}{\WF@rapt}
+% \changes{v3.2d}{2011/11/02}{Usage of \cs{WF@captionstyhook} added}
 % Original code:
 % \begin{verbatim}
 %   \def\WF@rapt[#1]#2{% final two args: #1 = overhang,  #2 = width,
@@ -4342,15 +4348,20 @@
 % \end{macro}
 %
 % \begin{macro}{\WF@captionstyhook}
+% \changes{v3.2d}{2011/11/02}{This macro added}
+% \changes{v3.2e}{2011/11/10}{Bugfix 11-11-09: float package support fixed}
 % We place our \package{hyperref} anchor here, 	apply the `wrap' options etc.
+% Since the usage of |\@float@set|\x|every| is missing in the \package{wrapfig}
+% package we will catch it up here for making the necessary adaptions to the
+% \package{float} package.
 %    \begin{macrocode}
   \def\WF@captionstyhook#1{%
     \let\@captype\@undefined
-    \caption@ifundefined\@float@setevery{}{\@float@setevery{#1}}%
+    \@ifundefined{fst@#1}{}{\@float@setevery{#1}}%
     \caption@settype{#1}%
     \caption@clearmargin
 %%%    \caption@setoptions{wrapfloat}%
-    \caption@setoptions{wrap#1}}
+    \caption@setoptions{wrap#1}}%
 %    \end{macrocode}
 % \end{macro}
 %
