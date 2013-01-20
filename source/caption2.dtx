@@ -19,9 +19,9 @@
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
 % This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% and ltcaption.dtx, the derived files caption.sty, caption2.sty,
-% caption3.sty, and ltcaption.sty, and the user manuals caption-deu.tex,
-% caption-eng.tex, and caption-rus.tex.
+% ltcaption.dtx, and subcaption.dtx, the derived files caption.sty,
+% caption2.sty, caption3.sty, ltcaption.sty, and subcaption.sty, and the
+% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
 % \CheckSum{846}
@@ -30,7 +30,7 @@
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesFile{caption2.drv}%
-  [2007/09/10 v2.2 Documentated code of the (obsolete) caption2 package]
+  [2007/11/28 v2.2 Documentated code of the (obsolete) caption2 package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -38,15 +38,16 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 %
-\ifx\pdfoutput\undefined\else
-  \ifcase\pdfoutput\else
-    \usepackage{mathptmx,courier}
-    \usepackage[scaled=0.90]{helvet}
-  \fi
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage{mathptmx,courier}
+  \usepackage[scaled=0.90]{helvet}
+% \addtolength\marginparwidth{15pt}
 \fi
 %
 \usepackage{hypdoc}
-\hypersetup{pdfkeywords={LaTeX, package, caption2},pdfstartview={}}
+\ifpdf\usepackage{hypdestopt}\fi
+\hypersetup{pdfkeywords={LaTeX, package, caption2},pdfstartpage={},pdfstartview={}}
 %
 \usepackage{caption2}[2007/08/12]
 %
@@ -105,7 +106,7 @@
 % very far with this\ldots
 %
 % In 2003 I finally found some (more) time, so a new regular release $3.0$
-% of the \package{caption} package could be build in coorparation with
+% of the \package{caption} package could be build in cooperation with
 % Frank Mittelbach and Steven Cochran.
 % It was released in December 2003 and superseded the neglected
 % \package{caption2} package.
@@ -119,11 +120,15 @@
 % that the \package{caption2} package should be used instead of the
 % \package{caption} package -- these hints are outdated since December 2003.
 %
+% \vfill
+% \bigskip
+% \pagebreak[4]
+%
 % \section*{How to migrate to the regular \package{caption} package?}
 %
 % Usually replacing \package{caption2} by \package{caption} is sufficient
 % because the \package{caption} package emulates most of the options and
-% commands of the \package{caption2} package.
+% commands offered by the \package{caption2} package.
 % If you get some errors or wired results afterwards, please take a closer
 % look at the \package{caption} package documentation which will hopefully
 % help you clearing these problems. You will also find a section called
@@ -134,10 +139,10 @@
 % \section*{What will happen to this package?}
 %
 % The \package{caption2} package is still some kind of supported, that means
-% it will be part of future releases and bugs will still be fixed so existing
-% documents using this package will still compile.
-% But it will \emph{not} be enhanced in the future or adapted to future versions
-% of foreign packages.
+% it will be part of future releases of the \package{caption} package bundle,
+% and bugs will still be fixed so existing documents using this package will
+% still compile.
+% But it will \emph{not} be enhanced in the future.
 %
 % This means migrating to the actual \package{caption} package should not be
 % necessary for old documents -- they should still compile fine as they are.
@@ -147,8 +152,9 @@
 % \StopEventually{}
 %
 % \DoNotIndex{\\,\_,\ ,\@@par}
-% \DoNotIndex{\@classoptionslist,\@currext,\@currname}
-% \DoNotIndex{\@ehc,\@ehd,\@empty,\@expandtwoargs}
+% \DoNotIndex{\@bsphack}
+% \DoNotIndex{\@car,\@cdr,\@classoptionslist,\@cons,\@currext,\@currname}
+% \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
 % \DoNotIndex{\@ifnextchar,\@ifstar,\@ifundefined,\@latex@error}
@@ -205,18 +211,18 @@
 \PackageWarning{caption2}{%
   ****************************************************\MessageBreak
   THIS PACKAGE IS OBSOLETE:\MessageBreak
-  This package attempts to provide an caption 2.0/2.1\MessageBreak
-  author environment so that OLD documents can be\MessageBreak
-  successfully processed.\MessageBreak
-  It should NOT be used for NEW documents! New\MessageBreak
-  documents should use the caption package instead.\MessageBreak
+  This package attempts to provide an `caption2'\MessageBreak
+  package v2.0/2.1 author environment so that OLD\MessageBreak
+  documents can be successfully processed. It should\MessageBreak
+  NOT be used for NEW documents! New documents should\MessageBreak
+  use the regular `caption' package v3.x instead.\MessageBreak
   ****************************************************\@gobbletwo}%
 %    \end{macrocode}
 %
 % \subsection{Loading the caption3 kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2007/08/12] % needs v3.1 or newer
+\RequirePackage{caption3}[2007/09/01] % needs v3.1 or newer
 %    \end{macrocode}
 %
 % \subsection{Check against the regular caption package}
@@ -540,7 +546,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Options}
+% \subsection{Declaration of options}
 %
 % \begin{macro}{normal}
 % \begin{macro}{center}
@@ -693,7 +699,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% That's it! Now set the default values and start processing the options.
+% \subsection{Execution of options}
+%
+% Now we set the default values and start processing the options.
 % (If \cs{caption@twozero} is set to true (default) we will emulate the package
 % load algorithm of \textsf{caption} v2.0: If the package is already loaded
 % patch it, otherwise do nothing.)
@@ -1325,29 +1333,25 @@
 % \begin{thebibliography}{9}
 %   \bibitem{float}
 %   Anselm Lingnau:
-%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/float/float.pdf}%
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/float/}%
 %        {\emph{An Improved Environment for Floats}},
 %   2001/11/08
 %
 %   \bibitem{longtable}
 %   David Carlisle:
-%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/required/tools/longtable.pdf}%
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/required/tools/}%
 %        {\emph{The longtable package}},
 %   2000/10/22
 %
 %   \bibitem{rotating}
 %   Sebastian Rahtz and Leonor Barroca:
-% \iffalse
-%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/rotating/rotating.dtx}%
-%        {\emph{A style option for rotated objects in \LaTeX}},
-% \else
-%   \emph{A style option for rotated objects in \LaTeX},
-% \fi
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/rotating/}%
+%        {\emph{A style option for rotated objects in \LaTeX}},\\
 %   1997/09/26
 %
 %   \bibitem{subfigure}
 %   Steven D. Cochran:
-%   \href{ftp://ctan.tug.org/tex-archive/macros/latex/contrib/subfigure/subfigure.pdf}%
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/subfigure/}%
 %        {\emph{The subfigure package}},
 %   2002/02/14
 %

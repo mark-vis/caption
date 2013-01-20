@@ -19,17 +19,17 @@
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
 % This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% and ltcaption.dtx, the derived files caption.sty, caption2.sty,
-% caption3.sty, and ltcaption.sty, and the user manuals caption-deu.tex,
-% caption-eng.tex, and caption-rus.tex.
+% ltcaption.dtx, and subcaption.dtx, the derived files caption.sty,
+% caption2.sty, caption3.sty, ltcaption.sty, and subcaption.sty, and the
+% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{5511}
+% \CheckSum{5978}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2007/11/04 v3.1e Implementation of the caption package]
+\ProvidesFile{caption.drv}[2007/12/23 v3.1f Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -50,9 +50,10 @@
 \fi
 %
 \usepackage{hypdoc}
-\hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartview={}}
+\ifpdf\usepackage{hypdestopt}\fi
+\hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2007/11/04]
+\usepackage[debug]{caption}[2007/12/21]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -75,7 +76,7 @@
 % \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 % \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
-% \let\package\puresf
+% \let\class\puresf \let\package\puresf
 % \let\env\purett \let\opt\purett
 %
 % \def\thispackage{the \package{caption} package}
@@ -84,6 +85,8 @@
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 % \newcommand*\version[2][]{\textit{v#2}}
+% \newcommand*\x{\discretionary{-}{}{}}
+% \newcommand*\xx{\discretionary{}{}{}}
 %
 % \GetFileInfo{caption.drv}
 % \let\docdate\filedate
@@ -153,14 +156,16 @@
 % \fi
 %
 % \DoNotIndex{\\,\_,\ ,\@@par}
-% \DoNotIndex{\@classoptionslist,\@currext,\@currname}
-% \DoNotIndex{\@ehc,\@ehd,\@empty,\@expandtwoargs}
+% \DoNotIndex{\@bsphack}
+% \DoNotIndex{\@car,\@cdr,\@classoptionslist,\@cons,\@currext,\@currname}
+% \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
-% \DoNotIndex{\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
-% \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@namedef,\@nameuse}
+% \DoNotIndex{\if@minipage\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
+% \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@minipagefalse,\@minipagetrue}
+% \DoNotIndex{\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
-% \DoNotIndex{\@removeelement,\@restorepar,\@secondoftwo,\@setpar}
+% \DoNotIndex{\@removeelement,\@restorepar,\@secondoftwo,\@setminipage,\@setpar}
 % \DoNotIndex{\@tempa,\@tempboxa,\@tempdima,\@tempdimb,\@tempdimc,\@tempb,\@tempc}
 % \DoNotIndex{\@testopt}
 % \DoNotIndex{\@undefined,\@unprocessedoptions,\@unusedoptionlist}
@@ -225,7 +230,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/11/04 v3.1e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/12/21 v3.1f caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -682,6 +687,7 @@
 % \changes{v3.0a}{2004/01/17}{Bugfix: Missing \% added}
 % \changes{v3.1}{2007/07/22}{Starred-variant added}
 % \changes{v3.1e}{2007/07/27}{Inside packages the starred variant will be used automatically}
+% \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 %  |\captionsetup|\oarg{type}\marg{keyval-list of options}\\
 %  |\captionsetup*|\oarg{type}\marg{keyval-list of options}\par
 %  If the optional argument `type' is specified, we simply save or append
@@ -701,10 +707,12 @@
 \newcommand*\caption@setup{\caption@setkeys{caption}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@setup@options#1[#2]{%
-  % #1 is \@gobble in star form, and \@firstofone otherwise
-  #1{\caption@addtooptlist{#2}}%
-  \expandafter\caption@l@addto@list\csname caption@opt@#2\endcsname}
+\def\caption@setup@options#1[#2]#3{%
+  \@bsphack
+    % #1 is \@gobble in star form, and \@firstofone otherwise
+    #1{\caption@addtooptlist{#2}}%
+    \expandafter\caption@l@addto@list\csname caption@opt@#2\endcsname{#3}%
+  \@esphack}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -712,6 +720,7 @@
 % \changes{v3.1}{2007/07/29}{Optional argument added}
 % \changes{v3.1}{2007/08/17}{Starred variant added}
 % \changes{v3.1e}{2007/07/27}{Inside packages the starred variant will be used automatically}
+% \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 %  |\clearcaptionsetup|\oarg{option}\marg{type}\\
 %  |\clearcaptionsetup*|\oarg{option}\marg{type}\par
 %  This removes the saved option list associated with \meta{type}.
@@ -729,13 +738,15 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\@@clearcaptionsetup[#1]#2{%
-  \expandafter\caption@ifempty@list\csname caption@opt@#2\endcsname
-    {\caption@tempa{\caption@Warning{Option list `#2' undefined}}}%
-    {\ifx,#1,%
-       \caption@clearsetup{#2}%
-     \else
-       \caption@@removefromsetup{#1}{#2}%
-     \fi}}
+  \@bsphack
+    \expandafter\caption@ifempty@list\csname caption@opt@#2\endcsname
+      {\caption@tempa{\caption@Warning{Option list `#2' undefined}}}%
+      {\ifx,#1,%
+         \caption@clearsetup{#2}%
+       \else
+         \caption@@removefromsetup{#1}{#2}%
+       \fi}%
+  \@esphack}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@clearsetup[1]{%
@@ -772,19 +783,22 @@
 % \begin{macro}{\showcaptionsetup}
 % \changes{v3.0e}{2005/05/03}{Optimized for memory usage}
 % \changes{v3.1}{2007/07/29}{Bugfix: Does not expand option list anymore}
+% \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 %  |\showcaptionsetup|\oarg{package}\marg{type}\par
 %  This comes for debugging issues: It shows the saved option list which
 %  is associated with \meta{type}.
 %    \begin{macrocode}
 \newcommand*\showcaptionsetup[2][\@firstofone]{%
-  \GenericWarning{}{%
-    #1 Caption Info: Option list on `#2'\MessageBreak
-    #1 Caption Data: \@ifundefined{caption@opt@#2}{%
-      -none-%
-    }{%
-      {\expandafter\expandafter\expandafter\strip@prefix
-         \expandafter\meaning\csname caption@opt@#2\endcsname}%
-    }}}
+  \@bsphack
+    \GenericWarning{}{%
+      #1 Caption Info: Option list on `#2'\MessageBreak
+      #1 Caption Data: \@ifundefined{caption@opt@#2}{%
+        -none-%
+      }{%
+        {\expandafter\expandafter\expandafter\strip@prefix
+           \expandafter\meaning\csname caption@opt@#2\endcsname}%
+      }}%
+  \@esphack}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -799,6 +813,7 @@
 % \changes{v3.0l}{2007/01/30}{Optional argument removed}
 % \changes{v3.1}{2007/04/11}{Usage of \cs{clearcaptionsetup} added}
 % \changes{v3.1}{2007/05/09}{Renamed from \cs{caption@settype} to \cs{caption@setoptions}}
+% \changes{v3.1f}{2007/12/03}{Definition of \cs{caption@iftypewarning} removed}
 %  |\caption@setoptions|\marg{type or environment or\ldots}\par
 %  Caption options which have been saved with |\captionsetup|\oarg{type} can
 %  be executed by using this command.
@@ -807,12 +822,14 @@
 %    \begin{macrocode}
 \newcommand*\caption@setoptions[1]{%
   \caption@Debug{options=#1}%
-  \expandafter\let\expandafter\@tempa\csname caption@opt@#1\endcsname
-  \ifx\@tempa\relax \else
-    \let\caption@iftypewarning\@firstoftwo % = true
-    \expandafter\caption@setup\expandafter{\@tempa}%
+  \expandafter\let\expandafter\caption@opt\csname caption@opt@#1\endcsname
+  \ifx\caption@opt\relax \else
+    \caption@xsetup\caption@opt
     \caption@clearsetup{#1}%
   \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@xsetup[1]{\expandafter\caption@setup\expandafter{#1}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -862,6 +879,7 @@
 % \changes{v3.0l}{2007/01/30}{Optional argument added}
 % \changes{v3.0p}{2007/04/08}{\cs{caption@keydepth} is now a command instead of a counter}
 % \changes{v3.1b}{2007/09/18}{Usage of \cs{caption@Package} removed, we use \cs{caption@KV@err} instead}
+% \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 %  |\caption@setkeys|\oarg{package}\marg{family}\marg{key-values}\par
 %  This one simply calls |\setkeys|\marg{family}\marg{key-values}
 %  but lets the error messages not refer to the \package{keyval} package,
@@ -871,12 +889,13 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@@setkeys[#1]#2#3{%
+  \@bsphack
+%    \end{macrocode}
+%    \begin{macrocode}
   \expandafter\let\csname ORI@KV@err\caption@keydepth\endcsname\KV@err
   \expandafter\let\csname ORI@KV@errx\caption@keydepth\endcsname\KV@errx
-  \@ifundefined{#1@KV@err}%
-    {\let\KV@err\ORI@KV@err\let\KV@errx\ORI@KV@errx}%
-    {\expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
-     \let\KV@errx\KV@err}%
+  \expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
+  \let\KV@errx\KV@err
   \edef\caption@keydepth{\caption@keydepth i}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -886,7 +905,10 @@
 %    \begin{macrocode}
   \edef\caption@keydepth{\expandafter\@cdr\caption@keydepth\@nil}%
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
-  \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname}
+  \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
+%    \end{macrocode}
+%    \begin{macrocode}
+  \@esphack}
 %    \end{macrocode}
 %    \begin{macrocode}
 \let\caption@keydepth\@empty
@@ -955,13 +977,14 @@
 % \changes{v3.0p}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
 % \changes{v3.0p}{2007/04/03}{Option `twoside' added}
 % \changes{v3.1}{2007/08/11}{Options `margin*', `minmargin', and `maxmargin' added}
+% \changes{v3.1f}{2007/11/10}{Option `oneside' added}
 %
 % \begin{macro}{\captionmargin}
 % \begin{macro}{\captionwidth}
 %  |\captionmargin| and |\captionwidth| contain the extra margin
 %  resp. the total width used for captions. Please never set these values in
 %  a direct way, they are just accessible in user documents to provide
-%  compatibility to |caption.sty| \version{1.x}.\par
+%  compatibility to \version{1.x}.\par
 %  Note that we can only set one value at a time, `margin' \emph{or} `width'.
 %  If |\captionwidth| is not zero we will take this value afterwards,
 %  otherwise |\captionmargin| and |\captionmargin@|.
@@ -978,6 +1001,7 @@
 \DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
+\DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
@@ -994,7 +1018,7 @@
 %        `\texttt{margin*=}\cs{captionmargin}' works in singleline options}
 %  |\setcaptionmargin|\marg{amount}\\
 %  |\setcaptionmargin*|\marg{amount}\par
-%  Please never use this in user documents, it's just there to
+%  Please never use them in user documents, it's just there to
 %  provide compatibility to the \package{caption2} package.
 %    \begin{macrocode}
 \newcommand*\setcaptionmargin{%
@@ -1064,12 +1088,20 @@
 %
 % \begin{macro}{\caption@label}
 % \changes{v3.1}{2007/09/01}{This macro added}
+% \changes{v3.1f}{2007/12/03}{Definition of \cs{caption@newlabel} in AUX file added}
 %  This command is a modified version of |\label| from \LaTeX2e.
 %  It will be used inside |\caption@ifoddpage| and |\FP@helpNote|.
 %    \begin{macrocode}
 \newcommand*\caption@label[1]{%
+  \caption@@label
   \protected@write\@auxout{\let\caption@thepage\relax}%
          {\string\caption@newlabel{#1}{\caption@thepage}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@label{%
+  \global\let\caption@@label\relax
+  \protected@write\@auxout{}%
+    {\string\providecommand*\string\caption@newlabel[2]{}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1177,7 +1209,7 @@
 % our option) or not (and therefore should be ignored by us).\footnote{%^^A
 % This problem was completely solved due a change of \cs{caption@ProcessOptions}
 % in \thispackage\ \version{3.0j}, but we still need this workaround since
-% these options otherwise would still collide with the current version $1.3$
+% these options would otherwise still collide with the current version $1.3$
 % of the \package{subfig} package (Sigh!)}
 %    \begin{macrocode}
 \@ifundefined{scr@caption}{}{%
@@ -1232,6 +1264,7 @@
 % \changes{v3.0f}{2005/06/01}{Starred variant added}
 % \changes{v3.1}{2007/07/29}{Recursive style definitions should work now}
 % \changes{v3.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
+% \changes{v3.1f}{2007/12/03}{Definition of \cs{caption@iftypewarning} removed}
 %  |\caption@setstyle|\marg{name}\\
 %  |\caption@setstyle*|\marg{name}\par
 %  Selecting a caption style means saving the additional
@@ -1251,13 +1284,12 @@
     {#1{\caption@Error{Undefined style `#2'}}}%
     {\expandafter\let\expandafter\caption@sty\csname caption@sty@#2\endcsname
      \ifx\caption@setstyle@flag\@undefined
-       \let\caption@setstyle@flag\caption@setstyle
-       \let\caption@iftypewarning\@firstoftwo % = true
+       \let\caption@setstyle@flag\relax
        \caption@resetstyle
-       \expandafter\caption@setup\expandafter{\caption@sty}%
+       \caption@xsetup\caption@sty
        \let\caption@setstyle@flag\@undefined
      \else
-       \expandafter\caption@setup\expandafter{\caption@sty}%
+       \caption@xsetup\caption@sty
      \fi
      \expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
      \expandafter\caption@l@addto@list\expandafter\caption@opt@singleline
@@ -1269,13 +1301,14 @@
 % \changes{v3.1}{2007/02/04}{%
 %       This macro renamed from \cs{caption@setdefault} to \cs{caption@resetstyle}}
 % \changes{v3.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
+% \changes{v3.1f}{2007/11/17}{\texttt{size=} added}
 %  This resets (nearly) all caption options to the base ones.
 %  \emph{Note that this does not touch the skips and the positioning!}
 %    \begin{macrocode}
 \newcommand*\caption@resetstyle{%
   \caption@setup{%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
-    justification=justified,font=,labelfont=,textfont=,%
+    justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
     indent=0pt,parindent=0pt,hangindent=0pt,%
     singlelinecheck=1,strut=1}%
@@ -1409,12 +1442,14 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% There are three pre-defined label formats, called `empty', `simple',
-% and `parens'.
+% \changes{v3.1f}{2007/12/16}{Caption label format \opt{brace} added}
+% There are four pre-defined label formats, called `empty', `simple',
+% `parens', and `brace'.
 %    \begin{macrocode}
 \DeclareCaptionLabelFormat{empty}{}
 \DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{\nobreakspace}#2}
 \DeclareCaptionLabelFormat{parens}{\bothIfFirst{#1}{\nobreakspace}(#2)}
+\DeclareCaptionLabelFormat{brace}{\bothIfFirst{#1}{\nobreakspace}#2)}
 %    \end{macrocode}
 %
 % `default' usually maps to `simple'.
@@ -1560,14 +1595,17 @@
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
+\DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
 \DeclareDefaultCaptionFont{font}{}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
+\DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
 \DeclareDefaultCaptionFont{labelfont}{}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
+\DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
 \DeclareDefaultCaptionFont{textfont}{}
 %    \end{macrocode}
 %
@@ -1576,13 +1614,24 @@
 % \changes{v3.1}{2006/05/14}{Support of \cs{DeclareDefaultCaptionFont} added}
 %  |\caption@setfont|\marg{name}\marg{keyval-list of names}\par
 %  Selecting a caption font means saving all the code snippets
-%  (in |\caption#1|).
-%  Because we use |\setkeys| recursive here we need to do this inside an
-%  extra group and collect all the code snippets in |\caption@tempa| first.
+%  in |\caption|\meta{name}.
 %    \begin{macrocode}
-\newcommand*\caption@setfont[2]{%
+\newcommand*\caption@setfont[1]{%
+  \expandafter\let\csname caption#1\endcsname\@empty
+  \caption@addtofont{#1}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@addtofont}
+% \changes{v3.1f}{2007/11/17}{This macro added}
+%  |\caption@addtofont|\marg{name}\marg{keyval-list of names}\par
+%  Like |\caption@setfont|, but adds the code snippets to |\caption|\meta{name}.\par
+%  Because we use |\setkeys| recursive here we need to do this inside an
+%  extra group.
+%    \begin{macrocode}
+\newcommand*\caption@addtofont[2]{%
   \begingroup
-    \let\caption@fnt\@empty
+    \expandafter\let\expandafter\caption@fnt\csname caption#1\endcsname
     \define@key{caption@fnt}{default}[]{%
       \l@addto@macro\caption@fnt{\csname caption#1@default\endcsname}}%
     \caption@setkeys[caption]{caption@fnt}{#2}%
@@ -1660,19 +1709,10 @@
     \KV@caption@fnt@singlespacing\@unused}}
 %    \end{macrocode}
 %
-% \begin{macro}{\captionsize}
-% \changes{v3.0a}{2004/01/23}{Implementation changed from \cs{captionfont}
-%        to \cs{@empty}}
-% \changes{v3.0c}{2004/07/16}{Use \cs{providecommand} instead of \cs{newcommand}}
-%  The old versions \version{1.x} of \thispackage\ offered this
-%  command to setup the font size used for captions. We still do
-%  so old documents will work fine.
-%    \begin{macrocode}
-\providecommand\captionsize{}
-%    \end{macrocode}
-% \end{macro}
-%
 % \changes{v3.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
+% The old versions \version{1.x} of \thispackage\ offered this
+% command to setup the font size used for captions. We still do
+% so old documents will work fine.
 %    \begin{macrocode}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 \DeclareDefaultCaptionFont{size}{}
@@ -1994,33 +2034,38 @@
 % \subsection{Lists}
 %
 % \changes{v3.0b}{2004/05/16}{Option \opt{listof=} added}
+% \changes{v3.1f}{2007/11/17}{Option \opt{list=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{listof}{\caption@set@bool\caption@iflof{#1}}
+\DeclareCaptionOption{list}{\caption@set@bool\caption@iflist{#1}}
+\DeclareCaptionOption{listof}{\caption@set@bool\caption@iflist{#1}}
 %    \end{macrocode}
 %
-% \begin{macro}{\DeclareCaptionListOfFormat}
+% \begin{macro}{\DeclareCaptionListFormat}
 % \changes{v3.1}{2004/07/15}{This macro added}
-%  |\DeclareCaptionListOfFormat|\marg{name}\marg{code with \#1 and \#2}
+% \changes{v3.1f}{2007/11/17}{Renamed from \cs{DeclareCaptionListOfFormat} to \cs{DeclareCaptionListFormat}}
+%  |\DeclareCaptionListFormat|\marg{name}\marg{code with \#1 and \#2}
 %    \begin{macrocode}
-\newcommand*\DeclareCaptionListOfFormat[2]{%
+\newcommand*\DeclareCaptionListFormat[2]{%
   \global\@namedef{caption@lstfmt@#1}##1##2{#2}}
-\@onlypreamble\DeclareCaptionListOfFormat
+\@onlypreamble\DeclareCaptionListFormat
 %    \end{macrocode}
 % \end{macro}
 %
 % \changes{v3.1}{2007/07/15}{Option \opt{listofformat=} added}
+% \changes{v3.1f}{2007/11/17}{Option \opt{listofformat=} renamed to \opt{listformat=}}
 %    \begin{macrocode}
-\DeclareCaptionOption{listofformat}{\caption@setlistofformat{#1}}
+\DeclareCaptionOption{listformat}{\caption@setlistformat{#1}}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setlistofformat}
+% \begin{macro}{\caption@setlistformat}
 % \changes{v3.1}{2004/07/15}{This macro added}
-%  |\caption@setlistofformat|\marg{name}\par
-%  Selecting a caption list-of format simply means saving the code (in |\caption@lstfmt|).
+% \changes{v3.1f}{2007/11/17}{Renamed from \cs{caption@setlistofformat} to \cs{caption@setlistformat}}
+%  |\caption@setlistformat|\marg{name}\par
+%  Selecting a caption list format simply means saving the code (in |\caption@lstfmt|).
 %    \begin{macrocode}
-\newcommand*\caption@setlistofformat[1]{%
+\newcommand*\caption@setlistformat[1]{%
   \@ifundefined{caption@lstfmt@#1}%
-    {\caption@Error{Undefined list-of format `#1'}}%
+    {\caption@Error{Undefined list format `#1'}}%
     {\expandafter\let\expandafter\caption@lstfmt
        \csname caption@lstfmt@#1\endcsname}}
 %    \end{macrocode}
@@ -2028,11 +2073,11 @@
 %
 % There are five pre-defined list formats, taken from the \package{subfig} package.
 %    \begin{macrocode}
-\DeclareCaptionListOfFormat{empty}{}
-\DeclareCaptionListOfFormat{simple}{#1#2}
-\DeclareCaptionListOfFormat{parens}{#1(#2)}
-\DeclareCaptionListOfFormat{subsimple}{#2}
-\DeclareCaptionListOfFormat{subparens}{(#2)}
+\DeclareCaptionListFormat{empty}{}
+\DeclareCaptionListFormat{simple}{#1#2}
+\DeclareCaptionListFormat{parens}{#1(#2)}
+\DeclareCaptionListFormat{subsimple}{#2}
+\DeclareCaptionListFormat{subparens}{(#2)}
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@lstfmt@default{\caption@lstfmt@subsimple}
@@ -2044,7 +2089,6 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
-  \let\caption@iftypewarning\caption@ifdebug
   \caption@ifdebug
     {\def\caption@Debug{\PackageInfo{caption}}}%
     {\let\caption@Debug\@gobble}}
@@ -2382,7 +2426,7 @@
 % \subsection{Execution of options}
 %
 %    \begin{macrocode}
-\captionsetup{style=default,position=default,listof=1,listofformat=default,%
+\captionsetup{style=default,position=default,list=1,listformat=default,%
               twoside=\if@twoside 1\else 0\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -2412,7 +2456,7 @@
 %  |listof=| was set to |true|.
 %    \begin{macrocode}
 \newcommand*\caption@addcontentsline[2]{%
-  \caption@iflof%
+  \caption@iflist
     {\def\@tempa{#2}}%
     {\let\@tempa\@empty}%
   \ifx\@tempa\@empty \else
@@ -2470,7 +2514,7 @@
 %        single-line-check replaced by \cs{relax}}
 % \changes{v3.0i}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be
 %        typeset in horizontal mode}
-% \changes{v3.0k}{2006/05/13}{Uses \cs{captionbox} instead of \cs{caption@start/endbox}}
+% \changes{v3.0k}{2006/05/13}{Uses \cs{caption@parbox} instead of \cs{caption@start/endbox}}
 % \changes{v3.0l}{2007/01/04}{Oops, bugfix 04-05-05 got lost in v3.0j, re-added}
 % \changes{v3.0p}{2007/04/03}{Usage of \cs{caption@ifoddpage} added}
 % \changes{v3.1}{2007/07/29}{\cs{caption@calcmargin} moved below single-line-check}
@@ -2520,7 +2564,7 @@
 %    \begin{macrocode}
   \@tempdima\captionwidth
   \caption@ifh{\advance\@tempdima-\caption@indent}%
-  \captionbox\@tempdima{%
+  \caption@parbox\@tempdima{%
 %    \end{macrocode}
 %
 % Typeset the indention (option |indention=|)\\
@@ -2535,7 +2579,7 @@
       \fi}%
 %    \end{macrocode}
 %
-% Typeset the caption itself and close the |\captionbox|
+% Typeset the caption itself and close the |\caption@parbox|
 %    \begin{macrocode}
     \caption@@@make{#1}{#2}}%
 %    \end{macrocode}
@@ -2624,7 +2668,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@singleline{%
-  \expandafter\caption@setup\expandafter{\caption@opt@singleline}%
+  \caption@xsetup\caption@opt@singleline
   \let\caption@fmt\caption@slfmt}
 %    \end{macrocode}
 % \end{macro}
@@ -2652,15 +2696,16 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\captionbox}
-% \changes{v3.0k}{2006/05/13}{We define \cs{captionbox} instead of
+% \begin{macro}{\caption@parbox}
+% \changes{v3.0k}{2006/05/13}{We define \cs{caption@parbox} instead of
 %        \cs{caption@start/endbox}}
-% \changes{v3.0n}{2006/03/09}{Bugfix 07-03-09: \cs{captionbox} changed from
+% \changes{v3.0n}{2006/03/09}{Bugfix 07-03-09: \cs{caption@parbox} changed from
 %        \cs{parbox-t} to \cs{parbox-b}}
-%  |\captionbox|\marg{width}\marg{contents}\par
+% \changes{v3.1f}{2007/11/11}{Renamed from \cs{captionbox} to \cs{caption@parbox}}
+%  |\caption@parbox|\marg{width}\marg{contents}\par
 %  This macro defines the box which surrounds the caption paragraph.
 %    \begin{macrocode}
-\newcommand*\captionbox{\parbox[b]}
+\newcommand*\caption@parbox{\parbox[b]}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2676,6 +2721,7 @@
 % \changes{v3.0h}{2005/08/25}{\cs{caption@iflf} added}
 % \changes{v3.0l}{2007/02/18}{Usage of \cs{caption@tfmt} added}
 % \changes{v3.1}{2007/05/07}{Bugfix: \cs{ifhmode} added to \cs{@finalstrut}}
+% \changes{v3.1f}{2007/11/17}{Made option \opt{size=} stronger than \opt{font=}}
 %  |\caption@@@make|\marg{caption label}\marg{caption text}\par
 %  This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
@@ -2708,7 +2754,7 @@
 %
 % Finally typeset the caption.
 %    \begin{macrocode}
-  \caption@hj\captionsize\captionfont\caption@fmt
+  \caption@hj\captionfont\captionsize\caption@fmt
     {\ifcaption@star\else{\captionlabelfont#1}\fi}%
     {\ifcaption@star\else{\caption@iflf\captionlabelfont\caption@lsep}\fi}%
     {{\captiontextfont
@@ -2756,34 +2802,26 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \iffalse\subsection{\cs{DeclareFloatingEnvironment}}\fi
-% \subsection{Bonus features}
+% \subsection{Types \& sub-types}
 %
-% \begin{macro}{\DeclareFloatingEnvironment}
+% \begin{macro}{\DeclareCaptionType}
 % \changes{v3.1}{2007/08/12}{This macro added}
 % \changes{v3.1a}{2007/09/07}{Three optional arguments added}
-%  |\DeclareFloatingEnvironment|\oarg{file ext}\marg{environment}\oarg{name}\oarg{list name}
+% \changes{v3.1f}{2007/12/06}{Renamed from \cs{DeclareFloatingEnvironment} to \cs{DeclareCaptionType}}
+% \changes{v3.1f}{2007/12/21}{Optional argument revised, uses key-value syntax now}
+%  |\DeclareCaptionType|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
-\providecommand*\DeclareFloatingEnvironment{%
-  \@ifnextchar[%]
-    \caption@@DeclareFloatingEnvironment\caption@DeclareFloatingEnvironment}
-\@onlypreamble\DeclareFloatingEnvironment
+\newcommand*\DeclareCaptionType{%
+  \@testopt\@DeclareCaptionType{}}
+\@onlypreamble\DeclareCaptionType
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@DeclareFloatingEnvironment[1]{%
-  \caption@@DeclareFloatingEnvironment[lo#1]{#1}}
-\@onlypreamble\caption@DeclareFloatingEnvironment
-%    \end{macrocode}
-%    \begin{macrocode}
-\def\caption@@DeclareFloatingEnvironment[#1]#2{%
-  \@ifundefined{c@chapter}%
-    {\newcounter{#2}%
-     \@namedef{the#2}{\arabic{#2}}%
-     \@namedef{theH#2}{\arabic{#2}}}%
-    {\newcounter{#2}[chapter]%
-     \@namedef{the#2}{\ifnum\c@chapter>\z@ \thechapter.\fi \arabic{#2}}%
-     \@namedef{theH#2}{\theHchapter.\arabic{#2}}}%
-  \@namedef{fps@#2}{tbp}%
+\def\@DeclareCaptionType[#1]#2{%
+  \def\caption@type{#2}%
+  \caption@Debug{New type `#2'}%
+  \newcounter{#2}\@namedef{theH#2}{}%
+  \KV@caption@DCT@within{\@ifundefined{c@chapter}{none}{chapter}}%
+  \KV@caption@DCT@placement{tbp}%
   \@ifundefined{c@float@type}%
     {\newcounter{float@type}%
      \setcounter{float@type}{\@ifundefined{c@figure}14}}%
@@ -2791,18 +2829,11 @@
   \caption@Debug{float type `#2'=\the\value{float@type}}%
   \expandafter\xdef\csname ftype@#2\endcsname{\the\value{float@type}}%
   \addtocounter{float@type}{\value{float@type}}%
-  \@namedef{ext@#2}{#1}%
+  \KV@caption@DCT@fileext{lo#2}%
   \@namedef{fnum@#2}{\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
   \newenvironment{#2}{\@float{#2}}{\end@float}%
   \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
-  \expandafter\newcommand\csname listof#2s\endcsname{\begingroup
-    \expandafter\let\expandafter\listfigurename\csname list#2name\endcsname
-    \expandafter\let\expandafter\ext@figure\csname ext@#2\endcsname
-    \let\caption@ORI@starttoc\@starttoc
-    \renewcommand*\@starttoc[1]{%
-      \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
-    \listoffigures
-    \endgroup}%
+  \expandafter\newcommand\csname listof#2s\endcsname{\caption@listof{#2}}%
   \@ifundefined{l@figure}%
     {\@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}}%
     {\expandafter\let\csname l@#2\endcsname\l@figure}%
@@ -2816,80 +2847,237 @@
   \expandafter\let\csname #2name\endcsname\@tempa
   \expandafter\newcommand\csname list#2name\endcsname{}%
   \expandafter\xdef\csname list#2name\endcsname{List of \@tempa s}%
-  \@cons\caption@floatlist{{#2}}%
-  \@ifnextchar[{\caption@@@DeclareFloatingEnvironment{#2}}\relax}
-\@onlypreamble\caption@@DeclareFloatingEnvironment
+  \@cons\caption@typelist{{#2}}%
+  \caption@setkeys[caption]{caption@DCT}{#1}%
+  \@ifnextchar[\@@DeclareCaptionType\relax}
+\@onlypreamble\@DeclareCaptionType
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@@DeclareFloatingEnvironment#1[#2]{%
-  \@namedef{#1name}{#2}%
-  \@ifnextchar[{\caption@@@@DeclareFloatingEnvironment{#1}}\relax}
-\@onlypreamble\caption@@@DeclareFloatingEnvironment
+\def\@@DeclareCaptionType[#1]{%
+  \KV@caption@DCT@name{#1}%
+  \@ifnextchar[\@@@DeclareCaptionType\relax}
+\@onlypreamble\@@DeclareCaptionType
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@@@DeclareFloatingEnvironment#1[#2]{%
-  \@namedef{list#1name}{#2}}
-\@onlypreamble\caption@@@@DeclareFloatingEnvironment
+\def\@@@DeclareCaptionType[#1]{%
+  \KV@caption@DCT@listname{#1}}
+\@onlypreamble\@@@DeclareCaptionType
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@floatlist{}
+\let\DeclareFloatingEnvironment\DeclareCaptionType % old command name
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\ForFloatingEnvironments}
-% \changes{v3.1a}{2007/09/07}{This macro added}
-%  |\ForFloatingEnvironments|\marg{code with \#1}
+% \begin{macro}{\caption@listof}
+% \changes{v3.1f}{2007/12/21}{This macro added}
+% |\caption@listof|\marg{float type}
 %    \begin{macrocode}
-\providecommand\ForFloatingEnvironments[1]{%
-  \caption@AtBeginDocument{%
-    \def\@elt##1{#1}%
-    \caption@floatlist
+\newcommand*\caption@listof[1]{%
+  \begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+    \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
+    \let\caption@ORI@starttoc\@starttoc
+    \renewcommand*\@starttoc[1]{%
+      \expandafter\caption@ORI@starttoc\expandafter{\ext@figure}}%
+    \listoffigures
+  \endgroup}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@typelist}
+% An \cs{@elt}-list containing the caption types defined
+% with |\Declare|\x|Caption|\x|Type|.
+%    \begin{macrocode}
+\newcommand*\caption@typelist{}
+%    \end{macrocode}
+% \end{macro}
+%
+% The available \meta{options} are:
+% |fileext=|\meta{file extension},
+% |listname=|\meta{list name},
+% |name=|\meta{prosa name},
+% |placement=|\meta{htbp},
+% |within=|\meta{none,chapter,section}, and
+% |without|.
+%    \begin{macrocode}
+\define@key{caption@DCT}{fileext}{\@namedef{ext@\caption@type}{#1}}
+\@onlypreamble@key{caption@DCT}{fileext}
+\define@key{caption@DCT}{listname}{\@namedef{list\caption@type name}{#1}}
+\@onlypreamble@key{caption@DCT}{listname}
+\define@key{caption@DCT}{name}{\@namedef{\caption@type name}{#1}}
+\@onlypreamble@key{caption@DCT}{name}
+\define@key{caption@DCT}{placement}{\@namedef{fps@\caption@type}{#1}}
+\@onlypreamble@key{caption@DCT}{placement}
+\define@key{caption@DCT}{within}{%
+  \@ifundefined{c@chapter}{}{\@removefromreset\caption@type{chapter}}%
+  \@removefromreset\caption@type{section}%
+  \begingroup
+    \caption@setkeys[caption]{caption@within}{#1}%
+  \endgroup}
+\@onlypreamble@key{caption@DCT}{within}
+\define@key{caption@DCT}{without}{\KV@caption@DCT@within{none}}
+\@onlypreamble@key{caption@DCT}{without}
+%    \end{macrocode}
+%    \begin{macrocode}
+\define@key{caption@within}{none}[]{%
+  \caption@within{}{}}
+\@onlypreamble@key{caption@within}{none}
+\@ifundefined{c@chapter}{}{%
+  \define@key{caption@within}{chapter}[]{%
+    \@addtoreset\caption@type{chapter}%
+    \caption@within{\ifnum\c@chapter>\z@ \thechapter.\fi}{\theHchapter.}}
+  \@onlypreamble@key{caption@within}{chapter}}
+\define@key{caption@within}{section}[]{%
+  \@addtoreset\caption@type{section}%
+  \caption@within{\ifnum\c@section>\z@ \thesection.\fi}{\theHsection.}}
+\@onlypreamble@key{caption@within}{section}
+%    \end{macrocode}
+% \begin{macro}{\caption@within}
+% \changes{v3.1f}{2007/12/21}{This macro added}
+% |\caption@within|\marg{thecode}\marg{theHcode}
+%    \begin{macrocode}
+\newcommand*\caption@within{%
+  \expandafter\caption@within@\expandafter{\caption@type}}
+\@onlypreamble\caption@within
+\newcommand*\caption@within@[3]{%
+  \global\@namedef{the\caption@type}{#2\arabic{#1}}%
+  \@ifundefined{theH\caption@type}\caption@AtBeginDocument\@firstofone
+    {\global\@namedef{theH\caption@type}{#3\arabic{#1}}}}
+\@onlypreamble\caption@within@
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@removefromreset}
+% \changes{v3.1f}{2007/12/21}{This macro added}
+% This code was taken from the \package{remreset} package
+% which is part of the `carlisle' package bundle.
+% (Copyright 1997 David Carlisle)
+%    \begin{macrocode}
+\providecommand*\@removefromreset[2]{{%
+  \expandafter\let\csname c@#1\endcsname\@removefromreset
+  \def\@elt##1{%
+    \expandafter\ifx\csname c@##1\endcsname\@removefromreset
+    \else
+      \noexpand\@elt{##1}%
+    \fi}%
+  \expandafter\xdef\csname cl@#2\endcsname{%
+    \csname cl@#2\endcsname}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionSubType}
+% \changes{v3.1f}{2007/11/16}{This macro added}
+%  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
+%  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\par
+%  The starred variant provides the numbering format
+%  \meta{type}|.|\meta{subtype} while the non-starred variant simply
+%  uses \meta{subtype}.
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionSubType{%
+  \caption@teststar\@DeclareCaptionSubType\@firstoftwo\@secondoftwo}
+\@onlypreamble\DeclareCaptionSubType
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\@DeclareCaptionSubType[1]{%
+  \@testopt{\@@DeclareCaptionSubType{#1}}{alph}}
+\@onlypreamble\@DeclareCaptionSubType
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\@@DeclareCaptionSubType#1[#2]#3{%
+  \@ifundefined{c@#3}%
+    {\caption@Error{No float type '#3' defined}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    {\@ifundefined{c@sub#3}%
+       {\caption@Debug{New subtype `sub#3'}%
+        \newcounter{sub#3}%
+        \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
+        \@ifundefined{l@chapter}%
+          {\edef\@tempa{\expandafter\expandafter\expandafter\noexpand
+                        \expandafter\@car\l@subsubsection\@nil}%
+           \def\@tempb{\@dottedtocline}%
+           \ifx\@tempa\@tempb % \l@subsubsection starts with \@dottedtocline
+             \expandafter\edef\csname l@sub#3\endcsname{%
+               \noexpand\@dottedtocline{2}%
+               \expandafter\expandafter\expandafter\noexpand
+               \expandafter\@gobbletwo\l@subsubsection}%
+           \else
+             \@namedef{l@sub#3}{\@dottedtocline{2}{3.8em}{3.2em}}%
+           \fi}%
+          {\expandafter\let\csname l@sub#3\endcsname\l@subsection}%
+        \@cons\caption@subtypelist{{#3}}}%
+       {\caption@Debug{Modify caption `sub#3'}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+     #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
+     {\@namedef{p@sub#3}{}%
+      \@namedef{thesub#3}{\csname the#3\endcsname.\@nameuse{#2}{sub#3}}}%
+     {\@namedef{p@sub#3}{\csname the#3\endcsname}%
+      \@namedef{thesub#3}{\@nameuse{#2}{sub#3}}}%
+     \@namedef{theHsub#3}{\csname theH#3\endcsname.\arabic{sub#3}}%
+     \@namedef{sub#3autorefname}{\csname #3name\endcsname}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\@onlypreamble\@@DeclareCaptionSubType
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\caption@subtypelist}
+% An \cs{@elt}-list containing the subtypes defined
+% with |\Declare|\x|Caption|\x|Sub|\x|Type|.
+%    \begin{macrocode}
+\newcommand*\caption@subtypelist{}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@For}
+% \changes{v3.1a}{2007/09/07}{This macro added}
+% \changes{v3.1f}{2007/11/16}{Renamed from \cs{ForFloatingEnvironments} to \cs{caption@For}}
+%  |\caption@For|\marg{elt-list}\marg{code with \#1}\\
+%  |\caption@For*|\marg{elt-list}\marg{code with \#1}
+%    \begin{macrocode}
+\newcommand*\caption@For{\caption@withoptargs\caption@@For}
+\@onlypreamble\caption@For
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@@For[3]{%
+  \caption@AtBeginDocument#1{%
+    \def\@elt##1{#3}%
+    \@nameuse{caption@#2}%
     \let\@elt\relax}}%
-\@onlypreamble\ForFloatingEnvironments
+\@onlypreamble\caption@@For
 %    \end{macrocode}
 % \end{macro}
 %
 % \subsection{subfig package adaptions}
 % \changes{v3.1}{2007/07/07}{Several adaptions to the \package{subfig} package added}
 %
-% Unfortunately the author of the \package{subfig} package does not seem to
-% maintain his package anymore, so we have to make several adaptions here.
+% We have to make several adaptions to \thispackage~\version{3.1} here.
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
   \def\@tempa{\@ifstar\sf@@subref\sf@subref}%
   \ifx\subref\@tempa
     \PackageInfo{caption3}{subfig package 1.2 or 1.3 is loaded\@gobble}%
 %    \end{macrocode}
-%
 %    \begin{macrocode}
     \let\caption@setfloattype\@gobble
-%    \end{macrocode}
-%    \begin{macrocode}
-%   \let\sf@ifinlist\caption@ifinlist
-    \let\sf@ifpositiontop\caption@iftop
-%    \end{macrocode}
-%    \begin{macrocode}
-    \def\@dottedxxxline#1#2#3#4#5#6#7{%
-      \begingroup
-        \caption@setfloattype{#1}%
-        \caption@setoptions{subfloat}%
-        \caption@setoptions{sub#1}%
-        \ifnum #3>\@nameuse{c@#2depth}\else
-          \@dottedtocline{\z@}{#4}{#5}{#6}{#7}%
-        \fi
-      \endgroup}%
-%    \end{macrocode}
-%    \begin{macrocode}
-     \let\sf@subfloat\sf@NEW@subfloat
-%    \end{macrocode}
-%    \begin{macrocode}
-    \caption@removefromoptlist{subfloat}%
-    \caption@removefromoptlist{subfigure}%
-    \caption@removefromoptlist{subtable}%
+    \let\@dottedxxxline\sf@NEW@dottedxxxline
+    \let\sf@subfloat\sf@NEW@subfloat
 %    \end{macrocode}
 %    \begin{macrocode}
   \fi
+  \let\sf@NEW@dottedxxxline\@undefined
   \let\sf@NEW@subfloat\@undefined}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\sf@NEW@dottedxxxline#1#2#3#4#5#6#7{%
+  \begingroup
+    \caption@setfloattype{#1}%
+    \caption@setoptions{subfloat}%
+    \caption@setoptions{sub#1}%
+    \ifnum #3>\@nameuse{c@#2depth}\else
+      \@dottedtocline{\z@}{#4}{#5}{#6}{#7}%
+    \fi
+  \endgroup}
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\sf@NEW@subfloat{%
@@ -2911,7 +3099,7 @@
     \setcounter{sub\@captype @save}{\value{sub\@captype}}%
     \@ifnextchar [%  %] match left bracket
       {\sf@@subfloat}%
-      {\sf@@subfloat[\@empty]}}%
+      {\sf@@subfloat[\@empty]}}
 %    \end{macrocode}
 %
 % \iffalse
@@ -2932,7 +3120,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/11/04 v3.1e Customising captions (AR)]
+\ProvidesPackage{caption}[2007/12/23 v3.1f Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -2949,7 +3137,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2007/11/04] % needs v3.1e or newer
+\RequirePackage{caption3}[2007/12/21] % needs v3.1f or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible packages}
@@ -2989,7 +3177,7 @@
 \newcommand*\caption@IncompatiblePackage[2]{%
   \PackageWarningNoLine{caption}{%
     Usage of the #1 package together with the\MessageBreak
-    caption package is strongly *not* recommended.\MessageBreak
+    caption package is strongly not recommended.\MessageBreak
     Instead of loading the #1 package you should\MessageBreak
     use the caption package option\MessageBreak
     \space\space`tableposition=top'#2}}
@@ -3005,7 +3193,7 @@
 \caption@ifbool{documentclass}{}{%
   \PackageWarningNoLine{caption}{%
     Unsupported document class (or package) detected,\MessageBreak
-    usage of the caption package is *not* recommended}%
+    usage of the caption package is not recommended}%
   \caption@Info{\string\@makecaption\space=\space\meaning\@makecaption}%
 }
 %    \end{macrocode}
@@ -3193,16 +3381,9 @@
 }
 %    \end{macrocode}
 %
-% \subsection{Option for configuration files}
+% \subsection{Declaration of options}
 %
-%    \begin{macrocode}
-\DeclareCaptionOption*{config}[caption]{%
-   \InputIfFileExists{#1.cfg}%
-     {\typeout{*** Local configuration file #1.cfg used ***}}%
-     {\caption@Warning{Configuration file #1.cfg not found}}}
-%    \end{macrocode}
-%
-% \subsection{Options for figure and table}
+% \subsubsection{Options for figure and table}
 %
 % \changes{v3.0a}{2004/01/09}{Options \opt{figureposition} and \opt{tableposition} added}
 %    \begin{macrocode}
@@ -3227,15 +3408,18 @@
 %
 % \changes{v3.0d}{2004/08/03}{Options \opt{figurename} and \opt{tablename} added}
 % \changes{v3.1}{2007/07/04}{Options \opt{figurename} and \opt{tablename} re-written}
+% \changes{v3.1f}{2007/11/18}{Options \opt{figurename} and \opt{tablename} are now
+%        available after the document preamble, too.}
+% \changes{v3.1f}{2007/11/18}{Option \opt{name} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{figurename}{\caption@SetFloatName{figure}{#1}}
-\@onlypreamble@key{caption}{figurename}
 \DeclareCaptionOption{tablename}{\caption@SetFloatName{table}{#1}}
-\@onlypreamble@key{caption}{tablename}
+\DeclareCaptionOption{name}{\caption@setfloatname\@captype{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@SetFloatName}
 % \changes{v3.1}{2007/07/04}{This macro added}
+% \changes{v3.1f}{2007/11/18}{After-preamble variant added}
 %  |\caption@SetFloatName|\marg{cmd}\marg{value}
 %    \begin{macrocode}
 \newcommand*\caption@SetFloatName[2]{%
@@ -3245,12 +3429,56 @@
       \@ifundefined{captions\languagename}{}{%
         \def\@tempa{\endgroup
           \expandafter\addto\csname captions\languagename\endcsname}}}%
-    \@tempa{\@namedef{#1name}{#2}}}
-\@onlypreamble\caption@SetFloatName
+    \@tempa{\caption@setfloatname{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setfloatname[2]{\@namedef{#1name}{#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@AtBeginDocument{\let\caption@SetFloatName\caption@setfloatname}
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{caption v1.x compatibility options}
+% \changes{v3.1f}{2007/12/21}{Options \opt{figurewithin} and \opt{tablewithin} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{figurewithin}{\caption@Within{figure}{#1}}
+\@onlypreamble@key{caption}{figurewithin}
+\DeclareCaptionOption{figurewithout}{\caption@Within{figure}{none}}
+\@onlypreamble@key{caption}{figurewithout}
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionOption{tablewithin}{\caption@Within{table}{#1}}
+\@onlypreamble@key{caption}{tablewithin}
+\DeclareCaptionOption{tablewithout}{\caption@Within{table}{none}}
+\@onlypreamble@key{caption}{tablewithout}
+%    \end{macrocode}
+% \begin{macro}{\caption@within}
+% \changes{v3.1}{2007/12/21}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
+\@onlypreamble\caption@Within
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsubsection{Miscellaneous options}
+%
+%    \begin{macrocode}
+\DeclareCaptionOption*{config}[caption]{%
+   \InputIfFileExists{#1.cfg}%
+     {\typeout{*** Local configuration file #1.cfg used ***}}%
+     {\caption@Warning{Configuration file #1.cfg not found}}}
+%    \end{macrocode}
+%
+% \changes{v3.1f}{2007/11/28}{Option \opt{@minipage=} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{@minipage}{%
+  \caption@ifinlist{#1}{auto,default}%
+    {\let\caption@if@minipage\@gobbletwo}%
+    {\caption@set@bool\caption@if@minipage{#1}}}
+\captionsetup{@minipage=default}
+%    \end{macrocode}
+%
+% \subsubsection{caption v1.x compatibility options}
 % \changes{v3.1}{2007/07/21}{Option `compatibility' added}
 % \changes{v3.1}{2007/09/01}{caption v1.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v1.x$ compatibility options}
@@ -3311,7 +3539,7 @@
 \DeclareCaptionOptionNoValue*{ruled}{\caption@setbool{ruled}{1}}
 %    \end{macrocode}
 %
-% \subsection{caption2 v2.x compatibility options}
+% \subsubsection{caption2 v2.x compatibility options}
 % \changes{v3.0h}{2005/07/08}{caption2 \version{2.x} compatibility options added}
 % \changes{v3.1}{2007/09/01}{caption2 v2.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v2.x$ compatibility options}
@@ -3332,7 +3560,7 @@
   \caption@WarningNoLine{Obsolete option `ignoreLTcapwidth' ignored}}
 %    \end{macrocode}
 %
-% \subsection{Obsolete caption v3.0 options}
+% \subsubsection{Obsolete caption v3.0 options}
 % \changes{v3.1}{2007/05/07}{Package option \opt{caption} marked as obsolete,
 %        gives error now}
 %
@@ -3346,7 +3574,7 @@
       and do *not* load the caption package anymore}}}
 %    \end{macrocode}
 %
-% \subsection{fltpage package support options}
+% \subsubsection{fltpage package support options}
 %
 % \changes{v3.1}{2007/09/01}{Options `FPlist' \& `FPref' added}
 % With these options is controlled where the list-of entry and |\ref| resp.
@@ -3369,7 +3597,7 @@
 \captionsetup{FPlist=caption,FPref=figure}
 %    \end{macrocode}
 %
-% \subsection{hyperref package support options}
+% \subsubsection{hyperref package support options}
 %
 % \changes{v3.1}{2007/06/21}{Options `hypcap' \& `hypcapspace' added}
 % With |hypcap=off| one can turn the \package{hypcap} support off
@@ -3392,14 +3620,25 @@
 \caption@ProcessOptions*{caption}
 %    \end{macrocode}
 %
-% \subsection{Option `type', \cs{captionof} and \cs{ContinuedFloat}}
+% \subsection{\cs{captionof} and \cs{ContinuedFloat}}
 %
 % \changes{v3.0d}{2004/08/03}{Option \opt{type=} added}
 % \changes{v3.1}{2007/06/25}{Option \opt{type*=} added}
+% \changes{v3.1f}{2007/11/16}{Option \opt{subtype} \& \opt{subtype*} added}
+%
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \DeclareCaptionOption{type}{\caption@settype{#1}}
-  \DeclareCaptionOption{type*}{\caption@settype*{#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \DeclareCaptionOption{type}{\caption@settype{#1}}%
+  \DeclareCaptionOption{type*}{\caption@settype*{#1}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \DeclareCaptionOption{subtype}[sub\@captype]{\caption@setsubtype{#1}}%
+  \DeclareCaptionOption{subtype*}[sub\@captype]{\caption@setsubtype*{#1}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+}
 %    \end{macrocode}
 %
 % \emph{Important Note:}
@@ -3411,19 +3650,27 @@
 % \changes{v3.1}{2007/05/09}{This macro added}
 % \changes{v3.1b}{2007/09/22}{Usage of \cs{caption@xlabel} added}
 % \changes{v3.1d}{2007/10/23}{Error message for \cs{caption@checkgrouplevel} revised}
+% \changes{v3.1f}{2007/11/16}{\cs{caption@setsubtype} added}
+% \changes{v3.1f}{2007/12/03}{Crappy \cs{caption@iftypewarning} replaced}
 %  |\caption@settype*|\marg{type}\par
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@setoptions|).
 %  Furthermore we check |\currentgrouplevel| (if avail),
 %  redefine |\@currentlabel| so a |\label| before |\caption| will result
 %  in a hint instead of a wrong reference, and
-%  use the macro |\caption@settypehook| (which will be used by our
+%  use the macro |\caption@|(|sub|)|typehook| (which will be used by our
 %  \package{float} package support).\par
 %  The non-starred version sets a \package{hyperref} anchor additionally
 %  (if |hypcap=true| and the \package{hypcap} package is not loaded).
 %    \begin{macrocode}
 \newcommand*\caption@settype{%
   \caption@@settype{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setsubtype{%
+  \caption@iftype
+    {\caption@@settype{sub}}%
+    {\caption@Error{Option `subtype=' outside float}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@settype[1]{%
@@ -3434,41 +3681,51 @@
 % #1 = "" or "sub"
 % #2 = \@firstoftwo in star form, \@secondoftwo otherwise
 % #3 = <type>, e.g. "figure" or "table"
-  \caption@Debug{type=#3}%
-  \caption@checkgrouplevel{#1}{%
-    \captionsetup{#1type#2*\@empty=...}#2{ or \@backslashchar#1captionof}{}}%
+  \@ifundefined{c@#3}%
+    {\caption@Error{No float type '#3' defined}}%
+    {\caption@Debug{#1type=#3}%
+     \caption@checkgrouplevel{#1}{%
+       \captionsetup{#1type#2*\@empty=...}#2{ or
+                     \@backslashchar#1captionof}{}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \@ifundefined{@#1captype}{}{%
-    \edef\@tempa{#3}%
-    \expandafter\ifx\csname @#1captype\endcsname\@tempa \else
-      \caption@iftypewarning{\caption@Warning{%
-        Caption type was already set to `#3'\MessageBreak}}{}%
-    \fi}%
-  \expandafter\edef\csname @#1captype\endcsname{#3}%
-  \let\caption@iftypewarning\caption@ifdebug
+     \edef\@tempa{#3}%
+     \expandafter\ifx\csname @#1captype\endcsname\@tempa \else
+       \@nameuse{caption@#1type@warning}%
+     \fi
+     \expandafter\let\csname @#1captype\endcsname\@tempa
 %    \end{macrocode}
 %    \begin{macrocode}
-  \@nameuse{#1caption@settypehook}%
-  \expandafter\caption@setoptions\csname @#1captype\endcsname
+     \@nameuse{caption@#1typehook}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \let\caption@ifrefstepcounter\@secondoftwo
-  #2{}{%
-    \let\@currentlabel\caption@undefinedlabel
-%   \let\@currentHlabel\@undefined
-    \ifx\caption@ORI@label\@undefined
-      \let\caption@ORI@label\label
-      \def\label{\caption@withoptargs\caption@xlabel}%
-    \fi
-    \caption@start}}
+     \caption@setoptions{#3}%
+     \ifx\caption@opt\relax
+       \@nameundef{caption@#1type@warning}%
+     \else
+       \@namedef{caption@#1type@warning}{\caption@Warning{%
+         The #1caption type was already set to
+         `\csname @#1captype\endcsname'\MessageBreak}}%
+     \fi
+%    \end{macrocode}
+%    \begin{macrocode}
+     \let\caption@ifrefstepcounter\@secondoftwo
+     #2{}{%
+       \let\@currentlabel\caption@undefinedlabel
+%      \let\@currentHlabel\@undefined
+       \ifx\caption@ORI@label\@undefined
+         \let\caption@ORI@label\label
+         \let\label\caption@xlabel
+       \fi
+       \caption@start}}}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@settypehook}
-% Hook, will be extended by our \package{float} package support.
+% \begin{macro}{\caption@typehook}
+% Hook, will be extended later on, e.g.~by our \package{float} package
+% support.
 %    \begin{macrocode}
-\newcommand*\caption@settypehook{}
+\newcommand*\caption@typehook{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3492,9 +3749,10 @@
 %
 % \begin{macro}{\caption@checkgrouplevel}
 % \changes{v3.1}{2007/07/15}{This macro and its usage added}
+% \changes{v3.1f}{2007/11/28}{Error changed to warning (compatibility)}
 %  Checks if |\captionsetup{type=|\ldots|}| or |\caption| is done
-%  inside a group or not -- in the latter case an error will be issued.
-%  (needs \eTeX)
+%  inside a group or not -- in the latter case a warning message will
+%  be issued. (needs \eTeX)
 %    \begin{macrocode}
 \begingroup\expandafter\expandafter\expandafter\endgroup
 \expandafter\ifx\csname currentgrouplevel\endcsname\relax
@@ -3509,7 +3767,7 @@
          \expandafter\edef\csname #1caption@grouplevel\endcsname{%
            \the\currentgrouplevel}%
        \else
-        \caption@Error{\string#2\MessageBreak outside box or environment}%
+         \caption@Warning{\string#2\MessageBreak outside box or environment}%
        \fi
     }{}}
 \fi
@@ -3528,16 +3786,18 @@
 % \end{macro}
 % \begin{macro}{\caption@xlabel}
 % \changes{v3.1b}{2007/09/22}{This macro and its usage added}
+% \changes{v3.1f}{2007/11/11}{Revised}
 %  The new code of |\label| inside floating environments.
 %  |\label| will be redefined using |\caption@withoptargs|, so
 %  |#1| are the optional arguments (if any), and
 %  |#2| is the mandatory argument here.
 %    \begin{macrocode}
-\newcommand*\caption@xlabel[2]{%
+\newcommand*\caption@xlabel{%
   \ifx\@currentlabel\caption@undefinedlabel
     \caption@Warning{\noexpand\label before \noexpand\caption ignored}%
+    \expandafter\@gobble
   \else
-    \caption@ORI@label#1{#2}%
+    \expandafter\caption@ORI@label
   \fi}
 %    \end{macrocode}
 % \end{macro}
@@ -3562,6 +3822,7 @@
 %
 % \begin{macro}{\captionlistentry}
 % \changes{v3.1}{2007/07/28}{This macro added}
+% \changes{v3.1f}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 %  |\captionlistentry|\oarg{float type}\marg{list entry}
 %    \begin{macrocode}
 \newcommand*\captionlistentry{%
@@ -3569,9 +3830,11 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@listentry[#1]#2{%
-  \caption@refstepcounter{#1}%
-  \caption@makecurrent{#1}{#2}%
-  \caption@addcontentsline{#1}{#2}}
+  \@bsphack
+    \caption@refstepcounter{#1}%
+    \caption@makecurrent{#1}{#2}%
+    \caption@addcontentsline{#1}{#2}%
+  \@esphack}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3666,10 +3929,14 @@
 %
 % \begin{macro}{\caption@dblarg}
 % \changes{v3.1}{2007/02/05}{This macro added}
+% \changes{v3.1f}{2007/12/06}{Bugfix 07-12-06: Changed so it works without \cs{kernel@ifnextchar}
+%        (which was introduced in \LaTeXe\ 2004/01/23), too}
 %  A |\relax| was added compared to |\@dblarg| so |\caption{}| will be
 %  expanded to |\caption[\relax]{}| (and not to |\caption[]{}|).
 %    \begin{macrocode}
-\newcommand\caption@dblarg[1]{\kernel@ifnextchar[{#1}{\caption@xdblarg{#1}}}%
+\@ifundefined{kernel@ifnextchar}%
+  {\newcommand\caption@dblarg[1]{\@ifnextchar[{#1}{\caption@xdblarg{#1}}}}%
+  {\newcommand\caption@dblarg[1]{\kernel@ifnextchar[{#1}{\caption@xdblarg{#1}}}}%
 \newcommand\caption@xdblarg[2]{#1[{#2\relax}]{#2}}%
 %    \end{macrocode}
 % \end{macro}
@@ -3742,21 +4009,6 @@
   \@ifundefined{fnum@#1}{\iftrue}{\ifx\caption@lfmt\caption@lfmt@default\else}%
     \@namedef{fnum@#1}{\caption@fnum{#1}}%
   \fi}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@addcontentsline}
-% If |\sf@ifpositiontop| is defined, we extend |\caption@addcontentsline|
-% so it handles sub-captions, too.
-%    \begin{macrocode}
-\caption@AtBeginDocument*{%
-  \@ifundefined{sf@ifpositiontop}{}{%
-    \let\caption@kernel@addcontentsline\caption@addcontentsline
-    \renewcommand*\caption@addcontentsline[2]{%
-      \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
-      \caption@kernel@addcontentsline{#1}{#2}%
-      \sf@ifpositiontop{}{\@listsubcaptions{#1}}}%
-  }}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4133,7 +4385,7 @@
 %    \begin{macrocode}
   \@ifundefined{caption@ifcompatibility}%
     {\let\caption@ifcompatibility\caption@ifincompatible
-     \let\@tempa\@firstofone}%
+     \let\@tempa\caption@WarningNoLine}%
     {\let\@tempa\@gobble}% suppress warning
 %    \end{macrocode}
 %
@@ -4143,12 +4395,9 @@
 %
 %    \begin{macrocode}
     \@tempa{%
-      \caption@WarningNoLine{%
-        \noexpand\caption will not be redefined since it's already\MessageBreak
-        redefined by a document class or package which is\MessageBreak
-        unknown to the caption package.\MessageBreak
-        As a result some features will not work as expected}%
-    }%
+      \noexpand\caption will not be redefined since it's already\MessageBreak
+      redefined by a document class or package which is\MessageBreak
+      unknown to the caption package}%
 %    \end{macrocode}
 %
 %  |\ContinuedFloat| is not supported in compatibility mode.
@@ -4188,8 +4437,7 @@
       \caption@WarningNoLine{%
         Forced redefinition of \noexpand\caption since the\MessageBreak
         unsupported(!) package option `compatibility=false'\MessageBreak
-        was given. Please fasten your seat belts, as we may\MessageBreak
-        experience turbulence}%
+        was given}%
     }{}%
 %    \end{macrocode}
 %
@@ -4228,6 +4476,8 @@
 %
 % \begin{macro}{\@caption}
 % \changes{v3.1}{2007/02/04}{Re-written, does not save\&use original definition anymore}
+% \changes{v3.1f}{2007/11/28}{Bugfix: Handling of \texttt{@minipage} flag added}
+% \changes{v3.1f}{2007/11/28}{Support of option \opt{@minipage} added}
 %  As above, our version has been adapted to the packages we support.
 %  Additionally our code is nested by |\caption@beginex| \&
 %  |\caption@end| instead of |\begingroup| \& |\endgroup|.
@@ -4251,12 +4501,16 @@
       \caption@beginex{#1}{#2}{#3}%
         \caption@setfloatcapt{%
           \caption@boxrestore
+          \if@minipage
+            \@setminipage
+          \fi
           \caption@normalsize
           \ifcaption@star
             \let\caption@@anchor\@firstofone
           \fi
           \@makecaption{\csname fnum@#1\endcsname}%
-                       {\ignorespaces\caption@@anchor{#3}}\par}%
+                       {\ignorespaces\caption@@anchor{#3}}\par
+          \caption@if@minipage\@minipagetrue\@minipagefalse}%
       \caption@end}%
 %    \end{macrocode}
 % \end{macro}
@@ -4289,7 +4543,6 @@
 %    \end{macrocode}
 %
 % \begin{macro}{\@makecaption}
-% \changes{v3.1}{2007/03/10}{\cs{nobreak}s added, needed for beamer class}
 %  |\@makecaption|\marg{label}\marg{text}\par
 %  We do basically the same as the original code (from the standard
 %  \LaTeX\ document classes), but take care of the |position=| setting
@@ -4300,6 +4553,151 @@
   \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
   \caption@@make{#1}{#2}%
   \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsection{Support for sub-captions}
+% \changes{v3.1f}{2007/11/16}{Support for sub-captions added}
+%
+% \begin{macro}{\caption@DeclareSubType}
+% |\caption@DeclareSub| initializes the usage of \cs{caption}
+% in sub-floats.
+%    \begin{macrocode}
+\def\caption@DeclareSubType sub#1\@nil{%
+  \caption@Debug{Initializing subtype for `#1'\@gobble}%
+  \@namedef{subcaption@value#1}{0}%
+  \@namedef{caption@beginsub#1}{\caption@beginsubfloat{#1}}}
+\@onlypreamble\caption@DeclareSubType
+%    \end{macrocode}
+% \end{macro}
+%
+% Initialize the sub-captions defined with \cs{DeclareCaptionSubType}\ldots
+%    \begin{macrocode}
+\caption@For*{subtypelist}{\caption@DeclareSubType sub#1\@nil}
+%    \end{macrocode}
+%
+% Initialize the sub-captions defined with \cs{newsubfloat}\cite{subfig}\ldots
+%    \begin{macrocode}
+\caption@AtBeginDocument*{%
+  \@ifundefined{sf@counterlist}{}{%
+    \@for\sf@temp:=\sf@counterlist\do{%
+      \expandafter\caption@DeclareSubType\sf@temp\@nil}}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@subtypehook}
+% Hook, will be used inside \cs{caption@setsubtype}.
+%    \begin{macrocode}
+\newcommand*\caption@subtypehook{%
+  \ifx\caption\caption@subcaption \else
+%    \end{macrocode}
+%    \begin{macrocode}
+    \caption@ifrefstepcounter{}{%
+      % no \caption or \subcaption in this (floating) environment yet
+      \caption@Debug{Increment \@captype\ counter =\the\value\@captype}%
+      \caption@l@stepcounter\@captype
+      \let\addcontentsline\subcaption@addcontentsline}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \ifnum\csname subcaption@value\@captype\endcsname=\value\@captype \else
+      \caption@Debug{Reset sub\@captype\ counter}%
+      \expandafter\xdef\csname subcaption@value\@captype\endcsname{%
+        \the\value\@captype}%
+      \@stpelt\@subcaptype
+    \fi
+%    \end{macrocode}
+%    \begin{macrocode}
+    \c@ContinuedFloat=0\relax
+    \let\caption@resetContinuedFloat\@gobble
+    \let\caption@addcontentsline\caption@kernel@addcontentsline
+    \let\caption@setfloatcapt\@firstofone
+%    \end{macrocode}
+%    \begin{macrocode}
+    \caption@clearmargin
+    \caption@setoptions{sub}%
+    \caption@setoptions{subfloat}% for subfig-package compatibility
+%    \end{macrocode}
+%    \begin{macrocode}
+    \let\caption\caption@subcaption
+  \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@subcaption}
+% Makes a sub-caption.
+%    \begin{macrocode}
+\newcommand*\caption@subcaption{%
+  \caption@iftype
+    {\caption@checkgrouplevel{sub}\subcaption
+     \caption@star
+       {\caption@refstepcounter\@subcaptype}%
+       {\caption@dblarg{\@caption\@subcaptype}}}%
+    {\caption@Error{\noexpand\subcaption outside float}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@addcontentsline}
+% We extend |\caption@addcontentsline| so it handles sub-captions, too.
+% \Note{\cs{sf@ifpositiontop} \& \cs{@listsubcaptions} are defined by the
+%  \package{subfigure} \& \package{subfig} packages.}
+%    \begin{macrocode}
+\let\caption@kernel@addcontentsline\caption@addcontentsline
+\renewcommand*\caption@addcontentsline[2]{%
+  \sf@ifpositiontop{\@listsubcaptions{#1}}{}%
+  \caption@kernel@addcontentsline{#1}{#2}%
+  \sf@ifpositiontop{}{\@listsubcaptions{#1}}%
+  \caption@addsubcontentslines{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@addsubcontentslines[1]{%
+  \begingroup
+    \subcaption@addcontentslines
+  \endgroup
+  \subcaption@clearcontentslines}%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@AtBeginDocument*{%
+  \@ifundefined{sf@ifpositiontop}{\let\sf@ifpositiontop\@gobbletwo}{}%
+  \subcaption@clearcontentslines
+  \g@addto@macro\caption@typehook{\subcaption@checkcontentslines}%
+  \AtEndDocument{\subcaption@checkcontentslines}}%
+%    \end{macrocode}
+%
+% \begin{macro}{\subcaption@addcontentsline}
+% Add a pending sub-caption list entry.
+%    \begin{macrocode}
+\newcommand*\subcaption@addcontentsline[3]{%
+  \protected@edef\@tempa{%
+    \noexpand\g@addto@macro\noexpand\subcaption@addcontentslines{%
+      \noexpand\@namedef{the#2}{\csname the#2\endcsname}%
+      \ifx\@currentHref\@undefined \else
+        \noexpand\def\noexpand\@currentHref{\@currentHref}%
+      \fi
+      \protect\addcontentsline{#1}{#2}{#3}}}%
+  \@tempa}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\subcaption@checkcontentslines}
+% Checks if the list of pending sub-captions is empty, if not,
+% a warning will be issued.
+%    \begin{macrocode}
+\newcommand*\subcaption@checkcontentslines{%
+  \ifx\subcaption@addcontentslines\@empty \else
+    \subcaption@Error{%
+      Something's wrong--perhaps a missing \protect\caption\MessageBreak
+      in the last figure or table}%
+    \subcaption@clearcontentslines
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\subcaption@clearcontentslines}
+% Clear pending sub-caption list entries.
+%    \begin{macrocode}
+\newcommand*\subcaption@clearcontentslines{%
+  \global\let\subcaption@addcontentslines\@empty}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4323,10 +4721,33 @@
 % Since the beamer class do not offer a `list of figures' we switch
 % this support in \thispackage\ off.
 %    \begin{macrocode}
-  \captionsetup{listof=false}
-  \undefine@key{caption}{listof}
-  \undefine@key{caption}{listofformat}
+  \captionsetup{list=false}
+  \DeclareCaptionOption{list}{}
+  \DeclareCaptionOption{listof}{}
 %    \end{macrocode}
+%
+% \begin{macro}{\figure}
+% \changes{v3.1f}{2007/12/17}{This re-definition for \class{beamer} document class added}
+% \begin{macro}{\table}
+% \changes{v3.1f}{2007/12/17}{This re-definition for \class{beamer} document class added}
+%  We redefine |figure| \& |table| so our type-specific options will be used,
+%  a \package{hyperref} anchor will be set etc.
+%    \begin{macrocode}
+  \expandafter\let\expandafter\caption@ORI@figure
+    \csname\string\figure\endcsname
+  \@namedef{\string\figure}[#1]{%
+    \caption@ORI@figure[#1]%
+    \caption@settype{figure}}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \expandafter\let\expandafter\caption@ORI@table
+    \csname\string\table\endcsname
+  \@namedef{\string\table}[#1]{%
+    \caption@ORI@table[#1]%
+    \caption@settype{table}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
 %
 %    \begin{macrocode}
 }{}
@@ -4503,6 +4924,7 @@
 % \changes{v3.1}{2007/07/22}{This macro added}
 % \changes{v3.1c}{2007/10/06}{\cs{caption} \& \cs{@caption} revised for enhanced compatibility}
 % \changes{v3.1c}{2007/10/06}{Bugfix: Made \cs{@caption} long}
+% \changes{v3.1f}{2007/11/16}{Uses `space hack' instead of \cs{ignorespaces} now}
 %  |\caption@freeze*|\par
 %  Used by the \package{fltpage} \& \package{sidecap} package support.
 %    \begin{macrocode}
@@ -4539,10 +4961,12 @@
       \let\caption@@refstepcounter\caption@l@stepcounter
       \caption@ORI}%
     \long\def\@caption##1[##2]##3{%
-      \gdef\caption@SClentry{##2}\gdef\caption@SCtext{##3}%
-      \ignorespaces}%
+      \@bsphack
+        \gdef\caption@SClentry{##2}%
+        \gdef\caption@SCtext{##3}%
+      \@esphack}%
     #1{% is \@gobble in star form, and \@firstofone otherwise
-      \def\label##1{\gdef\caption@SClabel{##1}\ignorespaces}}%
+      \def\label##1{\@bsphack\gdef\caption@SClabel{##1}\@esphack}}%
 %    \end{macrocode}
 %    \begin{macrocode}
   }%
@@ -4682,7 +5106,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@settypehook}
+% \begin{macro}{\caption@typehook}
 % \changes{v3.1}{2007/07/08}{float package hook added}
 %  \LaTeX\ and almost every other packages use
 %    |\|\meta{type}|name|
@@ -4701,7 +5125,7 @@
 %  \Note{If the float was not defined with \cs{newfloat} but with
 %  \cs{restylefloat} instead, \cs{fname@}\meta{type} is not defined.}
 %    \begin{macrocode}
-  \g@addto@macro\caption@settypehook{%
+  \g@addto@macro\caption@typehook{%
     \expandafter\ifx\csname #1name\endcsname\relax
       \expandafter\let\csname #1name\expandafter\endcsname
                       \csname fname@#1\endcsname
@@ -4942,6 +5366,7 @@
 % \end{macro}
 %
 % \begin{macro}{\FP@floatBegin}
+% \changes{v3.1f}{2007/11/16}{Uses `space hack' instead of \cs{ignorespaces} now}
 % Original code:
 % \begin{verbatim}
 % \newcommand{\FP@floatBegin}[1]{%
@@ -4967,7 +5392,7 @@
     \begin{lrbox}{\FP@floatCorpusBOX}%
     \caption@ifFPrefcap
       {\caption@freeze\relax}%
-      {\def\label##1{\gdef\FP@LabelText{##1}\ignorespaces}%
+      {\def\label##1{\@bsphack\gdef\FP@LabelText{##1}\@esphack}%
        \caption@freeze*}}%
 %    \end{macrocode}
 % \end{macro}
@@ -5057,7 +5482,7 @@
 %
 % \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines FP-variant, too}
 %    \begin{macrocode}
-  \ForFloatingEnvironments{%
+  \caption@For{typelist}{%
     \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}%
 %    \end{macrocode}
 %
@@ -5269,7 +5694,7 @@
 %    \end{macrocode}
 % \Note{Since \cs{Hy@raisedlink} change \cs{@tempdima} we surrounded it by \cs{ifvmode},
 % suppressing ``\texttt{LaTeX Warning: Float too large for page by 1.0pt}'' in \texttt{sideways} floats.
-% (This will not be necessary with future versions of \package{hyperref}.)}
+% (This is not necessary since \package{hyperref} \version{6.77}.)}
 %    \begin{macrocode}
     \ifx\HyperRaiseLinkLength\@tempdima
       \def\caption@raisedlink#1{\ifvmode#1\else\Hy@raisedlink{#1}\fi}%
@@ -5301,7 +5726,7 @@
 % \iffalse
 %  (Since |\caption@setfloatcapt| will be set to |\@firstofone| inside
 %   |\subcaption| there is no need to add its restauration to
-%   |\subcaption@settypehook|.)
+%   |\caption@subtypehook|.)
 % \fi
 %    \begin{macrocode}
     \def\caption@freezeHref{%
@@ -5310,7 +5735,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 %     \let\caption@ORI@@start\caption@@start
-%     \l@addto@macro\subcaption@settypehook{%
+%     \l@addto@macro\caption@subtypehook{%
 %       \let\caption@@start\caption@ORI@@start}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -5776,6 +6201,7 @@
 % \end{macro}
 %
 % \begin{macro}{\make@piccaption}
+% \changes{v3.1}{2007/12/06}{Bugfix: \cs{caption@clearmargin} will always be used now}
 %  The original code:
 %  \begin{verbatim}
 %  \def\make@piccaption{%
@@ -5806,11 +6232,11 @@
     \long\def\caption[##1]##2{%
       \caption@freezeHref % will be defrosted in \ivparpic
       \caption@settype\@piccaptype
-      \ifnum\c@piccaptionpos>2\relax
+%     \ifnum\c@piccaptionpos>2\relax
         \caption@clearmargin
-      \else
-        \captionwidth\z@ % do not use "width=" setting
-      \fi
+%     \else
+%       \captionwidth\z@ % do not use "width=" setting
+%     \fi
       \caption@setoptions{parpic}%
       \let\caption@boxrestore\@parboxrestore
       \caption@setautoposition b%
@@ -5892,7 +6318,7 @@
 %
 % \begin{macro}{\@makerotcaption}
 % \changes{v3.0i}{2005/12/06}{Rewritten, should finally work proper now}
-% \changes{v3.0m}{2007/03/04}{Uses \cs{captionbox} instead of \cs{caption@start/endbox} now}
+% \changes{v3.0m}{2007/03/04}{Uses \cs{caption@parbox} instead of \cs{caption@start/endbox} now}
 %  Original (bugfixed) code:
 %  \begin{verbatim}
 %  \long\def\@makerotcaption#1#2{%
@@ -5920,9 +6346,9 @@
       \caption@slc{#1}{#2}{.8\vsize}{%
         \let\caption@makerot\caption@@make
         \caption@clearmargin
-%       \long\def\captionbox##1##2{\hbox{\hsize=.8\textheight\relax##2}}%
+%       \long\def\caption@parbox##1##2{\hbox{\hsize=.8\textheight\relax##2}}%
 %         (not needed because \rotatebox uses an \hbox anyway)
-        \let\captionbox\@secondoftwo}%
+        \let\caption@parbox\@secondoftwo}%
       \caption@set@bool\caption@ifslc0% been there, done that
     \fi
 %    \end{macrocode}
@@ -5940,7 +6366,7 @@
 %
 % \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines sideways-variant, too}
 %    \begin{macrocode}
-  \ForFloatingEnvironments{%
+  \caption@For{typelist}{%
     \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
     \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
 %    \end{macrocode}
@@ -6056,12 +6482,17 @@
 % \end{macro}
 %
 % \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines SC-variant, too}
+% \changes{v3.1f}{2007/12/23}{Bugfix in definition of SC-variant}
 %    \begin{macrocode}
-  \ForFloatingEnvironments{%
-    \newenvironment{SC#1}%
-      {\SC@float[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@float}%
-    \newenvironment{SC#1*}%
-      {\SC@dblfloat[\@nameuse{SC@#1@vpos}]{#1}}{\endSC@dblfloat}}%
+  \newcommand*\caption@For@SC[2]{%
+    \def#1{b}% = \sidecaptionvpos{#2}{b} (v1.6)
+    \newenvironment{SC#2}%
+      {\SC@float[#1]{#2}}{\endSC@float}%
+    \newenvironment{SC#2*}%
+      {\SC@dblfloat[#1]{#2}}{\endSC@dblfloat}}%
+  \@onlypreamble\caption@For@SC
+  \caption@For{typelist}{%
+    \expandafter\caption@For@SC\csname SC@#1@vpos\endcsname{#1}}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -6313,7 +6744,7 @@
 %
 % \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines wrap-variant, too}
 %    \begin{macrocode}
-  \ForFloatingEnvironments{%
+  \caption@For{typelist}{%
     \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}%
     \caption@restylewrapfloat{#1}}%
 %    \end{macrocode}
@@ -6443,7 +6874,7 @@
 %   Sebastian Rahtz \& Heiko Oberdiek:\\
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/hyperref/}%
 %        {\emph{Hypertext marks in \LaTeX}},\\
-%   June 14, 2007
+%   November 12, 2007
 %
 %   \bibitem{hypcap}
 %   Heiko Oberdiek:\\
