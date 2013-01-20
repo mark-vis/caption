@@ -24,12 +24,12 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{5390}
+% \CheckSum{5418}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2007/09/16 v3.1a Implementation of the caption package]
+\ProvidesFile{caption.drv}[2007/09/22 v3.1b Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -42,18 +42,17 @@
 \renewcommand*\l@subsubsection{\@dottedtocline{3}{3.8em}{3.6em}}
 \makeatother
 %
-\ifx\pdfoutput\undefined \else
-  \ifcase\pdfoutput \else
-    \usepackage{mathptmx,courier}
-    \usepackage[scaled=0.90]{helvet}
-    \addtolength\marginparwidth{15pt}
-  \fi
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage{mathptmx,courier}
+  \usepackage[scaled=0.90]{helvet}
+  \addtolength\marginparwidth{15pt}
 \fi
 %
 \usepackage{hypdoc}
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2007/09/16]
+\usepackage[debug]{caption}[2007/09/17]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -222,7 +221,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/09/16 v3.1a caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/09/22 v3.1b caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -380,6 +379,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@setbool}
+% \begin{macro}{\caption@set@bool}
 % \changes{v3.1}{2007/04/05}{\cs{caption@set@bool}\marg{cmd}\marg{value} added}
 % \begin{macro}{\caption@ifbool}
 % \begin{macro}{\caption@undefbool}
@@ -410,6 +410,7 @@
 %    \begin{macrocode}
 \newcommand*\caption@undefbool[1]{\@nameundef{caption@if#1}}
 %    \end{macrocode}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 % \end{macro}
@@ -536,15 +537,14 @@
 % \begin{macro}{\caption@Error}
 % \changes{v3.0l}{2007/01/20}{This macro added, will now be used for errors}
 % \changes{v3.0q}{2007/04/11}{Renamed from \cs{caption@error} to \cs{caption@Error}}
-%  |\caption@Error|\marg{message}\par
-%  This is mainly identical to |\PackageError{caption}{|\meta{message}|}{\caption@eh}|.
+% \changes{v3.1b}{2007/09/18}{Usage of \cs{caption@Package} removed}
+% \begin{macro}{\caption@KV@err}
+%  |\caption@Error|\marg{message}
 %    \begin{macrocode}
-\newcommand*\caption@Error[1]{%
-  \PackageError\caption@Package{#1}\caption@eh}
+\newcommand*\caption@Error[1]{\PackageError{caption}{#1}\caption@eh}
+\let\caption@KV@err\caption@Error
 %    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@Package{caption}
-%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@eh}
@@ -553,7 +553,7 @@
 %    \begin{macrocode}
 \newcommand*\caption@eh{%
   If you do not understand this error, please take a closer look\MessageBreak
-  at the documentation of the `\caption@Package' package.\MessageBreak
+  at the documentation of the `caption' package.\MessageBreak
   \@ehc}
 %    \end{macrocode}
 % \end{macro}
@@ -783,6 +783,7 @@
 % \changes{v3.0l}{2007/01/20}{Bugfix: Usage of \cs{caption@keydepth} added}
 % \changes{v3.0l}{2007/01/30}{Optional argument added}
 % \changes{v3.0p}{2007/04/08}{\cs{caption@keydepth} is now a command instead of a counter}
+% \changes{v3.1b}{2007/09/18}{Usage of \cs{caption@Package} removed, we use \cs{caption@KV@err} instead}
 %  |\caption@setkeys|\oarg{package}\marg{family}\marg{key-values}\par
 %  This one simply calls |\setkeys|\marg{family}\marg{key-values}
 %  but lets the error messages not refer to the \package{keyval} package,
@@ -792,26 +793,22 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@@setkeys[#1]#2#3{%
-  \ifx\caption@keydepth\@empty
-    \let\caption@ORI@KV@errx\KV@errx
-    \let\caption@ORI@KV@err\KV@err
-    \let\KV@errx\caption@Error
-    \let\KV@err\caption@Error
-  \fi
-  \l@addto@macro\caption@keydepth.%
+  \expandafter\let\csname ORI@KV@err\caption@keydepth\endcsname\KV@err
+  \expandafter\let\csname ORI@KV@errx\caption@keydepth\endcsname\KV@errx
+  \@ifundefined{#1@KV@err}%
+    {\let\KV@err\ORI@KV@err\let\KV@errx\ORI@KV@errx}%
+    {\expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
+     \let\KV@errx\KV@err}%
+  \l@addto@macro\caption@keydepth i%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \def\caption@Package{#1}%
   \caption@Debug{\protect\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
-  \def\caption@Package{caption}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \edef\caption@keydepth{\expandafter\@cdr\caption@keydepth\@nil}%
-  \ifx\caption@keydepth\@empty
-    \let\KV@errx\caption@ORI@KV@errx
-    \let\KV@err\caption@ORI@KV@err
-  \fi}
+  \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
+  \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname}
 %    \end{macrocode}
 %    \begin{macrocode}
 \let\caption@keydepth\@empty
@@ -2827,7 +2824,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/09/16 v3.1a Customising captions (AR)]
+\ProvidesPackage{caption}[2007/09/22 v3.1b Customising captions (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@Info}
@@ -3302,6 +3299,7 @@
 %
 % \begin{macro}{\caption@settype}
 % \changes{v3.1}{2007/05/09}{This macro added}
+% \changes{v3.1b}{2007/09/22}{Usage of \cs{caption@xlabel} added}
 %  |\caption@settype*|\marg{type}\par
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@setoptions|).
@@ -3347,7 +3345,11 @@
   \let\caption@ifrefstepcounter\@secondoftwo
   #2{% \@gobble or \@firstofone
     \let\@currentlabel\caption@undefinedlabel
-    \let\@currentHlabel\@undefined
+%   \let\@currentHlabel\@undefined
+    \ifx\caption@ORI@label\@undefined
+      \let\caption@ORI@label\label
+      \def\label{\caption@withoptargs\caption@xlabel}%
+    \fi
     \caption@start}}
 %    \end{macrocode}
 % \end{macro}
@@ -3405,15 +3407,23 @@
 %
 % \begin{macro}{\caption@undefinedlabel}
 % \changes{v3.1}{2007/07/03}{This macro and its usage added}
+% \changes{v3.1b}{2007/09/22}{Contents changed to \texttt{??}}
 %  This label will be used for |\currentlabel| inside (floating) environments
 %  as default. (see above)
 %  \Note{All commands used have to be robust here.}
 %    \begin{macrocode}
-\newcommand*\caption@undefinedlabel{%
-  \emph{Please place \caption@cs{label} \textbf{after} \caption@cs{caption}}}%
+\newcommand*\caption@undefinedlabel{??}
 %    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\caption@xlabel}
+% \changes{v3.1b}{2007/09/22}{This macro and its usage added}
 %    \begin{macrocode}
-\DeclareRobustCommand\caption@cs[1]{\texttt{\char`\\#1}}
+\newcommand*\caption@xlabel[2]{%
+  \ifx\@currentlabel\caption@undefinedlabel
+    \PackageWarning{caption}{\noexpand\label before \noexpand\caption ignored}%
+  \else
+    \caption@ORI@label#1{#2}%
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3624,6 +3634,7 @@
 %
 % \begin{macro}{\caption@boxrestore}
 % \changes{v3.1}{2007/03/03}{This macro and its usage added}
+% \changes{v3.1b}{2007/09/17}{Bugfix: Redefinition of CR added}
 %  The original code (from |latex/base/ltboxes.dtx|):
 %  \begin{verbatim}
 %  \def\@parboxrestore{\@arrayparboxrestore\let\\\@normalcr}
@@ -3645,20 +3656,20 @@
 % This one will be used by |\@caption| instead of |\@parboxrestore|.
 %    \begin{macrocode}
 \newcommand*\caption@boxrestore{%
-% \let\if@nobreak\iffalse
-% \let\if@noskipsec\iffalse
+  \let\if@nobreak\iffalse
+  \let\if@noskipsec\iffalse
   \let\par\@@par
 % \let\-\@dischyph
 % \let\'\@acci\let\`\@accii\let\=\@acciii
   \parindent\z@ \parskip\z@skip
-% \everypar{}%
+  \everypar{}%
 % \linewidth\hsize
 % \@totalleftmargin\z@ 
   \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
   \parfillskip\@flushglue \lineskip\normallineskip
   \baselineskip\normalbaselineskip
   \sloppy
-% \let\\\@normalcr
+  \let\\\@normalcr
 }
 %    \end{macrocode}
 % \end{macro}
@@ -3689,7 +3700,7 @@
 %
 % \begin{macro}{\caption@makecurrent}
 % \begin{macro}{\caption@makestart}
-% \begin{macro}{\caption@anchor}
+% \begin{macro}{\caption@@anchor}
 % \begin{macro}{\caption@start}
 % \begin{macro}{\caption@@start}
 % \begin{macro}{\caption@freezeHref}
@@ -3698,14 +3709,11 @@
 %    \begin{macrocode}
 \newcommand*\caption@makecurrent[2]{}
 \let\caption@makestart\@gobble
-\let\caption@anchor\@firstofone
+\let\caption@@anchor\@firstofone
 \let\caption@start\relax
 \let\caption@@start\relax
 \let\caption@freezeHref\relax
 \let\caption@defrostHref\relax
-%    \end{macrocode}
-%    \begin{macrocode}
-\g@addto@macro\caption@prepareslc{\let\caption@anchor\@firstofone}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -4010,14 +4018,12 @@
 %
 %    \begin{macrocode}
     \@tempa{%
-      \PackageWarning{caption}{%
-        *************************************************\MessageBreak
+      \PackageWarningNoLine{caption}{%
         \noexpand\caption will not be redefined since it's already\MessageBreak
         redefined by a document class or package which is\MessageBreak
         unknown to the caption package.\MessageBreak
         As a result some new features of the caption\MessageBreak
-        package will not work as expected.\MessageBreak
-        *************************************************\@gobbletwo}%
+        package will not work as expected}%
     }%
 %    \end{macrocode}
 %
@@ -4058,12 +4064,10 @@
 %    \begin{macrocode}
     \caption@ifincompatible{%
       \PackageWarning{caption}{%
-        *****************************************************\MessageBreak
         Forced redefinition of \noexpand\caption since the\MessageBreak
         unsupported(!) package option `compatibility=false'\MessageBreak
         was given. Please fasten your seat belts, as we may\MessageBreak
-        experience turbulence!\MessageBreak
-        *****************************************************\@gobbletwo}%
+        experience turbulence!\@gobbletwo}%
     }{}%
 %    \end{macrocode}
 %
@@ -4127,30 +4131,31 @@
           \caption@boxrestore
           \caption@normalsize
           \ifcaption@star
-            \let\caption@anchor\@firstofone
+            \let\caption@@anchor\@firstofone
           \fi
           \@makecaption{\csname fnum@#1\endcsname}%
-                       {\ignorespaces\caption@anchor{#3}}\par}%
+                       {\ignorespaces\caption@@anchor{#3}}\par}%
       \caption@end}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\@xfloat}
-% \changes{v3.1}{2007/05/09}{This re-definition added}
-% We redefine |\@xfloat| so inside floating environments our
-% type-specific options will be used, a \package{hyperref}
-% anchor will be set etc.
-%    \begin{macrocode}
-    \let\caption@ORI@xfloat\@xfloat
-    \def\@xfloat#1[#2]{%
-      \caption@ORI@xfloat{#1}[#2]%
-      \caption@settype{#1}}%
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
   }%
 %    \end{macrocode}
+%
+% \begin{macro}{\@xfloat}
+% \changes{v3.1}{2007/05/09}{This re-definition added}
+% \changes{v3.1b}{2007/09/22}{Will now be redefined in compatibility mode, too}
+% We redefine |\@xfloat| so inside floating environments our
+% type-specific options will be used, a \package{hyperref}
+% anchor will be set etc.
+%    \begin{macrocode}
+  \let\caption@ORI@xfloat\@xfloat
+  \def\@xfloat#1[#2]{%
+    \caption@ORI@xfloat{#1}[#2]%
+    \caption@settype{#1}}%
+%    \end{macrocode}
+% \end{macro}
 %
 %    \begin{macrocode}
 }
@@ -4437,7 +4442,7 @@
         \expandafter\label\expandafter{\caption@SClabel}%
       \fi
     \else
-      \caption@Error{Internal error:\MessageBreak
+      \caption@Error{Internal Error:\MessageBreak
         \noexpand\caption@defrost in same group as \string\caption@freeze}%
     \fi}%
 %    \end{macrocode}
@@ -4551,22 +4556,23 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@setfloatcapt}
-% \changes{v3.1}{2007/06/23}{This macro added}
+% \changes{v3.1}{2007/06/23}{This check added}
+% \changes{v3.1b}{2007/09/22}{This check removed, so \cs{captionsetup(type=Example)} works}
 %  Here we do a consistency check: If the caption to handle is a one from
 %  the \package{float} package (|\newfloat| or |\restylefloat|),
 %  |\setfloatcapt| should be redefined, so actually this error should never
 %  occur.
 %    \begin{macrocode}
-  \renewcommand*\caption@setfloatcapt{%
-    \float@ifcaption\@captype{%
-      \caption@Error{Something is going wrong here...\MessageBreak
-        For a removal of this problem please consult the\MessageBreak
-        caption package documentation, especially the sections\MessageBreak
-        about the `float' and the `wrapfig' package}%
-      \@gobble
-    }{%
-      \@firstofone
-    }}%
+% \renewcommand*\caption@setfloatcapt{%
+%   \float@ifcaption\@captype{%
+%     \caption@Error{Something is going wrong here...\MessageBreak
+%       For a removal of this problem please consult the\MessageBreak
+%       caption package documentation, especially the sections\MessageBreak
+%       about the `float' and the `wrapfig' package}%
+%     \@gobble
+%   }{%
+%     \@firstofone
+%   }}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4911,7 +4917,7 @@
             \expandafter\caption@makecurrent\expandafter\@captype
                                          \expandafter{\caption@SClentry}}%
            {\expandafter\captionlistentry\expandafter{\caption@SClentry}}%
-         \caption@anchor\relax
+         \caption@@anchor\relax
          \ifx\FP@LabelText\@empty \else
            \expandafter\label\expandafter{\FP@LabelText}%
          \fi
@@ -4965,6 +4971,7 @@
       Hyperref support is turned off\MessageBreak
       because hyperref has stopped early}%
   }{%
+    \g@addto@macro\caption@prepareslc{\measuring@true}%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@@refstepcounter}
@@ -5017,19 +5024,19 @@
     \renewcommand*\caption@makestart[1]{%
       \begingroup
         \Hy@hypertexnamesfalse
-        \gdef\@currentHlabel{}%
+%       \gdef\@currentHlabel{}%
         \hyper@makecurrent{#1.xxx}%
       \endgroup
       \caption@Debug{hyper start=\@currentHref}}%
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@anchor}
-% We redefine |\caption@anchor| so a \package{hyperref} anchor
+% \begin{macro}{\caption@@anchor}
+% We redefine |\caption@@anchor| so a \package{hyperref} anchor
 % will be set inside |\@caption|.
 %    \begin{macrocode}
-    \renewcommand\caption@anchor[1]{%
-      \caption@Debug{hyper anchor \@currentHref}%
+    \renewcommand\caption@@anchor[1]{%
+      \caption@Debug{hyper anchor: \@currentHref}%
       % If we cannot have nesting, the anchor is empty.
       \ifHy@nesting
         \hyper@@anchor{\@currentHref}{#1}%
@@ -5037,23 +5044,46 @@
         \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#1%
       \fi}%
 %    \end{macrocode}
+%    \begin{macrocode}
+    \g@addto@macro\caption@prepareslc{\let\caption@@anchor\@firstofone}%
+%    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@@anchor}
-% We define |\caption@@anchor| so a \package{hyperref} anchor
-% will be set inside |\caption@start|.
+% \begin{macro}{\caption@startanchor}
+% \changes{v3.1b}{2007/09/17}{Bugfix 06-09-17: We use \cs{caption@anchor} instead of \cs{hyper@@anchor}}
+% We redefine |\caption@@anchor| so a \package{hyperref} anchor
+% will be set inside |\caption@start|. This code was taken from the
+% \package{hypcap} package\cite{hypcap} and adapted.
+% \Note{Since \cs{hyper@@anchor} can cause a change from vertical mode to
+% horizontal mode (Bug in \package{hyperref} package!?), and since the
+% workaround \cs{let}\cs{leavevmode}\cs{relax} which can be found in the
+% \package{hypcap} package is not always sufficient
+% (for example with ``Direct pdfmark support'' and \texttt{breaklinks=true}),
+% we use \cs{caption@anchor} instead of \cs{hyper@@anchor} here.}
 %    \begin{macrocode}
-    \newcommand*\caption@@anchor[1]{%
-      \caption@Debug{hyper anchor #1}%
-      \begingroup
+    \newcommand*\caption@startanchor[1]{%
+      \caption@Debug{hyper anchor: #1}%
+      \ifvmode\begingroup
         \@tempdima\prevdepth
         \nointerlineskip
         \vspace*{-\caption@hypcapspace}%
-        \let\leavevmode\relax
-        \hyper@@anchor{#1}\relax
+        \caption@anchor{#1}%
         \vspace*{\caption@hypcapspace}%
         \prevdepth\@tempdima
-      \endgroup}%
+      \endgroup\else
+        \PackageWarning{caption}{Internal Warning: Vertical TeX mode expected}%
+        \caption@anchor{#1}%
+      \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@anchor}
+% Sets a \package{hyperref} anchor.
+%    \begin{macrocode}
+    \newcommand*\caption@anchor[1]{%
+      \ifmeasuring@ \else
+        \Hy@raisedlink{\hyper@anchorstart{#1}\hyper@anchorend}%
+      \fi}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -5090,39 +5120,35 @@
 %         This macro renamed from \cs{capstart} to \cs{caption@start} and revised}
 %  This one emulates the \package{hypcap} package (if |hypcap=true|).
 %    \begin{macrocode}
-    \def\caption@start{%
-      \caption@ifhypcap{%
-        \ifvmode
+    \def\caption@start{\caption@ifhypcap{%
 %    \end{macrocode}
 %
 % Generate the \package{hyperref} label and set the \package{hyperref} anchor,
 % usually both is done inside |\@caption|.
 %    \begin{macrocode}
-          \caption@makestart\@captype
-          \caption@@anchor\@currentHref
+      \caption@makestart\@captype
+      \caption@startanchor\@currentHref
 %    \end{macrocode}
 %
 % Prevent |\@caption| from generating a new \package{hyperref} label,
 % use the label we save in |\hc@currentHref| instead.
 % (We also support the |\@capstart| flag from the \package{hypcap} package.)
 %    \begin{macrocode}
-          \global\@capstarttrue
-          \let\hc@currentHref\@currentHref
-          \def\caption@makecurrentHref##1{%
-            \global\@capstartfalse
-            \global\let\@currentHref\hc@currentHref}%
+      \global\@capstarttrue
+      \let\hc@currentHref\@currentHref
+      \def\caption@makecurrentHref##1{%
+        \global\@capstartfalse
+        \global\let\@currentHref\hc@currentHref}%
 %    \end{macrocode}
 %
 % Prevent |\@caption| from generating a \package{hyperref} anchor since this
 % has already been done.
 %    \begin{macrocode}
-          \let\caption@anchor\@firstofone
-          \let\caption@@anchor\@gobble
+      \let\caption@@anchor\@firstofone
+%%%   \let\caption@startanchor\@gobble
 %    \end{macrocode}
 %    \begin{macrocode}
-        \else
-          \PackageWarning{caption}{Wrong TeX mode, no hyperlink anchor was set}%
-        \fi}{}}%
+    }{}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -5166,7 +5192,7 @@
       \let\caption@ORI@setfloatcapt\caption@setfloatcapt
       \renewcommand*\caption@setfloatcapt{%
         \ifx\caption@currentHref\@undefined \else
-          \let\caption@anchor\@firstofone
+          \let\caption@@anchor\@firstofone
         \fi
         \caption@ORI@setfloatcapt}}%
 %    \end{macrocode}
@@ -5178,7 +5204,7 @@
 %    \begin{macrocode}
     \def\caption@defrostHref{%
       \ifx\caption@currentHref\@undefined \else
-        \caption@@anchor\caption@currentHref
+        \caption@startanchor\caption@currentHref
         \global\let\caption@currentHref\@undefined
       \fi}%
 %    \end{macrocode}
@@ -5360,10 +5386,10 @@
 %       \def\hyper@makecurrent##1{%
 %         \let\hyper@makecurrent\caption@ORI@hyper@makecurrent
 %         \caption@makestart{##1}%
-%         \let\Hy@LT@currentHlabel\@currentHlabel
+%%        \let\Hy@LT@currentHlabel\@currentHlabel
 %         \let\Hy@LT@currentHref\@currentHref
 %         \def\hyper@makecurrent####1{%
-%           \let\@currentHlabel\Hy@LT@currentHlabel
+%%          \let\@currentHlabel\Hy@LT@currentHlabel
 %           \let\@currentHref\Hy@LT@currentHref}}%
 %       \let\caption@ORI@ContinuedFloat\ContinuedFloat
 %       \def\ContinuedFloat{\noalign{%

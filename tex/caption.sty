@@ -28,7 +28,7 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/09/16 v3.1a Customising captions (AR)]
+\ProvidesPackage{caption}[2007/09/22 v3.1b Customising captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
 \RequirePackage{caption3}[2007/09/16] % needs v3.1a or newer
@@ -273,7 +273,10 @@
   \let\caption@ifrefstepcounter\@secondoftwo
   #2{% \@gobble or \@firstofone
     \let\@currentlabel\caption@undefinedlabel
-    \let\@currentHlabel\@undefined
+    \ifx\caption@ORI@label\@undefined
+      \let\caption@ORI@label\label
+      \def\label{\caption@withoptargs\caption@xlabel}%
+    \fi
     \caption@start}}
 \newcommand*\caption@settypehook{}
 \newcommand*\caption@iftype{%
@@ -295,9 +298,13 @@
        \fi
     }{}}
 \fi
-\newcommand*\caption@undefinedlabel{%
-  \emph{Please place \caption@cs{label} \textbf{after} \caption@cs{caption}}}%
-\DeclareRobustCommand\caption@cs[1]{\texttt{\char`\\#1}}
+\newcommand*\caption@undefinedlabel{??}
+\newcommand*\caption@xlabel[2]{%
+  \ifx\@currentlabel\caption@undefinedlabel
+    \PackageWarning{caption}{\noexpand\label before \noexpand\caption ignored}%
+  \else
+    \caption@ORI@label#1{#2}%
+  \fi}
 \def\captionof{\caption@teststar\caption@of{\caption*}\caption}
 \newcommand*\caption@of[2]{%
   \let\caption@setfloatcapt\@firstofone
@@ -361,24 +368,27 @@
       \sf@ifpositiontop{}{\@listsubcaptions{#1}}}%
   }}
 \newcommand*\caption@boxrestore{%
+  \let\if@nobreak\iffalse
+  \let\if@noskipsec\iffalse
   \let\par\@@par
   \parindent\z@ \parskip\z@skip
+  \everypar{}%
   \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
   \parfillskip\@flushglue \lineskip\normallineskip
   \baselineskip\normalbaselineskip
   \sloppy
+  \let\\\@normalcr
 }
 \newcommand*\caption@normalsize{%
   \caption@font*{\KV@caption@fnt@normal\@unused}}
 \let\caption@setfloatcapt\@firstofone
 \newcommand*\caption@makecurrent[2]{}
 \let\caption@makestart\@gobble
-\let\caption@anchor\@firstofone
+\let\caption@@anchor\@firstofone
 \let\caption@start\relax
 \let\caption@@start\relax
 \let\caption@freezeHref\relax
 \let\caption@defrostHref\relax
-\g@addto@macro\caption@prepareslc{\let\caption@anchor\@firstofone}
 \caption@AtBeginDocument{%
   \caption@setbool{incompatible}{0}%
   \caption@CheckCommand\caption{%
@@ -584,14 +594,12 @@
     {\let\@tempa\@gobble}% suppress warning
   \caption@ifcompatibility{%
     \@tempa{%
-      \PackageWarning{caption}{%
-        *************************************************\MessageBreak
+      \PackageWarningNoLine{caption}{%
         \noexpand\caption will not be redefined since it's already\MessageBreak
         redefined by a document class or package which is\MessageBreak
         unknown to the caption package.\MessageBreak
         As a result some new features of the caption\MessageBreak
-        package will not work as expected.\MessageBreak
-        *************************************************\@gobbletwo}%
+        package will not work as expected}%
     }%
     \renewcommand*\caption@ContinuedFloat[1]{%
       \caption@Error{Not available in compatibility mode}}%
@@ -612,12 +620,10 @@
   }{%
     \caption@ifincompatible{%
       \PackageWarning{caption}{%
-        *****************************************************\MessageBreak
         Forced redefinition of \noexpand\caption since the\MessageBreak
         unsupported(!) package option `compatibility=false'\MessageBreak
         was given. Please fasten your seat belts, as we may\MessageBreak
-        experience turbulence!\MessageBreak
-        *****************************************************\@gobbletwo}%
+        experience turbulence!\@gobbletwo}%
     }{}%
     \def\caption{%
       \caption@iftype
@@ -639,16 +645,16 @@
           \caption@boxrestore
           \caption@normalsize
           \ifcaption@star
-            \let\caption@anchor\@firstofone
+            \let\caption@@anchor\@firstofone
           \fi
           \@makecaption{\csname fnum@#1\endcsname}%
-                       {\ignorespaces\caption@anchor{#3}}\par}%
+                       {\ignorespaces\caption@@anchor{#3}}\par}%
       \caption@end}%
-    \let\caption@ORI@xfloat\@xfloat
-    \def\@xfloat#1[#2]{%
-      \caption@ORI@xfloat{#1}[#2]%
-      \caption@settype{#1}}%
   }%
+  \let\caption@ORI@xfloat\@xfloat
+  \def\@xfloat#1[#2]{%
+    \caption@ORI@xfloat{#1}[#2]%
+    \caption@settype{#1}}%
 }
 \long\def\@makecaption#1#2{%
   \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
@@ -780,7 +786,7 @@
         \expandafter\label\expandafter{\caption@SClabel}%
       \fi
     \else
-      \caption@Error{Internal error:\MessageBreak
+      \caption@Error{Internal Error:\MessageBreak
         \noexpand\caption@defrost in same group as \string\caption@freeze}%
     \fi}%
   }{}%
@@ -802,16 +808,6 @@
     }{}%
     \caption@freezeHref % will be defrosted in \float@makebox
     \caption@ORI@float@setevery{#1}}%
-  \renewcommand*\caption@setfloatcapt{%
-    \float@ifcaption\@captype{%
-      \caption@Error{Something is going wrong here...\MessageBreak
-        For a removal of this problem please consult the\MessageBreak
-        caption package documentation, especially the sections\MessageBreak
-        about the `float' and the `wrapfig' package}%
-      \@gobble
-    }{%
-      \@firstofone
-    }}%
   \g@addto@macro\caption@settypehook{%
     \expandafter\ifx\csname #1name\endcsname\relax
       \expandafter\let\csname #1name\expandafter\endcsname
@@ -898,7 +894,7 @@
             \expandafter\caption@makecurrent\expandafter\@captype
                                          \expandafter{\caption@SClentry}}%
            {\expandafter\captionlistentry\expandafter{\caption@SClentry}}%
-         \caption@anchor\relax
+         \caption@@anchor\relax
          \ifx\FP@LabelText\@empty \else
            \expandafter\label\expandafter{\FP@LabelText}%
          \fi
@@ -936,6 +932,7 @@
       Hyperref support is turned off\MessageBreak
       because hyperref has stopped early}%
   }{%
+    \g@addto@macro\caption@prepareslc{\measuring@true}%
     \renewcommand*\caption@@refstepcounter{\H@refstepcounter}%
     \renewcommand*\caption@makecurrent[2]{%
       \caption@makecurrentHref{#1}%
@@ -945,49 +942,51 @@
     \renewcommand*\caption@makestart[1]{%
       \begingroup
         \Hy@hypertexnamesfalse
-        \gdef\@currentHlabel{}%
         \hyper@makecurrent{#1.xxx}%
       \endgroup
       \caption@Debug{hyper start=\@currentHref}}%
-    \renewcommand\caption@anchor[1]{%
-      \caption@Debug{hyper anchor \@currentHref}%
+    \renewcommand\caption@@anchor[1]{%
+      \caption@Debug{hyper anchor: \@currentHref}%
       % If we cannot have nesting, the anchor is empty.
       \ifHy@nesting
         \hyper@@anchor{\@currentHref}{#1}%
       \else
         \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#1%
       \fi}%
-    \newcommand*\caption@@anchor[1]{%
-      \caption@Debug{hyper anchor #1}%
-      \begingroup
+    \g@addto@macro\caption@prepareslc{\let\caption@@anchor\@firstofone}%
+    \newcommand*\caption@startanchor[1]{%
+      \caption@Debug{hyper anchor: #1}%
+      \ifvmode\begingroup
         \@tempdima\prevdepth
         \nointerlineskip
         \vspace*{-\caption@hypcapspace}%
-        \let\leavevmode\relax
-        \hyper@@anchor{#1}\relax
+        \caption@anchor{#1}%
         \vspace*{\caption@hypcapspace}%
         \prevdepth\@tempdima
-      \endgroup}%
+      \endgroup\else
+        \PackageWarning{caption}{Internal Warning: Vertical TeX mode expected}%
+        \caption@anchor{#1}%
+      \fi}%
+    \newcommand*\caption@anchor[1]{%
+      \ifmeasuring@ \else
+        \Hy@raisedlink{\hyper@anchorstart{#1}\hyper@anchorend}%
+      \fi}%
     \renewcommand*\caption@@ContinuedFloat[1]{%
       \@ifundefined{theH#1}{}{%
         \expandafter\l@addto@macro\csname theH#1\endcsname{%
           \@alph\c@ContinuedFloat}}}%
     \newif\if@capstart
-    \def\caption@start{%
-      \caption@ifhypcap{%
-        \ifvmode
-          \caption@makestart\@captype
-          \caption@@anchor\@currentHref
-          \global\@capstarttrue
-          \let\hc@currentHref\@currentHref
-          \def\caption@makecurrentHref##1{%
-            \global\@capstartfalse
-            \global\let\@currentHref\hc@currentHref}%
-          \let\caption@anchor\@firstofone
-          \let\caption@@anchor\@gobble
-        \else
-          \PackageWarning{caption}{Wrong TeX mode, no hyperlink anchor was set}%
-        \fi}{}}%
+    \def\caption@start{\caption@ifhypcap{%
+      \caption@makestart\@captype
+      \caption@startanchor\@currentHref
+      \global\@capstarttrue
+      \let\hc@currentHref\@currentHref
+      \def\caption@makecurrentHref##1{%
+        \global\@capstartfalse
+        \global\let\@currentHref\hc@currentHref}%
+      \let\caption@@anchor\@firstofone
+%%%   \let\caption@startanchor\@gobble
+    }{}}%
     \def\caption@@start{%
       \@ifundefined{hc@currentHref}{%
         \PackageWarning{caption}{%
@@ -1002,12 +1001,12 @@
       \let\caption@ORI@setfloatcapt\caption@setfloatcapt
       \renewcommand*\caption@setfloatcapt{%
         \ifx\caption@currentHref\@undefined \else
-          \let\caption@anchor\@firstofone
+          \let\caption@@anchor\@firstofone
         \fi
         \caption@ORI@setfloatcapt}}%
     \def\caption@defrostHref{%
       \ifx\caption@currentHref\@undefined \else
-        \caption@@anchor\caption@currentHref
+        \caption@startanchor\caption@currentHref
         \global\let\caption@currentHref\@undefined
       \fi}%
     \@ifundefined{HyOrg@float@makebox}{}{%
@@ -1057,6 +1056,8 @@
       \def\@captionabovefalse{\LT@captionsetup{position=b}}%
       \def\captionlistentry##1{\noalign{%
         \caption@listentry[\LTcaptype]{##1}}}%
+%%        \let\Hy@LT@currentHlabel\@currentHlabel
+%%          \let\@currentHlabel\Hy@LT@currentHlabel
       \def\ContinuedFloat{\noalign{%
         \caption@Error{\noexpand\ContinuedFloat outside float}}}%
       \caption@ORI@LT@array}}%

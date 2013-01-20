@@ -23,7 +23,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-eng.tex}[2007/09/16 v3.1a The caption package]
+\ProvidesFile{caption-eng.tex}[2007/09/22 v3.1b The caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=20pt % Make TeX shut up.
 %\errorcontextlines=3
 
@@ -31,12 +31,11 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 
-\ifx\pdfoutput\undefined\else
-  \ifcase\pdfoutput\else
-    \usepackage{mathptmx,courier}
-    \usepackage[scaled=0.90]{helvet}
-    \addtolength\marginparwidth{15pt}
-  \fi
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage{mathptmx,courier}
+  \usepackage[scaled=0.90]{helvet}
+  \addtolength\marginparwidth{15pt}
 \fi
 
 \usepackage[USenglish]{babel}
@@ -1892,6 +1891,18 @@ when when used with the \package{beamer} document class.
 An easy way to select the `old' defaults is using the option
 |style=base| when loading \thispackage\ (or later on using |\captionsetup|).
 
+Another new feature is the automatic check for compatibility; if an
+incompatibility will be found, a warning message will be issued and if a strong
+incompatibility was found some features of \thispackage\ will be disabled.
+Please note that only this check was added to \thispackage, so if you get
+such warning message, the previous versions of \thispackage\ were incompatible
+as well, but did not issued such warning, they were ``only'' having
+side-effects or causing problems.
+So these warnings only say that some bad side effects or problems could
+happen, but not that they actually will happen.
+Anyway, if you use \thispackage\ in such circumstances,
+you should use it with care.
+
 % --------------------------------------------------------------------------- %
 
 \pagebreak[4]
@@ -2019,13 +2030,11 @@ Option & Short description & Section \\
 \begin{Warnings}
 
 \Message
-  |*************************************************|\\
   |\caption will not be redefined since it's already|\\
   |redefined by a document class or package which is|\\
   |unknown to the caption package.|\\
   |As a result some new features of the caption|\\
-  |package will not work as expected.|\\
-  |*************************************************|
+  |package will not work as expected.|
 \Description
   If \thispackage\ detects that some (unknown) documentclass or
   package has enhanced |\caption|, it will not redefine
@@ -2042,21 +2051,6 @@ Option & Short description & Section \\
   \par\See{\Ref{classes}}
 
 \Message
-  |*****************************************************|\\
-  |Forced redefinition of \caption since the|\\
-  |unsupported(!) package option `compatibility=false'|\\
-  |was given. Please fasten your seat belts, as we may|\\
-  |experience turbulence!|\\
-  |*****************************************************|
-\Description
-  Since you were so keen to specify the option |compatibility=false|
-  \thispackage\ will try to do its best to fulfill your wishes.
-  But depending on the document class or other packages you use that
-  can end in non-functional features or even errors. So keep your
-  fingers crossed!
-  \par\See{\Ref{classes}}
-
-\Message
   |Caption type was already set to `|\meta{type}|'.|
 \Description
   This warning informs you about mixed caption options. For example if
@@ -2066,6 +2060,19 @@ Option & Short description & Section \\
   and the one for |table| (specified with |\captionsetup[table]{|\ldots|}|)
   as well.
   \par\See{\Ref{commands}}
+
+\Message
+  |Forced redefinition of \caption since the|\\
+  |unsupported(!) package option `compatibility=false'|\\
+  |was given. Please fasten your seat belts, as we may|\\
+  |experience turbulence!|
+\Description
+  Since you were so keen to specify the option |compatibility=false|
+  \thispackage\ will try to do its best to fulfill your wishes.
+  But depending on the document class or other packages you use that
+  can end in non-functional features or even errors. So keep your
+  fingers crossed!
+  \par\See{\Ref{classes}}
 
 \Message
   |Hyperref support is turned off because hyperref has|\\
@@ -2086,6 +2093,24 @@ Option & Short description & Section \\
   \KOMAScript\ command |\setcapwidth| is not (yet) working if you use
   this package, so if you try to use it anyway, you will get this warning.
   \par\See{\Ref{KOMA}}
+
+\Message
+  |Internal Warning: |\meta{warning message}|.|
+\Description
+% \Thispackage\ can only set hyperanchors in \TeX s vertical mode.\par
+  You should never see this warning, either you use a package which redefines
+  |figure| or |table| and which is unknown to \thispackage, or this is a bug
+  in \thispackage.
+  Please send me an e-mail reporting this issue.
+
+\Message
+  |\label before \caption ignored|
+\Description
+  Regarding |\label| the floating environments behave differently than its
+  non-floating counterparts: The internal reference will not be generated
+  at the beginning of the environment, but at |\caption| instead.
+  So you have to place the |\label| command either \emph{after} the
+  |\caption| command or inside the caption text.
 
 \Message
   |Option `|\meta{option}|' was not in list `|\meta{option list}|'.|
@@ -2192,7 +2217,8 @@ Option & Short description & Section \\
   |Unused \captionsetup[|\meta{type}|].|
 \Description
   You have specified options with |\captionsetup[|\meta{type}|]| which are
-  not used later on in the document. This can be because of a typo in \meta{type},
+  not used later on.
+  This can be because of a typo in \meta{type},
   or because you use a package which redefines |figure| or |table| and
   which is unknown to \thispackage, or simply because you don't have any usage
   of the environment \meta{type} after this line.\par
@@ -2210,15 +2236,6 @@ Option & Short description & Section \\
   Please decide which one do you actually want to use, \thispackage\ or the
   other one, using both can lead to wrong skips above or below the caption.
   \par\See{\Ref{skips}}
-
-\Message
-  |Wrong TeX mode, no hyperlink anchor was set.|
-\Description
-% \Thispackage\ can only set hyperanchors in \TeX s vertical mode.\par
-  You should never see this warning, either you use a package which redefines
-  |figure| or |table| and which is unknown to \thispackage, or this is a bug
-  in \thispackage.
-  Please send me an e-mail reporting this issue.
 
 \end{Warnings}
 
@@ -2307,10 +2324,23 @@ Option & Short description & Section \\
   to a more recent version, at least to the one requested.
 
 \Message
-  |Internal error: |\meta{internal-error-message}|.|
+  |Internal Error: |\meta{error message}|.|
 \Description
   You should never see this error.
   Please send me an e-mail reporting this issue.
+
+\Message
+  |! LaTeX Error: Option clash for package caption.|\\
+{\color{black}\hspace{1.5em}-- oder --}\\
+  |! LaTeX Error: Missing \begin{document}.|
+\Description
+  \Thispackage\ has already been loaded by some other \LaTeX\ package,
+  so you can't do that again specifying different options.
+  A candidate causing this could be the \package{subfig} package; if this is
+  the case, please load \thispackage\ \emph{before} the \package{subfig}
+  package or specify the option |caption=false| while loading the
+  \package{subfig} package.
+  \par\See{the \package{subfig} package\cite{subfig} documentation}
 
 \Message
   |Not allowed in longtable* environment.|
@@ -2338,6 +2368,7 @@ Option & Short description & Section \\
   Figures resp.~List of Tables, too, even if you don't use such list.
   \par\See{\Ref{commands}, \Ref{listof}, and \Ref{hyperref}\,}
 
+\iffalse % was removed in v3.1b
 \Message
   |Something is going wrong here...|\\
   |For a removal of this problem please consult the|\\
@@ -2350,6 +2381,7 @@ Option & Short description & Section \\
   the \package{float} package in a manner which is incompatible to
   \thispackage!?
   \par\See{\Ref{float} and \Ref{wrapfig}}
+\fi
 
 \iffalse
 \Message
@@ -2383,7 +2415,7 @@ Option & Short description & Section \\
   \package{subfig} package working. This mechanism is obsolet and not offered
   anymore, please pass this option to the \package{subfig} instead and do not
   load \thispackage\ anymore.
-  \par\See{the \package{subfig}\cite{subfig} documentation}
+  \par\See{the \package{subfig} package\cite{subfig} documentation}
 
 \Message
   |Undefined boolean value `|\meta{value}|'.|
@@ -2523,8 +2555,9 @@ Henrik Lundell,
 David Byers,
 William Asquith,
 Prof.~Dr.~Dirk Hoffmann,
+Frank Martini,
 and
-Frank Martini
+Danie Els
 who all helped to make this package a better one.
 
 % --------------------------------------------------------------------------- %

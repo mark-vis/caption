@@ -23,7 +23,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-deu.tex}[2007/09/16 v3.1a Das caption-Paket]
+\ProvidesFile{caption-deu.tex}[2007/09/22 v3.1b Das caption-Paket]
 \hbadness=9999 \newcount\hbadness \hfuzz=20pt % Make TeX shut up.
 %\errorcontextlines=3
 
@@ -32,12 +32,11 @@
 \setlength\parskip{\medskipamount}
 
 %%%\usepackage[T1]{fontenc}
-\ifx\pdfoutput\undefined\else
-  \ifcase\pdfoutput\else
-    \usepackage{mathptmx,courier}
-    \usepackage[scaled=0.90]{helvet}
-    \addtolength\marginparwidth{15pt}
-  \fi
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage{mathptmx,courier}
+  \usepackage[scaled=0.90]{helvet}
+  \addtolength\marginparwidth{15pt}
 \fi
 
 \usepackage[german]{babel}
@@ -1394,8 +1393,8 @@ bezüglich der Abbildungs- und Tabellenbeschriftungen gleich.
 \Thispackage überprüft automatisch die Kompatibilität zur Dokumentenklasse und
 gibt eine klare Warnung aus, wenn es eine Unverträglichkeit entdeckt.
 Wenn Sie keine solche Warnung erhalten, ist alles bestens, wenn doch, wird von
-der Verwendung des \package{caption}"=Paketes abgeraten, insbesondere wird eine
-solche Verwendung nicht supportet.
+der Verwendung des \package{caption}"=Paketes abgeraten, insbesondere erhalten
+Sie in einem solchen Fall keinen Support.
 
 {\small(Sollten Sie trotz der angemahnten Inkompatibilität \thispackage{}
  nutzen wollen, sollten Sie vorsichtig auf Seiteneffekte achten; gewöhnlich
@@ -1570,7 +1569,7 @@ oder \package{frenchpro}"=Paket.
 
 % --------------------------------------------------------------------------- %
 
-\pagebreak[3]
+\pagebreak[4]
 \section{Interaktion mit anderen Paketen}
 \label{packages}
 
@@ -2111,6 +2110,19 @@ Möchten sie weiterhin die "`alten"' Vorbelegungen, so können Sie die Option
 |style=base| beim Laden des \package{caption}"=Paketes angeben oder später
 mittels |\captionsetup|\xx|{style=base}| den alten Grundzustand wieder herstellen.
 
+Weiterhin prüft die aktuelle Version des \package{caption}"=Paketes automatisch
+nach Inkompatibilitäten und gibt ggf.~ eine Warnung diesbezüglich aus.
+Sollte eine ernsthafte Inkompatibilität festgestellt werden, werden außerdem
+einige Features des \package{caption}"=Paketes abgeschaltet.
+Lediglich diese Prüfung ist neu, wenn sie also neuerdings eine
+Kompatibilitätswarnung erhalten, so waren auch bereits vorangegangene Versionen
+des \package{caption}"=Paketes inkompatibel, dies hatte sich aber früher "`nur"'
+durch Seiteneffekte bzw.~nicht korrekt funktionierende Features geäußert.
+Die Kompatibilitätswarnungen sagen auch nicht aus, daß etwas schief gegangen ist,
+sondern lediglich, daß etwas schief gehen kann. Sie sollten aber auf jeden Fall,
+wenn Sie \thispackage\ trotz einer solchen Warnung einsetzen, die Abbildungs-
+und Tabellenbeschriftungen bzgl.~ ihres Aussehens genau im Auge behalten.
+
 % --------------------------------------------------------------------------- %
 
 \pagebreak[4]
@@ -2239,13 +2251,11 @@ Option            & Kurzbeschreibung & Abschnitt \\
 \begin{Warnings}
 
 \Message
-  |*************************************************|\\
   |\caption will not be redefined since it's already|\\
   |redefined by a document class or package which is|\\
   |unknown to the caption package.|\\
   |As a result some new features of the caption|\\
-  |package will not work as expected.|\\
-  |*************************************************|
+  |package will not work as expected.|
 \Description
   Wenn \thispackage\ eine vorhandene (und unbekannte) Erweiterung des Befehls
   |\caption| erkannt hat, definiert es |\caption| nicht erneut um, da dies
@@ -2262,21 +2272,6 @@ Option            & Kurzbeschreibung & Abschnitt \\
   \par\See{\Ref{classes}}
 
 \Message
-  |*****************************************************|\\
-  |Forced redefinition of \caption since the|\\
-  |unsupported(!) package option `compatibility=false'|\\
-  |was given. Please fasten your seat belts, as we may|\\
-  |experience turbulence!|\\
-  |*****************************************************|
-\Description
-  Da Sie so mutig waren, die Option |compatibility=false| zu probieren,
-  wird \thispackage\ sein bestes geben, um diesen Wunsch zu erfüllen.
-  Aber je nach verwendeter Dokumentenklasse bzw.~Pakete sollten Sie sich
-  auf nicht"=funktionierende Features oder gar Fehlermeldungen einstellen.
-  Also bitte die Daumen gedrückt halten!
-  \par\See{\Ref{classes}}
-
-\Message
   |Caption type was already set to `|\meta{type}|'.|
 \Description
   Diese Warnung informiert Sie über vermische \package{caption}"=Optionen.
@@ -2286,6 +2281,19 @@ Option            & Kurzbeschreibung & Abschnitt \\
   derjenige für |table| (mittels |\captionsetup|\xx|[table]|\xx|{|\ldots|}|
   angegeben), angewandt.
   \par\See{\Ref{commands}}
+
+\Message
+  |Forced redefinition of \caption since the|\\
+  |unsupported(!) package option `compatibility=false'|\\
+  |was given. Please fasten your seat belts, as we may|\\
+  |experience turbulence!|
+\Description
+  Da Sie so mutig waren, die Option |compatibility=false| zu probieren,
+  wird \thispackage\ sein bestes geben, um diesen Wunsch zu erfüllen.
+  Aber je nach verwendeter Dokumentenklasse bzw.~Pakete sollten Sie sich
+  auf nicht"=funktionierende Features oder gar Fehlermeldungen einstellen.
+  Also bitte die Daumen gedrückt halten!
+  \par\See{\Ref{classes}}
 
 \Message
   |Hyperref support is turned off because hyperref has|\\
@@ -2306,6 +2314,24 @@ Option            & Kurzbeschreibung & Abschnitt \\
   von |\setcapwidth| funktioniert (noch) nicht; wenn Sie es angeben,
   wird diese Warnung ausgegeben.
   \par\See{\Ref{KOMA}}
+
+\Message
+  |Internal Warning: |\meta{Warnungstext}|.|
+\Description
+  Diese Warnung sollten Sie niemals sehen; entweder verwenden Sie ein Paket,
+  welches |figure| und/oder |table| in einer dem \package{caption}"=Paket
+  unbekannten Art \& Weise verändert, oder aber es ist ein Bug im
+  \package{caption}"=Paket.
+  Bitte senden Sie mir einen Fehlerbericht diesbezüglich per E-Mail. Danke!
+
+\Message
+  |\label before \caption ignored|
+\Description
+  Anders als bei nicht gleitenden Umgebungen wird bei den
+  gleitenden Umgebungen die interne Referenz erst bei Anwendung des Befehls
+  |\caption| erzeugt. Ein |\label| Befehl, der auf diese Abbildung
+  bzw.~Tabelle verweisen soll, muß daher entweder \emph{nach} |\caption|
+  oder innerhalb des Argumentes von |\caption| platziert werden.
 
 \Message
   |Option `|\meta{option}|' was not in list `|\meta{option list}|'.|
@@ -2444,17 +2470,6 @@ Option            & Kurzbeschreibung & Abschnitt \\
   \thispackage\ -- zu entscheiden, um falsche Abstände zu vermeiden.
   \par\See{\Ref{skips}}
 
-\Message
-  |Wrong TeX mode, no hyper anchor was set.|
-\Description
-% \Thispackage\ kann nur im sog.~vertikalen Modus von \TeX\ Hyperlink"=Anker
-% setzen.\par
-  Diese Warnung sollten Sie niemals sehen; entweder verwenden Sie ein Paket,
-  welches |figure| und/oder |table| in einer dem \package{caption}"=Paket
-  unbekannten Art \& Weise verändert, oder aber es ist ein Bug im
-  \package{caption}"=Paket.
-  Bitte senden Sie mir einen Fehlerbericht diesbezüglich per E-Mail. Danke!
-
 \end{Warnings}
 
 \pagebreak[4]
@@ -2470,7 +2485,7 @@ Option            & Kurzbeschreibung & Abschnitt \\
   als optionales Argument bei |\caption| bzw. |\captionof| mit angegeben
   werden muß, auch wenn Ihr Dokument gar kein Abbildungs- oder
   Tabellenverzeichnis beeinhaltet.
-  \par\See{\Ref{commands}, \Ref{listof}, and \Ref{hyperref}\,}
+  \par\See{\Ref{commands}, \Ref{listof} und \Ref{hyperref}\,}
 
 \Message
   |\caption outside float.|
@@ -2550,10 +2565,23 @@ Option            & Kurzbeschreibung & Abschnitt \\
   benötigte Version.
 
 \Message
-  |Internal error: |\meta{internal-error-message}|.|
+  |Internal Error: |\meta{Fehlertext}|.|
 \Description
   Diesen Fehler sollten Sie niemals sehen. Wenn doch, senden Sie mir bitte
   einen Fehlerbericht per E-Mail.
+
+\Message
+  |! LaTeX Error: Option clash for package caption.|\\
+{\color{black}\hspace{1.5em}-- oder --}\\
+  |! LaTeX Error: Missing \begin{document}.|
+\Description
+  Ein anderes \LaTeX-Paket hat \thispackage\ bereits geladen, Sie können es
+  daher nicht noch einmal mit anderen Optionen laden.
+  Als Verdächtiger kommt das \package{subfig}"=Paket in Frage, sollte dies
+  zutreffen, laden Sie bitte entweder \thispackage\ \emph{vor} dem
+  \package{subfig}"=Paket oder geben beim Laden des \package{subfig}"=Paketes
+  die Option |caption=false| an.
+  \par\See{Dokumentation des \package{subfig}"=Paketes\cite{subfig}}
 
 \Message
   |Not allowed in longtable* environment.|
@@ -2580,8 +2608,9 @@ Option            & Kurzbeschreibung & Abschnitt \\
   Argument bei |\caption| bzw. |\captionof| mit angegeben werden muß,
   auch wenn Ihr Dokument gar kein Abbildungs- oder Tabellenverzeichnis
   beeinhaltet.
-  \par\See{\Ref{commands}, \Ref{listof}, and \Ref{hyperref}\,}
+  \par\See{\Ref{commands}, \Ref{listof} und \Ref{hyperref}\,}
 
+\iffalse % was removed in v3.1b
 \Message
   |Something is going wrong here...|\\
   |For a removal of this problem please consult the|\\
@@ -2594,6 +2623,7 @@ Option            & Kurzbeschreibung & Abschnitt \\
   \package{float}"=Paket in einer für \thispackage\ inkompatiblen
   Art \& Weise erweitert!?
   \par\See{\Ref{float} und \Ref{wrapfig}}
+\fi
 
 \iffalse
 \Message
@@ -2788,9 +2818,10 @@ Sang-Heon Shim,
 Henrik Lundell,
 David Byers,
 William Asquith,
-Prof.~Dr.~Dirk Hoffmann
-und
+Prof.~Dr.~Dirk Hoffmann,
 Frank Martini
+und
+Danie Els
 f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
 
 % --------------------------------------------------------------------------- %
@@ -2798,7 +2829,7 @@ f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
 \pagebreak[4]
 \begin{thebibliography}{99}
   \bibitem{TLC2}
-  Frank Mittelbach and Michel Goossens:\\
+  Frank Mittelbach und Michel Goossens:\\
   \newblock {\em Der {\LaTeX} Begleiter (2.\,Auflage)},\\
   \newblock Addison-Wesley, 2004.
 
@@ -2875,13 +2906,13 @@ f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
   July 13, 1993
 
   \bibitem{picins}
-  Joachim Bleser and Edmund Lang:\\
+  Joachim Bleser und Edmund Lang:\\
   \href{ftp://dante.ctan.org/tex-archive/macros/latex209/contrib/picins/mpic.dvi}%
        {\emph{PicIns-Benutzerhandbuch Version 3.0}},\\
   September~1992
 
   \bibitem{rotating}
-  Sebastian Rahtz and Leonor Barroca:\\
+  Sebastian Rahtz und Leonor Barroca:\\
   \href{ftp://dante.ctan.org/tex-archive/macros/latex/contrib/rotating/}%
        {\emph{A style option for rotated objects in \LaTeX}},\\
   1997/09/26
@@ -2905,7 +2936,7 @@ f"ur ihre Hilfe beim stetigen Verbessern dieses Paketes bedanken.
   2005/07/05
 
   \bibitem{supertabular}
-  Johannes Braams and Theo Jurriens:\\
+  Johannes Braams und Theo Jurriens:\\
   \href{ftp://dante.ctan.org/tex-archive/macros/latex/contrib/supertabular/supertabular.pdf}%
        {\emph{The supertabular environment}},\\
   2002/07/19
