@@ -6,7 +6,7 @@
 %%
 %% subcaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -29,28 +29,30 @@
 %% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2011/10/30 v1.1c Sub-captions (AR)]
-\RequirePackage{caption}[2011/08/18] % needs v3.2b or newer
+\ProvidesPackage{subcaption}[2012/04/09 v1.1f Sub-captions (AR)]
+\RequirePackage{caption}[2012/03/25] % needs v3.3 or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
     The `subcaption' package does not work correctly\MessageBreak
     in compatibility mode}}{}}
-\caption@ifundefined\subfigure{}{%
-  \PackageError{subcaption}{%
-    This package can't be used in cooperation\MessageBreak
-    with the subfigure package}{RTFM}%
-  \endinput}
-\caption@ifundefined\subfloat{}{%
-  \PackageError{subcaption}{%
-    This package can't be used in cooperation\MessageBreak
-    with the subfig package}{RTFM}%
-  \endinput}
+\@ifpackageloaded{subfigure}{%
+  \PackageError{subcaption}%
+    {This package can't be used in cooperation\MessageBreak
+     with the subfigure package}%
+    {RTFM}%
+  \endinput}{}%
+\@ifpackageloaded{subfig}{%
+  \PackageError{subcaption}%
+    {This package can't be used in cooperation\MessageBreak
+     with the subfig package}%
+    {RTFM}%
+  \endinput}{}%
 \caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
 \caption@ExecuteOptions{subcaption}{%
   font+=small,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
 \caption@ProcessOptions*{subcaption}
 \caption@ForEachType{\DeclareCaptionSubType{#1}}
-\newcommand*\subcaption{%
+\def\subcaption{%
   \caption@iftype
     {\setcaptionsubtype*\caption}%
     {\caption@Error{\noexpand\subcaption outside float}%
@@ -71,8 +73,7 @@
   \minipage#1{#2}%
   \setcaptionsubtype\relax}
 \newcommand*\subcaptionbox{%
-  \let\captionbox@settype\setcaptionsubtype
-  \caption@withoptargs\caption@box}
+  \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
 \g@addto@macro\caption@subtypehook{%
   \ifx\label\subcaption@label \else
     \let\subcaption@ORI@label\label
@@ -87,18 +88,17 @@
     \protected@edef\@currentlabel{\csname thesub\@captype\endcsname}%
     \subcaption@ORI@label#1{sub@#2}%
   \endgroup\@esphack}
-\DeclareRobustCommand*\subref{\@ifstar{\subcaption@ref*}\@subref}
-\newcommand*\@subref{%
-  \caption@withoptargs\@@subref}
-\newcommand*\@@subref[2]{%
+\DeclareRobustCommand*\subref{%
+  \@ifstar
+    {\caption@withoptargs\subcaption@ref*}%
+    {\caption@withoptargs\@subref}}
+\newcommand*\@subref[2]{%
   \caption@ifundefined\hyperref
-    {\subcaption@ref#1{#2}}%
-    {\hyperref[#2]{\subcaption@ref*#1{#2}}}}
-\newcommand*\subcaption@ref{%
-  \caption@withoptargs\subcaption@@ref}
-\newcommand*\subcaption@@ref[2]{%
+    {\subcaption@ref{#1}{#2}}%
+    {\hyperref[#2]{\subcaption@ref{*#1}{#2}}}}
+\newcommand*\subcaption@ref[2]{%
   \begingroup
-    \caption@setoptions*{sub}%
+    \caption@setoptions{sub}%
     \subcaption@reffmt\p@subref{\ref#1{sub@#2}}%
   \endgroup}
 \newcommand*\p@subref{}

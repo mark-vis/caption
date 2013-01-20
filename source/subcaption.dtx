@@ -2,7 +2,7 @@
 % 
 % This is file `subcaption.dtx'.
 % 
-% Copyright (C) 2007-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2012 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -25,12 +25,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{143}
+% \CheckSum{133}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2011/08/29 v1.1 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2012/05/18 v1.1 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -52,7 +52,7 @@
 \fi
 %
 \usepackage[bottom]{footmisc}
-\usepackage{array,graphicx,overpic,pict2e,slashbox}
+\usepackage{array,graphicx,overpic,pict2e,diagbox}
 \IfFileExists{test/tlc2/cat.eps}{\graphicspath{{test/tlc2/}}}{}%
 %
 \PassOptionsToPackage{breaklinks=true}{hyperref}
@@ -73,7 +73,6 @@
 \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 \newcommand*\version[2][]{$v#2$}
-\newcommand*\x{\discretionary{}{}{}}
 %
 \usepackage{marvosym}
 \makeatletter
@@ -283,7 +282,18 @@
 % \DescribeEnv{subtable}
 % After loading \thispackage\ the new environments |sub|\-|figure| and
 % |sub|\-|table| are available, which have the same (optional \& mandatory)
-% arguments as the |mini|\-|page| environment.
+% arguments as the |mini|\-|page| environment:
+% \begin{quote}
+%   |\begin{subfigure}|\oarg{pos}\marg{width}\\
+%   \ldots\\
+%   |\end{subfigure}|
+% \end{quote}
+% and
+% \begin{quote}
+%   |\begin{subtable}|\oarg{pos}\marg{width}\\
+%   \ldots\\
+%   |\end{subtable}|
+% \end{quote}
 % Inside these environments you use the ordinary |\caption| command
 % for typesetting captions. So this example is the same as the last one,
 % but uses the |sub|\-|figure| environment:
@@ -306,13 +316,11 @@
 % \item You can override the setttings for a specific subcaption
 % with a |\caption|\-|setup| inside the |sub|\-|figure| or |sub|\-|table| environment, e.g.:
 % \begin{quote}
-%   \ldots\\
 %   |\begin{subfigure}[b]{.5\linewidth}|\\
 %   |  \centering\large A|\\
 %   |  |\textcolor{blue}{\cs{captionsetup}\csmarg{skip=3pt}}\\
 %   |  \caption{A subfigure}\label{fig:1a}|\\
 %   |\end{subfigure}|\\
-%   \ldots
 % \end{quote}
 % \item Hyperlinks targeted to this subfigure will jump to the beginning
 % of the subfigure, and not to the caption of the subfigure
@@ -334,8 +342,11 @@
 % \section{The \cs{subcaptionbox} command}
 %
 % \DescribeMacro\subcaptionbox
-% A more powerful (but less flexible) way of setting sub-figures is
-% offered by the |\sub|\-|caption|\-|box| command. Its syntax is:
+% A different way of setting sub-figures is
+% offered by the |\sub|\-|caption|\-|box| command, which automatically
+% aligns the sub-figures resp.~sub-tables by their very first caption line.
+%
+% Its syntax is:
 % \begingroup
 % \leftmargini=12pt
 % \begin{quote}
@@ -883,14 +894,14 @@
 % \subsection{Identification}
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2011/10/30 v1.1c Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2012/04/09 v1.1f Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
 %
 % Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[2011/08/18] % needs v3.2b or newer
+\RequirePackage{caption}[2012/03/25] % needs v3.3 or newer
 %    \end{macrocode}
 % \changes{v1.1b}{2011/09/01}{Compatibility error added}
 %    \begin{macrocode}
@@ -903,18 +914,20 @@
 % Since we are incompatible to them an error message will be issued when
 % the \package{subfigure} or \package{subfig} package is loaded.
 %    \begin{macrocode}
-\caption@ifundefined\subfigure{}{%
-  \PackageError{subcaption}{%
-    This package can't be used in cooperation\MessageBreak
-    with the subfigure package}{RTFM}%
-  \endinput}
+\@ifpackageloaded{subfigure}{%
+  \PackageError{subcaption}%
+    {This package can't be used in cooperation\MessageBreak
+     with the subfigure package}%
+    {RTFM}%
+  \endinput}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
-\caption@ifundefined\subfloat{}{%
-  \PackageError{subcaption}{%
-    This package can't be used in cooperation\MessageBreak
-    with the subfig package}{RTFM}%
-  \endinput}
+\@ifpackageloaded{subfig}{%
+  \PackageError{subcaption}%
+    {This package can't be used in cooperation\MessageBreak
+     with the subfig package}%
+    {RTFM}%
+  \endinput}{}%
 %    \end{macrocode}
 %
 % \iffalse
@@ -946,12 +959,14 @@
 % \subsubsection{The \cs{subcaption} command}
 %
 % \begin{macro}{\subcaption}
+% \changes{v1.1f}{2012/04/06}{\cs{newcommand} changed to \cs{def}
+%     so it works with the \puresf{memoir} document class, too}
 % Without a prefacing |\set|\-|caption|\-|sub|\-|type|, |\sub|\-|caption| is some kind
 % of |\caption|\-|of{sub|\-|\@cap|\-|type}|.
 % \Note{Like \cs{captionof}, this command is designed to be used inside an
 % own group!}
 %    \begin{macrocode}
-\newcommand*\subcaption{%
+\def\subcaption{%
   \caption@iftype
     {\setcaptionsubtype*\caption}%
     {\caption@Error{\noexpand\subcaption outside float}%
@@ -1016,11 +1031,11 @@
 % \changes{v1.0b}{2008/08/31}{Definition and usage of \cs{subcaption@hrule} added}
 % \changes{v1.0c}{2010/12/17}{Uses \cs{caption@box} now}
 % \changes{v1.1}{2011/08/16}{Adapted to actual version of \cs{caption@box}}
+% \changes{v1.1f}{2012/04/09}{Adapted to actual version of \cs{caption@ibox}}
 % A |\parbox| with contents and sub-caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
 \newcommand*\subcaptionbox{%
-  \let\captionbox@settype\setcaptionsubtype
-  \caption@withoptargs\caption@box}
+  \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1059,23 +1074,24 @@
 %
 % \begin{macro}{\subref}
 % \changes{v1.1}{2011/08/14}{Caption option \opt{subrefformat=} added}
-% \changes{v1.1a}{2011/08/18}{Uses \cs{caption@setoptions} now}
+% \changes{v1.1a}{2011/08/18}{Uses \cs{caption@setoptions*} now}
+% \changes{v1.1d}{2012/01/12}{Usage of \cs{caption@setoptions*} replaced by \cs{caption@setoptions}}
+% \changes{v1.1f}{2012/04/09}{Revised}
 % This one calls |\ref| with the second label. (see |\subcaption@label|)
 %    \begin{macrocode}
-\DeclareRobustCommand*\subref{\@ifstar{\subcaption@ref*}\@subref}
-\newcommand*\@subref{%
-  \caption@withoptargs\@@subref}
-\newcommand*\@@subref[2]{%
+\DeclareRobustCommand*\subref{%
+  \@ifstar
+    {\caption@withoptargs\subcaption@ref*}%
+    {\caption@withoptargs\@subref}}
+\newcommand*\@subref[2]{%
   \caption@ifundefined\hyperref
-    {\subcaption@ref#1{#2}}%
-    {\hyperref[#2]{\subcaption@ref*#1{#2}}}}
+    {\subcaption@ref{#1}{#2}}%
+    {\hyperref[#2]{\subcaption@ref{*#1}{#2}}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\subcaption@ref{%
-  \caption@withoptargs\subcaption@@ref}
-\newcommand*\subcaption@@ref[2]{%
+\newcommand*\subcaption@ref[2]{%
   \begingroup
-    \caption@setoptions*{sub}%
+    \caption@setoptions{sub}%
     \subcaption@reffmt\p@subref{\ref#1{sub@#2}}%
   \endgroup}
 %    \end{macrocode}

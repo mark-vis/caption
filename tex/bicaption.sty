@@ -6,7 +6,7 @@
 %%
 %% bicaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -29,12 +29,16 @@
 %% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2011/10/30 v1.0a Bilingual Captions (AR)]
-\RequirePackage{caption}[2011/08/28] % needs v3.2c or newer
+\ProvidesPackage{bicaption}[2012/12/26 v1.1 Bilingual Captions (AR)]
+\RequirePackage{caption}[2012/12/26] % needs v3.3 or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
     The `bicaption' package does not work correctly\MessageBreak
     in compatibility mode}}{}}
+\newcommand*\bicaption@Info[1]{%
+  \PackageInfo{bicaption}{#1}}
+\newcommand*\bicaption@InfoNoLine[1]{%
+  \PackageInfo{bicaption}{#1\@gobble}}
 \newcommand*\bicaption@Warning[1]{%
   \bicaption@WarningNoLine{#1\on@line}}
 \newcommand*\bicaption@WarningNoLine[1]{%
@@ -65,34 +69,39 @@
   \caption@set@bool\bicaption@ifswap{#1}}
 \DeclareCaptionOption{lang}{\def\bicaption@language{#1}}
 \let\KV@caption@language\KV@caption@lang
-\newcommand*\bicaption@selectlanguage{%
-  \@ifstar
-    {\bicaption@select@language\select@language}
-    {\bicaption@select@language\selectlanguage}}
-\newcommand*\bicaption@select@language[1]{%
+\newcommand*\bicaption@selectlanguage[1]{%
   \caption@ifundefined\bicaption@language{}{%
-    \expandafter#1\expandafter{\bicaption@language}}}
+    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}}}
 \g@addto@macro\caption@applyfont{%
-  \bicaption@selectlanguage*}
+  \bicaption@selectlanguage\@firstoftwo}
 \g@addto@macro\caption@prepareslc{%
   \let\bicaption@language\@undefined}
+\providecommand*\selectcaptionlanguage[1]{%
+  #1\select@language\selectlanguage}
 \caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0}
-\ifcsname bbl@main@language\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\bbl@main@language}}
-  \@tempa
+\ifcsname captionmainlanguage\endcsname
+  \bicaption@InfoNoLine{main language is set to \captionmainlanguage}
+\else\ifcsname bbl@main@language\endcsname
+  \bicaption@InfoNoLine{babel found, main language is \bbl@main@language}
+  \let\captionmainlanguage\bbl@main@language
 \else\ifcsname xpg@main@language\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\xpg@main@language}}
-  \@tempa
+  \bicaption@InfoNoLine{polyglossia found, main language is \xpg@main@language}
+  \let\captionmainlanguage\xpg@main@language
 \else
-  \bicaption@WarningNoLine{Please load this package after the babel package}
-\fi\fi
+  \bicaption@InfoNoLine{main language is not set}
+\fi\fi\fi
+\ifcsname captionmainlanguage\endcsname
+  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
+  \@tempa
+\fi
 \caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
-\let\caption@kernel@addcontentsline@ORI\caption@kernel@addcontentsline
-\renewcommand*\caption@kernel@addcontentsline[2]{%
+\let\bicaption@addcontentsline@ORI\caption@addcontentsline
+\renewcommand*\caption@addcontentsline[2]{%
   \caption@ifundefined\bicaption@lentry
-    {\caption@kernel@addcontentsline@ORI{#1}{#2}}%
-    {\expandafter\bicaption@addcontentsline\expandafter{\bicaption@lentry}{#1}{#2}%
+    {\bicaption@addcontentsline@ORI{#1}{#2}}%
+    {\expandafter\bicaption@addcontentsline\expandafter
+       {\bicaption@lentry}{#1}{#2}%
      \global\let\bicaption@lentry\@undefined}}
 \newcommand\bicaption@addcontentsline[3]{%
   \begingroup
@@ -112,22 +121,21 @@
   \endgroup}
 \newcommand*\bicaption@@addcontentsline[2]{%
   \caption@ifcontentsline{#2}{%
-    \bicaption@selectlanguage\relax
-    \caption@kernel@addcontentsline@ORI{#1}{#2}}}
+    \bicaption@selectlanguage\@secondoftwo
+    \bicaption@addcontentsline@ORI{#1}{#2}}}
 \let\caption@@make@ORI\caption@@make
 \renewcommand\caption@@make[2]{%
   \caption@ifundefined\bicaption@text
     {\caption@@make@ORI{#1}{#2}}%
-    {\expandafter\bicaption@@make\expandafter{\bicaption@text}{#1}{#2}%
+    {\expandafter\bicaption@@make\expandafter
+       {\bicaption@text}{#1}{#2}%
      \global\let\bicaption@text\@undefined}}
 \newcommand\bicaption@@make[3]{%
   \caption@setoptions{bi}%
   \ifnum\bicaption@lang=0\relax
     \bicaption@ifslc
-      {\caption@@slc{#2}{#3}{\captionwidth}{}%
-                    {\caption@set@bool\caption@ifslc0}%
-       \caption@@slc{#2}{#1}{\captionwidth}{}%
-                    {\caption@set@bool\caption@ifslc0}}%
+      {\caption@slc{#2}{#3}{}{\KV@caption@singlelinecheck0}%
+       \caption@slc{#2}{#1}{}{\KV@caption@singlelinecheck0}}%
       {}%
   \fi
   \ifnum\bicaption@lang=2\relax

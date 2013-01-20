@@ -6,7 +6,7 @@
 %%
 %% newfloat.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -29,9 +29,11 @@
 %% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2011/10/30 v1.0 Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2012/05/19 v1.0b Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
+\newcommand*\newfloat@InfoNoLine[1]{%
+  \newfloat@Info{#1\@gobble}}
 \newcommand*\newfloat@Error[1]{%
   \PackageError{newfloat}{#1}\newfloat@eh}
 \newcommand*\newfloat@eh{%
@@ -80,6 +82,7 @@
   \fi
   \expandafter\newcommand\csname list#2name\endcsname{}%
   \expandafter\xdef\csname list#2name\endcsname{List of \newfloat@Type s}%
+  \expandafter\let\csname fst@#2\endcsname\@undefined
   \newfloat@setplacement{#2}{tbp}%
   \newfloat@setfileext{#2}{lo#2}%
   \newfloat@setoptions*{#2}{#1}%
@@ -113,7 +116,7 @@
 \newcommand*\newfloat@@setoptions[3]{%
   \let\newfloat@within@value\@undefined
   \let\newfloat@chapterlistsgaps@value\@undefined
-  #1{\KV@@newfloat@within\newfloat@within@default}% set default value
+  #1{\KV@@newfloat@within\newfloat@within@default}% set default value for new floats
   \def\newfloat@type{#2}%
   \setkeys{@newfloat}{#3}%
   \ifx\newfloat@within@value\@undefined \else
@@ -145,6 +148,7 @@
       \fi
     \fi
   \endgroup}
+%%\AtBeginDocument{\let\newfloat@setname\newfloat@@setname}
 \newcommand*\newfloat@@setname[2]{%
   \@namedef{#1name}{#2}}
 \define@key{@newfloat}{name}{%
@@ -268,6 +272,8 @@
     \ifcsname ext@#1\endcsname
       \@cons\newfloat@list{{#1}}%
       \@namedef{newfloat@ext@\@nameuse{ext@#1}}{#1}%
+      \@ifundefined{@ifchapterlistsgap@#1}{%
+        \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@iden}{}%
     \else
       \newfloat@Error{`#1' does not seem to be a floating environment}%
     \fi}}
@@ -295,17 +301,18 @@
       \@@addchapterlistsgap{#1}{#2}}}
   \providecommand*\@@addchapterlistsgap[2]{%
     \@ifundefined{@addchapterlistsgap@#2}{% only once per extension
-      \@namedef{@addchapterlistsgap@#2}{}%
+      \@namedef{@addchapterlistsgap@#2}{#1}%
       \@@@addchapterlistsgap{#2}}{}}
   \providecommand*\@@@addchapterlistsgap[1]{%
     \ifdim \@chapterlistsgap>\z@
       \addtocontents{#1}{\protect\addvspace{\@chapterlistsgap}}%
     \fi}
   \providecommand*\@addchapterlistsgaps{%
-    \def\@elt##1{%
-      \@expandtwoargs\@addchapterlistsgap{##1}{\@nameuse{ext@##1}}}%
-    \newfloat@list
-    \let\@elt\relax}
+    \begingroup
+      \def\@elt##1{%
+        \@expandtwoargs\@addchapterlistsgap{##1}{\@nameuse{ext@##1}}}%
+      \newfloat@list
+    \endgroup}
   \providecommand*\@chapterlistsgap@off[1]{%
     \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@gobble
     \ifcsname unsettoc\endcsname
@@ -338,8 +345,25 @@
 }%
 \newfloat@list
 \let\@elt\relax
+\define@key{newfloat}{planb}[true]{%
+  \def\@tempa{#1}%
+  \def\@tempb{false}%
+  \ifx\@tempa\@tempb
+    \let\newfloat@ifplanb\@gobble
+  \else
+    \def\@tempb{true}%
+    \ifx\@tempa\@tempb
+      \let\newfloat@ifplanb\@iden
+    \else
+      \newfloat@Error{Invalid value `#1' for option `planb'}%
+    \fi
+  \fi}
+\define@key{newfloat}{planb-fileext}{%
+  \newfloat@Info{Setting Plan B file extension to `#1'}
+  \xdef\newfloat@addtocontents@ext{#1}}
+
 \let\@tempc\relax
-\@expandtwoargs\setkeys{newfloat}{\@ptionlist{\@currname.\@currext}}%
+\@expandtwoargs\setkeys{newfloat}{planb,\@ptionlist{\@currname.\@currext}}%
 \AtEndOfPackage{\let\@unprocessedoptions\relax}
 \newcommand*\newfloatsetup{\setkeys{newfloat}}
 \newcommand\newfloat@replace@chapter[2]{%
@@ -611,10 +635,33 @@
     \@afterheading
   \fi}
 \ifx\newfloat@replace@chapter\@gobbletwo \else
-  \PackageWarningNoLine{newfloat}{%
-   Unsupported document class, or\MessageBreak
-   \noexpand\@chapter was already redefined by another package}
-  \newfloat@Info{\string\@chapter\space=\space\meaning\@chapter}
+  \newfloat@InfoNoLine{%
+   Unsupported document class, or \noexpand\@chapter\MessageBreak
+   was already redefined by another package}
+  \newfloat@InfoNoLine{\string\@chapter\space=\space\meaning\@chapter}
+  \newfloat@InfoNoLine{\string\Hy@org@chapter\space=\space\meaning\Hy@org@chapter}
+  \newfloat@ifplanb{%
+    \newfloat@InfoNoLine{Trying Plan B..}%
+    \let\newfloat@addtocontents@ORI\addtocontents
+    \long\def\addtocontents#1#2{%
+      \newfloat@addtocontents{#1}{#2}#2\addvspace\newfloat@nil}%
+    \long\def\newfloat@addtocontents#1#2#3\addvspace#4\newfloat@nil{%
+      \def\newfloat@tempa{#4}%
+      \ifx\newfloat@tempa\@empty
+        \newfloat@addtocontents@ORI{#1}{#2}%
+      \else
+        \ifx\newfloat@addtocontents@ext\@undefined
+          \newfloat@Info{Setting Plan B file extension to `#1'...}%
+          \xdef\newfloat@addtocontents@ext{#1}%
+        \fi
+        \edef\newfloat@tempa{#1}%
+        \ifx\newfloat@tempa\newfloat@addtocontents@ext
+          \begingroup
+            \let\addtocontents\newfloat@addtocontents@ORI
+            \@addchapterlistsgaps
+          \endgroup
+        \fi
+      \fi}}
 \fi
 \newcommand\newfloat@ForEachNew[2][newfloat@@list]{%
   \AtBeginDocument{%
@@ -631,11 +678,11 @@
     \edef\@tempa{%
       \noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#1}}}}%
     \@tempa}}
-\newfloat@ForEachNew[FPfigure]{%
+\newfloat@ForEachNew[FP@floatBegin]{%
   \newcounter{FP@#1C}%
   \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}
 \providecommand*\ext@lstlisting{lol}%
-\newfloat@ForEachNew[sidewaysfigure]{%
+\newfloat@ForEachNew[@rotfloat]{%
   \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
   \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}
 \newcommand*\newfloat@For@SC[2]{%
@@ -645,9 +692,9 @@
   \newenvironment{SC#2*}%
     {\SC@dblfloat[#1]{#2}}{\endSC@dblfloat}}
 \@onlypreamble\newfloat@For@SC
-\newfloat@ForEachNew[SCfigure]{%
+\newfloat@ForEachNew[SC@float]{%
   \expandafter\newfloat@For@SC\csname SC@#1@vpos\endcsname{#1}}
-\newfloat@ForEachNew[wrapfigure]{%
+\newfloat@ForEachNew[wrapfloat]{%
   \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
 \endinput
 %%

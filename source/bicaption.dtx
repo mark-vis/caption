@@ -2,7 +2,7 @@
 % 
 % This is file `bicaption.dtx'.
 % 
-% Copyright (C) 2010-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2010-2012 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -14,7 +14,7 @@
 % and version 1.3 or later is part of all distributions of LaTeX
 % version 2003/12/01 or later.
 % 
-% This work has the LPPL maintenance status "maintained".F
+% This work has the LPPL maintenance status "maintained".
 % 
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
@@ -25,12 +25,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{369}
+% \CheckSum{385}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2011/10/30 v1.0 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2012/04/10 v1.1 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -61,8 +61,8 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, bicaption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage{bicaption}[2010/09/01]
-\usepackage{subcaption}[2010/09/01]
+\usepackage{bicaption}[2012/12/26]
+\usepackage{subcaption}[2012/04/09]
 %
 \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
@@ -73,7 +73,6 @@
 \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 \newcommand*\version[2][]{$v#2$}
-\newcommand*\x{\discretionary{}{}{}}
 %
 \usepackage{marvosym}
 \makeatletter
@@ -140,6 +139,7 @@
 % \section{The user interface}
 %
 % \subsection{Loading the package}
+% \label{sec:loading}
 %
 % \DescribeMacro{\usepackage}
 % This package will be loaded by
@@ -159,7 +159,12 @@
 %   |\captionsetup[bi-second]|\marg{options}\quad.
 % \end{quote}
 %
+% When used with the \package{babel} or \package{polyglossia} package, the
+% \package{bicaption} package should be loaded \emph{after} it, so the main
+% language will be set automatically. See \autoref{sec:babel} for details.
+%
 % \subsection{Setting options}
+% \label{sec:options}
 %
 % \DescribeMacro{\captionsetup}
 % \begin{quote}
@@ -186,7 +191,7 @@
 %
 % \bigskip
 %
-% Options specified with |\usepackage[|\ldots|]{bi|\-|caption}| and
+% Options specified with |\use|\-|package[|\ldots|]{bi|\-|caption}| and
 % |\caption|\-|setup[bi|\ldots|]{|\ldots|}| will override the ones specified by
 % |\caption|\-|setup{|\ldots|}| and |\caption|\-|setup[fig|\-|ure]{|\ldots|}|
 % (same for `table'). So finally we have the following order how
@@ -217,7 +222,19 @@
 %   |labelsep=quad,indention=10pt,position=top,labelfont=bf|~.
 % \end{quote}
 %
+% \bigskip
+%
+% To limit |bi|, |bi-first|, or |bi-second| options to specific environments one can use
+% multiple optional arguments for |\caption|\-|setup|, e.g.:
+% \begin{quote}
+%   |\captionsetup[figure][bi-first]|\oarg{options}
+% \end{quote}
+% will limit the settings to the first heading of |figure| environments only.
+% Please note that the environment name has to be specified as first optional argument
+% while the bilingual selection as second one.
+%
 % \subsection{Additional options}
+% \label{sec:additional-options}
 %
 % These options are available additional to the ones offered by the
 % \package{caption} package:
@@ -228,8 +245,8 @@
 %   Sets the language of the caption, e.g.
 %   \begin{quote}|\use|\-|package|\-|[lang=eng|\-|lish]{bi|\-|caption}|\end{quote}
 %   will typeset the second caption of bilingual captions in English.
-%   (The language will be set with |\select|\-|language| internally,
-%    so the \package{babel} package must be loaded for using this option.)
+%   (The language will be set with |\select|\-|caption|\-|language| internally,
+%    see \autoref{sec:babel} for details.)
 %
 %   \item[bi-lang=]
 %   \DescribeMacro{bi-lang=}
@@ -258,6 +275,7 @@
 % \end{Options}
 %
 % \subsection{The \cs{bicaption} commands}
+% \label{sec:bicaption}
 %
 % \DescribeMacro\bicaption
 % Bilingual captions will be typeset by
@@ -320,6 +338,7 @@
 %
 % \PageBreak
 % \subsection{A sample document}
+% \label{sec:example}
 %
 % \begin{quote}
 %   |\documentclass[english,ngerman]{article}|\\
@@ -517,6 +536,7 @@
 %
 % \PageBreak
 % \subsection{Customising lists}
+% \label{sec:lists}
 %
 % \DescribeMacro{list=}
 % As default both caption texts will be insert into the List of Figures resp. List of Tables.
@@ -593,8 +613,9 @@
 %   |\usepackage[lang=english,listtype+=2]{bicaption}|\\
 %   ||\\
 %   |% We load the titletoc package for customizing lists|\\
-%   |% Note: Loading titletoc should be done prior defining|\\
-%   |% additional floating environments with \DeclareFloatingEnvironment|\\
+%   |% Note: Loading titletoc should be done prior|\\
+%   |% defining additional floating environments with|\\
+%   |% \DeclareFloatingEnvironment|\\
 %   |\usepackage{titletoc}|\\
 %   ||\\
 %   |\usepackage{newfloat}|\\
@@ -629,6 +650,64 @@
 %   ||\\
 %   |\end{document}|
 % \end{quote}
+%
+% \subsection{Language Selection}
+% \label{sec:babel}
+%
+% For language selection \thispackage\ uses two macros internally:
+%
+% \medskip
+%
+% \DescribeMacro\captionmainlanguage
+% |\caption|\-|main|\-|lan|\-|guage| contains the main language, e.g. |english| or |german|.
+% If not set prior to loading \thispackage, \thispackage\ will try to obtain this setting from
+% the \package{babel} or \package{polyglossia} package.
+%
+% So if you are using either \package{babel} or \package{polyglossia}, and want to adopt
+% the main language setting from it, then just load \thispackage\ \emph{after} it,
+% and simply forget about the |\caption|\-|main|\-|lan|\-|guage| stuff.
+%
+% Otherwise one can either define |\caption|\-|main|\-|lan|\-|guage| prior to
+% loading \thispackage, e.g.:
+% \begin{quote}
+%   |\newcommand\captionmainlanguage{french}|\\
+%   |\usepackage|\oarg{options}|{bicaption}|
+% \end{quote}
+% Or one can specify the main language via |\caption|\-|setup| after loading \thispackage, e.g.:
+% \begin{quote}
+%   |\usepackage|\oarg{options}|{bicaption}|\\
+%   |\captionsetup[bi-first]{lang=french}|
+% \end{quote}
+% When not using the \package{babel} or \package{polyglossia} package both approaches
+% will have exactly the same effect.
+% But when using the \package{babel} or \package{polyglossia} package, and one want to
+% specify the main caption language manually, the first approach is preferable since
+% defining |\caption|\-|main|\-|lan|\-|guage| will suppress the automatic detection mechanism.
+%
+% \medskip
+%
+% \DescribeMacro\selectcaptionlanguage
+% |\select|\-|caption|\-|lan|\-|guage| will be used internally  to select the language:
+% \begin{quote}
+%   |\selectcaptionlanguage|\marg{font-or-list-entry}\marg{language}
+% \end{quote}
+% For setting the language of the caption \meta{font-or-list-entry} will be |\@first|\-|of|\-|two|,
+% for setting the language of the list entry \meta{font-or-list-entry} will be
+% |\@second|\-|of|\-|two|.~\footnote{\cs{@firstoftwo} and \cs{@secondoftwo} are defined
+% in the \LaTeX\ kernel and simply pick either the 1st or 2nd argument.}
+% It defaults to |\select@lan|\-|guage| (caption) resp.~|\select|\-|lan|\-|guage| (list entry)
+% offered by the \package{babel} and \package{polyglossia} package:
+% \begin{quote}
+%   |\providecommand*\selectcaptionlanguage[2]{%|\\
+%   |  #1{\select@language}{\selectlanguage}{#2}}|
+% \end{quote}
+% If you need to alter this, just either define |\select|\-|caption|\-|lan|\-|guage| prior
+% loading \thispackage, or redefine it afterwards.
+%
+% \medskip
+%
+% Please note that all of this will only be relevant if the |lang=| option will be used.
+% Otherwise |\select|\-|caption|\-|lan|\-|guage| won't be used by \thispackage\ at all.
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -715,10 +794,10 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2011/10/30 v1.0a Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2012/12/26 v1.1 Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
-\RequirePackage{caption}[2011/08/28] % needs v3.2c or newer
+\RequirePackage{caption}[2012/12/26] % needs v3.3 or newer
 %    \end{macrocode}
 % \changes{v1.0}{2011/09/01}{Compatibility error added}
 %    \begin{macrocode}
@@ -732,6 +811,24 @@
 %
 % \pagebreak[3]
 % \subsection{Initial code}
+%
+% \begin{macro}{\bicaption@Info}
+%  |\bicaption@Info|\marg{message}
+%    \begin{macrocode}
+\newcommand*\bicaption@Info[1]{%
+  \PackageInfo{bicaption}{#1}}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\bicaption@InfoNoLine}
+%  |\bicaption@InfoNoLine|\marg{message}\par
+%  \Note{The \cs{@gobble} at the end of the 2nd argument of
+%   \cs{PackageInfo} suppresses the line number info.
+%   See TLC2\cite{TLC2}, A.4.7, p885 for details.}
+%    \begin{macrocode}
+\newcommand*\bicaption@InfoNoLine[1]{%
+  \PackageInfo{bicaption}{#1\@gobble}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\bicaption@Warning}
 %  |\bicaption@Warning|\marg{message}
@@ -751,6 +848,7 @@
   See the bicaption package documentation for explanation.}
 %    \end{macrocode}
 % \end{macro}
+%
 % \begin{macro}{\bicaption@Error}
 %  |\bicaption@Error|\marg{message}
 %    \begin{macrocode}
@@ -809,27 +907,32 @@
 %
 % \begin{macro}{\bicaption@selectlanguage}
 % \changes{v1.0}{2011/08/31}{Starred variant added}
-% Set the language via \cs{selectlanguage}.
+% \changes{v1.1}{2012/04/09}{Support of \cs{selectcaptionlanguage} added}
+% Set the language (stored in |\bi|\-|caption@lan|\-|guage|)
+% via |\select|\-|bi|\-|caption|\-|lan|\-|guage|.
 %    \begin{macrocode}
-\newcommand*\bicaption@selectlanguage{%
-  \@ifstar
-    {\bicaption@select@language\select@language}
-    {\bicaption@select@language\selectlanguage}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\bicaption@select@language[1]{%
+\newcommand*\bicaption@selectlanguage[1]{%
   \caption@ifundefined\bicaption@language{}{%
-    \expandafter#1\expandafter{\bicaption@language}}}
+    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}}}
 %    \end{macrocode}
 % |\caption@applyfont| (of the \package{caption} package kernel) will be extended here
 % so the language setting will actually take effect.
 %    \begin{macrocode}
 \g@addto@macro\caption@applyfont{%
-  \bicaption@selectlanguage*}
+  \bicaption@selectlanguage\@firstoftwo}
 %    \end{macrocode}
 %    \begin{macrocode}
 \g@addto@macro\caption@prepareslc{%
   \let\bicaption@language\@undefined}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\selectcaptionlanguage}
+% |\selectcaptionlanguage|\marg{font-or-list-entry}\marg{language}
+% will finally be used to set up the language.
+%    \begin{macrocode}
+\providecommand*\selectcaptionlanguage[1]{%
+  #1\select@language\selectlanguage}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -843,17 +946,25 @@
 %
 % Set the language for the first caption.
 %    \begin{macrocode}
-\ifcsname bbl@main@language\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\bbl@main@language}}
-  \@tempa
+\ifcsname captionmainlanguage\endcsname
+  \bicaption@InfoNoLine{main language is set to \captionmainlanguage}
+\else\ifcsname bbl@main@language\endcsname
+  \bicaption@InfoNoLine{babel found, main language is \bbl@main@language}
+  \let\captionmainlanguage\bbl@main@language
 \else\ifcsname xpg@main@language\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\xpg@main@language}}
-  \@tempa
+  \bicaption@InfoNoLine{polyglossia found, main language is \xpg@main@language}
+  \let\captionmainlanguage\xpg@main@language
 \else
-  \bicaption@WarningNoLine{Please load this package after the babel package}
-\fi\fi
+  \bicaption@InfoNoLine{main language is not set}
+\fi\fi\fi
 %    \end{macrocode}
-% We use |\caption@ProcessOptions| here to add the options to the `|bi-second|' option
+%    \begin{macrocode}
+\ifcsname captionmainlanguage\endcsname
+  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
+  \@tempa
+\fi
+%    \end{macrocode}
+% We use |\caption@Process|\-|Options| here to add the options to the `|bi-second|' option
 % list instead of executing them immediately.
 %    \begin{macrocode}
 \caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
@@ -863,16 +974,18 @@
 % \pagebreak[3]
 % \subsection{Main code}
 %
-% \begin{macro}{\caption@kernel@addcontentsline}
+% \begin{macro}{\caption@addcontentsline}
 % \changes{v1.0}{2011/08/31}{Redefinition of \cs{caption@kernel@addcontentsline} added}
-% We patch \cs{caption@kernel@addcontentsline} (of the \package{caption} package kernel)
-% so \cs{bicaption@addcontentsline} will be used for bilingual captions instead.
+% \changes{v1.0b}{2012/01/15}{\cs{caption@kernel@addcontentsline} changed to \cs{caption@addcontentsline}}
+% We patch |\caption@add|\-|contents|\-|line| (of the \package{caption} package kernel)
+% so |bi|\-|caption@add|\-|contents|\-|line| will be used for bilingual captions instead.
 %    \begin{macrocode}
-\let\caption@kernel@addcontentsline@ORI\caption@kernel@addcontentsline
-\renewcommand*\caption@kernel@addcontentsline[2]{%
+\let\bicaption@addcontentsline@ORI\caption@addcontentsline
+\renewcommand*\caption@addcontentsline[2]{%
   \caption@ifundefined\bicaption@lentry
-    {\caption@kernel@addcontentsline@ORI{#1}{#2}}%
-    {\expandafter\bicaption@addcontentsline\expandafter{\bicaption@lentry}{#1}{#2}%
+    {\bicaption@addcontentsline@ORI{#1}{#2}}%
+    {\expandafter\bicaption@addcontentsline\expandafter
+       {\bicaption@lentry}{#1}{#2}%
      \global\let\bicaption@lentry\@undefined}}
 %    \end{macrocode}
 % \end{macro}
@@ -880,7 +993,7 @@
 % \begin{macro}{\bicaption@addcontentsline}
 % \changes{v1.0}{2011/08/31}{This macro added}
 % |\bicaption@addcontentsline|\marg{list entry \#2}\marg{type}\marg{list entry \#1}\par
-% Typeset both captions using the original version of \cs{caption@addcontentsline}.
+% Typeset both captions using the original version of |\caption@add|\-|contents|\-|line|.
 %    \begin{macrocode}
 \newcommand\bicaption@addcontentsline[3]{%
   \begingroup
@@ -913,20 +1026,21 @@
 %    \begin{macrocode}
 \newcommand*\bicaption@@addcontentsline[2]{%
   \caption@ifcontentsline{#2}{%
-    \bicaption@selectlanguage\relax
-    \caption@kernel@addcontentsline@ORI{#1}{#2}}}
+    \bicaption@selectlanguage\@secondoftwo
+    \bicaption@addcontentsline@ORI{#1}{#2}}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@@make}
-% We patch \cs{caption@@make} (of the \package{caption} package kernel)
-% so \cs{bicaption@@make} will be used for bilingual captions instead.
+% We patch |\caption@@make| (of the \package{caption} package kernel)
+% so |\bi|\-|caption@@make| will be used for bilingual captions instead.
 %    \begin{macrocode}
 \let\caption@@make@ORI\caption@@make
 \renewcommand\caption@@make[2]{%
   \caption@ifundefined\bicaption@text
     {\caption@@make@ORI{#1}{#2}}%
-    {\expandafter\bicaption@@make\expandafter{\bicaption@text}{#1}{#2}%
+    {\expandafter\bicaption@@make\expandafter
+       {\bicaption@text}{#1}{#2}%
      \global\let\bicaption@text\@undefined}}
 %    \end{macrocode}
 % \end{macro}
@@ -945,10 +1059,8 @@
 %    \begin{macrocode}
   \ifnum\bicaption@lang=0\relax
     \bicaption@ifslc
-      {\caption@@slc{#2}{#3}{\captionwidth}{}%
-                    {\caption@set@bool\caption@ifslc0}%
-       \caption@@slc{#2}{#1}{\captionwidth}{}%
-                    {\caption@set@bool\caption@ifslc0}}%
+      {\caption@slc{#2}{#3}{}{\KV@caption@singlelinecheck0}%
+       \caption@slc{#2}{#1}{}{\KV@caption@singlelinecheck0}}%
       {}%
   \fi
 %    \end{macrocode}
@@ -1045,7 +1157,7 @@
 %
 % \begin{macro}{\bicaption@getlabel}
 % \changes{v1.0}{2011/09/03}{\cs{label} can have optional arguments now}
-% Gets the label command out of the (first) caption text and stores it to |\bicaption@label|.
+% Gets the label command out of the (first) caption text and stores it to |\bi|\-|caption@label|.
 %    \begin{macrocode}
 \long\def\bicaption@getlabel#1\label#2#3\@nil{%
   \def\@tempa{#2}%
@@ -1133,6 +1245,13 @@
 \caption@ForEachType{\bicaption@declarelist{#1}}
 %    \end{macrocode}
 % \end{macro}
+%
+% \begin{thebibliography}{9}
+%   \bibitem{TLC2}
+%   Frank Mittelbach and Michel Goossens:\\
+%   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},
+%   \newblock Addison-Wesley, 2004.
+% \end{thebibliography}
 %
 % \iffalse
 %</package>

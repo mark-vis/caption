@@ -6,7 +6,7 @@
 %%
 %% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -29,7 +29,7 @@
 %% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2011/11/01 v1.4a caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2013/01/06 v1.5 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -122,24 +122,25 @@
 \AtBeginDocument{\let\caption@ifatletter\@secondoftwo}
 \newcommand*\caption@withoptargs[1]{%
   \@ifstar
-    {\def\caption@tempa{*}\caption@@withoptargs#1}%
-    {\def\caption@tempa{}\caption@@withoptargs#1}}
+    {\def\caption@tempa{*}\caption@@withoptargs{#1}}%
+    {\def\caption@tempa{}\caption@@withoptargs{#1}}}
 \def\caption@@withoptargs#1{%
   \@ifnextchar[%]
-    {\caption@@@withoptargs#1}%
-    {\caption@@@@withoptargs#1}}
+    {\caption@@@withoptargs{#1}}%
+    {\caption@@@@withoptargs{#1}}}
 \def\caption@@@withoptargs#1[#2]{%
   \l@addto@macro\caption@tempa{[{#2}]}%
-  \caption@@withoptargs#1}
+  \caption@@withoptargs{#1}}
 \def\caption@@@@withoptargs#1{%
-  \expandafter#1\expandafter{\caption@tempa}}
+  \def\caption@tempb{#1}%
+  \expandafter\caption@tempb\expandafter{\caption@tempa}}
 \DeclareRobustCommand*\caption@gobble{%
   \caption@withoptargs\@gobbletwo}
 \newcommand\caption@DoCheckCommand[2]{%
   \begingroup
-    \let\@tempa#1%
+    \let\caption@tempa#1%
     #2%
-    \ifx\@tempa#1%
+    \ifx\caption@tempa#1%
       \endgroup
       \let\caption@CheckCommand\@gobbletwo
     \else
@@ -175,7 +176,7 @@
 \newcommand*\caption@Info[1]{%
   \PackageInfo{caption}{#1}}
 \newcommand*\caption@InfoNoLine[1]{%
-  \PackageInfo{caption}{#1\@gobble}}
+  \caption@Info{#1\@gobble}}
 \newcommand*\caption@Warning[1]{%
   \caption@WarningNoLine{#1\on@line}}
 \newcommand*\caption@WarningNoLine[1]{%
@@ -205,8 +206,11 @@
   \caption@teststar\caption@declareoption\AtEndOfPackage\@gobble}
 \@onlypreamble\DeclareCaptionOption
 \newcommand*\caption@declareoption[2]{%
-  #1{\undefine@key{caption}{#2}}\define@key{caption}{#2}}
+  #1{\undefine@key{caption}{#2}}\caption@declare@option{#2}}
 \@onlypreamble\caption@declareoption
+\newcommand*\caption@declare@option{%
+  \define@key{caption}}
+%% no \@onlypreamble\caption@declare@option, will be used by \captionsetup
 \newcommand*\DeclareCaptionOptionNoValue{%
   \caption@teststar\caption@declareoption@novalue\AtEndOfPackage\@gobble}
 \@onlypreamble\DeclareCaptionOptionNoValue
@@ -228,7 +232,16 @@
   \captionsetup@startrue#1\captionsetup@starfalse
   \@ifnextchar[\caption@setup@options\caption@setup}
 \newcommand*\caption@setup{\caption@setkeys{caption}}
-\def\caption@setup@options[#1]#2{%
+\def\caption@setup@options[#1]{%
+  \@ifnextchar[%
+    {\caption@stepthecounter
+     \caption@withoptargs{\@expandtwoargs
+       \caption@setup@options@i{#1}{@\caption@thecounter}}}%
+    {\caption@setup@options@{#1}}}
+\newcommand*\caption@setup@options@i[4]{%
+  \caption@setup@options@{#1}{#2}%
+  \caption@declare@option{#2}[]{\captionsetup#3{#4}}}
+\newcommand*\caption@setup@options@[2]{%
   \@bsphack
     \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
     \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
@@ -284,15 +297,12 @@
       }}%
   \@esphack}
 \DeclareCaptionOption{options}{\caption@setoptions{#1}}
-\DeclareCaptionOption{options*}{\caption@setoptions*{#1}}
-\newcommand*\caption@setoptions{%
-  \caption@teststar\caption@set@options\@gobble\@firstofone}
-\newcommand*\caption@set@options[2]{%
-  \caption@Debug{options=#2}%
-  \expandafter\let\expandafter\caption@opt\csname caption@opt@#2\endcsname
+\newcommand*\caption@setoptions[1]{%
+  \caption@Debug{options=#1}%
+  \expandafter\let\expandafter\caption@opt\csname caption@opt@#1\endcsname
   \ifx\caption@opt\relax \else
     \caption@xsetup\caption@opt
-    #1{\caption@clearsetup{#2}}% #1 = \@firstofone -or- \@gobble
+    \caption@clearsetup{#1}%
   \fi}
 \newcommand*\caption@xsetup[1]{\expandafter\caption@setup\expandafter{#1}}
 \newcommand*\caption@addtooptlist[1]{%
@@ -391,6 +401,7 @@
 \newdimen\captionmargin
 \newdimen\captionmargin@
 \newdimen\captionwidth
+\newdimen\caption@tempdima
 \DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
 \DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
@@ -436,7 +447,7 @@
   \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
     \@secondoftwo\@firstoftwo}
 \newcommand*\caption@thecounter{0}
-\newcommand*\caption@stepcounter{%
+\newcommand*\caption@stepthecounter{%
   \@tempcnta\caption@thecounter
   \advance\@tempcnta\@ne
   \xdef\caption@thecounter{\the\@tempcnta}}
@@ -511,8 +522,6 @@
 \@onlypreamble\caption@declarestyle
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
 \DeclareCaptionOption{style*}{\caption@setstyle*{#1}}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
-\DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 \newcommand*\caption@setstyle{%
   \caption@teststar\caption@@setstyle\@gobble\@firstofone}
 \newcommand*\caption@@setstyle[2]{%
@@ -532,6 +541,7 @@
        \expandafter{\caption@sls}}}
 \newcommand*\caption@resetstyle{%
   \caption@setup{%
+    box=parbox,boxcolor=white,%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
@@ -540,8 +550,26 @@
   \caption@clearsetup{singleline}}
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
-  format=default,labelsep=default,textformat=default,%
+  box=default,format=default,labelsep=default,textformat=default,%
   justification=default,font=default,labelfont=default,textfont=default}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
+\newcommand*\DeclareCaptionBox[2]{%
+  \global\long\@namedef{caption@box@#1}##1##2{#2}}
+\@onlypreamble\DeclareCaptionBox
+\DeclareCaptionOption{box}{\caption@setbox{#1}}
+\newcommand*\caption@setbox[1]{%
+  \@ifundefined{caption@box@#1}%
+    {\caption@Error{Undefined box `#1'}}%
+    {\expandafter\let\expandafter\caption@box\csname caption@box@#1\endcsname}}
+\DeclareCaptionBox{empty}{}
+\DeclareCaptionBox{none}{#2}
+\DeclareCaptionBox{parbox}{\parbox[b]{#1}{#2}}
+\DeclareCaptionBox{colorbox}{\colorbox{\caption@boxcolor}{%
+  \addtolength\caption@tempdima{-2\fboxsep}%
+  \caption@box@parbox\caption@tempdima{#2}}}
+\DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
+\def\caption@box@default{\caption@box@parbox}
 \newcommand*\DeclareCaptionFormat{%
   \caption@teststar\caption@declareformat\@gobble\@firstofone}
 \@onlypreamble\DeclareCaptionFormat
@@ -751,34 +779,48 @@
   \caption@ragged\RaggedLeft\raggedleft}
 \DeclareCaptionJustification{RaggedRight}{%
   \caption@ragged\RaggedRight\raggedright}
-\newcommand*\caption@ragged{%
-  \caption@Debug{We need ragged2e}%
-  \protected@write\@auxout{}{\string\caption@newlabel{ragged2e}{}}%
-  \global\let\caption@ragged\caption@@ragged
-  \caption@ragged}
-\caption@AtBeginDocument{%
-  \@ifundefined{caption@r@ragged2e}{%
-    \newcommand*\caption@@ragged{%
-      \caption@Warning{%
-        `ragged2e' support has been changed.\MessageBreak
-        Rerun to get captions right}%
-      \global\let\caption@ragged\@secondoftwo % suppress further warnings
-      \caption@ragged}%
-  }{%
-    \caption@Debug{We load ragged2e}%
-    \IfFileExists{ragged2e.sty}{%
-      \RequirePackage{ragged2e}%
-      \let\caption@@ragged\@firstoftwo
-    }{%
-      \newcommand*\caption@@ragged[2]{%
-        \@ifundefined{caption\string#1}{%
-          \caption@Warning{%
-            `ragged2e' package not loaded, therefore\MessageBreak
-            substituting \string#2 for \string#1\MessageBreak}%
-          \global\@namedef{caption\string#1}}{}%
-        #2}%
-    }%
-  }}
+\newcommand*\caption@ragged{\caption@ifpackageloaded{ragged2e}}
+\newcommand*\caption@ifpackageloaded[1]{%
+  \@ifundefined{caption@ifpkg@#1}%
+    {\caption@RequirePackage{#1}%
+     \caption@pkg@true{#1}}%
+    {}%
+  \caption@ifpkg{#1}}
+\AtBeginDocument{\renewcommand*\caption@ifpackageloaded[1]{%
+  \@ifundefined{caption@ifpkg@#1}%
+    {\caption@addto@pkg@list{#1}%
+     \caption@pkg@false{#1}%
+     \caption@Warning{%
+       `#1' support has been changed.\MessageBreak
+       Rerun to get captions right}}%
+    {}%
+  \caption@ifpkg{#1}}}
+\newcommand*\caption@ifpkg[1]{%
+  \csname caption@ifpkg@#1\endcsname}
+\newcommand*\caption@pkg@true[1]{%
+  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@firstoftwo}
+\newcommand*\caption@pkg@false[1]{%
+  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@secondoftwo}
+\newcommand*\caption@pkg@list{}
+\newcommand*\caption@addto@pkg@list[1]{%
+  \protected@write\@auxout{}{%
+    \string\@cons\string\caption@pkg@list{{#1}}}}
+\AtBeginDocument{%
+  \def\caption@tempa{\endgroup}%
+  \begingroup
+  \def\@elt#1{%
+    \g@addto@macro\caption@tempa{%
+      \caption@RequirePackage{#1}%
+      \@namedef{caption@ifpkg@#1}{%
+        \caption@addto@pkg@list{#1}%
+        \caption@pkg@true{#1}%
+        \caption@ifpkg{#1}}}}%
+  \caption@pkg@list
+  \caption@tempa}
+\newcommand*\caption@RequirePackage[1]{%
+  \caption@Info{We need package `#1'}%
+  \RequirePackage{#1}}
+\@onlypreamble\caption@RequirePackage
 \caption@ifundefined\abovecaptionskip{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
 \caption@ifundefined\belowcaptionskip{%
@@ -887,6 +929,24 @@
       \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
     \fi
     \vskip\belowcaptionskip}}
+\providecommand*\caption@ifelsarticleclass{%
+  \@ifclassloaded{elsarticle}\@firstofone\@gobble}
+\@onlypreamble\caption@ifelsarticleclass
+\caption@ifelsarticleclass{%
+  \caption@CheckCommand\@makecaption{%
+    % elsarticle.cls,v 1.20 2008-10-13 04:24:12 cvr Exp
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip\footnotesize
+      \sbox\@tempboxa{#1: #2}%
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi
+      \vskip\belowcaptionskip}}
+  \DeclareCaptionDefaultFont{font}{\footnotesize}
+}
 \providecommand*\caption@ifamsclass{%
   \caption@ifundefined\@captionheadfont\@gobble\@firstofone}
 \@onlypreamble\caption@ifamsclass
@@ -1209,16 +1269,18 @@
         {\caption@Debug{addcontentsline: #1 => \caption@listtype}%
          \@namedef{the\caption@listtype}{\@nameuse{the#1}}}%
       \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
-    \endgroup}}
+    \endgroup}%
+    \caption@addsubcontentslines{#1}}
 \newcommand\caption@@addcontentsline[2]{%
   {\let\\\space
    \@ifundefined{ext@#1}%
      {\caption@Error{No float type '#1' defined}}%
-     {\caption@@@addcontentsline
+     {\caption@add@contentsline
        {\csname ext@#1\endcsname}%
        {#1}%
        {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
        {\ignorespaces #2}}}}
+\newcommand*\caption@add@contentsline{\caption@@@addcontentsline}
 \newcommand*\caption@@@addcontentsline[4]{%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
 \newcommand\caption@ifcontentsline[1]{%
@@ -1230,24 +1292,15 @@
   \else
     \expandafter\@firstofone
   \fi}
+\newcommand*\caption@addsubcontentslines[1]{}
 \newif\ifcaption@star
 \newcommand*\caption@fnum[1]{\caption@lfmt{\@nameuse{#1name}}{\@nameuse{the#1}}}
 \newcommand\caption@make[2]{\caption@@make{\caption@lfmt{#1}{#2}}}
 \newcommand\caption@@make[2]{%
   \begingroup
-  \caption@stepcounter
+  \caption@stepthecounter
   \caption@beginhook
-  \ifx\caption@maxmargin\@undefined \else
-    \ifdim\captionmargin>\caption@maxmargin\relax
-      \captionmargin\caption@maxmargin\relax
-    \fi
-  \fi
-  \ifx\caption@minmargin\@undefined \else
-    \ifdim\captionmargin<\caption@minmargin\relax
-      \captionmargin\caption@minmargin\relax
-    \fi
-  \fi
-  \caption@ifslc{\caption@slc{#1}{#2}\captionwidth\relax}{}%
+  \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
   \caption@calcmargin
   \@tempdima\captionmargin
   \ifdim\captionmargin@=\z@ \else
@@ -1255,9 +1308,9 @@
   \fi
   \caption@ifh{\advance\@tempdima\caption@indent}%
   \hspace\@tempdima
-  \@tempdima\captionwidth
-  \caption@ifh{\advance\@tempdima-\caption@indent}%
-  \caption@parbox\@tempdima{%
+  \caption@tempdima\captionwidth
+  \caption@ifh{\advance\caption@tempdima-\caption@indent}%
+  \caption@parbox\caption@tempdima{%
     \caption@ifh{%
       \ifdim\caption@indent=\z@
         \leavevmode
@@ -1275,6 +1328,16 @@
   \global\caption@starfalse}
 \newcommand*\caption@calcmargin{%
   \caption@calcmargin@hook
+  \ifx\caption@maxmargin\@undefined \else
+    \ifdim\captionmargin>\caption@maxmargin\relax
+      \captionmargin\caption@maxmargin\relax
+    \fi
+  \fi
+  \ifx\caption@minmargin\@undefined \else
+    \ifdim\captionmargin<\caption@minmargin\relax
+      \captionmargin\caption@minmargin\relax
+    \fi
+  \fi
   \ifdim\captionwidth=\z@
     \captionwidth\linewidth
     \advance\captionwidth by -2\captionmargin
@@ -1295,21 +1358,19 @@
     \string\width=\the\captionwidth}%
 }
 \newcommand\caption@slc[4]{%
-  \caption@@slc{#1}{#2}{#3}{\caption@singleline#4}{}}
-\newcommand\caption@@slc[5]{%
   \caption@Debug{Begin SLC}%
   \begingroup
   \caption@singleline
   \let\caption@hj\@empty
-  \caption@calcmargin % calculate #3 if necessary
+  \caption@calcmargin % calculate \captionwidth
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-  \ifdim\wd\@tempboxa>#3%
-    \endgroup
-    #5%
-  \else
+  \ifdim\wd\@tempboxa>\captionwidth
     \endgroup
     #4%
+  \else
+    \endgroup
+    #3%
   \fi
   \caption@Debug{End SLC}}
 \newcommand*\caption@singleline{%
@@ -1333,7 +1394,7 @@
   \endgroup}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
-\newcommand*\caption@parbox{\parbox[b]}
+\newcommand*\caption@parbox{\caption@box}
 \newcommand*\caption@applyfont{%
   \caption@hj\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
@@ -1413,33 +1474,6 @@
   \edef\@tempa{\def\noexpand\newfloat@hook####1{\the\toks@}}%
   \@tempa}
 \providecommand*\newfloat@hook[1]{}
-\newcommand*\caption@patch@stpelt{%
-  \let\caption@stpelt\@stpelt
-  \def\@stpelt##1{%
-    \caption@stpelt{##1}%
-    \begingroup
-      \let\@elt\caption@stpelt
-      \csname caption@cl@##1\endcsname
-    \endgroup}%
-  \let\caption@patch@stpelt\relax}
-\@onlypreamble\caption@patch@stpelt
-\newcommand*\caption@addtoreset[2]{%
-  \caption@patch@stpelt
-  \@ifundefined{caption@cl@#2}{\@namedef{caption@cl@#2}{}}{}%
-  \expandafter\@cons\csname caption@cl@#2\endcsname{{#1}}}
-\@onlypreamble\caption@addtoreset
-\newcommand*\caption@removefromreset[2]{%
-  \begingroup
-    \expandafter\let\csname c@#1\endcsname\caption@removefromreset
-    \def\@elt##1{%
-      \expandafter\ifx\csname c@##1\endcsname\caption@removefromreset
-      \else
-        \noexpand\@elt{##1}%
-      \fi}%
-    \expandafter\xdef\csname caption@cl@#2\endcsname{%
-      \csname caption@cl@#2\endcsname}%
-  \endgroup}
-\@onlypreamble\caption@removefromreset
 \newcommand*\DeclareCaptionSubType{%
   \caption@teststar\caption@declaresubtype\@firstoftwo\@secondoftwo}
 \@onlypreamble\DeclareCaptionSubType
@@ -1452,7 +1486,7 @@
     {\@ifundefined{c@sub#3}%
        {\caption@Debug{New subtype `sub#3'}%
         \newcounter{sub#3}%
-        \caption@addtoreset{sub#3}{#3}%
+        \@addtoreset{sub#3}{#3}%
         \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
         \caption@declaresublistentry{#3}%
         \@cons\caption@subtypelist{{#3}}}%
@@ -1536,6 +1570,7 @@
   \endgroup}
 \def\sf@NEW@subfloat{%
   \begingroup
+    \@nameuse{caption@warmup}%
     \caption@setfloattype\@captype
     \sf@ifpositiontop{%
       \maincaptiontoptrue
