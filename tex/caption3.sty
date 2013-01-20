@@ -4,9 +4,9 @@
 %%
 %% The original source files were:
 %%
-%% caption.dtx  (with options: `kernel')
+%% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2010 Axel Sommerfeldt (caption@sommerfee.de)
+%% Copyright (C) 1994-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% --------------------------------------------------------------------------
 %% 
@@ -23,12 +23,13 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-%% ltcaption.dtx, and subcaption.dtx, the derived files caption.sty,
-%% caption2.sty, caption3.sty, ltcaption.sty, and subcaption.sty, and the
-%% user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%% caption3.dtx, bicaption.dtx, ltcaption.dtx, and subcaption.dtx,
+%% the derived files caption.sty, caption2.sty, caption3.sty, bicaption.sty,
+%% ltcaption.sty, and subcaption.sty, and the user manuals caption-deu.tex,
+%% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2010/01/14 v3.1m caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2011/08/06 v1.3 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -151,7 +152,7 @@
   \caption@teststar\g@addto@macro
     \caption@@begindocumenthook\caption@begindocumenthook}
 \AtBeginDocument{%
-   \PackageInfo{caption}{Begin \noexpand\AtBeginDocument code\@gobble}%
+   \caption@InfoNoLine{Begin \noexpand\AtBeginDocument code}%
    \def\caption@AtBeginDocument{%
      \@ifstar{\g@addto@macro\caption@@begindocumenthook}\@firstofone}%
    \caption@begindocumenthook
@@ -160,20 +161,24 @@
      \@ifstar\@firstofone\@firstofone}%
    \caption@@begindocumenthook
    \let\caption@@begindocumenthook\relax
-   \PackageInfo{caption}{End \noexpand\AtBeginDocument code\@gobble}}
+   \caption@InfoNoLine{End \noexpand\AtBeginDocument code}}
+\newcommand*\caption@Info[1]{%
+  \PackageInfo{caption}{#1}}
+\newcommand*\caption@InfoNoLine[1]{%
+  \PackageInfo{caption}{#1\@gobble}}
 \newcommand*\caption@Warning[1]{%
   \caption@WarningNoLine{#1\on@line}}
 \newcommand*\caption@WarningNoLine[1]{%
   \PackageWarning{caption}{#1.^^J\caption@wh\@gobbletwo}}
-\newcommand*\caption@Error[1]{%
-  \PackageError{caption}{#1}\caption@eh}
-\let\caption@KV@err\caption@Error
 \newcommand*\caption@wh{%
   See the caption package documentation for explanation.}
+\newcommand*\caption@Error[1]{%
+  \PackageError{caption}{#1}\caption@eh}
 \newcommand*\caption@eh{%
   If you do not understand this error, please take a closer look\MessageBreak
   at the documentation of the `caption' package, especially the\MessageBreak
   section about errors.\MessageBreak\@ehc}
+\let\caption@KV@err\caption@Error
 \RequirePackage{keyval}[1997/11/10]
 \providecommand*\undefine@key[2]{%
   \@nameundef{KV@#1@#2}\@nameundef{KV@#1@#2@default}}
@@ -269,12 +274,15 @@
       }}%
   \@esphack}
 \DeclareCaptionOption{options}{\caption@setoptions{#1}}
-\newcommand*\caption@setoptions[1]{%
-  \caption@Debug{options=#1}%
-  \expandafter\let\expandafter\caption@opt\csname caption@opt@#1\endcsname
+\DeclareCaptionOption{options*}{\caption@setoptions*{#1}}
+\newcommand*\caption@setoptions{%
+  \caption@teststar\caption@set@options\@gobble\@firstofone}
+\newcommand*\caption@set@options[2]{%
+  \caption@Debug{options=#2}%
+  \expandafter\let\expandafter\caption@opt\csname caption@opt@#2\endcsname
   \ifx\caption@opt\relax \else
     \caption@xsetup\caption@opt
-    \caption@clearsetup{#1}%
+    #1{\caption@clearsetup{#2}}% #1 = \@firstofone -or- \@gobble
   \fi}
 \newcommand*\caption@xsetup[1]{\expandafter\caption@setup\expandafter{#1}}
 \newcommand*\caption@addtooptlist[1]{%
@@ -316,12 +324,12 @@
   \@esphack}
 \let\caption@keydepth\@empty
 \newcommand*\caption@ExecuteOptions[2]{%
-  \@expandtwoargs\caption@setkeys{#1}{#2}}%
+  \expandafter\@expandtwoargs\csname caption@setkeys@#1\endcsname{#1}{#2}}%
 \@onlypreamble\caption@ExecuteOptions
 \newcommand*\caption@ProcessOptions{%
   \caption@teststar\caption@@ProcessOptions\@gobble\@firstofone}
 \@onlypreamble\caption@ProcessOptions
-\newcommand*\caption@@ProcessOptions[2]{%
+\newcommand\caption@@ProcessOptions[2]{%
   \let\@tempc\relax
   \let\caption@tempa\@empty
   #1{% \@firstofone -or- \@gobble
@@ -331,7 +339,7 @@
           \PackageInfo{#2}{Global option `\CurrentOption' ignored}%
         }{%
           \PackageInfo{#2}{Global option `\CurrentOption' processed}%
-          \edef\caption@tempa{\caption@tempa,\CurrentOption,}%
+          \edef\caption@tempa{\caption@tempa\CurrentOption,}%
           \@expandtwoargs\@removeelement\CurrentOption
             \@unusedoptionlist\@unusedoptionlist
         }%
@@ -342,29 +350,78 @@
   \caption@ExecuteOptions{#2}{\caption@tempa\@ptionlist{\@currname.\@currext}}%
   \AtEndOfPackage{\let\@unprocessedoptions\relax}}
 \@onlypreamble\caption@@ProcessOptions
+\newcommand*\caption@packagelist{}
+\@onlypreamble\caption@packagelist
+\newcommand\caption@SetupOptions[2]{%
+  \@namedef{caption@setkeys@#1}##1##2{#2}%
+  \expandafter\@onlypreamble\csname caption@setkeys@#1\endcsname
+  \@cons\caption@packagelist{{#1}}}
+\@onlypreamble\caption@SetupOptions
+\let\caption@onefilewithoptions\@onefilewithoptions
+\def\@onefilewithoptions#1[#2]{%
+  \begingroup
+  \def\@tempa{%
+    \endgroup
+    \caption@onefilewithoptions{#1}[{#2}]}%
+  \def\@tempb{#1}%
+  \def\@elt##1{%
+    \def\@tempc{##1}%
+    \ifx\@tempb\@tempc
+      \def\@tempa{%
+        \endgroup
+        \caption@ExecuteOptions{#1}{#2}%
+        \caption@onefilewithoptions{#1}[]}%
+    \fi}
+  \caption@packagelist
+  \@tempa}
+\@onlypreamble\caption@onefilewithoptions
 \newdimen\captionmargin
 \newdimen\captionmargin@
 \newdimen\captionwidth
 \DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
 \DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
 \DeclareCaptionOption{width}{\setcaptionwidth{#1}}
+\DeclareCaptionOption{width*}{\setcaptionwidth*{#1}}
+\DeclareCaptionOption{calcmargin}{\caption@setcalcmargin{#1}}
+\DeclareCaptionOption{calcmargin*}{\caption@setcalcmargin*{#1}}
+\DeclareCaptionOption{calcwidth}{\caption@setcalcwidth{#1}}
+\DeclareCaptionOption{calcwidth*}{\caption@setcalcwidth*{#1}}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
 \DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
 \DeclareCaptionOption{maxmargin}{\caption@setoptcmd\caption@maxmargin{#1}}
 \newcommand*\setcaptionmargin{%
-  \caption@teststar\caption@setmargin\@gobble\@firstofone}
-\newcommand*\caption@setmargin[2]{%
+  \caption@resetcalcmargin
+  \caption@setmargin}
+\newcommand*\caption@setmargin{%
+  \caption@teststar\caption@@setmargin\@gobble\@firstofone}
+\newcommand*\caption@@setmargin[2]{%
   #1{\captionwidth\z@}%
-  \caption@@setmargin#2,#2,\@nil}
-\def\caption@@setmargin#1,#2,#3\@nil{%
+  \caption@@@setmargin#2,#2,\@nil}
+\def\caption@@@setmargin#1,#2,#3\@nil{%
   \setlength\captionmargin@{#2}%
   \setlength\captionmargin{#1}%
   \addtolength\captionmargin@{-\captionmargin}}
 \newcommand*\setcaptionwidth{%
-  \captionmargin\z@
-  \captionmargin@\z@
-  \setlength\captionwidth}
+  \caption@resetcalcmargin
+  \caption@setwidth}
+\newcommand*\caption@setwidth{%
+  \caption@teststar\caption@@setwidth\@gobble\@firstofone}
+\newcommand*\caption@@setwidth[2]{%
+  #1{\captionmargin\z@\captionmargin@\z@}%
+  \setlength\captionwidth{#2}}%
+\newcommand*\caption@resetcalcmargin{%
+  \let\caption@calcmargin@hook\@empty}
+\newcommand*\caption@setcalcmargin{%
+  \caption@teststar{\caption@@setcalcmargin\caption@setmargin}%
+    \@secondoftwo\@firstoftwo}
+\newcommand*\caption@@setcalcmargin[3]{%
+  #2{\caption@resetcalcmargin
+     \l@addto@macro\caption@calcmargin@hook{#1{#3}}}%
+    {\l@addto@macro\caption@calcmargin@hook{#1*{#3}}}}
+\newcommand*\caption@setcalcwidth{%
+  \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
+    \@secondoftwo\@firstoftwo}
 \newcommand*\caption@thecounter{0}
 \newcommand*\caption@stepcounter{%
   \@tempcnta\caption@thecounter
@@ -526,7 +583,7 @@
   \caption@teststar\caption@declarelabelseparator\@gobble\@firstofone}
 \@onlypreamble\DeclareCaptionLabelSeparator
 \newcommand\caption@declarelabelseparator[3]{%
-  \global\expandafter\let\csname caption@iflf@#2\endcsname#1%
+  \global\@namedef{caption@iflf@#2}{#1}%
   \global\long\@namedef{caption@lsep@#2}{#3}%
   \caption@@declarelabelseparator{#2}#3\\\@nil}
 \@onlypreamble\caption@declarelabelseparator
@@ -626,6 +683,7 @@
 \DeclareCaptionFont{normalsize}{\normalsize}
 \DeclareCaptionFont{large}{\large}
 \DeclareCaptionFont{Large}{\Large}
+\DeclareCaptionFont{sansmath}{\sansmath}
 \DeclareCaptionFont{singlespacing}{%
   \@ifundefined{setspace@singlespace}{}{%
     \setstretch\setspace@singlespace}}% normally 1
@@ -641,11 +699,11 @@
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 \DeclareCaptionDefaultFont{size}{}
 \newcommand*\DeclareCaptionJustification[2]{%
-  \global\@namedef{caption@hj@#1}{#2}% for compatibility to v3.0
+  \global\@namedef{caption@hj@#1}{#2}% for compatibility to v1.0
   \DeclareCaptionFont{#1}{#2}}
 \@onlypreamble\DeclareCaptionJustification
 \newcommand*\DeclareCaptionDefaultJustification[1]{%
-  \global\@namedef{caption@hj@default}{#1}% for compatibility to v3.0
+  \global\@namedef{caption@hj@default}{#1}% for compatibility to v1.0
   \DeclareCaptionDefaultFont{@hj}{#1}}
 \@onlypreamble\DeclareCaptionDefaultJustification
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
@@ -789,7 +847,7 @@
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
   \caption@ifdebug
-    {\def\caption@Debug{\PackageInfo{caption}}}%
+    {\let\caption@Debug\caption@Info}%
     {\let\caption@Debug\@gobble}}
 \DeclareOption{debug}{\setkeys{caption}{debug}}
 \setkeys{caption}{debug=0}
@@ -902,14 +960,34 @@
         \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
       \fi
       \nobreak\vskip\belowcaptionskip\nobreak}}
-  \DeclareCaptionLabelFormat{default}{#1}
-  \DeclareCaptionDefaultJustification{\raggedright}
+\newcommand*\caption@ifbeamertemplate[1]{%
+  \begingroup
+    \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+    \@nameuse{beamer@@tmpop@caption@#1}%
+    \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+      \endgroup\expandafter\@firstoftwo
+    \else
+      \endgroup\expandafter\@secondoftwo
+    \fi}
+  \DeclareCaptionLabelFormat{default}{%
+    #1\caption@ifbeamertemplate{numbered}{~#2}{}}
+  \caption@declarelabelseparator
+    {\caption@ifbeamertemplate{caption name own line}\@gobble\@firstofone}
+    {default}
+    {\caption@ifbeamertemplate{caption name own line}{\\}{: }}
   \DeclareCaptionDefaultFont{font}{%
     \usebeamerfont*{caption}%
     \usebeamercolor[fg]{caption}}
   \DeclareCaptionDefaultFont{labelfont}{%
     \usebeamercolor[fg]{caption name}%
     \usebeamerfont*{caption name}}
+  \DeclareCaptionDefaultJustification{\raggedright}
+  \DeclareOption{beamerclass}{%
+    \renewcommand\caption@ifslc{%
+      \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
+    % Since the beamer class do not offer a `list of figures' we switch this support off.
+    \captionsetup{list=0}}
+  \PassOptionsToPackage{beamerclass}{caption3}
   \defbeamertemplate{caption}{caption3}{%
     \caption@make\insertcaptionname\insertcaptionnumber\insertcaption}
   \DeclareOption{beamer}{%
@@ -1014,7 +1092,7 @@
       \let\FB@makecaption\@makecaption}
   \else
     \ifx\@makecaption\@undefined\else
-      \PackageInfo{caption}{%
+      \caption@InfoNoLine{%
         The definition of \protect\@makecaption\space
         has been changed,\MessageBreak
         frenchb will NOT customize it}%
@@ -1053,46 +1131,46 @@
   \DeclareCaptionLabelSeparator{default}{\captionseparator\space}%
 }
 \DeclareCaptionListFormat{subperiod}{#2.}
-%%% \def\caption@tempa#1{\@ifundefined{extras#1}{}{%
-%%%   \expandafter\addto\csname extras#1\endcsname{%
-%%%      % reverse changes made by magyar.ldf
-%%%      \let\@makecaption\caption@makecaption
-%%%      \babel@save\@makecaption
-%%%      \caption@redefine
-%%%      \babel@save\@caption
-%%%      % change default labelsep and listformat
-%%%      \caption@setdefaultlabelsep{period}%
-%%%      \caption@setdefaultlistformat{subperiod}}%
-%%%   \expandafter\addto\csname noextras#1\endcsname{%
-%%%      % change default labelsep and listformat
-%%%      \caption@setdefaultlabelsep{colon}%
-%%%      \caption@setdefaultlistformat{subsimple}}%
-%%% }}
-%%% \caption@tempa{hungarian}
-%%% \caption@tempa{magyar}
-\captionsetup{style=default,position=default,%
-              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
-\ProcessOptions*
+\def\caption@tempa#1{\@ifundefined{extras#1}{}{%
+  \expandafter\addto\csname extras#1\endcsname{%
+     % change default labelsep and listformat
+     \caption@setdefaultlabelsep{period}%
+     \caption@setdefaultlistformat{subperiod}}%
+  \expandafter\addto\csname noextras#1\endcsname{%
+     % change default labelsep and listformat
+     \caption@setdefaultlabelsep{colon}%
+     \caption@setdefaultlistformat{subsimple}}%
+}}
+\caption@tempa{hungarian}
+\caption@tempa{magyar}
 \caption@IfCheckCommand{%
   \caption@setbool{documentclass}{1}%
 }{%
   \caption@setbool{documentclass}{0}%
-  \PackageInfo{caption}{%
+  \caption@InfoNoLine{%
          Unknown document class (or package),\MessageBreak
          standard defaults will be used}%
   \caption@Debug{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
 }
+\captionsetup{style=default,position=default,%
+              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
+\ProcessOptions*
 \newcommand*\caption@addcontentsline[2]{%
   \caption@iflist
     {\def\@tempa{#2}}%
     {\let\@tempa\@empty}%
   \ifx\@tempa\@empty \else
     {\let\\\space
-     \addcontentsline{\csname ext@#1\endcsname}{#1}%
-                     {\protect\numberline
-                       {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
-                       {\ignorespaces #2}}}%
+      \@ifundefined{ext@#1}%
+       {\caption@Error{No float type '#1' defined}}%
+       {\caption@@addcontentsline
+          {\csname ext@#1\endcsname}%
+          {#1}%
+          {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+          {\ignorespaces #2}}}%
   \fi}
+\newcommand*\caption@@addcontentsline[4]{%
+  \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
 \newif\ifcaption@star
 \newcommand*\caption@fnum[1]{\caption@lfmt{\@nameuse{#1name}}{\@nameuse{the#1}}}
 \newcommand\caption@make[2]{\caption@@make{\caption@lfmt{#1}{#2}}}
@@ -1137,6 +1215,7 @@
   \endgroup
   \global\caption@starfalse}
 \newcommand*\caption@calcmargin{%
+  \caption@calcmargin@hook
   \ifdim\captionwidth=\z@
     \captionwidth\linewidth
     \advance\captionwidth by -2\captionmargin
@@ -1157,6 +1236,8 @@
     \string\width=\the\captionwidth}%
 }
 \newcommand\caption@slc[4]{%
+  \caption@@slc{#1}{#2}{#3}{\caption@singleline#4}{}}
+\newcommand\caption@@slc[5]{%
   \caption@Debug{Begin SLC}%
   \begingroup
   \caption@singleline
@@ -1166,9 +1247,9 @@
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
   \ifdim\wd\@tempboxa>#3%
     \endgroup
+    #5%
   \else
     \endgroup
-    \caption@singleline
     #4%
   \fi
   \caption@Debug{End SLC}}
@@ -1176,22 +1257,40 @@
   \caption@xsetup\caption@opt@singleline
   \let\caption@fmt\caption@slfmt}
 \newcommand*\caption@prepareslc{%
-  \let\@footnotetext\@gobble\let\@endnotetext\@gobble
   \def\label{\caption@withoptargs\@gobbletwo}%
-  \let\stepcounter\caption@l@stepcounter
-  \let\refstepcounter\stepcounter\let\H@refstepcounter\stepcounter}
-\newcommand*\caption@l@stepcounter[1]{\advance\csname c@#1\endcsname\@ne\relax}
+  \let\caption@footnote@ORI\footnote
+  \def\footnote{\caption@withoptargs\caption@footnote}%
+  \let\caption@footnotemark@ORI\footnotemark
+  \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
+  \let\@footnotetext\@gobble
+  \let\@endnotetext\@gobble}
+\newcommand\caption@footnote[2]{%
+  \begingroup
+    \let\stepcounter\caption@l@stepcounter
+    \caption@footnote@ORI#1{#2}%
+  \endgroup}
+\newcommand\caption@footnotemark[1]{%
+  \begingroup
+    \let\stepcounter\caption@l@stepcounter
+    \caption@footnotemark@ORI#1%
+  \endgroup}
+\newcommand*\caption@l@stepcounter[1]{%
+  \advance\csname c@#1\endcsname\@ne\relax}
 \newcommand*\caption@parbox{\parbox[b]}
+\newcommand*\caption@applyfont{%
+  \caption@hj\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
   \sbox\@tempboxa{#1}%
   \ifdim\wd\@tempboxa=\z@
     \let\caption@lsep\relax
   \fi
   \caption@ifempty{#2}{%
-    \let\caption@lsep\relax
+    \let\caption@lsep\@empty
+    \let\caption@tfmt\@firstofone
   }%
   \@setpar{\@@par\caption@@par}\caption@@par
-  \caption@hj\captionfont\captionsize\caption@fmt
+  \caption@applyfont
+  \caption@fmt
     {\ifcaption@star\else{\captionlabelfont#1}\fi}%
     {\ifcaption@star\else{\caption@iflf\captionlabelfont\caption@lsep}\fi}%
     {{\captiontextfont
@@ -1262,6 +1361,7 @@
   \newenvironment{#2}{\@float{#2}}{\end@float}%
   \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
   \expandafter\newcommand\csname listof#2s\endcsname{\caption@listof{#2}}%
+  \expandafter\newcommand\csname listof#2es\endcsname{\caption@listof{#2}}%
   \@ifundefined{l@figure}%
     {\@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}}%
     {\expandafter\let\csname l@#2\endcsname\l@figure}%
@@ -1673,12 +1773,12 @@
   \endgroup}
 \@onlypreamble\caption@removefromreset
 \newcommand*\DeclareCaptionSubType{%
-  \caption@teststar\@DeclareCaptionSubType\@firstoftwo\@secondoftwo}
+  \caption@teststar\caption@declaresubtype\@firstoftwo\@secondoftwo}
 \@onlypreamble\DeclareCaptionSubType
-\newcommand*\@DeclareCaptionSubType[1]{%
-  \@testopt{\@@DeclareCaptionSubType{#1}}{alph}}
-\@onlypreamble\@DeclareCaptionSubType
-\def\@@DeclareCaptionSubType#1[#2]#3{%
+\newcommand*\caption@declaresubtype[1]{%
+  \@testopt{\caption@@declaresubtype{#1}}{alph}}
+\@onlypreamble\caption@declaresubtype
+\def\caption@@declaresubtype#1[#2]#3{%
   \@ifundefined{c@#3}%
     {\caption@Error{No float type '#3' defined}}%
     {\@ifundefined{c@sub#3}%
@@ -1686,19 +1786,7 @@
         \newcounter{sub#3}%
         \caption@addtoreset{sub#3}{#3}%
         \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
-        \@ifundefined{l@chapter}%
-          {\edef\@tempa{\expandafter\expandafter\expandafter\noexpand
-                        \expandafter\@car\l@subsubsection\@nil}%
-           \def\@tempb{\@dottedtocline}%
-           \ifx\@tempa\@tempb % \l@subsubsection starts with \@dottedtocline
-             \expandafter\edef\csname l@sub#3\endcsname{%
-               \noexpand\@dottedtocline{2}%
-               \expandafter\expandafter\expandafter\noexpand
-               \expandafter\@gobbletwo\l@subsubsection}%
-           \else
-             \@namedef{l@sub#3}{\@dottedtocline{2}{3.8em}{3.2em}}%
-           \fi}%
-          {\expandafter\let\csname l@sub#3\endcsname\l@subsection}%
+        \caption@declaresublistentry{#3}%
         \@cons\caption@subtypelist{{#3}}}%
        {\caption@Debug{Modify caption `sub#3'}}%
      \@namedef{sub#3name}{}%
@@ -1710,7 +1798,46 @@
       \@namedef{thesub#3}{\@nameuse{#2}{sub#3}}}%
      \@namedef{theHsub#3}{\csname theH#3\endcsname.\arabic{sub#3}}%
     }}
-\@onlypreamble\@@DeclareCaptionSubType
+\@onlypreamble\caption@@declaresubtype
+\newcommand*\caption@declaresublistentry{%
+  \@ifundefined{l@chapter}%
+    {\caption@@declaresublistentry\l@subsubsection}%
+    {\caption@@declaresublistentry\l@subsection}}
+\@onlypreamble\caption@declaresublistentry
+\newcommand*\caption@@declaresublistentry[2]{%
+  \ifx#1\@undefined
+    \caption@@@declaresublistentry\relax\@dottedtocline\caption@nil{#2}%
+  \else
+    \expandafter\caption@@@declaresublistentry#1{}{}\@dottedtocline\caption@nil{#2}%
+  \fi}
+\@onlypreamble\caption@@declaresublistentry
+\long\def\caption@@@declaresublistentry#1\@dottedtocline#2\caption@nil#3{%
+  \def\@tempa{#1}%
+  \ifx\@tempa\@empty
+    \caption@@@@declaresublistentry{#3}#2\caption@nil
+  \else
+    \caption@@@@declaresublistentry{#3}@{3.8em}{3.2em}\caption@nil
+  \fi}
+\@onlypreamble\caption@@@declaresublistentry
+\def\caption@@@@declaresublistentry#1#2#3#4#5\caption@nil{%
+  \expandafter\caption@@@@@declaresublistentry\expandafter
+    {\csname @dotted\csname ext@#1\endcsname line\endcsname}{#1}{#3}{#4}}
+\@onlypreamble\caption@@@@declaresublistentry
+\newcommand*\caption@@@@@declaresublistentry[4]{%
+  \@namedef{l@sub#2}{#1{2}{#3}{#4}}%
+  \caption@@@@@@declaresublistentry#1{c@\csname ext@#2\endcsname depth}}
+\@onlypreamble\caption@@@@@declaresublistentry
+\newcommand*\caption@@@@@@declaresublistentry[2]{
+  \ifx#1\relax
+    \def#1##1{%
+      \def\next{\@dottedtocline{##1}}%
+      \@ifundefined{#2}{}{%
+        \ifnum ##1>\@nameuse{#2}\relax
+          \let\next\@gobblefour
+        \fi}%
+      \next}%
+  \fi}
+\@onlypreamble\caption@@@@@@declaresublistentry
 \newcommand*\caption@subtypelist{}
 \newcommand*\caption@For{\caption@withoptargs\caption@@For}
 \newcommand\caption@@For[3]{%
@@ -1721,7 +1848,7 @@
 \caption@AtBeginDocument{%
   \def\@tempa{\@ifstar\sf@@subref\sf@subref}%
   \ifx\subref\@tempa
-    \PackageInfo{caption3}{subfig package 1.2 or 1.3 is loaded\@gobble}%
+    \caption@InfoNoLine{subfig package 1.2 or 1.3 is loaded}%
     \let\caption@setfloattype\@gobble
     \let\@dottedxxxline\sf@NEW@dottedxxxline
     \let\sf@subfloat\sf@NEW@subfloat
