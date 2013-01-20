@@ -24,12 +24,12 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{5486}
+% \CheckSum{5511}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2007/10/25 v3.1d Implementation of the caption package]
+\ProvidesFile{caption.drv}[2007/11/04 v3.1e Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -52,7 +52,7 @@
 \usepackage{hypdoc}
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartview={}}
 %
-\usepackage[debug]{caption}[2007/10/25]
+\usepackage[debug]{caption}[2007/11/04]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -104,14 +104,15 @@
 %
 % The kernel provides all the user commands and internal macros which are
 % necessary for typesetting captions and setting parameters regarding these.
-% While the standard \LaTeX\ document classes provides an internal command
+% While the standard \LaTeX\ document classes provide an internal command
 % called |\@makecaption| and no options to control its behavior (except the
 % vertical skips above and below the caption itself), we provide similar
 % commands called |\caption@make| and |\caption@@make|, but with a lot of
 % options which can be selected with |\captionsetup|.
 % Loading the kernel part do not change the output of a \LaTeX\ document
 % -- it just provides functionality which can be used by \LaTeXe\ packages
-% which typesets captions, like \thispackage\ and the \package{subfig} package.
+% which typesets captions, for example the \package{caption} and
+% \package{subfig} packages.
 %
 % \Thispackage\ itself redefines the \LaTeX\ commands
 % |\caption|, |\@caption|, and |\@makecaption| and maps the latter one to
@@ -123,7 +124,7 @@
 % |\ST@caption|) to the ones offered by the \package{caption3} kernel.
 % So you can think of \thispackage\ as a layer package, it
 % simply provides adaptation layers between the caption stuff coming from
-% \LaTeXe\ itself or \LaTeXe\ packages, and the caption stuff offered by the
+% \LaTeXe\ or packages, and the caption stuff offered by the
 % \package{caption3} kernel.
 % \end{abstract}
 % 
@@ -224,7 +225,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2007/10/25 v3.1d caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2007/11/04 v3.1e caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -277,7 +278,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@ifinlist}
-% \changes{2007/07/29}{Rewritten}
+% \changes{v3.1}{2007/07/29}{Rewritten}
 %  This helper macro checks if the first argument is in the comma separated
 %  list which is offered as second argument. So for example
 %  \begin{quote}
@@ -381,6 +382,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \pagebreak[3]
 % \begin{macro}{\caption@setbool}
 % \begin{macro}{\caption@set@bool}
 % \changes{v3.1}{2007/04/05}{\cs{caption@set@bool}\marg{cmd}\marg{value} added}
@@ -420,9 +422,23 @@
 %
 % \begin{macro}{\caption@teststar}
 % \changes{v3.1}{2007/05/08}{This macro and its usage added}
-%  |\caption@teststar|\marg{cmd}\marg{star arg}\marg{non-star arg}
+% \changes{v3.1e}{2007/10/28}{\cs{caption@teststar@} added}
+%  |\caption@teststar|\marg{cmd}\marg{star arg}\marg{non-star arg}\\
+%  |\caption@teststar@|\marg{cmd}\marg{star arg/token}\marg{non-star arg/token}
 %    \begin{macrocode}
 \newcommand*\caption@teststar[3]{\@ifstar{#1{#2}}{#1{#3}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@teststar@[3]{%
+  \@ifstar{#1{#2}}{\caption@ifatletter{#1{#2}}{#1{#3}}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@ifatletter{%
+  \ifnum\the\catcode`\@=11
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -595,12 +611,23 @@
 %
 % \begin{macro}{\@onlypreamble@key}
 % \changes{v3.1}{2007/07/22}{This macro added}
+% \changes{v3.1e}{2007/11/01}{\cs{KV@err} will be used now instead of \cs{@notprerr}}
 %  |\onlypreamble@key|\marg{family}\marg{key}\par
 %  Analogous to |\@onlypreamble| from \LaTeXe.
 %    \begin{macrocode}
-\providecommand*\@onlypreamble@key[2]{%
-  \expandafter\@onlypreamble\csname KV@#1@#2\endcsname}
+\providecommand*\@preamble@keys{}
+\providecommand*\@onlypreamble@key[2]{\@cons\@preamble@keys{{#1}{#2}}}
 \@onlypreamble\@onlypreamble@key
+\@onlypreamble\@preamble@keys
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\@notprerr@key[1]{\KV@err{Can be used only in preamble}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@AtBeginDocument*{%
+  \def\@elt#1#2{\expandafter\let\csname KV@#1@#2\endcsname\@notprerr@key}%
+  \@preamble@keys
+  \let\@elt\relax}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -653,13 +680,18 @@
 %
 % \begin{macro}{\captionsetup}
 % \changes{v3.0a}{2004/01/17}{Bugfix: Missing \% added}
-% \changes{v3.1}{2007/07/22}{Star-variant added}
-%  |\captionsetup|\oarg{type}\marg{keyval-list of options}\par
+% \changes{v3.1}{2007/07/22}{Starred-variant added}
+% \changes{v3.1e}{2007/07/27}{Inside packages the starred variant will be used automatically}
+%  |\captionsetup|\oarg{type}\marg{keyval-list of options}\\
+%  |\captionsetup*|\oarg{type}\marg{keyval-list of options}\par
 %  If the optional argument `type' is specified, we simply save or append
 %  the option list, otherwise we `execute' it with |\setkeys|.
+%  (The non-starred variant issues a warning if \meta{keyval-list of options}
+%   is not used later on.)
+%  \Note{The starred variant will be used inside packages automatically.}
 %    \begin{macrocode}
 \newcommand*\captionsetup{%
-  \caption@teststar\@captionsetup\@gobble\@firstofone}
+  \caption@teststar@\@captionsetup\@gobble\@firstofone}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\@captionsetup[1]{%
@@ -679,14 +711,16 @@
 % \begin{macro}{\clearcaptionsetup}
 % \changes{v3.1}{2007/07/29}{Optional argument added}
 % \changes{v3.1}{2007/08/17}{Starred variant added}
+% \changes{v3.1e}{2007/07/27}{Inside packages the starred variant will be used automatically}
 %  |\clearcaptionsetup|\oarg{option}\marg{type}\\
 %  |\clearcaptionsetup*|\oarg{option}\marg{type}\par
 %  This removes the saved option list associated with \meta{type}.
 %  If \meta{option} is given, only this option will be removed from the list.
-%  The starred variant does not issue a warning.
+%  (The starred variant does not issue warnings.)
+%  \Note{The starred variant will be used inside packages automatically.}
 %    \begin{macrocode}
 \newcommand*\clearcaptionsetup{%
-  \caption@teststar\@clearcaptionsetup\@gobble\@firstofone}
+  \caption@teststar@\@clearcaptionsetup\@gobble\@firstofone}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\@clearcaptionsetup[1]{%
@@ -744,7 +778,7 @@
 %    \begin{macrocode}
 \newcommand*\showcaptionsetup[2][\@firstofone]{%
   \GenericWarning{}{%
-    #1 Caption Info: KV list on `#2'\MessageBreak
+    #1 Caption Info: Option list on `#2'\MessageBreak
     #1 Caption Data: \@ifundefined{caption@opt@#2}{%
       -none-%
     }{%
@@ -843,7 +877,7 @@
     {\let\KV@err\ORI@KV@err\let\KV@errx\ORI@KV@errx}%
     {\expandafter\let\expandafter\KV@err\csname #1@KV@err\endcsname
      \let\KV@errx\KV@err}%
-  \l@addto@macro\caption@keydepth i%
+  \edef\caption@keydepth{\caption@keydepth i}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@Debug{\protect\setkeys{#2}{#3}}%
@@ -992,12 +1026,19 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@count}
+% \begin{macro}{\caption@counter}
 % \changes{v3.0p}{2007/04/03}{This counter added}
+% \changes{v3.1e}{2007/10/28}{Renamed to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
 % This counter numbers the captions. At the moment it will be used inside
 % |\caption@ifoddpage| only.
 %    \begin{macrocode}
-\newcommand*\caption@count{0}
+\newcommand*\caption@thecounter{0}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@stepcounter{%
+  \@tempcnta\caption@thecounter
+  \advance\@tempcnta\@ne
+  \xdef\caption@thecounter{\the\@tempcnta}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1049,6 +1090,7 @@
 %
 % \begin{macro}{\caption@ifoddpage}
 % \changes{v3.0p}{2007/04/03}{This macro added}
+% \changes{v3.1e}{2007/10/28}{Incrementation of counter moved to \cs{caption@@make}}
 %  At the moment this macro uses an own label\ldots ref mechanism,
 %  but an alternative implementation method would be using the
 %  \package{refcount} package\cite{refcount} and |\ifodd\getpagerefnumber{|\ldots|}|.
@@ -1057,13 +1099,8 @@
 %    \begin{macrocode}
 \newcommand*\caption@ifoddpage{%
   \caption@iftwoside{%
-    \begingroup
-      \@tempcnta\caption@count
-      \advance\@tempcnta\@ne
-      \xdef\caption@count{\the\@tempcnta}%
-    \endgroup
-    \caption@label\caption@count
-    \caption@pageref\caption@count
+    \caption@label\caption@thecounter
+    \caption@pageref\caption@thecounter
     \ifodd\caption@thepage
       \let\caption@ifoddpage\@firstoftwo
     \else
@@ -1108,8 +1145,8 @@
 % \changes{v3.0h}{2005/08/22}{Undocumented defaults for \opt{parindent=},
 %        \opt{hangindent=}, and \opt{parskip=} removed}
 %    \begin{macrocode}
-\DeclareCaptionOption{indent}[\leftmargini]{%
-       \setlength\caption@indent{#1}}% obsolete!
+\DeclareCaptionOption{indent}[\leftmargini]{% obsolete!
+       \setlength\caption@indent{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
        \setlength\caption@indent{#1}}
 \DeclareCaptionOption{parindent}{%
@@ -1694,7 +1731,7 @@
 % \begin{macro}{\centerfirst}
 % \changes{v3.0l}{2007/01/21}{Bugfix: Usage of \cs{@centercr} added (Thanks to Olga!)}
 % \changes{v3.0l}{2007/01/21}{This macro renamed from \cs{caption@centerfirst} to \cs{centerfirst}}
-%  Please blame Frank Mittelbach for the code of |\caption@centerfirst| |:-)|
+%  Please blame Frank Mittelbach for the code of |\centerfirst| |:-)|
 %    \begin{macrocode}
 \providecommand\centerfirst{%
   \let\\\@centercr
@@ -2124,8 +2161,8 @@
   \DeclareDefaultCaptionFont{font}{\@captionfont}
   \DeclareDefaultCaptionFont{labelfont}{\@captionheadfont}
   \DeclareDefaultCaptionFont{textfont}{\@captionfont\upshape}
-  \captionsetup*[figure]{position=b}
-  \captionsetup*[table]{position=t}
+  \captionsetup[figure]{position=b}
+  \captionsetup[table]{position=t}
 %    \end{macrocode}
 %    \begin{macrocode}
 }
@@ -2365,7 +2402,7 @@
 }
 %    \end{macrocode}
 %
-% \subsection{Typesetting the caption}
+% \subsection{Making an `List of' entry}
 %
 % \begin{macro}{\caption@addcontentsline}
 % \changes{v3.1}{2007/07/01}{This macro added}
@@ -2387,6 +2424,8 @@
   \fi}
 %    \end{macrocode}
 % \end{macro}
+%
+% \subsection{Typesetting the caption}
 %
 % \begin{macro}{\ifcaption@star}
 % If the starred form of |\caption| is used, this will be set to |true|.
@@ -2435,10 +2474,12 @@
 % \changes{v3.0l}{2007/01/04}{Oops, bugfix 04-05-05 got lost in v3.0j, re-added}
 % \changes{v3.0p}{2007/04/03}{Usage of \cs{caption@ifoddpage} added}
 % \changes{v3.1}{2007/07/29}{\cs{caption@calcmargin} moved below single-line-check}
+% \changes{v3.1e}{2007/10/28}{\cs{caption@stepcounter} added}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
   \begingroup
+  \caption@stepcounter
   \caption@beginhook
 %    \end{macrocode}
 %
@@ -2891,7 +2932,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/10/25 v3.1d Customising captions (AR)]
+\ProvidesPackage{caption}[2007/11/04 v3.1e Customising captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -2908,7 +2949,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2007/10/25] % needs v3.1d or newer
+\RequirePackage{caption3}[2007/11/04] % needs v3.1e or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible packages}
@@ -2932,9 +2973,9 @@
     \caption@IncompatiblePackage{ftcap}{}%
   }{}%
   \@ifpackageloaded{nonfloat}{%
-    \caption@IncompatiblePackage{nonfloat}{. %
-      Furthermore you could use \string\captionof\MessageBreak
-      instead of \noexpand\figcaption or \string\tabcaption}%
+    \caption@IncompatiblePackage{nonfloat}{.\MessageBreak
+      Furthermore you could use \noexpand\captionof instead of\MessageBreak
+      \noexpand\figcaption or \string\tabcaption}%
   }{}%
   \@ifpackageloaded{topcapt}{%
     \caption@IncompatiblePackage{topcapt}{}%
@@ -2951,8 +2992,7 @@
     caption package is strongly *not* recommended.\MessageBreak
     Instead of loading the #1 package you should\MessageBreak
     use the caption package option\MessageBreak
-    \space\space`tableposition=top'\MessageBreak
-    #2}}
+    \space\space`tableposition=top'#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \@onlypreamble\caption@IncompatiblePackage
@@ -3289,7 +3329,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOptionNoValue*{ignoreLTcapwidth}{%
-  \caption@Warning{Obsolete option `ignoreLTcapwidth' ignored}}
+  \caption@WarningNoLine{Obsolete option `ignoreLTcapwidth' ignored}}
 %    \end{macrocode}
 %
 % \subsection{Obsolete caption v3.0 options}
@@ -3481,13 +3521,17 @@
 % \changes{v3.1b}{2007/09/22}{Contents changed to \texttt{??}}
 %  This label will be used for |\currentlabel| inside (floating) environments
 %  as default. (see above)
-%  \Note{All commands used have to be robust here.}
+%  \iffalse\Note{All commands used have to be robust here.}\fi
 %    \begin{macrocode}
 \newcommand*\caption@undefinedlabel{??}
 %    \end{macrocode}
 % \end{macro}
 % \begin{macro}{\caption@xlabel}
 % \changes{v3.1b}{2007/09/22}{This macro and its usage added}
+%  The new code of |\label| inside floating environments.
+%  |\label| will be redefined using |\caption@withoptargs|, so
+%  |#1| are the optional arguments (if any), and
+%  |#2| is the mandatory argument here.
 %    \begin{macrocode}
 \newcommand*\caption@xlabel[2]{%
   \ifx\@currentlabel\caption@undefinedlabel
@@ -3501,10 +3545,15 @@
 % \begin{macro}{\captionof}
 % \changes{v3.1}{2007/05/09}{Uses \cs{caption@settype} instead of \cs{def}\cs{@captype}}
 % \changes{v3.1c}{2007/09/22}{Bugfix: Redefinition of \cs{caption@setfloatcapt} removed}
+% \changes{v3.1e}{2007/10/30}{Better compatibility: Will be defined with \cs{AtBeginDocument} now}
 %  |\captionof|\marg{type}\oarg{lst\_entry}\marg{heading}\\
-%  |\captionof*|\oarg{lst\_entry}\marg{heading}
+%  |\captionof*|\oarg{lst\_entry}\marg{heading}\par
+% \Note{This will be defined with \cs{AtBeginDocument} so
+%  \cs{usepackage}\csmarg{caption,capt-of} will still work.
+%  (Compatibility to \version{1.x})}
 %    \begin{macrocode}
-\def\captionof{\caption@teststar\caption@of{\caption*}\caption}
+\caption@AtBeginDocument{%
+  \def\captionof{\caption@teststar\caption@of{\caption*}\caption}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@of[2]{\caption@settype*{#2}#1}
@@ -3657,8 +3706,8 @@
 %  |\caption@beginex|\marg{type}\marg{list entry}\marg{heading}\par
 %  performs the same tasks as |\caption@begin| and additionally:
 %  \begin{enumerate}
-%  \item[5.] Make an entry in the list-of-whatever.
-%  \item[6.] Set |\caption@ifempty| according argument \meta{heading}.
+%  \item[4.] Make an entry in the list-of-whatever.
+%  \item[5.] Set |\caption@ifempty| according argument \meta{heading}.
 % \end{enumerate}
 %    \begin{macrocode}
 \newcommand\caption@beginex[3]{%
@@ -4098,8 +4147,7 @@
         \noexpand\caption will not be redefined since it's already\MessageBreak
         redefined by a document class or package which is\MessageBreak
         unknown to the caption package.\MessageBreak
-        As a result some new features of the caption\MessageBreak
-        package will not work as expected}%
+        As a result some features will not work as expected}%
     }%
 %    \end{macrocode}
 %
@@ -4115,14 +4163,12 @@
       \let\caption@start\relax
       \@ifundefined{caption@ORI@capstart}{}{%
         \caption@Debug{%
-          Undo redefinition of \string\capstart\@gobble}%
-        \let\capstart\caption@ORI@capstart
-        \let\caption@ORI@capstart\@undefined}%
-      \@ifundefined{Hy@float@makebox}{}{%
+          Restore hypcap definition of \string\capstart\@gobble}%
+        \let\capstart\caption@ORI@capstart}%
+      \@ifundefined{caption@ORI@float@makebox}{}{%
         \caption@Debug{%
           Restore hyperref redefinition of \string\float@makebox\@gobble}%
-        \let\float@makebox\Hy@float@makebox
-        \let\Hy@float@makebox\@undefined}%
+        \let\float@makebox\caption@ORI@float@makebox}%
     }%
 %    \end{macrocode}
 %
@@ -4217,6 +4263,11 @@
 %
 %    \begin{macrocode}
   }%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@AtBeginDocument*{%
+    \let\caption@ORI@capstart\@undefined
+    \let\caption@ORI@float@makebox\@undefined}%
 %    \end{macrocode}
 %
 % \begin{macro}{\@xfloat}
@@ -4768,7 +4819,7 @@
 % The skip between `boxed' floats and their caption defaults to |2pt|.
 %
 %    \begin{macrocode}
-\captionsetup*[boxed]{skip=2pt} % do not issue a warning when not used
+\captionsetup[boxed]{skip=2pt} % do not issue a warning when not used
 %    \end{macrocode}
 %
 % \changes{v3.0f}{2005/05/26}{\opt{strut=0} added to caption style \opt{ruled}}
@@ -5295,7 +5346,7 @@
     \@ifundefined{HyOrg@float@makebox}{}{%
       \caption@Debug{%
         Redefining \noexpand\float@makebox (again)\@gobble}%
-      \let\Hy@float@makebox\float@makebox
+      \let\caption@ORI@float@makebox\float@makebox % save for compatibility mode
       \renewcommand\float@makebox[1]{%
         \HyOrg@float@makebox{#1\relax \caption@defrostHref}}%
     }%
@@ -5308,7 +5359,8 @@
 %
 % \subsubsection{The hypcap package}
 % \changes{v3.0f}{2005/06/22}{Support of the \package{hypcap} package added}
-% \changes{v3.0l}{2007/02/20}{Adapted to \package{hypcap} v1.6}
+% \changes{v3.0l}{2007/02/20}{Adapted to \package{hypcap} \version{1.6}}
+% \changes{v3.1e}{2007/11/04}{\package{hypcap} support adapted to \package{hyperref} \version{6.77}}
 % 
 %    \begin{macrocode}
 \caption@IfPackageLoaded{hypcap}{% v1.0
@@ -5326,7 +5378,7 @@
 % only but our version affects \emph{all} |\caption|s in the same
 % environment, at least unless a new |\capstart| will be placed.
 %    \begin{macrocode}
-    \let\caption@ORI@capstart\capstart
+    \let\caption@ORI@capstart\capstart % save for compatibility mode
     \let\capstart\caption@start
     \let\caption@start\relax
     \let\caption@@start\relax
@@ -5337,19 +5389,8 @@
 % Furthermore we map our |\caption@hypcapspace| to |\hypcapspace|
 % offered by the \package{hypcap} package.
 %    \begin{macrocode}
-    \caption@@setbool\caption@ifhypcap1%
+    \caption@set@bool\caption@ifhypcap1%
     \renewcommand*\caption@hypcapspace{\hypcapspace}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\float@makebox}
-% Redo the redefinition of |\float@makebox|, if necessary.
-%    \begin{macrocode}
-    \@ifundefined{Hy@float@makebox}{}{%
-      \caption@Debug{%
-        Restore hyperref redefinition of \string\float@makebox\@gobble}%
-      \let\float@makebox\Hy@float@makebox
-      \let\Hy@float@makebox\@undefined}%
 %    \end{macrocode}
 % \end{macro}
 %

@@ -23,7 +23,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-eng.tex}[2007/10/23 v3.1d The caption package]
+\ProvidesFile{caption-eng.tex}[2007/11/04 v3.1e The caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=20pt % Make TeX shut up.
 %\errorcontextlines=3
 
@@ -186,7 +186,7 @@ caption formatting options, but you are free to define your very own stuff, too.
 
 % --------------------------------------------------------------------------- %
 
-\section*{Preliminary documentation}
+\section*{PRELIMINARY DOCUMENTATION}%Preliminary documentation}
 
 Please note that this document is inconsistent and not finished yet.
 It'll try to update it within the next months; the actual version can always be found
@@ -993,50 +993,130 @@ forces captions within a |figure| environment to use the given \meta{options}.
 Here comes an example to illustrate this:
 \begin{quote}
   |\captionsetup{font=small}|\\
-  |\captionsetup[figure]{labelfont=bf}|
+  |\captionsetup[figure]{labelfont=bf,textfont=it}|
 \end{quote}
 gives captions like this:
 \begin{Example}
   \captionsetup{font=small}
-  \captionsetup[figure]{labelfont=bf}
+  \captionsetup[figure]{labelfont=bf,textfont=it}
   \begingroup
     \captionof{figure}{A figure}
   \endgroup
-  \captionsetup{belowskip=\abovecaptionskip}
+  \captionsetup{position=top}
   \begingroup
     \captionof{table}{A table}
   \endgroup
 \end{Example}
 
-As you see the command |\captionsetup[figure]{labelfont=bf}| only changed
-the font of the figure caption labels, not touching all other ones.
+As you see the command |\captionsetup[figure]{|\ldots|}| only changed
+the look of the |figure| caption labels, not touching the other ones.
 
-\DescribeMacro{\clearcaptionsetup}
-If you want to get rid of these parameters marked for an automatic use within
-a particular environment you can use the command
-\begin{quote}
-  |\clearcaptionsetup|\marg{float type}\quad.
-\end{quote}
-
-For example |\clearcaptionsetup{figure}| would clear the extra handling in the
-example above:
-\begin{Example}
-  \captionsetup{font=small}
-  \begingroup
-    \captionof{figure}{A figure}
-  \endgroup
-  \captionsetup{belowskip=\abovecaptionskip}
-  \begingroup
-    \captionof{table}{A table}
-  \endgroup
-\end{Example}
-
-As \meta{float type} you can usually give one of these two only:
+{\small As \meta{float type} you can usually give one of these two only:
 |figure| or |table|.
 But as we will see later some \LaTeX\ packages (like the
 \package{float}, \package{longtable}, and \package{sidecap} package
 for example) offer additional floating environments and these two
-commands can also be used with them.
+commands can also be used with them. \See{\Ref{packages}}}
+
+{\small\NEWfeature{v3.1}
+There is also a starred variant of |\captionsetup|:
+\begin{quote}
+  |\captionsetup*|\oarg{float type}\marg{options}
+\end{quote}
+While the non-starred variant gives you a warning if the \meta{options} are
+actually not used throughout the document (e.g.~a |\captionsetup[table]{font=sf}|
+without a |table|), the starred variant will not.
+This is quite useful when setting generic options which are independant of a
+specific document.}
+
+\pagebreak[4]
+\DescribeMacro{\clearcaptionsetup}
+If you want to get rid of these parameters marked for an automatic use within
+a particular environment you can use the command
+\begin{quote}
+  |\clearcaptionsetup|\oarg{option}\marg{float type}\quad.
+\end{quote}
+
+For example |\clearcaptionsetup{figure}| would clear all the extra handling
+for |figure|s in the example above:
+\begin{quote}
+  |\captionsetup{font=small}|\\
+  |\captionsetup[figure]{labelfont=bf,textfont=it}|\\
+  \ldots\\
+  |  \caption{A figure}|\\
+  \ldots\\
+  |\clearcaptionsetup{figure}|\\
+  \ldots\\
+  |  \caption{A figure}|\\
+  \ldots\\
+\end{quote}
+\begin{Example}
+  \captionsetup{font=small}
+  \captionsetup[figure]{labelfont=bf,textfont=it}
+  \begingroup
+    \captionof{figure}{A figure}
+  \endgroup
+  \captionsetup{position=top}
+  \clearcaptionsetup{figure}
+  \begingroup
+    \captionof{figure}{A figure}
+  \endgroup
+\end{Example}
+
+\NEWfeature{v3.1}
+If an optional argument \meta{option} is given, only the settings regarding
+this particular \meta{option} are cleared.\footnote{You can only specify
+\emph{one} option here, not a list of options.
+If you want to clean more than one option, you need to use more than one
+\cs{clearcaptionsetup}s.}
+While the example above not only clears the options |labelfont=bf,textfont=it|
+for |figure|s (but all options for |figure|s instead),
+this one would only clear the |labelfont=bf| setting, leaving all other
+settings for |figure|s intact:
+\begin{quote}
+  |\captionsetup{font=small}|\\
+  |\captionsetup[figure]{labelfont=bf,textfont=it}|\\
+  \ldots\\
+  |  \caption{A figure}|\\
+  \ldots\\
+  |\clearcaptionsetup[labelfont]{figure}|\\
+  \ldots\\
+  |  \caption{A figure}|\\
+  \ldots\\
+\end{quote}
+\begin{Example}
+  \captionsetup{font=small}
+  \captionsetup[figure]{labelfont=bf,textfont=it}
+  \begingroup
+    \captionof{figure}{A figure}
+  \endgroup
+  \captionsetup{position=top}
+  \clearcaptionsetup[labelfont]{figure}
+  \begingroup
+    \captionof{figure}{A figure}
+  \endgroup
+\end{Example}
+{\small Analogous to |\captionsetup*| there is also a starred form
+|\clearcaptionsetup*| which suppresses warnings if the given \meta{option}
+was not setup for the specified \meta{float type}.}
+
+\pagebreak[4]
+\DescribeMacro{\showcaptionsetup}
+For debugging purposes the command
+\begin{quote}
+  |\showcaptionsetup|\marg{float type}
+\end{quote}
+is offered. It generates a logfile entry, showing the given options
+for the specified \meta{float type}. For example
+\begin{quote}
+  |\captionsetup[figure]{labelfont=bf,textfont=it}|\\
+  |\showcaptionsetup{figure}|
+\end{quote}
+gives the info:
+\begin{quote}
+  |Caption Info: Option list on `figure'|\\
+  |Caption Data: {labelfont=bf,textfont=it} on input line 5.|
+\end{quote}
 
 \subsection{Continued floats}
 \label{ContinuedFloat}
@@ -1066,11 +1146,10 @@ An example:
 \end{quote}
 gives the following result:
 \begin{Example}
-  \captionsetup{type=table}
+  \captionsetup{type=table,position=b,skip=0pt}
   \caption{A table}
   \centerline{\ldots}
   \ContinuedFloat
-  \captionsetup{aboveskip=0pt}
   \caption{A table (cont.)}
 \end{Example}
 
@@ -1862,7 +1941,9 @@ If you want to setup special options for the |parpic| environment you can use
   |\captionsetup[parpic]|\marg{options}\quad.
 \end{quote}
 These options will be executed additionally to the regular ones for
-|figure| or |table|.
+|figure| or |table|.\par
+Furthermore |\piccaption[]{|\ldots|}| produce no entry in the List of Figures,
+and |\piccaption*{|\ldots|}| gives an unlabeled \& unnumbered caption.
 
 \Note
 The |margin| resp.~|width| setting will not be used for these figures \& tables
@@ -2409,8 +2490,7 @@ Option & Short description & Section \\
   |\caption will not be redefined since it's already|\\
   |redefined by a document class or package which is|\\
   |unknown to the caption package.|\\
-  |As a result some new features of the caption|\\
-  |package will not work as expected.|
+  |As a result some features will not work as expected.|
 \Description
   If \thispackage\ detects that some (unknown) documentclass or
   package has enhanced |\caption|, it will not redefine

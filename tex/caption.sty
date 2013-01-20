@@ -28,10 +28,10 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/10/25 v3.1d Customising captions (AR)]
+\ProvidesPackage{caption}[2007/11/04 v3.1e Customising captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
-\RequirePackage{caption3}[2007/10/25] % needs v3.1d or newer
+\RequirePackage{caption3}[2007/11/04] % needs v3.1e or newer
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -43,9 +43,9 @@
     \caption@IncompatiblePackage{ftcap}{}%
   }{}%
   \@ifpackageloaded{nonfloat}{%
-    \caption@IncompatiblePackage{nonfloat}{. %
-      Furthermore you could use \string\captionof\MessageBreak
-      instead of \noexpand\figcaption or \string\tabcaption}%
+    \caption@IncompatiblePackage{nonfloat}{.\MessageBreak
+      Furthermore you could use \noexpand\captionof instead of\MessageBreak
+      \noexpand\figcaption or \string\tabcaption}%
   }{}%
   \@ifpackageloaded{topcapt}{%
     \caption@IncompatiblePackage{topcapt}{}%
@@ -57,8 +57,7 @@
     caption package is strongly *not* recommended.\MessageBreak
     Instead of loading the #1 package you should\MessageBreak
     use the caption package option\MessageBreak
-    \space\space`tableposition=top'\MessageBreak
-    #2}}
+    \space\space`tableposition=top'#2}}
 \@onlypreamble\caption@IncompatiblePackage
 \caption@ifbool{documentclass}{}{%
   \PackageWarningNoLine{caption}{%
@@ -228,7 +227,7 @@
   \caption@setjustification{raggedleft}}
 \DeclareCaptionOptionNoValue*{oneline}{\caption@setbool{slc}{1}}
 \DeclareCaptionOptionNoValue*{ignoreLTcapwidth}{%
-  \caption@Warning{Obsolete option `ignoreLTcapwidth' ignored}}
+  \caption@WarningNoLine{Obsolete option `ignoreLTcapwidth' ignored}}
 \DeclareCaptionOption*{caption}{%
   \caption@setbool{temp}{#1}%
   \caption@ifbool{temp}{}{%
@@ -305,7 +304,8 @@
   \else
     \caption@ORI@label#1{#2}%
   \fi}
-\def\captionof{\caption@teststar\caption@of{\caption*}\caption}
+\caption@AtBeginDocument{%
+  \def\captionof{\caption@teststar\caption@of{\caption*}\caption}}
 \newcommand*\caption@of[2]{\caption@settype*{#2}#1}
 \newcommand*\captionlistentry{%
   \@testopt\caption@listentry\@captype}
@@ -597,8 +597,7 @@
         \noexpand\caption will not be redefined since it's already\MessageBreak
         redefined by a document class or package which is\MessageBreak
         unknown to the caption package.\MessageBreak
-        As a result some new features of the caption\MessageBreak
-        package will not work as expected}%
+        As a result some features will not work as expected}%
     }%
     \renewcommand*\caption@ContinuedFloat[1]{%
       \caption@Error{Not available in compatibility mode}}%
@@ -606,14 +605,12 @@
       \let\caption@start\relax
       \@ifundefined{caption@ORI@capstart}{}{%
         \caption@Debug{%
-          Undo redefinition of \string\capstart\@gobble}%
-        \let\capstart\caption@ORI@capstart
-        \let\caption@ORI@capstart\@undefined}%
-      \@ifundefined{Hy@float@makebox}{}{%
+          Restore hypcap definition of \string\capstart\@gobble}%
+        \let\capstart\caption@ORI@capstart}%
+      \@ifundefined{caption@ORI@float@makebox}{}{%
         \caption@Debug{%
           Restore hyperref redefinition of \string\float@makebox\@gobble}%
-        \let\float@makebox\Hy@float@makebox
-        \let\Hy@float@makebox\@undefined}%
+        \let\float@makebox\caption@ORI@float@makebox}%
     }%
     \newcommand*\caption@star[2]{#1#2}%
   }{%
@@ -650,6 +647,9 @@
                        {\ignorespaces\caption@@anchor{#3}}\par}%
       \caption@end}%
   }%
+  \caption@AtBeginDocument*{%
+    \let\caption@ORI@capstart\@undefined
+    \let\caption@ORI@float@makebox\@undefined}%
   \let\caption@ORI@xfloat\@xfloat
   \def\@xfloat#1[#2]{%
     \caption@ORI@xfloat{#1}[#2]%
@@ -840,7 +840,7 @@
   \providecommand*\float@ifstyle[1]{\@secondoftwo}%
   \providecommand*\float@ifcaption[1]{\@secondoftwo}%
 }
-\captionsetup*[boxed]{skip=2pt} % do not issue a warning when not used
+\captionsetup[boxed]{skip=2pt} % do not issue a warning when not used
 \caption@ifbool{ruled}{%
   \captionsetup[ruled]{margin=0pt,minmargin=0,singlelinecheck=0}%
 }{%
@@ -1014,24 +1014,19 @@
     \@ifundefined{HyOrg@float@makebox}{}{%
       \caption@Debug{%
         Redefining \noexpand\float@makebox (again)\@gobble}%
-      \let\Hy@float@makebox\float@makebox
+      \let\caption@ORI@float@makebox\float@makebox % save for compatibility mode
       \renewcommand\float@makebox[1]{%
         \HyOrg@float@makebox{#1\relax \caption@defrostHref}}%
     }%
 }}{}
 \caption@IfPackageLoaded{hypcap}{% v1.0
   \ifx\caption@start\relax \else % hyperref hasn't stopped early
-    \let\caption@ORI@capstart\capstart
+    \let\caption@ORI@capstart\capstart % save for compatibility mode
     \let\capstart\caption@start
     \let\caption@start\relax
     \let\caption@@start\relax
-    \caption@@setbool\caption@ifhypcap1%
+    \caption@set@bool\caption@ifhypcap1%
     \renewcommand*\caption@hypcapspace{\hypcapspace}%
-    \@ifundefined{Hy@float@makebox}{}{%
-      \caption@Debug{%
-        Restore hyperref redefinition of \string\float@makebox\@gobble}%
-      \let\float@makebox\Hy@float@makebox
-      \let\Hy@float@makebox\@undefined}%
   \fi}{}
 \caption@IfPackageLoaded{listings}[2004/02/13 v1.2]{%
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
