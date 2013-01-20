@@ -23,13 +23,13 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-%% caption3.dtx, bicaption.dtx, ltcaption.dtx, and subcaption.dtx,
-%% the derived files caption.sty, caption2.sty, caption3.sty, bicaption.sty,
-%% ltcaption.sty, and subcaption.sty, and the user manuals caption-deu.tex,
-%% caption-eng.tex, and caption-rus.tex.
+%% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+%% the derived files caption.sty, caption2.sty, caption3.sty,
+%% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+%% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/09/30 v3.2c Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/11/02 v3.2d Customizing captions (AR)]
 \RequirePackage{caption3}[2011/08/30] % needs v1.4 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -66,28 +66,26 @@
 \DeclareCaptionOption{name}{\caption@setname\@captype{#1}}
 \DeclareCaptionOption{listfigurename}{\caption@SetName{listfigure}{#1}}
 \DeclareCaptionOption{listtablename}{\caption@SetName{listtable}{#1}}
-\newcommand*\caption@SetName[2]{%
-  \caption@setname{#1}{#2}%
-  \begingroup
-    \caption@ifundefined\languagename{}{%
-      \@ifundefined{captions\languagename}{}{%
-        \expandafter\g@addto@macro\csname captions\languagename\endcsname
-          {\caption@setname{#1}{#2}}}}%
-  \endgroup}
+\newcommand*\caption@SetName{%
+  \RequirePackage{newfloat}%
+  \newfloat@setname}
 \newcommand*\caption@setname[2]{\@namedef{#1name}{#2}}
 \caption@AtBeginDocument{\let\caption@SetName\caption@setname}
 \newcommand*\caption@DeclareWithinOption[1]{%
   \DeclareCaptionOption{#1within}{\caption@Within{#1}{##1}}%
   \DeclareCaptionOptionNoValue{#1without}{\caption@Within{#1}{none}}}
+\@onlypreamble\caption@DeclareWithinOption
 \caption@DeclareWithinOption{figure}
 \caption@DeclareWithinOption{table}
 \DeclareCaptionOption{within}{%
-  \caption@ifundefined\c@figure{}{\caption@Within{figure}{#1}}%
-  \caption@ifundefined\c@table{}{\caption@Within{table}{#1}}%
-  \caption@For{typelist}{\caption@Within{##1}{#1}}%
-  \def\caption@within@default{#1}}
-\DeclareCaptionOptionNoValue{without}{\KV@caption@within{none}}
-\newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
+  \RequirePackage{newfloat}%
+  \newfloatsetup{within=#1}}
+\DeclareCaptionOptionNoValue{without}{%
+  \RequirePackage{newfloat}%
+  \newfloatsetup{without}}
+\newcommand*\caption@Within{%
+  \RequirePackage{newfloat}%
+  \newfloat@setwithin}
 \DeclareCaptionOption*{config}[caption]{%
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
@@ -272,6 +270,8 @@
 \long\def\caption@@caption#1[#2]#3{%
   \ifcaption@star \else
     \caption@prepareanchor{#1}{#2}%
+    \M@gettitle{#2}%
+    \memcaptioninfo{#1}{\csname the#1\endcsname}{#2}{#3}%
   \fi
   \par
   \caption@beginex{#1}{#2}{#3}%
@@ -288,6 +288,8 @@
                    {\ignorespaces\caption@makeanchor{#3}}\par
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
+\providecommand\M@gettitle[1]{}
+\providecommand\memcaptioninfo[4]{}
 \newcommand*\caption@prepareanchor[2]{%
   \caption@makecurrent{#1}{#2}%
   \caption@ifhypcap\caption@@start{}}
@@ -1170,12 +1172,6 @@
     \fi}%
   \g@addto@macro\fs@plaintop{\def\@fs@mid{\vspace\abovecaptionskip\relax}}%
   \g@addto@macro\fs@boxed{\def\@fs@mid{\kern\abovecaptionskip\relax}}%
-  \providecommand*\float@ifstyle[1]{%
-    \expandafter\ifx\csname fst@#1\endcsname\relax
-      \expandafter\@secondoftwo
-    \else
-      \expandafter\@firstoftwo
-    \fi}%
   \providecommand*\float@getstyle[2]{%
     \edef#1{%
       \noexpand\expandafter\noexpand\@gobblefour\noexpand\string
@@ -1183,11 +1179,6 @@
           \csname fst@#2\endcsname}%
     \edef#1{#1}%
     \caption@Debug{floatstyle{#2} = `#1'}}%
-  \providecommand*\float@setstyle[2]{%
-    \expandafter\edef\csname fst@#1\endcsname{%
-      \expandafter\noexpand\csname fs@#2\endcsname}}%
-  \providecommand*\float@dostyle[1]{%
-    \@nameuse{fst@#1}\@float@setevery{#1}}%
   \providecommand*\float@ifcaption[1]{%
     \expandafter\ifx\csname @float@c@#1\endcsname\float@caption
       \expandafter\@firstoftwo
@@ -1195,7 +1186,6 @@
       \expandafter\@secondoftwo
     \fi}%
 }}{%
-  \providecommand*\float@ifstyle[1]{\@secondoftwo}%
   \providecommand*\float@ifcaption[1]{\@secondoftwo}%
 }
 \captionsetup[boxed]{skip=2pt} % do not issue a warning when not used
@@ -1286,9 +1276,6 @@
          \caption@defrost
        \end\FP@captype}%
   }%
-  \caption@For{typelist}{%
-    \newcounter{FP@#1C}%
-    \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}%
 }{%
   \let\caption@ifFPlistcap\@undefined
   \let\caption@ifFPrefcap\@undefined
@@ -1570,9 +1557,6 @@
     \nobreak\hspace{12pt}}%
   \newcommand\caption@makerot[2]{%
     \begin{minipage}\captionwidth\caption@@make{#1}{#2}\end{minipage}}%
-  \caption@For{typelist}{%
-    \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
-    \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
 }{}
 \caption@IfPackageLoaded{sidecap}[2003/06/06 v1.6f]{%
   \caption@setbool{needfreeze}{1}%
@@ -1604,15 +1588,6 @@
     \def\SC@orig@caption[##1]##2{\caption@defrost}%
     \caption@setSC@justify % for compatibility mode
     \caption@ORI@endSC@FLOAT}%
-  \newcommand*\caption@For@SC[2]{%
-    \def#1{b}% = \sidecaptionvpos{#2}{b} (v1.6)
-    \newenvironment{SC#2}%
-      {\SC@float[#1]{#2}}{\endSC@float}%
-    \newenvironment{SC#2*}%
-      {\SC@dblfloat[#1]{#2}}{\endSC@dblfloat}}%
-  \@onlypreamble\caption@For@SC
-  \caption@For{typelist}{%
-    \expandafter\caption@For@SC\csname SC@#1@vpos\endcsname{#1}}%
 }{}
 \caption@IfPackageLoaded{subfigure}[2002/01/23 v2.1]{%
   \def\sf@ifpositiontop{%
@@ -1707,69 +1682,28 @@
   %\newcommand*\caption@TPT@eatvskip{\vskip-.2\baselineskip}%
   \def\caption@TPT@eatvskip#1\vskip{#1\@tempdima=}%
 }{}
-\caption@IfPackageLoaded{wrapfig}{% ver 3.3  (Oct 12, 1999)
-  \providecommand*\float@ifstyle[1]{%
-    \expandafter\ifx\csname fst@#1\endcsname\relax
-      \expandafter\@secondoftwo
-    \else
-      \expandafter\@firstoftwo
-    \fi}%
-  \newcommand*\caption@restylewrapfloat[1]{%
-    \expandafter\ifx\csname caption@OUR@wrap#1\expandafter\endcsname
-                    \csname wrap#1\endcsname
-      \caption@Error{%
-        For a successful cooperation of the `wrapfig' package\MessageBreak
-        with the `float' package you should load the `wrapfig'\MessageBreak
-        package *after* the `float' package}%
-    \else
-      \expandafter\let\csname caption@ORI@wrap#1\expandafter\endcsname
-                      \csname wrap#1\endcsname
-      \@namedef{wrap#1}{\caption@wrapfloat{#1}}%
-      \expandafter\let\csname caption@OUR@wrap#1\expandafter\endcsname
-                      \csname wrap#1\endcsname
-    \fi}%
-  \newcommand*\caption@wrapfloat[1]{%
-    \caption@settype*{#1}%
-    \float@ifstyle{#1}{%
-      \ifx\WF@floatstyhook\@undefined
-        \caption@Error{%
-          For a successful cooperation of the `wrapfig' package\MessageBreak
-          with the `float' package you should use at least\MessageBreak
-          `wrapfig' version 3.6}%
-      \else
-        \float@dostyle{#1}%
-      \fi}{}%
-    \caption@clearmargin
-%%% \caption@setoptions{wrapfloat}%
-    \caption@setoptions{wrap#1}%
-    \@nameuse{caption@ORI@wrap#1}}%
-  \caption@restylewrapfloat{figure}%
-  \caption@restylewrapfloat{table}%
-  \caption@For{typelist}{%
-    \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}%
-    \caption@restylewrapfloat{#1}}%
-  \ifx\WF@floatstyhook\@undefined \else % wrapfig v3.6
-    \caption@ifundefined\float@restyle{}{%
-      \toks@=\expandafter{\float@restyle{#1}% (env may or may not be defined)
-        \caption@restylewrapfloat{#1}}%
-      \edef\@tempa{\def\noexpand\float@restyle##1{\the\toks@}}%
-      \@tempa}% perform redefinitions
-    \let\caption@ORI@wrapfloat\wrapfloat
-    \def\wrapfloat#1{%
-      \float@ifstyle{#1}{%
-        \caption@Error{%
-          For a successful cooperation of the `wrapfig' package\MessageBreak
-          with the `float' package you should load the `wrapfig'\MessageBreak
-          package *right after* the `float' package}}{}%
-      \caption@ORI@wrapfloat{#1}}%
-  \fi                                   % wrapfig v3.6
+\caption@IfPackageLoaded{wrapfig}[2003/01/31 v3.6]{%
+  \renewcommand*\wrapfloat[1]{%
+    \def\@captype{#1}%
+    \@ifundefined{fst@#1}{}{%
+      \@nameuse{fst@#1}%
+      \def\WF@floatstyhook{\let\@currbox\WF@box
+         \global\setbox\WF@box\float@makebox{\wd\WF@box}}}%
+    \@ifnextchar[\WF@wr{\WF@wr[]}}
   \def\WF@rapt[#1]#2{% final two args: #1 = overhang,  #2 = width,
     \gdef\WF@ovh{#1}% hold overhang for later, when \width is known
     \global\setbox\WF@box\vtop\bgroup \setlength\hsize{#2}%
-      \caption@start
+    \expandafter\WF@captionstyhook\expandafter{\@captype}% <= new
     \ifdim\hsize>\z@ \@parboxrestore \else
     \setbox\z@\hbox\bgroup \let\wf@@caption\caption \let\caption\wf@caption
     \ignorespaces \fi}%
+  \def\WF@captionstyhook#1{%
+    \let\@captype\@undefined
+    \caption@ifundefined\@float@setevery{}{\@float@setevery{#1}}%
+    \caption@settype{#1}%
+    \caption@clearmargin
+%%%    \caption@setoptions{wrapfloat}%
+    \caption@setoptions{wrap#1}}
 }{}
 \endinput
 %%

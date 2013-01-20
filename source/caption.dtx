@@ -19,13 +19,13 @@
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
 % This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% caption3.dtx, bicaption.dtx, ltcaption.dtx, and subcaption.dtx,
-% the derived files caption.sty, caption2.sty, caption3.sty, bicaption.sty,
-% ltcaption.sty, and subcaption.sty, and the user manuals caption-deu.tex,
-% caption-eng.tex, and caption-rus.tex.
+% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+% the derived files caption.sty, caption2.sty, caption3.sty,
+% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3663}
+% \CheckSum{3534}
 %
 % \iffalse
 %<*driver>
@@ -220,7 +220,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2011/09/30 v3.2c Customizing captions (AR)]
+\ProvidesPackage{caption}[2011/11/02 v3.2d Customizing captions (AR)]
 %\@ifundefined{PackageRedefines}{}{\PackageRedefines{caption}{caption}}
 %    \end{macrocode}
 %
@@ -323,16 +323,12 @@
 % \changes{v3.1f}{2007/11/18}{After-preamble variant added}
 % \changes{v3.1g}{2008/02/28}{Renamed from \cs{caption@SetFloatName} to \cs{caption@SetName}}
 % \changes{v3.1i}{2008/08/02}{Bugfix: Works now without \cs{addto}, too}
+% \changes{v3.2d}{2011/10/29}{Outsourced to \package{newfloat} package}
 %  |\caption@SetName|\marg{cmd}\marg{value}
 %    \begin{macrocode}
-\newcommand*\caption@SetName[2]{%
-  \caption@setname{#1}{#2}%
-  \begingroup
-    \caption@ifundefined\languagename{}{%
-      \@ifundefined{captions\languagename}{}{%
-        \expandafter\g@addto@macro\csname captions\languagename\endcsname
-          {\caption@setname{#1}{#2}}}}%
-  \endgroup}
+\newcommand*\caption@SetName{%
+  \RequirePackage{newfloat}%
+  \newfloat@setname}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setname[2]{\@namedef{#1name}{#2}}
@@ -354,6 +350,7 @@
 \newcommand*\caption@DeclareWithinOption[1]{%
   \DeclareCaptionOption{#1within}{\caption@Within{#1}{##1}}%
   \DeclareCaptionOptionNoValue{#1without}{\caption@Within{#1}{none}}}
+\@onlypreamble\caption@DeclareWithinOption
 %    \end{macrocode}
 % \end{macro}
 %    \begin{macrocode}
@@ -362,16 +359,19 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{within}{%
-  \caption@ifundefined\c@figure{}{\caption@Within{figure}{#1}}%
-  \caption@ifundefined\c@table{}{\caption@Within{table}{#1}}%
-  \caption@For{typelist}{\caption@Within{##1}{#1}}%
-  \def\caption@within@default{#1}}
-\DeclareCaptionOptionNoValue{without}{\KV@caption@within{none}}
+  \RequirePackage{newfloat}%
+  \newfloatsetup{within=#1}}
+\DeclareCaptionOptionNoValue{without}{%
+  \RequirePackage{newfloat}%
+  \newfloatsetup{without}}
 %    \end{macrocode}
 % \begin{macro}{\caption@Within}
 % \changes{v3.1}{2007/12/21}{This macro added}
+% \changes{v3.2d}{2011/10/29}{Outsourced to \package{newfloat} package}
 %    \begin{macrocode}
-\newcommand*\caption@Within[1]{\def\caption@type{#1}\KV@caption@DCT@within}
+\newcommand*\caption@Within{%
+  \RequirePackage{newfloat}%
+  \newfloat@setwithin}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -760,7 +760,7 @@
 % \changes{v3.0f}{2005/06/13}{Support of \cs{caption*[]} removed}
 % \changes{v3.0l}{2007/01/19}{Minimal support of \textsf{combine} package added}
 % \changes{v3.1}{2007/02/04}{Re-written, does not save\&use original definition anymore}
-% \changes{v3.2c}{2011/09/04}{Support of \cs{donemaincaptiontrue} added}
+% \changes{v3.2c}{2011/09/04}{Support of \cs{donemaincaptiontrue} from \textsf{memoir} document class added}
 %  Here comes our definition of |\caption| and |\caption*|.
 %  Beside the support of the starred variant this code was adapted to the
 %  various packages we support.
@@ -795,6 +795,7 @@
 % \changes{v3.1f}{2007/11/28}{Bugfix: Handling of \texttt{@minipage} flag added}
 % \changes{v3.1f}{2007/11/28}{Support of option \opt{@minipage} added}
 % \changes{v3.1g}{2008/03/16}{Internal: Uses \cs{caption@prepareanchor} now}
+% \changes{v3.2d}{2011/10/21}{Adapted to the \textsf{memoir} document class}
 %  As above, our version has been adapted to the packages we support.
 %  Additionally our code is nested by |\caption@beginex| \&
 %  |\caption@end| instead of |\begingroup| \& |\endgroup|.
@@ -810,6 +811,8 @@
 %    \begin{macrocode}
   \ifcaption@star \else
     \caption@prepareanchor{#1}{#2}%
+    \M@gettitle{#2}%
+    \memcaptioninfo{#1}{\csname the#1\endcsname}{#2}{#3}%
   \fi
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -828,6 +831,11 @@
                    {\ignorespaces\caption@makeanchor{#3}}\par
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
+%    \end{macrocode}
+% \textsf{memoir} document class stuff:
+%    \begin{macrocode}
+\providecommand\M@gettitle[1]{}
+\providecommand\memcaptioninfo[4]{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2608,23 +2616,6 @@
  }{%
 %    \end{macrocode}
 %
-% \iffalse
-% \begin{macro}{\caption@of}
-%  If the float is defined by the float package (which means |\fst@|\meta{type}
-%  is defined) we `execute' this float style, so |\@fs@iftopcapt| is set to its
-%  proper value.
-%  Furthermore we undo the re-definition of |\caption@setfloatcapt| which was
-%  done by |\float@dostyle|.
-%    \begin{macrocode}
-%    \renewcommand*\caption@of[2]{%
-%      \float@ifstyle{#2}{%
-%        \float@dostyle{#2}%
-%        \let\caption@setfloatcapt\@firstofone}{}%
-%      \caption@settype*{#2}#1}%
-%    \end{macrocode}
-% \end{macro}
-% \fi
-%
 % \begin{macro}{\@float@setevery}
 % \changes{v3.1k}{2009/10/09}{Bugfix 08-12-05: \cs{color@begin/endgroup} added
 %                             to redefinition of \cs{caption@setfloatcapt}}
@@ -2722,21 +2713,6 @@
 % \end{macro}
 % \end{macro}
 %
-% \begin{macro}{\float@ifstyle}
-% \changes{v3.1}{2007/06/10}{This macro added}
-% |\float@ifstyle|\marg{type}\marg{if-clause}\marg{else-clause}\par
-% Checks if the given \meta{type} (e.g.~|figure|) is associated with a
-% float style (e.g.~|boxed|).
-%    \begin{macrocode}
-  \providecommand*\float@ifstyle[1]{%
-    \expandafter\ifx\csname fst@#1\endcsname\relax
-      \expandafter\@secondoftwo
-    \else
-      \expandafter\@firstoftwo
-    \fi}%
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\float@getstyle}
 % \changes{v3.1}{2007/06/10}{This macro added}
 % |\float@getstyle|\marg{cmd}\marg{type}\par
@@ -2767,26 +2743,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\float@setstyle}
-% \changes{v3.1}{2007/06/10}{This macro added}
-% |\float@setstyle|\marg{type}\marg{style}\par
-% Sets or changes the float style associated with \meta{type}.
-%    \begin{macrocode}
-  \providecommand*\float@setstyle[2]{%
-    \expandafter\edef\csname fst@#1\endcsname{%
-      \expandafter\noexpand\csname fs@#2\endcsname}}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\float@dostyle}
-% \changes{v3.1}{2007/07/23}{This macro added}
-% |\float@dostyle|\marg{type}
-%    \begin{macrocode}
-  \providecommand*\float@dostyle[1]{%
-    \@nameuse{fst@#1}\@float@setevery{#1}}%
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\float@ifcaption}
 % \changes{v3.1}{2007/06/23}{This macro added}
 % |\float@ifcaption|\marg{type}\marg{if-clause}\marg{else-clause}\par
@@ -2809,7 +2765,6 @@
 %
 %    \begin{macrocode}
 }}{%
-  \providecommand*\float@ifstyle[1]{\@secondoftwo}%
   \providecommand*\float@ifcaption[1]{\@secondoftwo}%
 % \clearcaptionsetup{boxed}% used by the floatrow package?
 }
@@ -3053,14 +3008,6 @@
   }%
 %    \end{macrocode}
 % \end{macro}
-%
-% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines FP-variant, too}
-% \changes{v3.1k}{2009/09/28}{Bugfix regarding newly defined \package{fltpage} environments}
-%    \begin{macrocode}
-  \caption@For{typelist}{%
-    \newcounter{FP@#1C}%
-    \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}%
-%    \end{macrocode}
 %
 %    \begin{macrocode}
 }{%
@@ -3477,7 +3424,7 @@
 %
 % \begin{macro}{\ext@lstlisting}
 % \changes{v3.1}{2007/03/03}{This macro added}
-% Since the \package{listings} package do not define |\ext@lstlisting|,
+% Since the \package{listings} package do not define |\ext@lstlisting|
 % but we needed it when |\captionof{lstlisting}| will be done by the end user,
 % we define it here.
 %    \begin{macrocode}
@@ -3992,13 +3939,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines sideways-variant, too}
-%    \begin{macrocode}
-  \caption@For{typelist}{%
-    \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
-    \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}%
-%    \end{macrocode}
-%
 %    \begin{macrocode}
 }{}
 %    \end{macrocode}
@@ -4104,20 +4044,6 @@
     \caption@ORI@endSC@FLOAT}%
 %    \end{macrocode}
 % \end{macro}
-%
-% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines SC-variant, too}
-% \changes{v3.1f}{2007/12/23}{Bugfix in definition of SC-variant}
-%    \begin{macrocode}
-  \newcommand*\caption@For@SC[2]{%
-    \def#1{b}% = \sidecaptionvpos{#2}{b} (v1.6)
-    \newenvironment{SC#2}%
-      {\SC@float[#1]{#2}}{\endSC@float}%
-    \newenvironment{SC#2*}%
-      {\SC@dblfloat[#1]{#2}}{\endSC@dblfloat}}%
-  \@onlypreamble\caption@For@SC
-  \caption@For{typelist}{%
-    \expandafter\caption@For@SC\csname SC@#1@vpos\endcsname{#1}}%
-%    \end{macrocode}
 %
 %    \begin{macrocode}
 }{}
@@ -4372,129 +4298,28 @@
 %
 % \subsubsection{The wrapfig package}
 % \changes{v3.1}{2007/05/05}{Support of the \package{wrapfig} package added}
+% \changes{v3.2d}{2011/11/02}{Support of the \package{wrapfig} package rewritten}
 %
 %    \begin{macrocode}
-\caption@IfPackageLoaded{wrapfig}{% ver 3.3  (Oct 12, 1999)
+\caption@IfPackageLoaded{wrapfig}[2003/01/31 v3.6]{%
 %    \end{macrocode}
-%
-% \begin{macro}{\float@ifstyle}
-% \changes{v3.1}{2007/06/10}{This macro added}
-% |\float@ifstyle|\marg{type}\marg{if-clause}\marg{else-clause}\par
-% (see \package{float} package support for details)
-%    \begin{macrocode}
-  \providecommand*\float@ifstyle[1]{%
-    \expandafter\ifx\csname fst@#1\endcsname\relax
-      \expandafter\@secondoftwo
-    \else
-      \expandafter\@firstoftwo
-    \fi}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@restylewrapfloat}
-%  This one redefines the |wrap#1| environment, e.g.~|wrapfigure|.
-%  Our code uses |\caption@setoptions{wrapfigure}| so
-%  |\captionsetup[wrapfigure]{|\ldots|}| will work.\par
-%  But first we check if our redefinition was already done, this could
-%  happen inside |\float@restyle| when the \package{wrapfig} support of
-%  the \package{float} package was not installed successfully, so it has
-%  not redefined |\wrap#1| there.
-%    \begin{macrocode}
-  \newcommand*\caption@restylewrapfloat[1]{%
-    \expandafter\ifx\csname caption@OUR@wrap#1\expandafter\endcsname
-                    \csname wrap#1\endcsname
-      \caption@Error{%
-        For a successful cooperation of the `wrapfig' package\MessageBreak
-        with the `float' package you should load the `wrapfig'\MessageBreak
-        package *after* the `float' package}%
-    \else
-      \expandafter\let\csname caption@ORI@wrap#1\expandafter\endcsname
-                      \csname wrap#1\endcsname
-      \@namedef{wrap#1}{\caption@wrapfloat{#1}}%
-      \expandafter\let\csname caption@OUR@wrap#1\expandafter\endcsname
-                      \csname wrap#1\endcsname
-    \fi}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@wrapfloat}
-%    \begin{macrocode}
-  \newcommand*\caption@wrapfloat[1]{%
-    \caption@settype*{#1}%
-    \float@ifstyle{#1}{%
-      \ifx\WF@floatstyhook\@undefined
-        \caption@Error{%
-          For a successful cooperation of the `wrapfig' package\MessageBreak
-          with the `float' package you should use at least\MessageBreak
-          `wrapfig' version 3.6}%
-      \else
-        \float@dostyle{#1}%
-      \fi}{}%
-    \caption@clearmargin
-%%% \caption@setoptions{wrapfloat}%
-    \caption@setoptions{wrap#1}%
-    \@nameuse{caption@ORI@wrap#1}}%
-%    \end{macrocode}
-% \end{macro}
-%
-% Now we redefine the \package{wrapfig} environments we know about.\par
-% If someone has placed a |\newfloat| right between |\usepackage{wrapfig}|
-% and |\usepackage{caption}| (or loads \thispackage\ first, so all these
-% patches will be done with |\AtBeginDocument|) we have bad luck since the
-% \package{float} package do not offer a list of (re)styled floats.
-% (This would finally lead to an error in |\caption@setfloatcapt|.)
-%
-%    \begin{macrocode}
-  \caption@restylewrapfloat{figure}%
-  \caption@restylewrapfloat{table}%
-%    \end{macrocode}
-%
-% \changes{v3.1a}{2007/09/07}{\cs{DeclareFloatingEnvironment} defines wrap-variant, too}
-%    \begin{macrocode}
-  \caption@For{typelist}{%
-    \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}%
-    \caption@restylewrapfloat{#1}}%
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-  \ifx\WF@floatstyhook\@undefined \else % wrapfig v3.6
-%    \end{macrocode}
-%
-% \begin{macro}{\float@restyle}
-% If the \package{wrapfig} package \version{3.6} is used, we patch
-% |\float@restyle| (if defined), too, so new or restyled floats will be
-% handled correctly, too.
-%    \begin{macrocode}
-    \caption@ifundefined\float@restyle{}{%
-      \toks@=\expandafter{\float@restyle{#1}% (env may or may not be defined)
-        \caption@restylewrapfloat{#1}}%
-      \edef\@tempa{\def\noexpand\float@restyle##1{\the\toks@}}%
-      \@tempa}% perform redefinitions
-%    \end{macrocode}
-% \end{macro}
 %
 % \begin{macro}{\wrapfloat}
-% An additional check of the package load order:
-% If both, neither the \package{wrapfig} package nor \thispackage\ haven't
-% catch |\float@restyle|, we finally splash down at |\wrapfloat|.
+% First of all we make the \package{wrapfig} package independent from the package
+% load order regarding the \package{float} package.
+% (|\wrap|\x|float| will usually not be used when used with re-styled floats.)
 %    \begin{macrocode}
-    \let\caption@ORI@wrapfloat\wrapfloat
-    \def\wrapfloat#1{%
-      \float@ifstyle{#1}{%
-        \caption@Error{%
-          For a successful cooperation of the `wrapfig' package\MessageBreak
-          with the `float' package you should load the `wrapfig'\MessageBreak
-          package *right after* the `float' package}}{}%
-      \caption@ORI@wrapfloat{#1}}%
+  \renewcommand*\wrapfloat[1]{%
+    \def\@captype{#1}%
+    \@ifundefined{fst@#1}{}{%
+      \@nameuse{fst@#1}%
+      \def\WF@floatstyhook{\let\@currbox\WF@box 
+         \global\setbox\WF@box\float@makebox{\wd\WF@box}}}%
+    \@ifnextchar[\WF@wr{\WF@wr[]}}
 %    \end{macrocode}
 % \end{macro}
 %
-%    \begin{macrocode}
-  \fi                                   % wrapfig v3.6
-%    \end{macrocode}
-%
 % \begin{macro}{\WF@rapt}
-% We place our \package{hyperref} anchor here.\par
 % Original code:
 % \begin{verbatim}
 %   \def\WF@rapt[#1]#2{% final two args: #1 = overhang,  #2 = width,
@@ -4504,15 +4329,28 @@
 %     \setbox\z@\hbox\bgroup \let\wf@@caption\caption \let\caption\wf@caption
 %     \ignorespaces \fi}
 % \end{verbatim}%^^A
-% Our code:
+% Our code has |\WF@captionstyhook| in addition:
 %    \begin{macrocode}
   \def\WF@rapt[#1]#2{% final two args: #1 = overhang,  #2 = width,
     \gdef\WF@ovh{#1}% hold overhang for later, when \width is known
     \global\setbox\WF@box\vtop\bgroup \setlength\hsize{#2}%
-      \caption@start
+    \expandafter\WF@captionstyhook\expandafter{\@captype}% <= new
     \ifdim\hsize>\z@ \@parboxrestore \else
     \setbox\z@\hbox\bgroup \let\wf@@caption\caption \let\caption\wf@caption
     \ignorespaces \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\WF@captionstyhook}
+% We place our \package{hyperref} anchor here, 	apply the `wrap' options etc.
+%    \begin{macrocode}
+  \def\WF@captionstyhook#1{%
+    \let\@captype\@undefined
+    \caption@ifundefined\@float@setevery{}{\@float@setevery{#1}}%
+    \caption@settype{#1}%
+    \caption@clearmargin
+%%%    \caption@setoptions{wrapfloat}%
+    \caption@setoptions{wrap#1}}
 %    \end{macrocode}
 % \end{macro}
 %

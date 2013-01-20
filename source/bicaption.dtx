@@ -19,18 +19,18 @@
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
 % This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% caption3.dtx, bicaption.dtx, ltcaption.dtx, and subcaption.dtx,
-% the derived files caption.sty, caption2.sty, caption3.sty, bicaption.sty,
-% ltcaption.sty, and subcaption.sty, and the user manuals caption-deu.tex,
-% caption-eng.tex, and caption-rus.tex.
+% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+% the derived files caption.sty, caption2.sty, caption3.sty,
+% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{366}
+% \CheckSum{369}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2011/09/03 v1.0 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2011/10/30 v1.0 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -223,11 +223,10 @@
 % \package{caption} package:
 %
 % \begin{Options}{language=}
-%   \item[language=]
+%   \item[lang=]
 %   \DescribeMacro{language=}
-%   Sets the language of the caption,
-%   e.g.
-%   \begin{quote}|\use|\-|package|\-|[eng|\-|lish]{bi|\-|caption}|\end{quote}
+%   Sets the language of the caption, e.g.
+%   \begin{quote}|\use|\-|package|\-|[lang=eng|\-|lish]{bi|\-|caption}|\end{quote}
 %   will typeset the second caption of bilingual captions in English.
 %   (The language will be set with |\select|\-|language| internally,
 %    so the \package{babel} package must be loaded for using this option.)
@@ -540,8 +539,8 @@
 % responsible for the types
 % |figureX| ($=$ |figure| $+$ |X|), |tableX| ($=$ |table| $+$ |X|) etc.
 %
-% Such a \meta{list type} can be defined using |\Declare|\-|Caption|\-|Type|
-% offered by the \package{caption} package, but some document classes
+% Such a \meta{list type} can be defined using |\Declare|\-|Floating|\-|Environment|
+% offered by the \package{newfloat} package, but some document classes
 % or other packages offer macros for defining new floating environment types
 % (and their corresponding lists) as well.
 %
@@ -556,11 +555,12 @@
 %   |% "english", and list type "figureEng" resp. "tableEng"|\\
 %   |\usepackage[lang=english,listtype+=Eng]{bicaption}|\\
 %   ||\\
+%   |\usepackage{newfloat}|\\
 %   |% Define the new floating environment type "figureEng"|\\
-%   |\DeclareCaptionType[fileext=lof2]{figureEng}|\\
+%   |\DeclareFloatingEnvironment[fileext=lof2]{figureEng}|\\
 %   |                   [Figure][List of Figures]|\\
 %   |% Define the new floating environment type "tableEng"|\\
-%   |\DeclareCaptionType[fileext=lot2]{tableEng}|\\
+%   |\DeclareFloatingEnvironment[fileext=lot2]{tableEng}|\\
 %   |                   [Table][List of Tables]|\\
 %   ||\\
 %   |\begin{document}|\\
@@ -594,15 +594,16 @@
 %   ||\\
 %   |% We load the titletoc package for customizing lists|\\
 %   |% Note: Loading titletoc should be done prior defining|\\
-%   |% additional floating environments with \DeclareCaptionType|\\
+%   |% additional floating environments with \DeclareFloatingEnvironment|\\
 %   |\usepackage{titletoc}|\\
 %   ||\\
+%   |\usepackage{newfloat}|\\
 %   |% Define the new floating environment type "figure2"|\\
 %   |% Use the same file extension as for "figure" (.lof) here|\\
-%   |\DeclareCaptionType[fileext=lof]{figure2}|\\
+%   |\DeclareFloatingEnvironment[fileext=lof]{figure2}|\\
 %   |% Define the new floating environment type "table2"|\\
 %   |% Use the same file extension as for "table" (.lot) here|\\
-%   |\DeclareCaptionType[fileext=lot]{table2}|\\
+%   |\DeclareFloatingEnvironment[fileext=lot]{table2}|\\
 %   ||\\
 %   |% We use the titletoc package for customizing "figure2"|\\
 %   |% which is appropriate for the second language captions|\\
@@ -714,7 +715,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2011/09/03 v1.0 Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2011/10/30 v1.0a Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
 \RequirePackage{caption}[2011/08/28] % needs v3.2c or newer
@@ -842,12 +843,15 @@
 %
 % Set the language for the first caption.
 %    \begin{macrocode}
-\ifx\bbl@main@language\@undefined
-  \bicaption@WarningNoLine{Please load this package after the babel package}
-\else
+\ifcsname bbl@main@language\endcsname
   \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\bbl@main@language}}
   \@tempa
-\fi
+\else\ifcsname xpg@main@language\endcsname
+  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\xpg@main@language}}
+  \@tempa
+\else
+  \bicaption@WarningNoLine{Please load this package after the babel package}
+\fi\fi
 %    \end{macrocode}
 % We use |\caption@ProcessOptions| here to add the options to the `|bi-second|' option
 % list instead of executing them immediately.
@@ -1114,18 +1118,19 @@
 % \end{macro}
 %
 % \begin{macro}{\bicaption@listof}
+% \changes{v1.0a}{2011/10/30}{Adapted to the newfloat package}
 % Make commands like |\listoffigure2s| work.
+% (Is this a good idea or not!?)
 %    \begin{macrocode}
-\def\bicaption@declarelist#1{\@namedef{listof#1}{\bicaption@listof#1}}
+\newcommand*\bicaption@declarelist[1]{%
+  \@namedef{listof#1}{\bicaption@listof#1}}
 \@onlypreamble\bicaption@declarelist
+%    \end{macrocode}
+%    \begin{macrocode}
 \def\bicaption@listof#1 {\@nameuse{listof#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\caption@ifundefined\c@figure{}{\bicaption@declarelist{figure}}
-\caption@ifundefined\c@table{}{\bicaption@declarelist{table}}
-\caption@For{typelist}{\bicaption@declarelist{#1}}
-%    \end{macrocode}
-%    \begin{macrocode}
+\caption@ForEachType{\bicaption@declarelist{#1}}
 %    \end{macrocode}
 % \end{macro}
 %

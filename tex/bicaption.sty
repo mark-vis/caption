@@ -23,13 +23,13 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-%% caption3.dtx, bicaption.dtx, ltcaption.dtx, and subcaption.dtx,
-%% the derived files caption.sty, caption2.sty, caption3.sty, bicaption.sty,
-%% ltcaption.sty, and subcaption.sty, and the user manuals caption-deu.tex,
-%% caption-eng.tex, and caption-rus.tex.
+%% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
+%% the derived files caption.sty, caption2.sty, caption3.sty,
+%% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
+%% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2011/09/03 v1.0 Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2011/10/30 v1.0a Bilingual Captions (AR)]
 \RequirePackage{caption}[2011/08/28] % needs v3.2c or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
@@ -77,12 +77,15 @@
 \g@addto@macro\caption@prepareslc{%
   \let\bicaption@language\@undefined}
 \caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0}
-\ifx\bbl@main@language\@undefined
-  \bicaption@WarningNoLine{Please load this package after the babel package}
-\else
+\ifcsname bbl@main@language\endcsname
   \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\bbl@main@language}}
   \@tempa
-\fi
+\else\ifcsname xpg@main@language\endcsname
+  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\xpg@main@language}}
+  \@tempa
+\else
+  \bicaption@WarningNoLine{Please load this package after the babel package}
+\fi\fi
 \caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
 \let\caption@kernel@addcontentsline@ORI\caption@kernel@addcontentsline
@@ -213,12 +216,11 @@
       \l@addto@macro\caption@warmup{%
         \let\bicaption\caption@frozen@bicaption}}%
   \fi}
-\def\bicaption@declarelist#1{\@namedef{listof#1}{\bicaption@listof#1}}
+\newcommand*\bicaption@declarelist[1]{%
+  \@namedef{listof#1}{\bicaption@listof#1}}
 \@onlypreamble\bicaption@declarelist
 \def\bicaption@listof#1 {\@nameuse{listof#1}}
-\caption@ifundefined\c@figure{}{\bicaption@declarelist{figure}}
-\caption@ifundefined\c@table{}{\bicaption@declarelist{table}}
-\caption@For{typelist}{\bicaption@declarelist{#1}}
+\caption@ForEachType{\bicaption@declarelist{#1}}
 \endinput
 %%
 %% End of file `bicaption.sty'.
