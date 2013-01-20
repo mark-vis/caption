@@ -23,7 +23,7 @@
 % caption-eng.tex, and caption-rus.tex.
 % 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-eng.tex}[2007/10/17 v3.1c The caption package]
+\ProvidesFile{caption-eng.tex}[2007/10/23 v3.1d The caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=20pt % Make TeX shut up.
 %\errorcontextlines=3
 
@@ -1401,7 +1401,7 @@ If you don't get such warning everything is fine, but if you get it the usage of
 Furthermore the margin will be set to |\captionindent| for more-than-one-line captions
 (which will be set to |3pc| by the \AmS\ classes),
 the margin for single-line captions will be set to the half of it instead.
-If you want to use a common margin for both, insert |\clearcaptionsetup[margin]{SingleLine}|
+If you want to use a common margin for both, insert |\clearcaptionsetup[margin*]{singleline}|
 into the preamble of your document, after loading \thispackage.
 
 Additionally the options |figureposition=b,tableposition=t| will be set.
@@ -1494,6 +1494,7 @@ Additionally the margin is limited up to the tenth of the |\linewidth|.
 If you don't like this limitation, you can switch it off with the option
 |maxmargin=off| or |maxmargin=false| (which both means the same).
 
+\pagebreak[4]
 \subsection{The frenchb Babel option}
 \label{frenchb}
 
@@ -1730,7 +1731,7 @@ But
 |\end{minipage}|
 \end{quote}
 will place the hyperlink anchor at the beginning of the |minipage|,
-since |\captionsetup{type=figure}| does not only set the caption type
+since |\caption|\x|setup|\xx|{type=|\xx|figure}| does not only set the caption type
 to ``figure'' but does place a hyperlink anchor, too.
 
 \item{\cs{caption}\csoarg{}\csmarg\ldots\ vs.
@@ -1842,8 +1843,8 @@ These options will be executed additionally to the regular ones for
 
 \Note
 The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\captionsetup[figwindow]{|\ldots|}| or
-|\captionsetup[figtable]{|\ldots|}|.
+unless you set it explicit with |\caption|\x|setup|\xx|[figwindow]{|\ldots|}| or
+|\caption|\x|setup|\xx|[figtable]{|\ldots|}|.
 
 \pagebreak[3]
 \subsection{picins}
@@ -1909,7 +1910,7 @@ The command \cs{rotcaption} will be extended by \thispackage, so
 \NEWfeature{v3.1}
 Furthermore \cs{DefineFloatingEnvironment}\marg{name} will also define
 an environment called |sideways|\meta{name} which behaves like
-|sidewaysfigure| and |sidewaystable|.
+|sideways|\x|figure| and |sideways|\x|table|.
 
 \pagebreak[3]
 \subsection{sidecap}
@@ -2008,8 +2009,8 @@ These options will be executed additionally to the regular ones for
 Since the caption will have the same width as the contents here,
 the |margin| resp.~|width| setting will not be used for these figures \& tables,
 at least unless you set it explicit with
-|\captionsetup|\xx|[threeparttable]|\xx|{|\ldots|}|
-or |\captionsetup|\xx|[measuredfigure]|\xx|{|\ldots|}|.
+|\caption|\x|setup|\xx|[threeparttable]|\xx|{|\ldots|}|
+or |\caption|\x|setup|\xx|[measuredfigure]|\xx|{|\ldots|}|.
 
 \medskip{\small(Instead of using the \package{sidecap} package you can also use
 the \package{floatrow} package\cite{floatrow} for this purpose.)}
@@ -2041,8 +2042,8 @@ an environment called |wrap|\meta{name} which behaves like |wrapfigure| and
 
 \Note
 The |margin| resp.~|width| setting will not be used for these figures \& tables,
-unless you set it explicit with |\captionsetup[wrapfigure]{|\ldots|}| or
-|\captionsetup[wraptable]{|\ldots|}|.
+unless you set it explicit with |\caption|\x|setup|\xx|[wrapfigure]|\xx|{|\ldots|}|
+or |\caption|\x|setup|\xx|[wraptable]|\xx|{|\ldots|}|.
 
 \Note
 If the \package{wrapfig} package should be used in coorperation with the
@@ -2283,6 +2284,7 @@ you should use it with care.
 %   \def\Description{\nopagebreak\par\nopagebreak\color{black}\leftskip=1.5em\nopagebreak}%
 % }%
 % {\color{black}\end{trivlist}}
+\makeatletter
 \newenvironment{Warnings}{%
   \newif\ifMessage
   \def\Message{%
@@ -2295,9 +2297,13 @@ you should use it with care.
     \Messagetrue}%
   \def\Description{%
     \par\color{black}\leftskip=1.5em}%
+  \def\Or{\@testopt\@Or{or}}%
+  \def\@Or[##1]{%
+    \\{\small\color{black}\hspace{1.5em}\textit{-- ##1 --}}\\}%
 }{%
   \ifMessage\end{minipage}\par\fi
 }
+\makeatother
 
 \subsection{Commands}
 
@@ -2615,8 +2621,8 @@ Option & Short description & Section \\
 \begin{Warnings}
 
 \Message
-  |Argument of \@caption has an extra }.|\\
-{\color{black}\hspace{1.5em}-or-}\\
+  |Argument of \@caption has an extra }.|
+\Or
   |Paragraph ended before \@caption was complete.|
 \Description
   If you want to typeset something special (like a tabular) as caption,
@@ -2634,17 +2640,15 @@ Option & Short description & Section \\
   \par\See{\Ref{commands}}
 
 \Message
-  |\caption outside group or environment.|
+  |\caption outside box or environment.|
+\Or
+  |\captionsetup{type=...} outside box or environment.|
+\Or
+  |\captionsetup{type*=...} or \captionof outside box or environment.|
 \Description
-  You have placed a |\caption| command outside an box, group, or environment.
+  You have placed a |\caption|, |\captionof|, or |\captionsetup{type=|\meta{type}|}|
+  command outside an box, group, or environment.
   This is not supported.
-  \par\See{\Ref{commands}}
-
-\Message
-  |\captionsetup{type=|\meta{type}|} outside group or environment.|
-\Description
-  You have placed a |\captionof| or |\captionsetup{|\xx|type=|\xx\meta{type}|}|
-  command outside an box, group, or environment. This is not supported.
   \par\See{\Ref{commands}}
 
 \Message
@@ -2725,8 +2729,8 @@ Option & Short description & Section \\
   package only one caption can be placed. (This is due implementation design.)
 
 \Message
-  |Option clash for package caption.|\\
-{\color{black}\hspace{1.5em}-- or maybe --}\\
+  |Option clash for package caption.|
+\Or[but sometimes also]
   |Missing \begin{document}.|
 \Description
   \Thispackage\ has already been loaded by some other \LaTeX\ package,
@@ -2771,8 +2775,8 @@ Option & Short description & Section \\
 
 \Message
   |The option `labelsep=|\meta{name}|' does not work|\\
-  |with `format=hang'.|\\
-{\color{black}\hspace{1.5em}-or-}\\
+  |with `format=hang'.|
+\Or
   |The option `labelsep=|\meta{name}|' does not work|\\
   |with \setcaphanging (which is set by default).|
 \Description
@@ -2864,8 +2868,8 @@ Option & Short description & Section \\
 \Message
   |You can't use the caption package option|\\
   |  `tableposition=|\meta{position}|'|\\
-  |and use the |\meta{package}| package, too.|\\
-{\color{black}\hspace{1.5em}-or-}\\
+  |and use the |\meta{package}| package, too.|
+\Or
   |You can't use the global option|\\
   |  `tablecaptionabove'|\\
   |and use the |\meta{package}| package, too.|

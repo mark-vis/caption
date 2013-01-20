@@ -28,10 +28,10 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2007/10/17 v3.1c Customising captions (AR)]
+\ProvidesPackage{caption}[2007/10/25 v3.1d Customising captions (AR)]
 \newcommand*\caption@Info[1]{\PackageInfo{caption}{#1\@gobble}}
 \@onlypreamble\caption@Info
-\RequirePackage{caption3}[2007/10/17] % needs v3.1c or newer
+\RequirePackage{caption3}[2007/10/25] % needs v3.1d or newer
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -185,7 +185,7 @@
 \DeclareCaptionOption{compatibility}[1]{\caption@setbool{compatibility}{#1}}
 \@onlypreamble@key{caption}{compatibility}
 \DeclareCaptionOptionNoValue*{normal}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{justified}}
 \DeclareCaptionOptionNoValue*{isu}{%
   \caption@setformat{hang}%
@@ -194,13 +194,13 @@
   \caption@setformat{hang}%
   \caption@setjustification{justified}}
 \DeclareCaptionOptionNoValue*{center}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{centering}}
 \DeclareCaptionOptionNoValue*{anne}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{centerlast}}
 \DeclareCaptionOptionNoValue*{centerlast}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{centerlast}}
 \DeclareCaptionOptionNoValue*{scriptsize}{\def\captionfont{\scriptsize}}
 \DeclareCaptionOptionNoValue*{footnotesize}{\def\captionfont{\footnotesize}}
@@ -221,10 +221,10 @@
 \caption@setbool{ruled}{0}
 \DeclareCaptionOptionNoValue*{ruled}{\caption@setbool{ruled}{1}}
 \DeclareCaptionOptionNoValue*{flushleft}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{raggedright}}
 \DeclareCaptionOptionNoValue*{flushright}{%
-  \caption@setformat{normal}%
+  \caption@setformat{plain}%
   \caption@setjustification{raggedleft}}
 \DeclareCaptionOptionNoValue*{oneline}{\caption@setbool{slc}{1}}
 \DeclareCaptionOptionNoValue*{ignoreLTcapwidth}{%
@@ -255,10 +255,11 @@
 \newcommand*\caption@settype{%
   \caption@@settype{}}
 \newcommand*\caption@@settype[1]{%
-  \caption@teststar{\caption@@@settype{#1}}\@gobble\@firstofone}
+  \caption@teststar{\caption@@@settype{#1}}\@firstoftwo\@secondoftwo}
 \newcommand*\caption@@@settype[3]{%
   \caption@Debug{type=#3}%
-  \caption@checkgrouplevel{#1}{\captionsetup{#1type#2\@gobble*=#3}}%
+  \caption@checkgrouplevel{#1}{%
+    \captionsetup{#1type#2*\@empty=...}#2{ or \@backslashchar#1captionof}{}}%
   \@ifundefined{@#1captype}{}{%
     \edef\@tempa{#3}%
     \expandafter\ifx\csname @#1captype\endcsname\@tempa \else
@@ -270,7 +271,7 @@
   \@nameuse{#1caption@settypehook}%
   \expandafter\caption@setoptions\csname @#1captype\endcsname
   \let\caption@ifrefstepcounter\@secondoftwo
-  #2{% \@gobble or \@firstofone
+  #2{}{%
     \let\@currentlabel\caption@undefinedlabel
     \ifx\caption@ORI@label\@undefined
       \let\caption@ORI@label\label
@@ -293,7 +294,7 @@
          \expandafter\edef\csname #1caption@grouplevel\endcsname{%
            \the\currentgrouplevel}%
        \else
-        \caption@Error{\string#2 outside group or environment}%
+        \caption@Error{\string#2\MessageBreak outside box or environment}%
        \fi
     }{}}
 \fi
@@ -1108,7 +1109,7 @@
       \caption@prepareslc
     \fi
     \edef\@tempa{\expandafter\noexpand\@car#1\@nil}%
-    \if\@tempa*
+    \if\@tempa*%
       \let\@tempa\@firstofone
     \else\if\@tempa[%]
       \let\@tempa\@firstofone
