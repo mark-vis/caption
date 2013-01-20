@@ -29,36 +29,47 @@
 %% caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2011/01/22 v1.0c Adding subcaptions (AR)]
-\@ifundefined{subfigure}{}{%
+\ProvidesPackage{subcaption}[2011/08/17 v1.1 Adding subcaptions (AR)]
+\RequirePackage{caption}[2011/08/16] % needs v3.2a or newer
+\caption@ifundefined\subfigure{}{%
   \PackageError{subcaption}{%
     This package can't be used in cooperation\MessageBreak
-    with the subfigure package}%
+    with the subfigure package}{RTFM}%
   \endinput}
-\@ifundefined{subfloat}{}{%
+\caption@ifundefined\subfloat{}{%
   \PackageError{subcaption}{%
     This package can't be used in cooperation\MessageBreak
-    with the subfig package}%
+    with the subfig package}{RTFM}%
   \endinput}
-\RequirePackage{caption}[2010/12/01] % needs v3.2 or newer
 \caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
 \caption@ExecuteOptions{subcaption}{%
   font+=small,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
 \caption@ProcessOptions*{subcaption}
-\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}
-\@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}
+\caption@ifundefined\c@figure{}{\DeclareCaptionSubType{figure}}
+\caption@ifundefined\c@table{}{\DeclareCaptionSubType{table}}
 \caption@For{typelist}{\DeclareCaptionSubType{#1}}
-\newcommand*\subcaption{\captionsetup{subtype*}\caption}
-\g@addto@macro\caption@subtypehook{\let\subcaption\caption}
+\newcommand*\subcaption{%
+  \caption@iftype
+    {\setcaptionsubtype*\caption}%
+    {\caption@Error{\noexpand\subcaption outside float}%
+     \caption@withoptargs\@gobbletwo}}%
+\g@addto@macro\caption@subtypehook{%
+  \let\subcaption\caption}
+\newcommand*\phantomsubcaption{%
+  \caption@iftype
+    {\setcaptionsubtype*\phantomcaption}%
+    {\caption@Error{\noexpand\phantomsubcaption outside float}}}%
+\g@addto@macro\caption@subtypehook{%
+  \let\phantomsubcaption\phantomcaption}
 \caption@For{subtypelist}{%
   \newenvironment{sub#1}%
     {\caption@withoptargs\subcaption@minipage}%
     {\endminipage}}%
 \newcommand*\subcaption@minipage[2]{%
   \minipage#1{#2}%
-  \captionsetup{subtype}}
+  \setcaptionsubtype\relax}
 \newcommand*\subcaptionbox{%
-  \def\captionbox@type{subtype}%
+  \let\captionbox@settype\setcaptionsubtype
   \caption@withoptargs\caption@box}
 \g@addto@macro\caption@subtypehook{%
   \ifx\label\subcaption@label \else
@@ -71,8 +82,24 @@
     \protected@edef\@currentlabel{\csname thesub\@captype\endcsname}%
     \subcaption@ORI@label{sub@#1}%
   \endgroup\@esphack}
-\DeclareRobustCommand*\subref{\caption@withoptargs\subcaption@ref}
-\newcommand*\subcaption@ref[2]{\ref#1{sub@#2}}
+\DeclareRobustCommand*\subref{\@ifstar{\subcaption@ref*}\@subref}
+\newcommand*\@subref{%
+  \caption@withoptargs\@@subref}
+\newcommand*\@@subref[2]{%
+  \caption@ifundefined\hyperref
+    {\subcaption@ref#1{#2}}%
+    {\hyperref[#2]{\subcaption@ref*#1{#2}}}}
+\newcommand*\subcaption@ref{%
+  \caption@withoptargs\subcaption@@ref}
+\newcommand*\subcaption@@ref[2]{%
+  \subcaption@reffmt\p@subref{\ref#1{sub@#2}}}
+\newcommand*\p@subref{}
+\DeclareCaptionOption{subrefformat}{\subcaption@setrefformat{#1}}
+\newcommand*\subcaption@setrefformat[1]{%
+  \@ifundefined{caption@lfmt@#1}%
+    {\caption@Error{Undefined label format `#1'}}%
+    {\expandafter\let\expandafter\subcaption@reffmt\csname caption@lfmt@#1\endcsname}}
+\subcaption@setrefformat{simple}
 \endinput
 %%
 %% End of file `subcaption.sty'.
