@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3475}
+% \CheckSum{3459}
 %
 % \iffalse
 %<*driver>
@@ -1388,10 +1388,6 @@
         \caption@Debug{%
           Restore hypcap definition of \string\capstart\@gobble}%
         \let\capstart\caption@ORI@capstart}%
-      \caption@ifundefined\caption@ORI@float@makebox{}{%
-        \caption@Debug{%
-          Restore hyperref redefinition of \string\float@makebox\@gobble}%
-        \let\float@makebox\caption@ORI@float@makebox}%
     }%
 %    \end{macrocode}
 %
@@ -1431,8 +1427,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@AtBeginDocument*{%
-    \let\caption@ORI@capstart\@undefined
-    \let\caption@ORI@float@makebox\@undefined}%
+    \let\caption@ORI@capstart\@undefined}%
 %    \end{macrocode}
 %
 % \begin{macro}{\@xfloat}
@@ -2821,6 +2816,24 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\float@makebox}
+% \changes{v3.3}{2013/01/06}{Corrects wrong load order hyperref-float now}
+% \changes{v3.3}{2013/02/03}{Correction of wrong load order hyperref-float revised}
+% Refine |\float@makebox|.
+%    \begin{macrocode}
+  \let\caption@ORI@float@makebox\float@makebox
+  \renewcommand\float@makebox[1]{%
+    \caption@ORI@float@makebox{#1\relax \caption@defrostHref}}%
+%    \end{macrocode}
+% If it was redefined by the \package{hyperref} package,
+% we need to build on the original definition (and not on the redefined one).
+%    \begin{macrocode}
+  \caption@AtBeginDocument{\caption@ifcompatibility{}{%
+    \caption@ifundefined\HyOrg@float@makebox{}{%
+      \let\caption@ORI@float@makebox\HyOrg@float@makebox}}}%
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@typehook}
 % \changes{v3.1}{2007/07/08}{float package hook added}
 %  \LaTeX\ and almost every other packages use
@@ -3410,31 +3423,6 @@
         \caption@startanchor\caption@currentHref
         \global\let\caption@currentHref\@undefined
       \fi}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\float@makebox}
-% \changes{v3.3}{2013/01/06}{Corrects wrong load order hyperref-float now}
-% Do our own redefinition of |\float@makebox|, if it was redefined by
-% the \package{hyperref} package.
-% (But first of all we correct a wrong load order \package{hyperref}-\package{float},
-% if possible.)
-%    \begin{macrocode}
-    \caption@ifundefined\HyNew@float@makebox{}{%
-      \caption@ifundefined\HyOrg@float@makebox{%
-        \caption@Debug{%
-          Correcting wrong load order hyperref-float\@gobble}%
-        \let\HyOrg@float@makebox\float@makebox
-        \let\float@makebox\HyNew@float@makebox}{}}%
-%    \end{macrocode}
-%    \begin{macrocode}
-    \caption@ifundefined\HyOrg@float@makebox{}{%
-      \caption@Debug{%
-        Redefining \noexpand\float@makebox (again)\@gobble}%
-      \let\caption@ORI@float@makebox\float@makebox % save for compatibility mode
-      \renewcommand\float@makebox[1]{%
-        \HyOrg@float@makebox{#1\relax \caption@defrostHref}}%
-    }%
 %    \end{macrocode}
 % \end{macro}
 %

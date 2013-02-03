@@ -659,10 +659,6 @@
         \caption@Debug{%
           Restore hypcap definition of \string\capstart\@gobble}%
         \let\capstart\caption@ORI@capstart}%
-      \caption@ifundefined\caption@ORI@float@makebox{}{%
-        \caption@Debug{%
-          Restore hyperref redefinition of \string\float@makebox\@gobble}%
-        \let\float@makebox\caption@ORI@float@makebox}%
     }%
     \renewcommand*\caption@star[2]{#1#2}%
   }{%
@@ -678,8 +674,7 @@
     \caption@redefine
   }%
   \caption@AtBeginDocument*{%
-    \let\caption@ORI@capstart\@undefined
-    \let\caption@ORI@float@makebox\@undefined}%
+    \let\caption@ORI@capstart\@undefined}%
   \let\caption@ORI@xfloat\@xfloat
   \def\@xfloat#1[#2]{%
     \caption@ORI@xfloat{#1}[#2]%
@@ -1213,6 +1208,12 @@
     }{}%
     \caption@freezeHref % will be defrosted in \float@makebox
     \caption@ORI@float@setevery{#1}}%
+  \let\caption@ORI@float@makebox\float@makebox
+  \renewcommand\float@makebox[1]{%
+    \caption@ORI@float@makebox{#1\relax \caption@defrostHref}}%
+  \caption@AtBeginDocument{\caption@ifcompatibility{}{%
+    \caption@ifundefined\HyOrg@float@makebox{}{%
+      \let\caption@ORI@float@makebox\HyOrg@float@makebox}}}%
   \g@addto@macro\caption@typehook{%
     \expandafter\ifx\csname #1name\endcsname\relax
       \expandafter\let\csname #1name\expandafter\endcsname
@@ -1403,19 +1404,6 @@
         \caption@startanchor\caption@currentHref
         \global\let\caption@currentHref\@undefined
       \fi}%
-    \caption@ifundefined\HyNew@float@makebox{}{%
-      \caption@ifundefined\HyOrg@float@makebox{%
-        \caption@Debug{%
-          Correcting wrong load order hyperref-float\@gobble}%
-        \let\HyOrg@float@makebox\float@makebox
-        \let\float@makebox\HyNew@float@makebox}{}}%
-    \caption@ifundefined\HyOrg@float@makebox{}{%
-      \caption@Debug{%
-        Redefining \noexpand\float@makebox (again)\@gobble}%
-      \let\caption@ORI@float@makebox\float@makebox % save for compatibility mode
-      \renewcommand\float@makebox[1]{%
-        \HyOrg@float@makebox{#1\relax \caption@defrostHref}}%
-    }%
   }}{}
 \caption@IfPackageLoaded{hypcap}{% v1.0
   \ifx\caption@start\relax \else % hyperref hasn't stopped early
