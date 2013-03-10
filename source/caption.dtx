@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3472}
+% \CheckSum{3478}
 %
 % \iffalse
 %<*driver>
@@ -1991,7 +1991,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@prepare@stepcounter[2]{%
-  \flushsubcaptionlistentries[#2stepcounter]%
+  \caption@addsubcontentslines{#2stepcounter}%
   \caption@resetContinuedFloat{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -2267,6 +2267,7 @@
     \ifcaption@caption \else
 % no \caption in this part of the (floating) environment yet
       \let\caption@add@contentsline\caption@addsubcontentsline
+      \let\caption@addsubcontentslines\@gobble
       \ifcaption@subcaption \else
 % no \subcaption in this part of the (floating) environment yet
         \ifcaption@ContinuedFloat
@@ -2355,6 +2356,7 @@
 % \changes{v3.2}{2011/06/26}{Uses \cs{caption@@addcontentsline} instead of \cs{addcontentsline} now}
 % \changes{v3.2c}{2011/08/19}{Uses \cs{caption@gobble} instead of \cs{@gobble} now}
 % \changes{v3.3}{2012/01/15}{Debug message added}
+% \changes{v3.3}{2013/03/10}{A single \cs{protect} replaced by \cs{noexpand}}
 % Add a pending sub-caption list entry.
 %    \begin{macrocode}
 \newcommand*\caption@addsubcontentsline[4]{%
@@ -2369,16 +2371,21 @@
       \ifx\@currentHref\@undefined \else
         \noexpand\def\noexpand\@currentHref{\@currentHref}%
       \fi
-      \protect\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
+      \noexpand\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
   \@tempa}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\flushsubcaptionlistentries}
 % \changes{v3.3}{2012/01/15}{Renamed from \cs{caption@addsubcontentslines} to \cs{flushsubcaptionlistentries}}
+% \changes{v3.3}{2013/03/10}{Bugfix: Missing redefinition of \cs{caption@addsubcontentslines} added}
 % Writes pending sub-caption list entries.
 %    \begin{macrocode}
-\newcommand*\flushsubcaptionlistentries[1][user]{%
+\newcommand*\flushsubcaptionlistentries{%
+  \caption@addsubcontentslines{user}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\renewcommand*\caption@addsubcontentslines[1]{%
   \caption@Debug{\string\flushsubcaptionlistentries (#1)}%
   \begingroup
     \caption@subcontentslines
@@ -2393,19 +2400,19 @@
 \AtBeginDocument{\caption@ifundefined\chapter{}{%
   \let\caption@chapter@ORI\chapter
   \def\chapter{%
-    \flushsubcaptionlistentries[chapter]\caption@chapter@ORI}}}
+    \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}}
 %    \end{macrocode}
 % Same for \cs{appendix}.
 %    \begin{macrocode}
 \AtBeginDocument{\caption@ifundefined\appendix{}{%
   \let\caption@appendix@ORI\appendix
   \def\appendix{%
-    \flushsubcaptionlistentries[appendix]\caption@appendix@ORI}}}
+    \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}}
 %    \end{macrocode}
 % Flush the list of pending sub-caption list entries at the end of the document.
 %    \begin{macrocode}
 \AtEndDocument{%
-  \flushsubcaptionlistentries[AtEndDocument]}
+  \caption@addsubcontentslines{AtEndDocument}}
 %    \end{macrocode}
 % \end{macro}
 %

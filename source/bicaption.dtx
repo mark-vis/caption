@@ -5,7 +5,7 @@
 % $Id$
 % $HeadURL$
 %
-% Copyright (C) 2010-2012 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2010-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{394}
+% \CheckSum{398}
 %
 % \iffalse
 %<*driver>
@@ -998,11 +998,13 @@
 %
 % \begin{macro}{\bicaption@addcontentsline}
 % \changes{v1.0}{2011/08/31}{This macro added}
+% \changes{v1.1}{2013/03/10}{Bugfix: Delayed usage of \cs{caption@addsubcontentslines} added}
 % |\bicaption@addcontentsline|\marg{list entry \#2}\marg{type}\marg{list entry \#1}\par
 % Typeset both captions using the original version of |\caption@add|\-|contents|\-|line|.
 %    \begin{macrocode}
 \newcommand\bicaption@addcontentsline[3]{%
   \begingroup
+    \let\caption@addsubcontentslines\@gobble
 %    \end{macrocode}
 % Execute the options setup with |\captionsetup[bi]{|\ldots|}|.
 %    \begin{macrocode}
@@ -1010,24 +1012,25 @@
 %    \end{macrocode}
 % Do the first list entry, if requested.
 %    \begin{macrocode}
-  \ifnum\bicaption@lang=2\relax \else
-    \begingroup
-      \caption@setoptions{bi-first}%
-      \bicaption@@addcontentsline{#2}{#3}%
-    \endgroup
-  \fi
+    \ifnum\bicaption@lang=2\relax \else
+      \begingroup
+        \caption@setoptions{bi-first}%
+        \bicaption@@addcontentsline{#2}{#3}%
+      \endgroup
+    \fi
 %    \end{macrocode}
 % Do the second list entry, if requested.
 %    \begin{macrocode}
-  \ifnum\bicaption@lang=1\relax \else
-    \begingroup
-      \caption@setoptions{bi-second}%
-      \bicaption@@addcontentsline{#2}{#1}%
-    \endgroup
-  \fi
+    \ifnum\bicaption@lang=1\relax \else
+      \begingroup
+        \caption@setoptions{bi-second}%
+        \bicaption@@addcontentsline{#2}{#1}%
+      \endgroup
+    \fi
 %    \end{macrocode}
 %    \begin{macrocode}
-  \endgroup}
+  \endgroup
+  \caption@addsubcontentslines{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\bicaption@@addcontentsline[2]{%

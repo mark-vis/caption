@@ -913,7 +913,7 @@
   \caption@prepare@stepcounter{#1}{}%
   \caption@@@stepcounter{#1}}
 \newcommand*\caption@prepare@stepcounter[2]{%
-  \flushsubcaptionlistentries[#2stepcounter]%
+  \caption@addsubcontentslines{#2stepcounter}%
   \caption@resetContinuedFloat{#1}}
 \newcommand*\caption@@@refstepcounter{\refstepcounter}
 \newcommand*\caption@@@stepcounter{\stepcounter}
@@ -983,6 +983,7 @@
     \caption@warmup
     \ifcaption@caption \else
       \let\caption@add@contentsline\caption@addsubcontentsline
+      \let\caption@addsubcontentslines\@gobble
       \ifcaption@subcaption \else
         \ifcaption@ContinuedFloat
           \global\caption@ContinuedFloatfalse
@@ -1039,9 +1040,11 @@
       \ifx\@currentHref\@undefined \else
         \noexpand\def\noexpand\@currentHref{\@currentHref}%
       \fi
-      \protect\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
+      \noexpand\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
   \@tempa}
-\newcommand*\flushsubcaptionlistentries[1][user]{%
+\newcommand*\flushsubcaptionlistentries{%
+  \caption@addsubcontentslines{user}}
+\renewcommand*\caption@addsubcontentslines[1]{%
   \caption@Debug{\string\flushsubcaptionlistentries (#1)}%
   \begingroup
     \caption@subcontentslines
@@ -1050,13 +1053,13 @@
 \AtBeginDocument{\caption@ifundefined\chapter{}{%
   \let\caption@chapter@ORI\chapter
   \def\chapter{%
-    \flushsubcaptionlistentries[chapter]\caption@chapter@ORI}}}
+    \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}}
 \AtBeginDocument{\caption@ifundefined\appendix{}{%
   \let\caption@appendix@ORI\appendix
   \def\appendix{%
-    \flushsubcaptionlistentries[appendix]\caption@appendix@ORI}}}
+    \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}}
 \AtEndDocument{%
-  \flushsubcaptionlistentries[AtEndDocument]}
+  \caption@addsubcontentslines{AtEndDocument}}
 \caption@ifundefined\smf@makecaption{}{\let\smf@makecaption\@makecaption}
 \@ifclassloaded{beamer}{%
   \caption@InfoNoLine{beamer document class}%
