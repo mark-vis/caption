@@ -294,6 +294,18 @@
 \newif\ifcaption@caption
 \newif\ifcaption@subcaption
 \newif\ifcaption@ContinuedFloat
+\newcommand*\caption@clrflag[1]{%
+  \caption@chgflag{#1}{false}}
+\newcommand*\caption@setflag[1]{%
+  \caption@chgflag{#1}{true}}
+\newcommand*\caption@chgflag[2]{%
+  \global\csname caption@#1#2\endcsname}
+\caption@AtBeginDocument{%
+  \caption@ifundefined\FR@loc@{}{%
+    \caption@InfoNoLine{floatrow package is loaded}%
+    \g@addto@macro\FR@loc@{%
+      \renewcommand*\caption@chgflag[2]{%
+        \csname caption@#1#2\endcsname}}}}
 \def\caption@caption{%
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
@@ -715,9 +727,9 @@
     {\caption@@settype{sub}*{sub\@captype}}%
     {\caption@@settype{sub}{sub\@captype}}}%
 \newcommand*\caption@settype{%
-  \global\caption@captionfalse
-  \global\caption@subcaptionfalse
-  \global\caption@ContinuedFloatfalse
+  \caption@clrflag{caption}%
+  \caption@clrflag{subcaption}%
+  \caption@clrflag{ContinuedFloat}%
   \caption@set@type}
 \newcommand*\caption@set@type{%
   \caption@@settype{}}
@@ -854,7 +866,7 @@
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
   \fi}
 \newcommand*\caption@@ContinuedFloat[1]{%
-  \global\caption@ContinuedFloattrue
+  \caption@setflag{ContinuedFloat}%
   \stepcounter{ContinuedFloat}%
   \caption@@@ContinuedFloat{#1}}
 \newcommand*\caption@@@ContinuedFloat[1]{%
@@ -880,13 +892,13 @@
     {\caption@Error{No float type '#1' defined}}%
     {\caption@ref@stepcounter{#1}%
      \caption@fixposition
-     \caption@iftop{\global\caption@captiontrue}{\global\caption@captionfalse}%
-     \global\caption@subcaptionfalse
+     \caption@iftop\caption@setflag\caption@clrflag{caption}%
+     \caption@clrflag{subcaption}%
      \@nameuse{donemaincaptiontrue}}}
 \newcommand*\caption@ref@stepcounter{%
   \ifcaption@ContinuedFloat
     \let\caption@tempa\caption@@refcounter
-    \global\caption@ContinuedFloatfalse
+    \caption@clrflag{ContinuedFloat}%
   \else
     \let\caption@tempa\caption@@refstepcounter
     \ifcaption@caption \else
@@ -986,11 +998,11 @@
       \let\caption@addsubcontentslines\@gobble
       \ifcaption@subcaption \else
         \ifcaption@ContinuedFloat
-          \global\caption@ContinuedFloatfalse
+          \caption@clrflag{ContinuedFloat}%
         \else
           \caption@@stepcounter\@captype
         \fi
-        \global\caption@subcaptiontrue
+        \caption@setflag{subcaption}%
       \fi
     \fi
     \c@ContinuedFloat=0\relax

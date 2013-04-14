@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3480}
+% \CheckSum{3491}
 %
 % \iffalse
 %<*driver>
@@ -77,9 +77,9 @@
 %</driver>
 % \fi
 %
-% \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
-% \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
-% \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
+% \newcommand*\purerm[1]{\texorpdfstring{{\upshape\mdseries\rmfamily #1}}{#1}}
+% \newcommand*\puresf[1]{\texorpdfstring{{\upshape\mdseries\sffamily #1}}{#1}}
+% \newcommand*\purett[1]{\texorpdfstring{{\upshape\mdseries\ttfamily #1}}{#1}}
 % \let\class\puresf \let\package\puresf
 % \let\env\purett \let\opt\purett
 %
@@ -850,6 +850,34 @@
 % \end{macro}
 % \end{macro}
 %
+% \begin{macro}{\caption@clrflag}
+% \changes{v3.3}{2013/04/14}{This macro added}
+% \begin{macro}{\caption@setflag}
+% \changes{v3.3}{2013/04/14}{This macro added}
+% Furthermore we introduce the macros \cs{caption@clrflag} and \cs{caption@setflag}
+% for clearing resp.~setting these flags.
+%    \begin{macrocode}
+\newcommand*\caption@clrflag[1]{%
+  \caption@chgflag{#1}{false}}
+\newcommand*\caption@setflag[1]{%
+  \caption@chgflag{#1}{true}}
+\newcommand*\caption@chgflag[2]{%
+  \global\csname caption@#1#2\endcsname}
+%    \end{macrocode}
+% The \package{floatrow} package uses \cs{FR@loc@} to keep changes
+% (flags, counters, \ldots) local. Since it is not aware of our flags above
+% we need to extend that macro (if defined).
+%    \begin{macrocode}
+\caption@AtBeginDocument{%
+  \caption@ifundefined\FR@loc@{}{%
+    \caption@InfoNoLine{floatrow package is loaded}%
+    \g@addto@macro\FR@loc@{%
+      \renewcommand*\caption@chgflag[2]{%
+        \csname caption@#1#2\endcsname}}}}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
 % \begin{macro}{\caption@caption}
 % \changes{v3.0f}{2005/05/22}{Bugfix: \cs{ContinuedFloat} added}
 % \changes{v3.0f}{2005/06/13}{Support of \cs{caption*[]} removed}
@@ -1559,9 +1587,9 @@
 %  (if |hypcap=|\-|true| and the \package{hypcap} package is not loaded).
 %    \begin{macrocode}
 \newcommand*\caption@settype{%
-  \global\caption@captionfalse
-  \global\caption@subcaptionfalse
-  \global\caption@ContinuedFloatfalse
+  \caption@clrflag{caption}%
+  \caption@clrflag{subcaption}%
+  \caption@clrflag{ContinuedFloat}%
   \caption@set@type}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1868,7 +1896,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@ContinuedFloat[1]{%
-  \global\caption@ContinuedFloattrue
+  \caption@setflag{ContinuedFloat}%
   \stepcounter{ContinuedFloat}%
   \caption@@@ContinuedFloat{#1}}
 %    \end{macrocode}
@@ -1940,12 +1968,12 @@
 % therefore ending this part, so we set the flag to |false| in this case.)
 %    \begin{macrocode}
      \caption@fixposition
-     \caption@iftop{\global\caption@captiontrue}{\global\caption@captionfalse}%
+     \caption@iftop\caption@setflag\caption@clrflag{caption}%
 %    \end{macrocode}
 % This part does not contain content (like sub-figures) yet,
 % so we set |\if|\-|caption@sub|\-|caption| to |false|.
 %    \begin{macrocode}
-     \global\caption@subcaptionfalse
+     \caption@clrflag{subcaption}%
 %    \end{macrocode}
 % Support of the \textsf{memoir} document class.
 %    \begin{macrocode}
@@ -1955,7 +1983,7 @@
 \newcommand*\caption@ref@stepcounter{%
   \ifcaption@ContinuedFloat
     \let\caption@tempa\caption@@refcounter
-    \global\caption@ContinuedFloatfalse
+    \caption@clrflag{ContinuedFloat}%
   \else
     \let\caption@tempa\caption@@refstepcounter
     \ifcaption@caption \else
@@ -2271,11 +2299,11 @@
       \ifcaption@subcaption \else
 % no \subcaption in this part of the (floating) environment yet
         \ifcaption@ContinuedFloat
-          \global\caption@ContinuedFloatfalse
+          \caption@clrflag{ContinuedFloat}%
         \else
           \caption@@stepcounter\@captype
         \fi
-        \global\caption@subcaptiontrue
+        \caption@setflag{subcaption}%
       \fi
     \fi
 %    \end{macrocode}
