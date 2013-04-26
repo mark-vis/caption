@@ -57,14 +57,16 @@
 \expandafter\ifx\csname currentgrouplevel\endcsname\relax
   \PackageInfo{caption3}{TeX engine: TeX}
   \let\caption@ifeTeX\@secondoftwo
-  \newcommand\caption@addto[2]{%
-    \let\caption@addto@temp#1%
-    \g@addto@macro\caption@addto@temp{#2}%
+  \providecommand\l@addto@macro[2]{%
+    \begingroup
+      \toks@\expandafter{#1#2}%
+      \xdef\caption@addto@temp{\the\toks@}%
+    \endgroup
     \let#1\caption@addto@temp}
 \else
   \PackageInfo{caption3}{TeX engine: e-TeX}
   \let\caption@ifeTeX\@firstoftwo
-  \newcommand\caption@addto[2]{%
+  \providecommand\l@addto@macro[2]{%
     \edef#1{\unexpanded\expandafter{#1#2}}}
 \fi
 \newcommand*\caption@ifundefined[1]{%
@@ -149,7 +151,7 @@
     {\caption@@@withoptargs{#1}}%
     {\caption@@@@withoptargs{#1}}}
 \def\caption@@@withoptargs#1[#2]{%
-  \caption@addto\caption@tempa{[{#2}]}%
+  \l@addto@macro\caption@tempa{[{#2}]}%
   \caption@@withoptargs{#1}}
 \def\caption@@@@withoptargs#1{%
   \def\caption@tempb{#1}%
@@ -461,8 +463,8 @@
     \@secondoftwo\@firstoftwo}
 \newcommand*\caption@@setcalcmargin[3]{%
   #2{\caption@resetcalcmargin
-     \caption@addto\caption@calcmargin@hook{#1{#3}}}%
-    {\caption@addto\caption@calcmargin@hook{#1*{#3}}}}
+     \l@addto@macro\caption@calcmargin@hook{#1{#3}}}%
+    {\l@addto@macro\caption@calcmargin@hook{#1*{#3}}}}
 \newcommand*\caption@setcalcwidth{%
   \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
     \@secondoftwo\@firstoftwo}
@@ -513,7 +515,7 @@
 \DeclareCaptionOption{hangindent}{%
        \setlength\caption@hangindent{#1}}
 \DeclareCaptionOption{parskip}{%
-       \caption@addto\caption@@par{\setlength\parskip{#1}}}
+       \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 \providecommand*\caption@ifkomaclass{%
   \caption@ifundefined\scr@caption\@gobble\@firstofone}
 \@onlypreamble\caption@ifkomaclass
@@ -693,7 +695,7 @@
 \DeclareCaptionTextFormat{period}{#1.}
 \def\caption@tfmt@default{\caption@tfmt@simple}
 \newcommand*\DeclareCaptionFont[2]{%
-  \define@key{caption@fnt}{#1}[]{\caption@addto\caption@fnt{#2}}}
+  \define@key{caption@fnt}{#1}[]{\l@addto@macro\caption@fnt{#2}}}
 \@onlypreamble\DeclareCaptionFont
 \newcommand*\DeclareCaptionDefaultFont[2]{%
   \global\@namedef{caption#1@default}{#2}}
@@ -714,7 +716,7 @@
   \begingroup
     \expandafter\let\expandafter\caption@fnt\csname caption#1\endcsname
     \define@key{caption@fnt}{default}[]{%
-      \caption@addto\caption@fnt{\csname caption#1@default\endcsname}}%
+      \l@addto@macro\caption@fnt{\csname caption#1@default\endcsname}}%
     \caption@setkeys[caption]{caption@fnt}{#2}%
     \global\let\caption@tempa\caption@fnt
   \endgroup
@@ -891,8 +893,8 @@
   \def\caption@autoposition{\caption@setposition{#1}}}
 \newcommand*\caption@beginhook{}
 \newcommand*\caption@endhook{}
-\newcommand*\AtBeginCaption{\caption@addto\caption@beginhook}
-\newcommand*\AtEndCaption{\caption@addto\caption@endhook}
+\newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
+\newcommand*\AtEndCaption{\l@addto@macro\caption@endhook}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
 \DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
