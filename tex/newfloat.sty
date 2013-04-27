@@ -6,7 +6,7 @@
 %%
 %% newfloat.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2013 Axel Sommerfeldt
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% http://sourceforge.net/projects/latex-caption/
 %% 
@@ -24,17 +24,23 @@
 %% 
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
-%% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-%% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
-%% the derived files caption.sty, caption2.sty, caption3.sty,
-%% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
-%% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%% This work consists of the files
+%%   CHANGELOG, README, SUMMARY, caption.ins,
+%%   caption.dtx, caption2.dtx, caption3.dtx,
+%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
+%%   newfloat.dtx, and totalcount.dtx
+%% the derived files
+%%   caption.sty, caption2.sty, caption3.sty,
+%%   bicaption.sty, ltcaption.sty, subcaption.sty,
+%%   newfloat.sty, and totalcount.sty
+%% and the user manuals
+%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{newfloat}[\caption@tempa v1.0-\caption@tempb Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[\caption@tempa v1.1-\caption@tempb Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
 \newcommand*\newfloat@InfoNoLine[1]{%
@@ -45,6 +51,16 @@
   If you do not understand this error, please take a closer look\MessageBreak
   at the documentation of the `newfloat' package.\MessageBreak\@ehc}
 \RequirePackage{keyval}[1997/11/10]
+\newcommand*\newfloat@def[2]{%
+  \newfloat@ifundefined{#1}{%
+    \@namedef{#1}{#2}}}
+\newcommand*\newfloat@let[2]{%
+  \newfloat@ifundefined{#1}{%
+    \expandafter\let\csname #1\endcsname#2}}
+\newcommand*\newfloat@ifundefined[2]{%
+  \@ifundefined{#1}{#2}{%
+    \newfloat@Info{%
+      \expandafter\string\csname#1\endcsname\space is already defined}}}
 \newcommand*\DeclareFloatingEnvironment{%
   \@testopt\@DeclareFloatingEnvironment{}}
 \@onlypreamble\DeclareFloatingEnvironment
@@ -55,7 +71,7 @@
   \edef\@tempa{%
     \noexpand\g@addto@macro\noexpand\newfloat@Type{\@cdr#2\@nil}}%
   \@tempa
-  \newcounter{#2}%
+  \newfloat@ifundefined{c@#2}{\newcounter{#2}}%
   \ifdefined\c@float@type % from float package
     \expandafter\edef\csname ftype@#2\endcsname{\the\value{float@type}}%
     \addtocounter{float@type}{\value{float@type}}%
@@ -71,25 +87,27 @@
     \advance\newfloat@ftype\newfloat@ftype
   \fi\fi
   \newfloat@Info{float type `#2'=\@nameuse{ftype@#2}}%
-  \@namedef{fnum@#2}{\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
-  \expandafter\newcommand\csname #2name\endcsname{}%
-  \expandafter\let\csname #2name\endcsname\newfloat@Type
-  \@namedef{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
-  \@namedef{flegtoc#2}##1{}%
+  \newfloat@def{fnum@#2}%
+   {\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
+  \newfloat@let{#2name}{\newfloat@Type}%
+  \newfloat@def{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
+  \newfloat@ifundefined{flegtoc#2}{\@namedef{flegtoc#2}##1{}}%
   \newenvironment{#2}{\@float{#2}}{\end@float}%
   \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
-  \expandafter\newcommand\csname listof#2s\endcsname{\newfloat@listof{#2}}%
-  \expandafter\newcommand\csname listof#2es\endcsname{\newfloat@listof{#2}}%
+  \newfloat@def{listof#2}{\newfloat@listof{#2}}%
+  \newfloat@def{listof#2s}{\@nameuse{listof#2}}%
+  \newfloat@def{listof#2es}{\@nameuse{listof#2s}}%
+  \newfloat@def{newfloat@listof#2@hook}{}%
   \ifdefined\l@figure
-    \expandafter\let\csname l@#2\endcsname\l@figure
+    \newfloat@let{l@#2}{\l@figure}%
   \else
-    \@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}%
+    \newfloat@def{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}%
   \fi
-  \expandafter\newcommand\csname list#2name\endcsname{}%
-  \expandafter\xdef\csname list#2name\endcsname{List of \newfloat@Type s}%
+  \edef\newfloat@tempa{List of \newfloat@Type s}%
+  \newfloat@let{list#2name}{\newfloat@tempa}%
   \expandafter\let\csname fst@#2\endcsname\@undefined
-  \newfloat@setplacement{#2}{tbp}%
-  \newfloat@setfileext{#2}{lo#2}%
+  \newfloat@ifundefined{fps@#2}{\newfloat@setplacement{#2}{tbp}}%
+  \newfloat@ifundefined{ext@#2}{\newfloat@setfileext{#2}{lo#2}}%
   \newfloat@setoptions*{#2}{#1}%
   \@expandtwoargs\newfloat@announce{#2}{\@nameuse{ext@#2}}%
   \@ifnextchar[\newfloat@DFE@setname\relax}
@@ -102,18 +120,18 @@
   \KV@@newfloat@listname{#1}}
 \@onlypreamble\newfloat@DFE@setlistname
 \newcommand*\newfloat@listof[1]{%
-  \ifcsname listoftoc\endcsname
-    \expandafter\listoftoc\expandafter{\@nameuse{ext@#1}}%
-  \else
-    \begingroup
-      \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-      \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
-      \let\newfloat@ORI@starttoc\@starttoc
-      \renewcommand*\@starttoc[1]{%
-        \expandafter\newfloat@ORI@starttoc\expandafter{\ext@figure}}%
-      \listoffigures
-    \endgroup
-  \fi}
+  \@expandtwoargs\newfloat@list@of{#1}{\@nameuse{ext@#1}}}
+\newcommand*\newfloat@list@of[2]{%
+  \begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+    \def\ext@figure{#2}%
+    \let\newfloat@starttoc\@starttoc
+    \def\@starttoc##1{\newfloat@starttoc{#2}}%
+    \let\newfloat@listoftoc\listoftoc
+    \def\listoftoc##1{\newfloat@listoftoc{#2}}%
+    \@nameuse{newfloat@listof#1@hook}%
+    \listoffigures
+  \endgroup}
 \newcommand*\newfloat@setoptions{%
   \@ifstar
     {\newfloat@@setoptions\@firstofone}%
@@ -235,19 +253,18 @@
 \newcommand*\newfloat@announce[2]{%
   \@cons\newfloat@list{{#1}}%
   \@cons\newfloat@@list{{#1}}%
-  \@ifundefined{newfloat@ext@#2}{%
+  \newfloat@ifundefined{newfloat@ext@#2}{%
     \@namedef{newfloat@ext@#2}{#1}%
     \ifcsname c@lofdepth\endcsname
-      \@ifundefined{c@#2depth}{%
+      \newfloat@ifundefined{c@#2depth}{%
         \newcounter{#2depth}%
-        \setcounter{#2depth}{1}%
-      }{}%
+        \setcounter{#2depth}{1}}%
     \fi
     \ifcsname addtotoclist\endcsname
       \addtotoclist[float]{#2}%
-      \@namedef{listof#2name}{\@nameuse{list#1name}}%
+      \newfloat@def{listof#2name}{\@nameuse{list#1name}}%
     \fi
-  }{}%
+  }%
   \ifcsname contentsuse\endcsname
     \contentsuse{#1}{#2}%
   \fi
@@ -271,14 +288,16 @@
   \edef\@tempa{\def\noexpand\newfloat@hook####1{\the\toks@}}%
   \@tempa}
 \providecommand*\newfloat@hook[1]{}
+\newcommand\PrepareListOf[1]{%
+  \expandafter\g@addto@macro\csname newfloat@listof#1@hook\endcsname}
+\@onlypreamble\PrepareListOf
 \newcommand*\newfloat@list{}
 \newcommand*\newfloat@addtolist[1]{%
   \newfloat@ifinlist{#1}{}{%
     \ifcsname ext@#1\endcsname
       \@cons\newfloat@list{{#1}}%
       \@namedef{newfloat@ext@\@nameuse{ext@#1}}{#1}%
-      \@ifundefined{@ifchapterlistsgap@#1}{%
-        \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@iden}{}%
+      \newfloat@let{@ifchapterlistsgap@#1}{\@iden}%
     \else
       \newfloat@Error{`#1' does not seem to be a floating environment}%
     \fi}}

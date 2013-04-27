@@ -5,7 +5,7 @@
 % $Id$
 % $HeadURL$
 %
-% Copyright (C) 2011-2012 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2011-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,13 +28,13 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1300}
+% \CheckSum{1308}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesFile{newfloat.drv}%
-  [2012/05/18 v1.0 This package offers a command for defining new floating environments]
+  [2013/04/27 v1.1 This package offers a command for defining new floating environments]
 \hbadness=9999 \newcount\hbadness \hfuzz=48pt % Make TeX shut up.
 %
 \documentclass{ltxdoc}
@@ -94,7 +94,7 @@
 % \GetFileInfo{newfloat.sty}
 %
 % \title{\texorpdfstring{\Thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \fileversion.}}%^^A
 %        {The newfloat package}}
 % \author{Axel Sommerfeldt\\
 %         \url{http://sourceforge.net/projects/latex-caption/}}
@@ -266,7 +266,7 @@
 % \section{\cs{ForEachFloatingEnvironment}}
 %
 % \begin{quote}
-%  |\ForEachFloatingEnvironment|\meta{code with \#1}
+%  |\ForEachFloatingEnvironment|\marg{code with \#1}
 % \end{quote}
 % will execute the given \meta{code} for all known floating environments,
 % and for ones defined with |\Declare|\-|Floating|\-|Environment| later on.
@@ -292,6 +292,77 @@
 % \end{quote}
 % will typeout the names of all already known floating environments to the terminal
 % and log file.
+%
+% \pagebreak[3]
+% \section{\cs{PrepareListOf}}
+%
+% Unfortunately there is no standardized way of typesetting and customizing
+% lists of floating environments, i.e.~every document class offers it's own stuff here,
+% and there are plenty of \LaTeXe\ packages for this purpose.
+%
+% \pagebreak[3]
+% For that reason the \thispackage\ simply typesets the lists of newly
+% defined floating environments as ``List of Figure'' internally (using |\list|\-|of|\-|figure|)
+% but using a different list (the right one, of course) and using a different list name,
+% the one you have specified with either |\Declare|\-|Floating|\-|Environment| or
+% |\Setup|\-|Floating|\-|Environment|.\footnote{Please note that this is not the
+% fact when using a \KOMAScript\ document class, not \cs{listoffigure} but \cs{listoftoc}
+% will be used here, and therefore no problems should occur.}
+%
+% \pagebreak[3]
+% While this usually results in the same layout as the ``List of Figure'' and
+% is sufficient for most cases, there are some cases where this might
+% lead to an unwanted side effect.
+%
+% \pagebreak[3]
+% Therefore the \thispackage\ offers
+% \begin{quote}
+%  |\PrepareListOf|\marg{floating environment}\marg{code}
+% \end{quote}
+% which will execute the given \meta{code} right before actually typesetting the list
+% with |\list|\-|of|\-|figures| internally.
+%
+% \pagebreak[3]
+% One example:
+% \begin{quote}
+%   |\PrepareListOf{diagram}{%|\\
+%   |  \renewcommand{\cftfigpresnum}{Diagram~}}|
+% \end{quote}
+% will change the part typeset in front of the diagram number within the
+% ``List of Diagrams'' when using the \package{tocloft} package~\cite{tocloft}.
+% Without the code above you will get the part defined for figures instead.
+%
+% \pagebreak[3]
+% However, when dealing with the \package{tocloft} package it's a better
+% idea not to use |\Prepare|\-|List|\-|Of| but the customization facilities of that package
+% instead, e.g.:
+% \begin{quote}
+%   |\documentclass{book}|\\
+%   \ldots\\
+%   |\usepackage{newfloat,tocloft}|\\
+%   |\newlistof{diagram}{lod}{List of Diagrams}|\\
+%   |\DeclareFloatingEnvironment[name=Diagram,fileext=lod]{diagram}|\\
+%   |      % Note: Due of a bug in tocloft the file extension|\\
+%   |      % must be repeated at \DeclareFloatingEnvironment,|\\
+%   |      % otherwise you will get an empty list.|\\
+%   ||\\
+%   |% Customize `List of Figures'|\\
+%   |\renewcommand{\cftfigpresnum}{Figure~}|\\
+%   |\setlength{\cftfignumwidth}{2cm}|\\
+%   ||\\
+%   |% Customize `List of Diagrams'|\\
+%   |\renewcommand{\cftdiagrampresnum}{Diagram~}|\\
+%   |\setlength{\cftdiagramnumwidth}{2cm}|\\
+%   ||\\
+%   \ldots\\
+%   ||\\
+%   |\begin{document}|\\
+%   \ldots\\
+%   |\listoffigures|\\
+%   |\listofdiagrams|\\
+%   \ldots\\
+%   |\end{document}|
+% \end{quote}
 %
 % \iffalse
 % \pagebreak[3]
@@ -332,7 +403,7 @@
 % \fi
 %
 % \StopEventually{%^^A
-% \pagebreak[3]
+% \pagebreak[4]
 % \begin{thebibliography}{9}
 %
 %   \bibitem{memoir}
@@ -351,7 +422,7 @@
 %   Markus Kohm \& Jens-Uwe-Morawski:\\
 %   \href{http://www.ctan.org/pkg/koma-script}%
 %        {\emph{KOMA-Script -- a versatile \LaTeXe\ bundle}},\\
-%   2007-01-09
+%   2012-07-22
 %
 %   \bibitem{float}
 %   Anselm Lingnau:\\
@@ -376,6 +447,12 @@
 %   \href{http://www.ctan.org/pkg/sidecap}%
 %        {\emph{The sidecap package}},\\
 %   2003/06/06
+%
+%   \bibitem{tocloft}
+%   Peter Wilson, Herries Press, Will Robertson:\\
+%   \href{http://www.ctan.org/pkg/tocloft}%
+%        {\emph{The tocloft package}},\\
+%   2010/10/13
 %
 %   \bibitem{wrapfig}
 %   Donald Arseneau:\\
@@ -439,6 +516,8 @@
 % \setlength{\parskip}{0pt plus 1pt}
 % \changes{v1.0}{2011/10/30}{First release as \package{newfloat} package,
 %       outsourced from the \package{caption3} package and revised}
+% \changes{v1.1}{2013/04/27}{Adapted to the \package{tocloft} package}
+% \changes{v1.1}{2013/04/27}{New command \cs{PrepareListOf} added}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -458,7 +537,7 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{newfloat}[\caption@tempa v1.0-\caption@tempb Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[\caption@tempa v1.1-\caption@tempb Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -495,10 +574,45 @@
 %    \end{macrocode}
 %
 % \pagebreak[3]
+% \subsection{Helper macros}
+%
+% \begin{macro}{\newfloat@def}
+% \changes{v1.1}{2013/04/27}{This macro added}
+% |\newfloat@def|\marg{macro name}\marg{definition}
+%    \begin{macrocode}
+\newcommand*\newfloat@def[2]{%
+  \newfloat@ifundefined{#1}{%
+    \@namedef{#1}{#2}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\newfloat@let}
+% \changes{v1.1}{2013/04/27}{This macro added}
+% |\newfloat@let|\marg{macro name}\marg{macro}
+%    \begin{macrocode}
+\newcommand*\newfloat@let[2]{%
+  \newfloat@ifundefined{#1}{%
+    \expandafter\let\csname #1\endcsname#2}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\newfloat@ifundefined}
+% \changes{v1.1}{2013/04/27}{This macro added}
+% |\newfloat@ifundefined|\marg{macro name}\marg{code}
+%    \begin{macrocode}
+\newcommand*\newfloat@ifundefined[2]{%
+  \@ifundefined{#1}{#2}{%
+    \newfloat@Info{%
+      \expandafter\string\csname#1\endcsname\space is already defined}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \pagebreak[3]
 % \subsection{\cs{DeclareFloatingEnvironment}}
 %
 % \begin{macro}{\DeclareFloatingEnvironment}
 % \changes{v1.0a}{2011/11/16}{Bugfix: Undefines \cs{fst@}\meta{environment} now}
+% \changes{v1.1}{2013/04/27}{Revised, only defines stuff yet undefined now}
 %  |\DeclareFloatingEnvironment|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareFloatingEnvironment{%
@@ -519,7 +633,7 @@
 %    \end{macrocode}
 % Define a counter with the same name as the floating environment
 %    \begin{macrocode}
-  \newcounter{#2}%
+  \newfloat@ifundefined{c@#2}{\newcounter{#2}}%
 %    \end{macrocode}
 % Set |\ftype@|\meta{type} which contains the type number for floats of type \meta{type}\par
 % (See also \url{http://tex.stackexchange.com/q/32359/2574})
@@ -542,18 +656,18 @@
 %    \end{macrocode}
 % Define |\fnum@|\meta{type}, a macro to generate the figure number for a caption
 %    \begin{macrocode}
-  \@namedef{fnum@#2}{\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
+  \newfloat@def{fnum@#2}%
+   {\@nameuse{#2name}\nobreakspace\@nameuse{the#2}}%
 %    \end{macrocode}
 % Define |\|\meta{type}|name| used by |\fnum@|\meta{type} as \meta{type},
 % but with first letter capitalized
 %    \begin{macrocode}
-  \expandafter\newcommand\csname #2name\endcsname{}%
-  \expandafter\let\csname #2name\endcsname\newfloat@Type
-  \@namedef{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
+  \newfloat@let{#2name}{\newfloat@Type}%
+  \newfloat@def{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
 %    \end{macrocode}
 % Legend name in ToC (memoir document class)
 %    \begin{macrocode}
-  \@namedef{flegtoc#2}##1{}%
+  \newfloat@ifundefined{flegtoc#2}{\@namedef{flegtoc#2}##1{}}%
 %    \end{macrocode}
 % Define the floating environment
 %    \begin{macrocode}
@@ -561,16 +675,19 @@
   \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
 %    \end{macrocode}
 % Define the listing command |\listof|\meta{type}(|e|)|s|
+% \changes{v1.1}{2013/04/27}{Definition of list hook added}
 %    \begin{macrocode}
-  \expandafter\newcommand\csname listof#2s\endcsname{\newfloat@listof{#2}}%
-  \expandafter\newcommand\csname listof#2es\endcsname{\newfloat@listof{#2}}%
+  \newfloat@def{listof#2}{\newfloat@listof{#2}}%
+  \newfloat@def{listof#2s}{\@nameuse{listof#2}}%
+  \newfloat@def{listof#2es}{\@nameuse{listof#2s}}%
+  \newfloat@def{newfloat@listof#2@hook}{}%
   \ifdefined\l@figure
-    \expandafter\let\csname l@#2\endcsname\l@figure
+    \newfloat@let{l@#2}{\l@figure}%
   \else
-    \@namedef{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}%
+    \newfloat@def{l@#2}{\@dottedtocline{1}{1.5em}{2.3em}}%
   \fi
-  \expandafter\newcommand\csname list#2name\endcsname{}%
-  \expandafter\xdef\csname list#2name\endcsname{List of \newfloat@Type s}%
+  \edef\newfloat@tempa{List of \newfloat@Type s}%
+  \newfloat@let{list#2name}{\newfloat@tempa}%
 %    \end{macrocode}
 % We undefine |\fst@|\meta{environment} so the new environment
 % will not be recognized as defined by the \package{float} package.
@@ -581,8 +698,8 @@
 %    \end{macrocode}
 % Set default parameters
 %    \begin{macrocode}
-  \newfloat@setplacement{#2}{tbp}%
-  \newfloat@setfileext{#2}{lo#2}%
+  \newfloat@ifundefined{fps@#2}{\newfloat@setplacement{#2}{tbp}}%
+  \newfloat@ifundefined{ext@#2}{\newfloat@setfileext{#2}{lo#2}}%
 %    \end{macrocode}
 % Apply given options
 %    \begin{macrocode}
@@ -611,21 +728,25 @@
 % \end{macro}
 %
 % \begin{macro}{\newfloat@listof}
-% |\newfloat@listof|\marg{float type} typesets the list
+% \changes{v1.1}{2013/04/27}{Revised}
+% |\newfloat@listof|\marg{float type}\\
+% typesets the list, using |\listoffigure| with patched list name and file extension.
 %    \begin{macrocode}
 \newcommand*\newfloat@listof[1]{%
-  \ifcsname listoftoc\endcsname
-    \expandafter\listoftoc\expandafter{\@nameuse{ext@#1}}%
-  \else
-    \begingroup
-      \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
-      \expandafter\let\expandafter\ext@figure\csname ext@#1\endcsname
-      \let\newfloat@ORI@starttoc\@starttoc
-      \renewcommand*\@starttoc[1]{%
-        \expandafter\newfloat@ORI@starttoc\expandafter{\ext@figure}}%
-      \listoffigures
-    \endgroup
-  \fi}
+  \@expandtwoargs\newfloat@list@of{#1}{\@nameuse{ext@#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\newfloat@list@of[2]{%
+  \begingroup
+    \expandafter\let\expandafter\listfigurename\csname list#1name\endcsname
+    \def\ext@figure{#2}%
+    \let\newfloat@starttoc\@starttoc
+    \def\@starttoc##1{\newfloat@starttoc{#2}}%
+    \let\newfloat@listoftoc\listoftoc
+    \def\listoftoc##1{\newfloat@listoftoc{#2}}%
+    \@nameuse{newfloat@listof#1@hook}%
+    \listoffigures
+  \endgroup}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -864,27 +985,26 @@
   \@cons\newfloat@@list{{#1}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \@ifundefined{newfloat@ext@#2}{%
+  \newfloat@ifundefined{newfloat@ext@#2}{%
     \@namedef{newfloat@ext@#2}{#1}%
 %    \end{macrocode}
 % Support of \package{memoir} document class
 %    \begin{macrocode}
     \ifcsname c@lofdepth\endcsname
-      \@ifundefined{c@#2depth}{%
+      \newfloat@ifundefined{c@#2depth}{%
         \newcounter{#2depth}%
-        \setcounter{#2depth}{1}%
-      }{}%
+        \setcounter{#2depth}{1}}%
     \fi
 %    \end{macrocode}
 % Support of \package{tocbasic} package
 %    \begin{macrocode}
     \ifcsname addtotoclist\endcsname
       \addtotoclist[float]{#2}%
-      \@namedef{listof#2name}{\@nameuse{list#1name}}%
+      \newfloat@def{listof#2name}{\@nameuse{list#1name}}%
     \fi
 %    \end{macrocode}
 %    \begin{macrocode}
-  }{}%
+  }%
 %    \end{macrocode}
 % Support of \package{titletoc} package
 %    \begin{macrocode}
@@ -951,6 +1071,21 @@
 % \end{macro}
 %
 % \pagebreak[3]
+% \subsection{\cs{PrepareListOf}}
+%
+% \begin{macro}{\PrepareListOf}
+% \changes{v1.1}{2013/04/27}{This macro added}
+% |\PrepareListOf|\marg{float type}\marg{code}\\
+% adds \meta{code} to the one which prepares typesetting the list,
+% just before |\listoffigures|.
+%    \begin{macrocode}
+\newcommand\PrepareListOf[1]{%
+  \expandafter\g@addto@macro\csname newfloat@listof#1@hook\endcsname}
+\@onlypreamble\PrepareListOf
+%    \end{macrocode}
+% \end{macro}
+%
+% \pagebreak[3]
 % \subsection{The list of floating environments}
 %
 % \begin{macro}{\newfloat@list}
@@ -971,8 +1106,7 @@
     \ifcsname ext@#1\endcsname
       \@cons\newfloat@list{{#1}}%
       \@namedef{newfloat@ext@\@nameuse{ext@#1}}{#1}%
-      \@ifundefined{@ifchapterlistsgap@#1}{%
-        \expandafter\let\csname @ifchapterlistsgap@#1\endcsname\@iden}{}%
+      \newfloat@let{@ifchapterlistsgap@#1}{\@iden}%
     \else
       \newfloat@Error{`#1' does not seem to be a floating environment}%
     \fi}}
