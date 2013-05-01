@@ -1509,12 +1509,13 @@
 % \changes{v1.2}{2007/11/17}{Usage of \opt{size=} added}
 % \changes{v1.2b}{2008/05/06}{Usage of \opt{rule} added}
 % \changes{v1.5}{2012/03/15}{\opt{box=parbox} added}
+% \changes{v1.5}{2013/05/01}{\opt{box=none} added, \opt{box=parbox} changed to \opt{parbox=parbox}}
 %  This resets (nearly) all caption options to the base ones.
 %  \emph{Note that this does not touch the skips and the positioning!}
 %    \begin{macrocode}
 \newcommand*\caption@resetstyle{%
   \caption@setup{%
-    box=parbox,boxcolor=white,%
+    box=none,boxcolor=white,parbox=parbox,%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
@@ -1561,21 +1562,32 @@
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{box}{\caption@setbox{#1}}
+\DeclareCaptionOption{parbox}{\caption@set@box\caption@parbox{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setbox}
 %  |\caption@setbox|\marg{name}\par
 %  Selecting a caption box simply means saving the code (in |\caption@box|).
 %    \begin{macrocode}
-\newcommand*\caption@setbox[1]{%
-  \@ifundefined{caption@box@#1}%
-    {\caption@Error{Undefined box `#1'}}%
-    {\expandafter\let\expandafter\caption@box\csname caption@box@#1\endcsname}}
+\newcommand*\caption@setbox{%
+  \caption@set@box\caption@box}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@set@box[2]{%
+  \@ifundefined{caption@box@#2}%
+    {\caption@Error{Undefined box `#2'}}%
+    {\expandafter\let\expandafter#1\csname caption@box@#2\endcsname}}
 %    \end{macrocode}
 % \end{macro}
 %
-% There are four pre-defined label formats, called `empty', `simple',
-% `parens', and `brace'.
+% There are four pre-defined boxes, called `empty', `none',
+% `parbox', and `colorbox'.
+% \changes{v1.0i}{2006/05/13}{We define \cs{captionbox} instead of
+%        \cs{caption@start/endbox}}
+% \changes{v1.0l}{2006/03/09}{Bugfix 07-03-09: \cs{captionbox} changed from
+%        \cs{parbox-t} to \cs{parbox-b}}
+% \changes{v1.2}{2007/11/11}{\cs{captionbox} renamed to \cs{caption@parbox}}
+% \changes{v1.5}{2012/03/15}{\cs{caption@parbox} adapted to \cs{DeclareCaptionBox}}
 %    \begin{macrocode}
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
@@ -1583,15 +1595,15 @@
 %\DeclareCaptionBox{colorbox}{%
 %  \colorbox{\caption@boxcolor}{\caption@box@parbox{\dimexpr #1-2\fboxsep}{#2}}}
 \DeclareCaptionBox{colorbox}{\colorbox{\caption@boxcolor}{%
-% \setlength\caption@tempdima{#1}%
+  \setlength\caption@tempdima{#1}%
   \addtolength\caption@tempdima{-2\fboxsep}%
   \caption@box@parbox\caption@tempdima{#2}}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 %    \end{macrocode}
 %
-% `default' usually maps to `parbox'.
+% `default' usually maps to `none`.
 %    \begin{macrocode}
-\def\caption@box@default{\caption@box@parbox}
+\def\caption@box@default{\caption@box@none}
 %    \end{macrocode}
 %
 % \subsection{Formats}
@@ -3143,6 +3155,7 @@
 % \changes{v1.1e}{2007/10/28}{\cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/03/15}{Uses \cs{caption@tempdima} instead of \cs{@tempdima}}
 % \changes{v1.5}{2012/12/26}{max-margin stuff moved to \cs{caption@calcmargin}}
+% \changes{v1.5}{2013/05/01}{Usage of \cs{caption@box} added}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -3156,15 +3169,20 @@
   \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
 %    \end{macrocode}
 %
+% Typeset the outer box
+%    \begin{macrocode}
+  \caption@box\linewidth{%
+%    \end{macrocode}
+%
 % Typeset the left margin (option |margin=|)
 %    \begin{macrocode}
-  \caption@calcmargin
-  \@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{}{\advance\@tempdima\captionmargin@}%
-  \fi
-  \caption@ifh{\advance\@tempdima\caption@indent}%
-  \hspace\@tempdima
+    \caption@calcmargin
+    \caption@tempdima\captionmargin
+    \ifdim\captionmargin@=\z@ \else
+      \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@}%
+    \fi
+    \caption@ifh{\advance\caption@tempdima\caption@indent}%
+    \hspace\caption@tempdima
 %    \end{macrocode}
 %
 % We actually use a |\vbox| of width |\captionwidth - \caption@indent|
@@ -3172,35 +3190,35 @@
 % \Note{\cs{captionindent} is \emph{not} supported if the caption format
 % was defined with \cs{DeclareCaptionFormat*}.}
 %    \begin{macrocode}
-  \caption@tempdima\captionwidth
-  \caption@ifh{\advance\caption@tempdima-\caption@indent}%
-  \caption@parbox\caption@tempdima{%
+    \caption@tempdima\captionwidth
+    \caption@ifh{\advance\caption@tempdima-\caption@indent}%
+    \caption@parbox\caption@tempdima{%
 %    \end{macrocode}
 %
 % Typeset the indention (option |indention=|)\\
 % {\small Bugfix 04-05-05:
 %  |\hskip-\caption@indent| replaced by |\ifdim\caption@indent=\z@|\ldots}
 %    \begin{macrocode}
-    \caption@ifh{%
-      \ifdim\caption@indent=\z@
-        \leavevmode
-      \else
-        \hskip-\caption@indent
-      \fi}%
+      \caption@ifh{%
+        \ifdim\caption@indent=\z@
+          \leavevmode
+        \else
+          \hskip-\caption@indent
+        \fi}%
 %    \end{macrocode}
 %
 % Typeset the caption itself and close the |\caption@parbox|
 %    \begin{macrocode}
-    \caption@@@make{#1}{#2}}%
+      \caption@@@make{#1}{#2}}%
 %    \end{macrocode}
 %
-% Typeset the right margin (option |margin=|)
+% Typeset the right margin (option |margin=|) and close the |\caption@box|
 %    \begin{macrocode}
-  \@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{\advance\@tempdima\captionmargin@}{}%
-  \fi
-  \hspace\@tempdima
+    \caption@tempdima\captionmargin
+    \ifdim\captionmargin@=\z@ \else
+      \caption@ifoddpage{\advance\caption@tempdima\captionmargin@}{}%
+    \fi
+    \hspace\caption@tempdima}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -3364,21 +3382,6 @@
 %    \begin{macrocode}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@parbox}
-% \changes{v1.0i}{2006/05/13}{We define \cs{caption@parbox} instead of
-%        \cs{caption@start/endbox}}
-% \changes{v1.0l}{2006/03/09}{Bugfix 07-03-09: \cs{caption@parbox} changed from
-%        \cs{parbox-t} to \cs{parbox-b}}
-% \changes{v1.2}{2007/11/11}{Renamed from \cs{captionbox} to \cs{caption@parbox}}
-% \changes{v1.5}{2012/03/15}{Adapted to \cs{DeclareCaptionBox}}
-%  |\caption@parbox|\marg{width}\marg{contents}\par
-%  This macro defines the box which surrounds the caption paragraph.
-% (For compatibility reasons we still use |\caption@par|\-|box| instead of |\caption@box|.)
-%    \begin{macrocode}
-\newcommand*\caption@parbox{\caption@box}
 %    \end{macrocode}
 % \end{macro}
 %

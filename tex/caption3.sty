@@ -563,7 +563,7 @@
        \expandafter{\caption@sls}}}
 \newcommand*\caption@resetstyle{%
   \caption@setup{%
-    box=parbox,boxcolor=white,%
+    box=none,boxcolor=white,parbox=parbox,%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
@@ -580,18 +580,22 @@
   \global\long\@namedef{caption@box@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
 \DeclareCaptionOption{box}{\caption@setbox{#1}}
-\newcommand*\caption@setbox[1]{%
-  \@ifundefined{caption@box@#1}%
-    {\caption@Error{Undefined box `#1'}}%
-    {\expandafter\let\expandafter\caption@box\csname caption@box@#1\endcsname}}
+\DeclareCaptionOption{parbox}{\caption@set@box\caption@parbox{#1}}
+\newcommand*\caption@setbox{%
+  \caption@set@box\caption@box}
+\newcommand*\caption@set@box[2]{%
+  \@ifundefined{caption@box@#2}%
+    {\caption@Error{Undefined box `#2'}}%
+    {\expandafter\let\expandafter#1\csname caption@box@#2\endcsname}}
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
 \DeclareCaptionBox{parbox}{\parbox[b]{#1}{#2}}
 \DeclareCaptionBox{colorbox}{\colorbox{\caption@boxcolor}{%
+  \setlength\caption@tempdima{#1}%
   \addtolength\caption@tempdima{-2\fboxsep}%
   \caption@box@parbox\caption@tempdima{#2}}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
-\def\caption@box@default{\caption@box@parbox}
+\def\caption@box@default{\caption@box@none}
 \newcommand*\DeclareCaptionFormat{%
   \caption@teststar\caption@declareformat\@gobble\@firstofone}
 \@onlypreamble\DeclareCaptionFormat
@@ -1325,28 +1329,29 @@
   \caption@stepthecounter
   \caption@beginhook
   \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
-  \caption@calcmargin
-  \@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{}{\advance\@tempdima\captionmargin@}%
-  \fi
-  \caption@ifh{\advance\@tempdima\caption@indent}%
-  \hspace\@tempdima
-  \caption@tempdima\captionwidth
-  \caption@ifh{\advance\caption@tempdima-\caption@indent}%
-  \caption@parbox\caption@tempdima{%
-    \caption@ifh{%
-      \ifdim\caption@indent=\z@
-        \leavevmode
-      \else
-        \hskip-\caption@indent
-      \fi}%
-    \caption@@@make{#1}{#2}}%
-  \@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{\advance\@tempdima\captionmargin@}{}%
-  \fi
-  \hspace\@tempdima
+  \caption@box\linewidth{%
+    \caption@calcmargin
+    \caption@tempdima\captionmargin
+    \ifdim\captionmargin@=\z@ \else
+      \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@}%
+    \fi
+    \caption@ifh{\advance\caption@tempdima\caption@indent}%
+    \hspace\caption@tempdima
+    \caption@tempdima\captionwidth
+    \caption@ifh{\advance\caption@tempdima-\caption@indent}%
+    \caption@parbox\caption@tempdima{%
+      \caption@ifh{%
+        \ifdim\caption@indent=\z@
+          \leavevmode
+        \else
+          \hskip-\caption@indent
+        \fi}%
+      \caption@@@make{#1}{#2}}%
+    \caption@tempdima\captionmargin
+    \ifdim\captionmargin@=\z@ \else
+      \caption@ifoddpage{\advance\caption@tempdima\captionmargin@}{}%
+    \fi
+    \hspace\caption@tempdima}%
   \caption@endhook
   \endgroup
   \global\caption@starfalse}
@@ -1422,7 +1427,6 @@
   \endgroup}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
-\newcommand*\caption@parbox{\caption@box}
 \newcommand*\caption@applyfont{%
   \caption@hj\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
