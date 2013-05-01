@@ -709,6 +709,10 @@
 }
 \caption@AtBeginDocument{\caption@redefine}
 \let\@makecaption\caption@makecaption
+\newcommand\phantomcaption{%
+  \caption@iftype
+    {\caption@refstepcounter\@captype}%
+    {\caption@Error{\noexpand\phantomcaption outside float}}}%
 \caption@AtBeginDocument{%
   \DeclareCaptionOption{type}{\setcaptiontype{#1}}%
   \DeclareCaptionOption{type*}{\setcaptiontype*{#1}}%
@@ -730,7 +734,6 @@
   \caption@clrflag{caption}%
   \caption@clrflag{subcaption}%
   \caption@clrflag{ContinuedFloat}%
-  \caption@restorecounters
   \caption@set@type}
 \newcommand*\caption@set@type{%
   \caption@@settype{}}
@@ -762,8 +765,6 @@
       \let\label\caption@xlabel
     \fi
     \caption@start}}
-\caption@ifundefined\donemaincaptionfalse{}{%
-  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}
 \newcommand*\caption@typehook{}
 \newcommand*\caption@iftype{%
   \caption@ifundefined\@captype\@secondoftwo\@firstoftwo}
@@ -861,6 +862,7 @@
 \newcommand*\caption@Continued@Float[1]{%
   \edef\caption@tempa{#1}%
   \ifx\caption@tempa\caption@CFtype
+    \caption@restorecounters
     \caption@@ContinuedFloat{#1}%
   \else
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
@@ -883,10 +885,8 @@
 \newcommand*\caption@resetContinuedFloat[1]{%
   \xdef\caption@CFtype{#1}%
   \@stpelt{ContinuedFloat}}
-\newcommand\phantomcaption{%
-  \caption@iftype
-    {\caption@refstepcounter\@captype}%
-    {\caption@Error{\noexpand\phantomcaption outside float}}}%
+\caption@ifundefined\donemaincaptionfalse{}{%
+  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}
 \newcommand*\caption@refstepcounter[1]{%
   \@ifundefined{c@#1}%
     {\caption@Error{No float type '#1' defined}}%
