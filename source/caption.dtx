@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3484}
+% \CheckSum{3504}
 %
 % \iffalse
 %<*driver>
@@ -2298,6 +2298,7 @@
 % \changes{v3.2c}{2011/09/30}{Bugfix 11-09-26: Usage of \cs{if@subfloatrow} added}
 % \changes{v3.3}{2011/12/28}{Bugfix 11-12-16: \cs{caption@l@stepcounter} replaced by \cs{stepcounter}}
 % \changes{v3.3}{2012/03/15}{Usage of \cs{caption@setbox} added}
+% \changes{v3.3}{2013/01/05}{Redefinition of \cs{caption@settype} added}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -2334,8 +2335,23 @@
     \caption@setoptions{subfloat}% for subfig-package compatibility
 %    \end{macrocode}
 %    \begin{macrocode}
+% redefine \setcaptiontype
+    \def\caption@settype{\caption@withoptargs\caption@sub@settype}%
+    \def\caption@sub@settype##1##2{%
+      \def\caption@tempa{##2}%
+      \ifx\caption@tempa\@captype
+%%%     \caption@setsubtype##1\relax
+      \else
+        \caption@Error{##2 inside \@subcaptype}%
+      \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+% redefine \caption
     \let\caption\caption@subcaption
     \let\phantomcaption\caption@subphantom
+%    \end{macrocode}
+%    \begin{macrocode}
+% restore \@makecaption
     \if@subfloatrow
       \caption@Debug{Keeping \string\@makecaption}%
     \else
@@ -4426,8 +4442,8 @@
   \let\caption@ORI@threeparttable\threeparttable
   \renewcommand*\threeparttable{%
     \caption@settype{table}%
-      \caption@setposition a% ?
-      \caption@clearmargin
+    \caption@setposition a% ?
+    \caption@clearmargin
     \caption@setoptions{threeparttable}%
     \caption@ORI@threeparttable}%
 %    \end{macrocode}
@@ -4438,8 +4454,8 @@
   \let\caption@ORI@measuredfigure\measuredfigure
   \renewcommand*\measuredfigure{%
     \caption@settype{figure}%
-      \caption@setposition a% ?
-      \caption@clearmargin
+    \caption@setposition a% ?
+    \caption@clearmargin
     \caption@setoptions{measuredfigure}%
     \caption@ORI@measuredfigure}%
 %    \end{macrocode}
