@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3478}
+% \CheckSum{3484}
 %
 % \iffalse
 %<*driver>
@@ -1575,6 +1575,7 @@
 % \changes{v3.1g}{2008/01/12}{Usage of \cs{ifcaptionsetup@star} added}
 % \changes{v3.2}{2010/10/26}{Error message moved from here to \cs{caption@refstepcounter}}
 % \changes{v3.3}{2011/12/28}{Resetting of \cs{ifcaption@caption} and \cs{ifcaption@subcaption} added}
+% \changes{v3.3}{2013/05/01}{Usage of \cs{caption@restorecounters} added}
 %  |\caption@settype*|\marg{type}\par
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@set|\-|options|).
@@ -1590,6 +1591,7 @@
   \caption@clrflag{caption}%
   \caption@clrflag{subcaption}%
   \caption@clrflag{ContinuedFloat}%
+  \caption@restorecounters
   \caption@set@type}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1642,8 +1644,21 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\donemaincaptionfalse}
+% Since the \class{memoir} document class resets the sub-caption
+% counter at |\@float|, right after |\done|\-|main|\-|caption|\-|false|,
+% we save all sub-caption counters at |\done|\-|main|\-|caption|\-|false|,
+% so we can restore them inside |\caption@set|\-|type| later on with
+% |\caption@restorecounters|.
+%    \begin{macrocode}
+\caption@ifundefined\donemaincaptionfalse{}{%
+  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@typehook}
-% Hook, will be extended later on, e.g.~by our \package{float} package
+% Hook which will be used inside |\caption@set|\-|type|.
+% It will be extended later on, e.g.~by our \package{float} package
 % support.
 %    \begin{macrocode}
 \newcommand*\caption@typehook{}
@@ -1736,6 +1751,7 @@
   \@esphack}
 %    \end{macrocode}
 % \end{macro}
+%
 %
 % \begin{macro}{\captionof}
 % \changes{v3.1}{2007/05/09}{Uses \cs{caption@settype} instead of \cs{def}\cs{@captype}}

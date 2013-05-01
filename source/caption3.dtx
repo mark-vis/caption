@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3502}
+% \CheckSum{3532}
 %
 % \iffalse
 %<*driver>
@@ -220,28 +220,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\bothIfFirst}
-% \begin{macro}{\bothIfSecond}
-%  |\bothIfFirst| tests if the first argument is not empty, |\bothIfSecond|
-%  tests if the second argument is not empty. If yes both arguments get
-%  typeset, otherwise none of them.
-%    \begin{macrocode}
-\def\bothIfFirst#1#2{%
-  \protected@edef\caption@tempa{#1}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
-%    \end{macrocode}
-%    \begin{macrocode}
-\def\bothIfSecond#1#2{%
-  \protected@edef\caption@tempa{#2}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
 % \begin{macro}{\l@addto@macro}
 % \changes{v3.3}{2013/04/26}{Revised}
 %  The \LaTeXe\ kernel offers the internal helper macro |\g@addto@macro| which
@@ -265,6 +243,28 @@
     \edef#1{\unexpanded\expandafter{#1#2}}}
 \fi
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\bothIfFirst}
+% \begin{macro}{\bothIfSecond}
+%  |\bothIfFirst| tests if the first argument is not empty, |\bothIfSecond|
+%  tests if the second argument is not empty. If yes both arguments get
+%  typeset, otherwise none of them.
+%    \begin{macrocode}
+\def\bothIfFirst#1#2{%
+  \protected@edef\caption@tempa{#1}%
+  \ifx\caption@tempa\@empty \else
+    #1#2%
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\bothIfSecond#1#2{%
+  \protected@edef\caption@tempa{#2}%
+  \ifx\caption@tempa\@empty \else
+    #1#2%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@ifundefined}
@@ -3687,6 +3687,45 @@
 % with |\Declare|\-|Caption|\-|Sub|\-|Type|.
 %    \begin{macrocode}
 \newcommand*\caption@subtypelist{}
+%    \end{macrocode}
+% \end{macro}
+%
+% Unfortunately the \class{memoir} document class resets the
+% \texttt{subfigure} resp.~\texttt{subtable} counter at the begin
+% of floating environments, i.e.~at |\@float|.
+% As a side-effect |\Continued|\-|Float| does not work correctly.
+% For that reason we need to introduce macros to save and restore
+% all sub-caption counters here.
+%
+% \begin{macro}{\caption@restorecounters}
+% \changes{v1.5}{2013/05/01}{This macro added}
+% |\caption@restore|\-|counters| restores all counters saved with
+% |\caption@save|\-|counter|.
+%    \begin{macrocode}
+\newcommand*\caption@restorecounters{%
+  \caption@restore@counters
+  \let\caption@restore@counters\@empty}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@restore@counters{}
+%    \end{macrocode}
+% \end{macro}
+% \begin{macro}{\caption@savesubcounters}
+% \changes{v1.5}{2013/05/01}{This macro added}
+% |\caption@save|\-|sub|\-|counters| saves all sub-caption counters,
+% so they can be restored with |\caption@restore|\-|counters| later on.
+%    \begin{macrocode}
+\newcommand*\caption@savesubcounters{%
+  \def\@elt##1{\caption@savecounter{sub##1}}%
+  \caption@subtypelist
+  \let\@elt\relax}%
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@savecounter[1]{%
+  \edef\caption@tempa{%
+    \noexpand\l@addto@macro\noexpand\caption@restore@counters
+      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
+  \caption@tempa}
 %    \end{macrocode}
 % \end{macro}
 %

@@ -43,16 +43,6 @@
 \ProvidesPackage{caption3}[\caption@tempa v1.5-\caption@tempb caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
-\def\bothIfFirst#1#2{%
-  \protected@edef\caption@tempa{#1}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
-\def\bothIfSecond#1#2{%
-  \protected@edef\caption@tempa{#2}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
 \begingroup\expandafter\expandafter\expandafter\endgroup
 \expandafter\ifx\csname currentgrouplevel\endcsname\relax
   \PackageInfo{caption3}{TeX engine: TeX}
@@ -69,6 +59,16 @@
   \providecommand\l@addto@macro[2]{%
     \edef#1{\unexpanded\expandafter{#1#2}}}
 \fi
+\def\bothIfFirst#1#2{%
+  \protected@edef\caption@tempa{#1}%
+  \ifx\caption@tempa\@empty \else
+    #1#2%
+  \fi}
+\def\bothIfSecond#1#2{%
+  \protected@edef\caption@tempa{#2}%
+  \ifx\caption@tempa\@empty \else
+    #1#2%
+  \fi}
 \newcommand*\caption@ifundefined[1]{%
   \ifx#1\@undefined
     \expandafter\@firstoftwo
@@ -1571,6 +1571,19 @@
   \fi}
 \@onlypreamble\caption@@@@@@declaresublistentry
 \newcommand*\caption@subtypelist{}
+\newcommand*\caption@restorecounters{%
+  \caption@restore@counters
+  \let\caption@restore@counters\@empty}
+\newcommand*\caption@restore@counters{}
+\newcommand*\caption@savesubcounters{%
+  \def\@elt##1{\caption@savecounter{sub##1}}%
+  \caption@subtypelist
+  \let\@elt\relax}%
+\newcommand*\caption@savecounter[1]{%
+  \edef\caption@tempa{%
+    \noexpand\l@addto@macro\noexpand\caption@restore@counters
+      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
+  \caption@tempa}
 \newcommand*\caption@For{\caption@withoptargs\caption@@For}
 \newcommand\caption@@For[3]{%
   \caption@AtBeginDocument#1{%
