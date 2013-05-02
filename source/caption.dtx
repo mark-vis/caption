@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3504}
+% \CheckSum{3507}
 %
 % \iffalse
 %<*driver>
@@ -99,7 +99,7 @@
 %          This package has version number \fileversion, last revised \filedate.}}%^^A
 %        {the caption package}}
 % \author{Axel Sommerfeldt\\
-%         \url{http://sourceforge.net/projects/latex-caption/}}
+%         \url{http://sourceforge.net/p/latex-caption/}}
 % \date{\docdate}
 % \maketitle
 %
@@ -2298,7 +2298,7 @@
 % \changes{v3.2c}{2011/09/30}{Bugfix 11-09-26: Usage of \cs{if@subfloatrow} added}
 % \changes{v3.3}{2011/12/28}{Bugfix 11-12-16: \cs{caption@l@stepcounter} replaced by \cs{stepcounter}}
 % \changes{v3.3}{2012/03/15}{Usage of \cs{caption@setbox} added}
-% \changes{v3.3}{2013/01/05}{Redefinition of \cs{caption@settype} added}
+% \changes{v3.3}{2013/05/01}{Redefinition of \cs{caption@settype} added}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -2700,6 +2700,18 @@
   \caption@ifneedfreeze{%
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@freezetype}
+% \changes{v3.3}{2013/05/01}{This macro added}
+%  |\caption@freezetype|\marg{type}\par
+%  Used by the \package{fltpage} \& \package{sidecap} package support.
+%    \begin{macrocode}
+    \newcommand*\caption@freezetype[1]{%
+      \caption@settype*{#1}%
+      \captionsetup*[sub]{hypcap=true}% Note: This is just a (q&d) workaround!
+      \caption@freeze}%
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@freeze}
 % \changes{v3.1}{2007/07/22}{This macro added}
 % \changes{v3.1c}{2007/10/06}{\cs{caption} \& \cs{@caption} revised for enhanced compatibility}
@@ -2712,67 +2724,63 @@
 % \changes{v3.2b}{2011/08/18}{Redefinition of \cs{label} revised}
 % \changes{v3.2c}{2011/08/21}{Revised}
 % \changes{v3.3}{2013/01/06}{Adapted to new switch \cs{caption@caption} etc.}
-%  |\caption@freeze|\par
-%  Used by the \package{fltpage} \& \package{sidecap} package support.
+% |\caption@freeze|\par
+%  Used by the \package{bicaption} package.
 %    \begin{macrocode}
-  \newcommand*\caption@freeze[1]{%
-    \caption@settype*{#1}%
-    \captionsetup*[sub]{hypcap=true}% Note: This is just a (q&d) workaround!
+    \newcommand*\caption@freeze{%
+      \let\caption@frozen@ContinuedFloat\ContinuedFloat
+      \def\ContinuedFloat{%
+        \caption@@freeze{\caption@@@ContinuedFloat\@captype}%
+        \caption@frozen@ContinuedFloat}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \let\caption@frozen@ContinuedFloat\ContinuedFloat
-    \def\ContinuedFloat{%
-      \caption@@freeze{\caption@@@ContinuedFloat\@captype}%
-      \caption@frozen@ContinuedFloat}%
+      \let\caption@frozen@setup\caption@setup
+      \def\caption@setup##1{%
+        \caption@@freeze{\caption@setup{##1}}%
+        \caption@frozen@setup{##1}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \let\caption@frozen@setup\caption@setup
-    \def\caption@setup##1{%
-      \caption@@freeze{\caption@setup{##1}}%
-      \caption@frozen@setup{##1}}%
-%    \end{macrocode}
-%    \begin{macrocode}
-    \let\caption@frozen@caption\caption
-    \def\caption{%
+      \let\caption@frozen@caption\caption
       \def\caption{%
-        \caption@Error{%
-          Only one \noexpand\caption can be placed in this environment}%
-        \caption@gobble}%
-      \@ifstar
-      {\caption@SC@caption*}%
-      {\let\@currentlabel\caption@SClabel
-       \caption@withoptargs\caption@SC@caption}}%
-    \long\def\caption@SC@caption##1##2{%
-      \caption@@freeze{\caption##1{##2}}%
-      \ignorespaces}%
+        \def\caption{%
+          \caption@Error{%
+            Only one \noexpand\caption can be placed in this environment}%
+          \caption@gobble}%
+        \@ifstar
+        {\caption@SC@caption*}%
+        {\let\@currentlabel\caption@SClabel
+         \caption@withoptargs\caption@SC@caption}}%
+      \long\def\caption@SC@caption##1##2{%
+        \caption@@freeze{\caption##1{##2}}%
+        \ignorespaces}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \let\caption@frozen@label\label
-    \def\label{%
-      \caption@withoptargs\caption@SC@label}%
-    \def\caption@SC@label##1##2{%
-      \ifx\@currentlabel\caption@SClabel
-        \@bsphack
-          \caption@freeze@label{##1}{##2}%
-        \@esphack
-      \else
-        \caption@frozen@label##1{##2}%
-      \fi}%
-    \def\caption@SClabel{\caption@undefinedlabel}%
-    \def\caption@freeze@label##1##2{%
-      \caption@@freeze{\label##1{##2}}}%
+      \let\caption@frozen@label\label
+      \def\label{%
+        \caption@withoptargs\caption@SC@label}%
+      \def\caption@SC@label##1##2{%
+        \ifx\@currentlabel\caption@SClabel
+          \@bsphack
+            \caption@freeze@label{##1}{##2}%
+          \@esphack
+        \else
+          \caption@frozen@label##1{##2}%
+        \fi}%
+      \def\caption@SClabel{\caption@undefinedlabel}%
+      \def\caption@freeze@label##1##2{%
+        \caption@@freeze{\label##1{##2}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \global\let\caption@frozen@content\@empty
-    \long\def\caption@@freeze{%
-      \g@addto@macro\caption@frozen@content}%
+      \global\let\caption@frozen@content\@empty
+      \long\def\caption@@freeze{%
+        \g@addto@macro\caption@frozen@content}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \def\caption@warmup{%
-      \let\ContinuedFloat\caption@frozen@ContinuedFloat
-      \let\caption@setup\caption@frozen@setup
-      \let\caption\caption@frozen@caption
-      \let\label\caption@frozen@label}}%
+      \def\caption@warmup{%
+        \let\ContinuedFloat\caption@frozen@ContinuedFloat
+        \let\caption@setup\caption@frozen@setup
+        \let\caption\caption@frozen@caption
+        \let\label\caption@frozen@label}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2792,13 +2800,13 @@
 % \changes{v3.2c}{2011/08/21}{\cs{caption@defrost@setup} removed}
 %  |\caption@defrost|
 %    \begin{macrocode}
-  \newcommand*\caption@defrost{%
-    \ifx\caption@frozen@caption\@undefined
-      \caption@frozen@content
-    \else
-      \caption@Error{Internal Error:\MessageBreak
-        \noexpand\caption@defrost in same group as \string\caption@freeze}%
-    \fi}%
+    \newcommand*\caption@defrost{%
+      \ifx\caption@frozen@caption\@undefined
+        \caption@frozen@content
+      \else
+        \caption@Error{Internal Error:\MessageBreak
+          \noexpand\caption@defrost in same group as \string\caption@freeze}%
+      \fi}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3138,6 +3146,7 @@
 % \changes{v3.1k}{2009/10/09}{Bugfix 09-09-11: Missing \cs{ignorespaces} added}
 % \changes{v3.2c}{2011/08/28}{Adapted to current version of \cs{caption@freeze}}
 % \changes{v3.2f}{2012/02/19}{Bugfix 12-02-16: \texttt{minipage} environment added}
+% \changes{v3.3}{2013/05/01}{Usage of \cs{caption@freeze} replaced by \cs{caption@freezetype}}
 % Original code:
 % \begin{verbatim}
 % \newcommand{\FP@floatBegin}[1]{%
@@ -3161,7 +3170,7 @@
     \def\FP@captype{#1}%
     \begin{lrbox}{\FP@floatCorpusBOX}%
     \minipage\hsize % changes from LR mode to vertical mode
-    \caption@freeze{#1}%
+    \caption@freezetype{#1}%
     \ignorespaces}%
 %    \end{macrocode}
 % \end{macro}
@@ -4163,6 +4172,7 @@
 % \changes{v3.0c}{2004/07/16}{Bugfix 04-07-15: Check for \cs{caption@star} removed}
 % \changes{v3.1c}{2007/10/06}{\cs{caption} will be saved \& restored now}
 % \changes{v3.2a}{2011/08/17}{Bugfix: Uses \cs{caption@freeze} instead of \cs{caption@freeze*} now}
+% \changes{v3.3}{2013/05/01}{Usage of \cs{caption@freeze} replaced by \cs{caption@freezetype}}
 %  This macro will be called at the start of the environment, here is a good
 %  opportunity to do some adaptations to |\caption| and |\captionsetup|.
 %    \begin{macrocode}
@@ -4181,7 +4191,7 @@
 %  which will be executed later on.
 %  Furthermore we need to make |\caption*| work.
 %    \begin{macrocode}
-    \caption@freeze{#2}%
+    \caption@freezetype{#2}%
 %    \end{macrocode}
 % The sidecap package uses |\ifx\label\SC@label| to test if it is just inside a
 % |SC|\-|figure| or not. So we redefine |\SC@label| here so this test will still work.

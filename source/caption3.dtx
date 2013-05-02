@@ -28,12 +28,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3533}
+% \CheckSum{3543}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2011/10/09 v1.5 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2013/05/01 v1.6 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -102,7 +102,7 @@
 %          This package has version number \fileversion, last revised \filedate.}}%^^A
 %        {the caption kernel}}
 % \author{Axel Sommerfeldt\\
-%         \url{http://sourceforge.net/projects/latex-caption/}}
+%         \url{http://sourceforge.net/p/latex-caption/}}
 % \date{\docdate}
 % \maketitle
 %
@@ -204,7 +204,7 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{caption3}[\caption@tempa v1.5-\caption@tempb caption3 kernel (AR)]
+\ProvidesPackage{caption3}[\caption@tempa v1.6-\caption@tempb caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
@@ -1509,7 +1509,7 @@
 % \changes{v1.2}{2007/11/17}{Usage of \opt{size=} added}
 % \changes{v1.2b}{2008/05/06}{Usage of \opt{rule} added}
 % \changes{v1.5}{2012/03/15}{\opt{box=parbox} added}
-% \changes{v1.5}{2013/05/01}{\opt{box=none} added, \opt{box=parbox} changed to \opt{parbox=parbox}}
+% \changes{v1.6}{2013/05/01}{\opt{box=none} added, \opt{box=parbox} changed to \opt{parbox=parbox}}
 %  This resets (nearly) all caption options to the base ones.
 %  \emph{Note that this does not touch the skips and the positioning!}
 %    \begin{macrocode}
@@ -1560,6 +1560,8 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v1.5}{2012/03/15}{Option \opt{box=} added}
+% \changes{v1.6}{2013/05/01}{Option \opt{parbox=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{box}{\caption@setbox{#1}}
 \DeclareCaptionOption{parbox}{\caption@set@box\caption@parbox{#1}}
@@ -1588,6 +1590,7 @@
 %        \cs{parbox-t} to \cs{parbox-b}}
 % \changes{v1.2}{2007/11/11}{\cs{captionbox} renamed to \cs{caption@parbox}}
 % \changes{v1.5}{2012/03/15}{\cs{caption@parbox} adapted to \cs{DeclareCaptionBox}}
+% \changes{v1.6}{2013/05/02}{Option \opt{boxsep=} added}
 %    \begin{macrocode}
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
@@ -1597,8 +1600,10 @@
 \DeclareCaptionBox{colorbox}{\colorbox{\caption@boxcolor}{%
   \setlength\caption@tempdima{#1}%
   \addtolength\caption@tempdima{-2\fboxsep}%
-  \caption@box@parbox\caption@tempdima{#2}}}
+  \linewidth=\caption@tempdima\hsize=\caption@tempdima
+  #2}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
+\DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
 %    \end{macrocode}
 %
 % `default' usually maps to `none`.
@@ -3155,7 +3160,7 @@
 % \changes{v1.1e}{2007/10/28}{\cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/03/15}{Uses \cs{caption@tempdima} instead of \cs{@tempdima}}
 % \changes{v1.5}{2012/12/26}{max-margin stuff moved to \cs{caption@calcmargin}}
-% \changes{v1.5}{2013/05/01}{Usage of \cs{caption@box} added}
+% \changes{v1.6}{2013/05/01}{Usage of \cs{caption@box} added}
 %  |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -3164,14 +3169,14 @@
   \caption@beginhook
 %    \end{macrocode}
 %
-% Special single-line treatment (option |singlelinecheck=|)
-%    \begin{macrocode}
-  \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
-%    \end{macrocode}
-%
-% Typeset the outer box
+% Typeset the outer box |\caption@box|
 %    \begin{macrocode}
   \caption@box\linewidth{%
+%    \end{macrocode}
+%
+% Special single-line treatment (option |singlelinecheck=|)
+%    \begin{macrocode}
+    \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
 %    \end{macrocode}
 %
 % Typeset the left margin (option |margin=|)
@@ -3212,13 +3217,18 @@
       \caption@@@make{#1}{#2}}%
 %    \end{macrocode}
 %
-% Typeset the right margin (option |margin=|) and close the |\caption@box|
+% Typeset the right margin (option |margin=|)
 %    \begin{macrocode}
     \caption@tempdima\captionmargin
     \ifdim\captionmargin@=\z@ \else
       \caption@ifoddpage{\advance\caption@tempdima\captionmargin@}{}%
     \fi
-    \hspace\caption@tempdima}%
+    \hspace\caption@tempdima
+%    \end{macrocode}
+%
+% Close the outer box |\caption@box|
+%    \begin{macrocode}
+  }%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
