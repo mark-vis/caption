@@ -6,7 +6,7 @@
 %%
 %% totalcount.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2013 Axel Sommerfeldt
+%% Copyright (C) 1994-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% http://sourceforge.net/projects/latex-caption/
 %% 
@@ -37,45 +37,58 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{totalcount}[2008/02/27 v0.7 Total values of counters (AR)]
+\ProvidesPackage{totalcount}[2008/03/09 v1.0 Total values of counters (AR)]
 \newcommand*\DeclareTotalCounter[1]{%
   \@ifundefined{c@#1}%
     {\PackageError{totalcount}{Undefined counter `#1'}\@ehc}%
-    {\newcounter{total@#1}%
+    {\newcounter{totalcount@#1}%
      \@namedef{total#1s}{\nfss@text{\reset@font\bfseries ??}}%
-     \@namedef{total#1es}{\nfss@text{\reset@font\bfseries ??}}%
-     \@cons\total@counters{{#1}}}}
+     \@namedef{total#1es}{\@nameuse{total#1s}}%
+     \expandafter\newif\csname iftotal#1s\endcsname
+     \@namedef{iftotal#1es}{\@nameuse{iftotal#1s}}%
+     \@cons\totalcount@counters{{#1}}}}
 \@onlypreamble\DeclareTotalCounter
-\let\total@counters\@empty
-\newcommand*\total@xspace{}
-\DeclareOption{xspace}{\renewcommand*\total@xspace{\xspace}}
+\let\totalcount@counters\@empty
+\newcommand*\totalcount@xspace{}
+\DeclareOption{xspace}{\renewcommand*\totalcount@xspace{\xspace}}
 \DeclareOption*{\expandafter\DeclareTotalCounter\expandafter{\CurrentOption}}
 \ProcessOptions\relax
-\ifx\total@xspace\@empty\else
+\ifx\totalcount@xspace\@empty\else
   \RequirePackage{xspace}
 \fi
-\newcommand*\total@addtocounter[1]{%
-  \@ifundefined{c@total@#1}{}{%
-    \addtocounter{total@#1}{\value{#1}}}}
-\let\total@stpelt@ORI\@stpelt
+\newcommand*\totalcount@addtocounter[1]{%
+  \@ifundefined{c@totalcount@#1}{}{%
+    \addtocounter{totalcount@#1}{\value{#1}}}}
+\let\totalcount@stpelt@ORI\@stpelt
 \renewcommand*\@stpelt[1]{%
-  \total@addtocounter{#1}\total@stpelt@ORI{#1}}
+  \totalcount@addtocounter{#1}%
+  \totalcount@stpelt@ORI{#1}}
+\newcommand*\totalcount@set[2]{%
+  \@ifundefined{c@totalcount@#1}{}{%
+    \global\@namedef{total#1s}{#2\totalcount@xspace}%
+    \ifnum#2=0\relax \else
+      \global\@nameuse{total#1strue}%
+    \fi}}
 \AtBeginDocument{\AtEndDocument{%
   \begingroup
     \@tempswafalse
+    \if@filesw
+      \immediate\write\@mainaux{%
+        \string\providecommand\string\totalcount@set[2]{}}%
+    \fi
     \def\@elt#1{%
-      \total@addtocounter{#1}%
-      \xdef\total@tempa{\the\value{total@#1}}%
-      \xdef\total@tempb{\total@tempa\noexpand\total@xspace}%
-      \expandafter\ifx\csname total#1s\endcsname\total@tempb \else
+      \totalcount@addtocounter{#1}%
+      \edef\totalcount@tempa{\the\value{totalcount@#1}}%
+      \expandafter\let\expandafter\totalcount@tempb\csname total#1s\endcsname
+      \@expandtwoargs\totalcount@set{#1}{\totalcount@tempa}%
+      \expandafter\ifx\csname total#1s\endcsname\totalcount@tempb \else
         \@tempswatrue
       \fi
       \if@filesw
         \immediate\write\@mainaux{%
-          \string\gdef\string\total#1s{\total@tempa\string\total@xspace}%
-          \string\gdef\string\total#1es{\total@tempa\string\total@xspace}}%
+          \string\totalcount@set{#1}{\totalcount@tempa}}%
       \fi}%
-    \total@counters
+    \totalcount@counters
     \if@tempswa
       \PackageWarningNoLine{totalcount}{%
         Total counter(s) have changed.\MessageBreak
