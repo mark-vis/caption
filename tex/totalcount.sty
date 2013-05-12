@@ -37,16 +37,19 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{totalcount}[2008/03/09 v1.0 Total values of counters (AR)]
+\def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
+  \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
+\caption@tempa $Id$
+\ProvidesPackage{totalcount}[\caption@tempa v1.0-\caption@tempb Total values of counters (AR)]
 \newcommand*\DeclareTotalCounter[1]{%
-  \@ifundefined{c@#1}%
+  \newcounter{totalcount@#1}%
+  \@namedef{total#1s}{\nfss@text{\reset@font\bfseries ??}}%
+  \@namedef{total#1es}{\@nameuse{total#1s}}%
+  \expandafter\newif\csname iftotal#1s\endcsname
+  \@namedef{iftotal#1es}{\@nameuse{iftotal#1s}}%
+  \AtBeginDocument{\@ifundefined{c@#1}%
     {\PackageError{totalcount}{Undefined counter `#1'}\@ehc}%
-    {\newcounter{totalcount@#1}%
-     \@namedef{total#1s}{\nfss@text{\reset@font\bfseries ??}}%
-     \@namedef{total#1es}{\@nameuse{total#1s}}%
-     \expandafter\newif\csname iftotal#1s\endcsname
-     \@namedef{iftotal#1es}{\@nameuse{iftotal#1s}}%
-     \@cons\totalcount@counters{{#1}}}}
+    {\@cons\totalcount@counters{{#1}}}}}
 \@onlypreamble\DeclareTotalCounter
 \let\totalcount@counters\@empty
 \newcommand*\totalcount@xspace{}
@@ -64,11 +67,12 @@
   \totalcount@addtocounter{#1}%
   \totalcount@stpelt@ORI{#1}}
 \newcommand*\totalcount@set[2]{%
-  \@ifundefined{c@totalcount@#1}{}{%
-    \global\@namedef{total#1s}{#2\totalcount@xspace}%
-    \ifnum#2=0\relax \else
-      \global\@nameuse{total#1strue}%
-    \fi}}
+  \@ifundefined{c@totalcount@#1}%
+    {}%
+    {\global\@namedef{total#1s}{#2\totalcount@xspace}%
+     \ifnum#2=0\relax \else
+       \global\@nameuse{total#1strue}%
+     \fi}}
 \AtBeginDocument{\AtEndDocument{%
   \begingroup
     \@tempswafalse
