@@ -5,7 +5,7 @@
 % $Id$
 % $HeadURL$
 %
-% Copyright (C) 2007-2011 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2013 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,13 +28,13 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{356}
+% \CheckSum{386}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesFile{ltcaption.drv}%
-  [2009/03/30 v1.2 This package fixes caption problems with
+  [2013/06/01 v1.4 This package fixes caption problems with
                    other-than-centered aligned longtables]
 \hbadness=9999 \newcount\hbadness \hfuzz=48pt % Make TeX shut up.
 %
@@ -72,7 +72,7 @@
 % \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 % \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
-% \let\package\puresf
+% \let\class\puresf \let\package\puresf
 % \let\env\purett \let\opt\purett
 %
 % \def\thispackage{the \package{ltcaption} package}
@@ -84,7 +84,7 @@
 % \GetFileInfo{ltcaption.sty}
 %
 % \title{\texorpdfstring{\Thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \fileversion.}}%^^A
 %        {The ltcaption package}}
 % \author{Axel Sommerfeldt\\
 %         \url{http://sourceforge.net/projects/latex-caption/}}
@@ -147,8 +147,9 @@
 %
 % \emph{Note:}
 % These lengths \& commands do not work when \thispackage\ is used with one
-% of the \KOMAScript\ classes\cite{KOMAScript} |scrartcl|, |scrreprt| or
-% |scrbook|, the \KOMAScript\ settings for captions are used instead.
+% of the \KOMAScript\ document classes \class{scrartcl}, \class{scrreprt}, or \class{scrbook}~\cite{KOMAScript},
+% or used with the \class{memoir} document class~\cite{memoir}.
+% The \KOMAScript\ resp.~\class{memoir} settings for captions are used instead.
 % Same with the \package{caption} package which also uses its own options
 % and settings.
 %
@@ -165,7 +166,9 @@
 %   |  A & B \\|\\
 %   |\end{longtable}|
 % \end{quote}
+% \pagebreak[3]
 % will result in a longtable like this:
+% \pagebreak[3]
 % \setcounter{figure}{6}
 % \begingroup
 %   \renewcommand\LTcaptype{figure}
@@ -180,7 +183,7 @@
 % does not increment the |table| counter. (As a consequence, |\caption| is not
 % available for such longtables, but |\caption*| still is.)
 %
-% \clearpage
+% \pagebreak[3]
 % \section{Spot the difference}
 %
 % \begin{minipage}{\linewidth}
@@ -369,19 +372,25 @@
 %   \bibitem{NTGclasses}
 %   Victor Eijkhout:
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/ntgclass/}%
-%        {\emph{An introduction to the Dutch \LaTeX\ document classes}},\\
+%        {\emph{An introduction to the Dutch \LaTeX\ document classes}},
 %   \mbox{3~September~1989}
 %
 %   \bibitem{KOMAScript}
 %   Markus Kohm \& Jens-Uwe-Morawski:
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/koma-script/}%
-%        {\emph{KOMA-Script -- a versatile \LaTeXe\ bundle}},\\
-%   2007-01-09
+%        {\emph{KOMA-Script -- a versatile \LaTeXe\ bundle}},
+%   2012-07-22
+%
+%   \bibitem{memoir}
+%   Peter Wilson, maintained by Lars Madsen:
+%   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/koma-script/}%
+%        {\emph{The Memoir Class for Configurable Typesetting}},
+%   2013-05-30
 %
 %   \bibitem{floatrow}
 %   Olga Lapko:
 %   \href{http://tug.ctan.org/tex-archive/macros/latex/contrib/floatrow/}%
-%        {\emph{The floatrow package documentation}},\\
+%        {\emph{The floatrow package documentation}},
 %   2007/08/24
 % \end{thebibliography}
 % }
@@ -457,7 +466,7 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{ltcaption}[\caption@tempa v1.3-\caption@tempb longtable captions (AR)]
+\ProvidesPackage{ltcaption}[\caption@tempa v1.4-\caption@tempb longtable captions (AR)]
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -830,7 +839,7 @@
   \if@komalongtable
 %    \end{macrocode}
 %    \begin{macrocode}
-    \renewcommand{\LT@makecaption}[3]{%
+    \renewcommand\LT@makecaption[3]{%
       \noalign{%
         \if@captionabove
           \vskip\belowcaptionskip
@@ -854,6 +863,32 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \fi}
+%    \end{macrocode}
+%
+% \subsection{Adaption for \texorpdfstring{Memoir}{Memoir}}
+%
+%    \begin{macrocode}
+\@ifclassloaded{memoir}{%
+  \@ifundefined{@@makecaption}{}{%
+    \renewcommand\LT@makecaption[3]{%
+%     \noalign{\vskip\abovecaptionskip}%
+      \caption@LT@make{%
+        \let\@memtempa\relax
+        % starred form -> #1 = \@gobble
+        \ifx#1\@gobble
+          \let\@contnfont\@empty
+          \let\@contdelim\@empty
+          \@@makecaption{}{#3}%
+        \else
+          \@@makecaption{#2}{#3}%
+        \fi
+        \endgraf\vskip\belowcaptionskip}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \let\LT@@makecaption\@undefined
+%    \end{macrocode}
+%    \begin{macrocode}
+  }}{}
 %    \end{macrocode}
 %
 % \iffalse
