@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3543}
+% \CheckSum{3550}
 %
 % \iffalse
 %<*driver>
@@ -3590,6 +3590,7 @@
 % \changes{v1.4}{2011/10/09}{Support of the titletoc package added}
 % \changes{v1.5}{2011/12/29}{Usage of \cs{caption@addtoreset} replaced by \cs{@addtoreset}}
 % \changes{v1.5}{2013/01/10}{Bugfix: Definition of autoref string corrected}
+% \changes{v1.6}{2013/06/17}{Bugfix: \cs{c@tocdepth} will be set (locally) now}
 %  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\par
 %  The starred variant provides the numbering format
@@ -3677,7 +3678,8 @@
 %    \begin{macrocode}
 \newcommand*\caption@@@@@declaresublistentry[4]{%
   \@namedef{l@sub#2}{#1{2}{#3}{#4}}%
-  \caption@@@@@@declaresublistentry#1{c@\csname ext@#2\endcsname depth}}
+  \expandafter\caption@@@@@@declaresublistentry
+    \expandafter#1\expandafter{\csname ext@#2\endcsname depth}}
 \@onlypreamble\caption@@@@@declaresublistentry
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -3685,9 +3687,11 @@
   \ifx#1\relax
     \def#1##1{%
       \def\next{\@dottedtocline{##1}}%
-      \@ifundefined{#2}{}{%
-        \ifnum ##1>\@nameuse{#2}\relax
+      \@ifundefined{c@#2}{}{%
+        \ifnum ##1>\@nameuse{c@#2}\relax
           \let\next\@gobblefour
+        \else
+          \c@tocdepth=\@nameuse{c@#2}\relax
         \fi}%
       \next}%
   \fi}
