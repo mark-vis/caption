@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1318}
+% \CheckSum{1320}
 %
 % \iffalse
 %<*driver>
@@ -613,6 +613,7 @@
 % \begin{macro}{\DeclareFloatingEnvironment}
 % \changes{v1.0a}{2011/11/16}{Bugfix: Undefines \cs{fst@}\meta{environment} now}
 % \changes{v1.1}{2013/04/27}{Revised, only defines stuff yet undefined now}
+% \changes{v1.1}{2013/11/03}{Uses \cs{newfloat@capitalize} now}
 %  |\DeclareFloatingEnvironment|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareFloatingEnvironment{%
@@ -621,15 +622,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\@DeclareFloatingEnvironment[#1]#2{%
-%    \end{macrocode}
-% First of all, we set |\newfloat@Type| to the  type name\par
-%    \begin{macrocode}
   \newfloat@Info{New float `#2' with options `#1'}%
-  \edef\newfloat@Type{\def\noexpand\newfloat@Type{\@car#2\@nil}}%
-  \uppercase\expandafter{\newfloat@Type}%
-  \edef\@tempa{%
-    \noexpand\g@addto@macro\noexpand\newfloat@Type{\@cdr#2\@nil}}%
-  \@tempa
 %    \end{macrocode}
 % Define a counter with the same name as the floating environment
 %    \begin{macrocode}
@@ -662,6 +655,7 @@
 % Define |\|\meta{type}|name| used by |\fnum@|\meta{type} as \meta{type},
 % but with first letter capitalized
 %    \begin{macrocode}
+  \newfloat@capitalize\newfloat@Type{#2}%
   \newfloat@let{#2name}{\newfloat@Type}%
   \newfloat@def{fleg#2}{\@nameuse{#2name}}% legend naming (memoir)
 %    \end{macrocode}
@@ -736,6 +730,21 @@
 \def\newfloat@DFE@setlistname[#1]{%
   \KV@@newfloat@listname{#1}}
 \@onlypreamble\newfloat@DFE@setlistname
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\newfloat@capitalize}
+% \changes{v1.1}{2013/11/03}{Code extracted from \cs{DeclareFloatingEnvironment}}
+% \changes{v1.1}{2013/11/03}{Uses \cs{newfloat@tempa} instead of \cs{@tempa} now}
+% |\newfloat@capitalize|\marg{command}\marg{name}\\
+% Defines \meta{command} to \meta{name}, but with first letter capitalized.
+%    \begin{macrocode}
+\newcommand*\newfloat@capitalize[2]{%
+  \edef\newfloat@tempa{\gdef\noexpand#1{\@car#2\@nil}}%
+  \uppercase\expandafter{\newfloat@tempa}%
+  \edef\newfloat@tempa{%
+    \noexpand\g@addto@macro\noexpand#1{\@cdr#2\@nil}}%
+  \newfloat@tempa}
 %    \end{macrocode}
 % \end{macro}
 %
