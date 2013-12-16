@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3527}
+% \CheckSum{3536}
 %
 % \iffalse
 %<*driver>
@@ -1425,7 +1425,7 @@
 %
 %  |\ContinuedFloat| is not supported in compatibility mode.
 %    \begin{macrocode}
-    \renewcommand*\caption@ContinuedFloat[1]{%
+    \renewcommand*\caption@ContinuedFloatX[1]{%
       \caption@Error{Not available in compatibility mode}}%
 %    \end{macrocode}
 %
@@ -1856,18 +1856,15 @@
 % \subsection{\cs{ContinuedFloat}}
 %
 % \begin{macro}{\ContinuedFloat}
-% \changes{v3.0f}{2005/06/11}{%
-%         Call of \cs{caption@ContinuedFloat} added}
-% \changes{v3.0i}{2005/11/12}{%
-%         Optional argument and call of \cs{caption@@ContinuedFloat} added}
-% \changes{v3.0g}{2005/06/28}{%
-%         Bugfix: \cs{newcounter} replaced by \cs{newcount}}
+% \changes{v3.0i}{2005/11/12}{Optional argument added}
+% \changes{v3.0g}{2005/06/28}{Bugfix: \cs{newcounter} replaced by \cs{newcount}}
 % \changes{v3.1}{2007/07/02}{Format of \package{hyperref} extension changed}
 % \changes{v3.1}{2007/07/07}{\cs{caption@setoptions} added}
 % \changes{v3.1g}{2008/01/29}{Starred variant added}
 % \changes{v3.2f}{2011/12/17}{Undocumented optional argument removed}
 % \changes{v3.3}{2011/12/28}{Uses \cs{ifcaption@ContinuedFloat} now}
 % \changes{v3.3}{2013/05/01}{Usage of \cs{caption@restorecounters} added}
+% \changes{v3.3}{2013/12/16}{Bugfix: Does not use \cs{caption@ContinuedFloat} anymore since this breaks \cs{ContinuedFloat} offered by the \package{subfig} package}
 %  |\ContinuedFloat|\\
 %  |\ContinuedFloat*|\par
 %  This mainly sets the appropriate flag, increments the
@@ -1889,11 +1886,11 @@
 %    \begin{macrocode}
 \def\ContinuedFloat{%
   \caption@iftype
-    {\caption@ContinuedFloat\@captype}%
+    {\caption@ContinuedFloatX\@captype}%
     {\caption@Error{\noexpand\ContinuedFloat outside float}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@ContinuedFloat[1]{%
+\newcommand*\caption@ContinuedFloatX[1]{%
   \@ifstar
     {\caption@@refstepcounter\@captype
      \caption@@ContinuedFloat{#1}}%
@@ -1910,20 +1907,22 @@
   \fi}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@ContinuedFloat[1]{%
+\newcommand*\caption@@ContinuedFloat{%
   \caption@setflag{ContinuedFloat}%
+  \caption@@@ContinuedFloat}
+\newcommand*\caption@@@ContinuedFloat{%
   \stepcounter{ContinuedFloat}%
-  \caption@@@ContinuedFloat{#1}}
+  \caption@@@@ContinuedFloat}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@@ContinuedFloat[1]{%
+\newcommand*\caption@@@@ContinuedFloat[1]{%
   \caption@setoptions{ContinuedFloat}%
   \caption@setoptions{continued#1}%
   \expandafter\l@addto@macro\csname the#1\endcsname\theContinuedFloat
   \@ifundefined{theH#1}{}{%
     \expandafter\l@addto@macro\csname theH#1\endcsname{%
       \@alph\c@ContinuedFloat}}%
-  \let\caption@@@ContinuedFloat\@gobble}
+  \let\caption@@@@ContinuedFloat\@gobble}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@CFtype{??}
@@ -1936,6 +1935,18 @@
 %    \begin{macrocode}
 \newcounter{ContinuedFloat}
 \let\theContinuedFloat\@empty
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ContinuedFloat}
+% \changes{v3.0f}{2005/06/11}{This macro added}
+% \changes{v3.3}{2013/12/16}{Bugfix: Revised and defined with \cs{def} instead of \cs{newcommand}}
+% |\caption@ContinuedFloat|\marg{type}\par
+% This one is used by \cs{ContinuedFloat} offered by the \package{subfig} package.
+%    \begin{macrocode}
+\def\caption@ContinuedFloat{%
+  \let\caption@resetContinuedFloat\@gobble
+  \caption@@@ContinuedFloat}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2747,7 +2758,7 @@
     \newcommand*\caption@freeze{%
       \let\caption@frozen@ContinuedFloat\ContinuedFloat
       \def\ContinuedFloat{%
-        \caption@@freeze{\caption@@@ContinuedFloat\@captype}%
+        \caption@@freeze{\caption@@@@ContinuedFloat\@captype}%
         \caption@frozen@ContinuedFloat}%
 %    \end{macrocode}
 %    \begin{macrocode}

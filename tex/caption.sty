@@ -678,7 +678,7 @@
       redefined by a document class or package which is\MessageBreak
       unknown to the caption package}%
     \renewcommand*\caption@redefine{}%
-    \renewcommand*\caption@ContinuedFloat[1]{%
+    \renewcommand*\caption@ContinuedFloatX[1]{%
       \caption@Error{Not available in compatibility mode}}%
     \caption@AtBeginDocument*{%
       \let\caption@start\relax
@@ -852,9 +852,9 @@
 \providecommand*\caption@hj@s{}
 \def\ContinuedFloat{%
   \caption@iftype
-    {\caption@ContinuedFloat\@captype}%
+    {\caption@ContinuedFloatX\@captype}%
     {\caption@Error{\noexpand\ContinuedFloat outside float}}}
-\newcommand*\caption@ContinuedFloat[1]{%
+\newcommand*\caption@ContinuedFloatX[1]{%
   \@ifstar
     {\caption@@refstepcounter\@captype
      \caption@@ContinuedFloat{#1}}%
@@ -867,21 +867,26 @@
   \else
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
   \fi}
-\newcommand*\caption@@ContinuedFloat[1]{%
+\newcommand*\caption@@ContinuedFloat{%
   \caption@setflag{ContinuedFloat}%
+  \caption@@@ContinuedFloat}
+\newcommand*\caption@@@ContinuedFloat{%
   \stepcounter{ContinuedFloat}%
-  \caption@@@ContinuedFloat{#1}}
-\newcommand*\caption@@@ContinuedFloat[1]{%
+  \caption@@@@ContinuedFloat}
+\newcommand*\caption@@@@ContinuedFloat[1]{%
   \caption@setoptions{ContinuedFloat}%
   \caption@setoptions{continued#1}%
   \expandafter\l@addto@macro\csname the#1\endcsname\theContinuedFloat
   \@ifundefined{theH#1}{}{%
     \expandafter\l@addto@macro\csname theH#1\endcsname{%
       \@alph\c@ContinuedFloat}}%
-  \let\caption@@@ContinuedFloat\@gobble}
+  \let\caption@@@@ContinuedFloat\@gobble}
 \newcommand*\caption@CFtype{??}
 \newcounter{ContinuedFloat}
 \let\theContinuedFloat\@empty
+\def\caption@ContinuedFloat{%
+  \let\caption@resetContinuedFloat\@gobble
+  \caption@@@ContinuedFloat}
 \newcommand*\caption@resetContinuedFloat[1]{%
   \xdef\caption@CFtype{#1}%
   \@stpelt{ContinuedFloat}}
@@ -1183,7 +1188,7 @@
     \newcommand*\caption@freeze{%
       \let\caption@frozen@ContinuedFloat\ContinuedFloat
       \def\ContinuedFloat{%
-        \caption@@freeze{\caption@@@ContinuedFloat\@captype}%
+        \caption@@freeze{\caption@@@@ContinuedFloat\@captype}%
         \caption@frozen@ContinuedFloat}%
       \let\caption@frozen@setup\caption@setup
       \def\caption@setup##1{%
