@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3554}
+% \CheckSum{3633}
 %
 % \iffalse
 %<*driver>
@@ -1869,8 +1869,20 @@
 %
 % There are three pre-defined text formats, called `empty', `simple' and `period'.
 % \changes{v1.4}{2011/10/05}{Pre-defined text format `empty' added}
+% \changes{v1.7}{2015/09/16}{The text format `empty' now takes care of the \cs{label}}
 %    \begin{macrocode}
-\DeclareCaptionTextFormat{empty}{}
+\DeclareCaptionTextFormat{empty}{%
+  \caption@get@label#1\caption@makeanchor{}\@nil
+  \caption@thelabel}
+\long\def\caption@get@label#1\caption@makeanchor#2#3\@nil{%
+  \def\caption@tempa{#2}%
+  \ifx\caption@tempa\@empty
+    \caption@getlabel#1\label{}\@nil
+  \else
+    \caption@getlabel#2\label{}\@nil
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
 %    \end{macrocode}
@@ -1879,6 +1891,43 @@
 %    \begin{macrocode}
 \def\caption@tfmt@default{\caption@tfmt@simple}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@getlabel}
+% \changes{v1.0}{2011/09/03}{\cs{label} can have optional arguments now}
+% \changes{v1.7}{2015/09/16}{Moved from \package{bicaption} package to \package{caption3}}
+% Gets the label command out of the (first) caption text and stores it to |\caption@thelabel|.
+%    \begin{macrocode}
+\long\def\caption@getlabel#1\label#2#3\@nil{%
+  \def\@tempa{#2}%
+  \ifx\@tempa\@empty
+    \let\caption@thelabel\relax
+  \else
+    \def\@tempb{*}%
+    \ifx\@tempa\@tempb
+      \def\caption@thelabel{\label*}%
+      \caption@@getlabel#3\@nil
+    \else
+      \def\caption@thelabel{\label}%
+      \caption@@getlabel{#2}#3\@nil
+    \fi
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@@getlabel#1#2\@nil{%
+  \def\@tempa{#1}%
+  \def\@tempb{[}%
+  \ifx\@tempa\@tempb
+    \caption@@@getlabel#1#2\@nil
+  \else
+    \l@addto@macro\caption@thelabel{{#1}}%
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@@@getlabel[#1]#2\@nil{%
+  \l@addto@macro\caption@thelabel{[{#1}]}%
+  \caption@@getlabel#2\@nil}
+%    \end{macrocode}
+% \end{macro}
 %
 % \subsection{Fonts}
 %
