@@ -1,0 +1,154 @@
+% http://www.latex-community.org/forum/viewtopic.php?f=46&t=20075
+% => E-Mail to Heiko Oberdiek
+
+\iffalse
+Hallo Heiko,
+
+hyperref ist in den letzten Jahren verzeihlicher geworden, was falsche
+Ladereihenfolgen angeht. So liefert z.B.
+\fi
+
+\documentclass[a4paper]{book} 
+
+\usepackage[debug=true]{caption}
+\usepackage{hyperref}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\begin{document}
+
+\tableofcontents
+
+\chapter{One}
+
+\begin{algorithm}
+\caption{Iris Detection Algorithm}\label{alg:myaaa}
+\begin{algorithmic}[1]
+   \State $a=b+c$
+   \If {$a>2$}
+   \State \ldots
+   \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\chapter{Two}
+
+See Algorithm~\ref{alg:myaaa}.
+
+\end{document}
+
+ohne caption-Paket keinen Hinweis (mehr) auf ein Problem, und auch der
+Hyperlink funktioniert fast korrekt. (Er zeigt auf den Inhalt der
+algorithm-Umgebung und nicht auf den Anfang.)
+
+Wenn jetzt aber mein caption-Paket dazukommt, stimmt der Link überhaupt
+nicht mehr und man bekommt auch "pdfTeX warning (dest):
+name{algorithm.1} has been referenced but does not exist, replaced by a
+fixed one" zu hören.
+
+Hintergrund: Mein caption-Paket geht davon aus, daß wenn hyperref
+geladen ist, auch das float-Paket passend von hyperref gepatcht ist. Ist
+es hier aber nicht, da das float-Paket hier erst von algorithm geladen
+und benutzt wird. Und als Folge bekomme ich sowas dann häufiger als
+Fehlermeldung.
+
+Ich habe mal einen Forumsbeitrag zum Anlaß genommen, das ganze zu
+analysieren:
+
+http://www.latex-community.org/forum/viewtopic.php?f=46&t=20075
+
+So, und was möchte ich nun von dir? Meine Idee wäre es, daß du den Patch
+von \float@makebox auch in Form eines Makros zur Verfügung stellst. Dann
+könnte ich diesen Patch bei meiner Umdefinition von \@caption ggf.
+nachholen, so daß \@caption und \float@makebox wieder zusammenpassen.
+
+Also bisher patcht hyperref so:
+
+%    Compatibility with float.sty: anchor setting at the top
+%    of the float, if the float is controlled by float.sty.
+%    Several \verb|\caption| commands inside one float are
+%    not supported.
+%    \begin{macrocode}
+\let\Hy@float@caption\@caption
+\@ifpackageloaded{float}{%
+  \def\Hy@float@caption{%
+    \ifx\Hy@float@currentHref\@undefined
+      \hyper@makecurrent{\@captype}%
+      \global\let\Hy@float@currentHref\@currentHref
+    \else
+      \let\@currentHref\Hy@float@currentHref
+    \fi
+    \float@caption
+  }%
+  \let\HyOrg@float@makebox\float@makebox
+  \renewcommand{\float@makebox}[1]{%
+    \HyOrg@float@makebox{%
+      #1\relax
+      \ifx\Hy@float@currentHref\@undefined
+      \else
+        \expandafter\hyper@@anchor\expandafter{%
+          \Hy@float@currentHref
+        }{\relax}%
+        \global\let\Hy@float@currentHref\@undefined
+      \fi
+    }%
+  }%
+}{}
+%    \end{macrocode}
+
+Meine Idee wäre, es in Zukunft so zu machen:
+
+\let\Hy@float@caption\@caption
+\newcommand{\HyNew@float@makebox}[1]{%
+  \HyOrg@float@makebox{%
+    ...
+  }%
+}%
+\@ifpackageloaded{float}{%
+  \def\Hy@float@caption{%
+    ...
+  }%
+  \let\HyOrg@float@makebox\float@makebox
+  \let\float@makebox\HyNew@float@makebox
+}{}
+
+Dann könnte ich einfach folgendes hinter meine Umdefinition von
+\@caption packen:
+
+\ifdefined\HyNew@float@makebox
+  \ifdefined\HyOrg@float@makebox
+% alles ok, \float@makebox ist schon gepatcht
+  \else
+% nix gut, \float@makebox ist noch nicht gepatcht => nachholen
+    \let\HyOrg@float@makebox\float@makebox
+    \let\float@makebox\HyNew@float@makebox
+  \fi
+\fi
+
+Was hälst du davon? Alternative Lösungsvorschläge?
+
+Liebe Grüße,
+Axel
+
+
+Hallo Axel,
+
+On Sun, Apr 29, 2012 at 01:28:04PM +0200, axel.sommerfeldt@f-m.fm wrote:
+
+<Show quoted text>
+
+Ich habe das so in hyperref 6.82q eingebaut.
+Nach mehrstündigem Systemkampf (ein Update von openssl zerbrach
+svn, xsltproc wurde inkompatibel nach einem Update von libxml/libxslt,
+schließlich funktionierte nicht einmal mehr die TeX-Programme,
+da diese nach einem TL-Update von texmf.cnf Segmentation-Fault-Abstürze
+lieferten, ...) hatte ich allerdings keine Kraft mehr für irgendwelche
+Tests.
+
+Hyperref auf Puszcza und TUG habe ich aktualisiert,
+CTAN wird vermutlich morgen aktuell sein.
+(TL 2011 wird nicht mehr aktualisiert wegen Freeze-Status.)
+
+Viele Grüße
+  Heiko Oberdiek

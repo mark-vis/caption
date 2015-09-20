@@ -1,0 +1,121 @@
+% Mit pdfLaTeX übersetzen!
+
+\iffalse
+Return-Path: <oberdiek@uni-freiburg.de>
+Received: from compute1.internal (compute1.internal [10.202.2.41])
+	 by store65m.internal (Cyrus v2.3.13-fmsvn17160) with LMTPA;
+	 Wed, 10 Dec 2008 12:18:43 -0500
+X-Sieve: CMU Sieve 2.3
+X-Spam-known-sender: yes
+X-Spam-score: 0.0
+X-Spam-hits: BAYES_50 0.001, BAYES_USED global
+X-Spam-source: IP='151.189.21.113', Host='pop3.arcor.de', Country='DE', FromHeader='de',
+  MailFrom='de'
+X-Spam-charsets: plain='iso-8859-1'
+X-Resolved-to: sommerfee@f-m.fm
+X-Mail-from: oberdiek@uni-freiburg.de
+Received: from imap12.internal ([10.202.2.62])
+  by compute1.internal (LMTPProxy); Wed, 10 Dec 2008 12:18:43 -0500
+Received: from pop3.arcor.de [151.189.21.113] by messagingengine.com
+  with POP3 for sommerfee@f-m.fm; Wed, 10 Dec 2008 12:18:41 -0500
+X-DeliveredInternalDate: Wed, 10 Dec 2008 17:01:19 +0100
+X-LinkName: arcor.de
+X-Original-To: axel.sommerfeldt@arcor.de
+Received: from mail-in-12.arcor-online.net (mail-in-12.arcor-online.net [151.189.21.52])
+	by mail-in-08-z2.arcor-online.net (Postfix) with ESMTP id 1C9E92130AA
+	for <axel.sommerfeldt@arcor.de>; Wed, 10 Dec 2008 17:10:25 +0100 (CET)
+Received: from atlas.informatik.uni-freiburg.de (atlas.informatik.uni-freiburg.de [132.230.150.3])
+	by mx.arcor.de (Postfix) with ESMTP id D68254C28E
+	for <axel.sommerfeldt@arcor.de>; Wed, 10 Dec 2008 17:10:24 +0100 (CET)
+Received: from remote239-01.home.uni-freiburg.de ([132.230.239.1] helo=irwin.vpn.uni-freiburg.de)
+	by atlas.informatik.uni-freiburg.de with esmtpsa (TLSv1:AES256-SHA:256)
+	(Exim 4.68)
+	(envelope-from <oberdiek@uni-freiburg.de>)
+	id 1LARdm-0001lw-4a
+	for axel.sommerfeldt@arcor.de; Wed, 10 Dec 2008 17:10:24 +0100
+Received: by irwin.vpn.uni-freiburg.de (Postfix, from userid 500)
+	id 48EEA1789C; Wed, 10 Dec 2008 17:01:19 +0100 (CET)
+Date: Wed, 10 Dec 2008 17:01:19 +0100
+From: Heiko Oberdiek <oberdiek@uni-freiburg.de>
+To: Axel Sommerfeldt <axel.sommerfeldt@arcor.de>
+Subject: \caption@setfloatcapt
+Message-ID: <20081210160118.GA12851@irwin.vpn.uni-freiburg.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+X-Virus-Scanned: ClamAV 0.94.1/8743/Wed Dec 10 16:08:45 2008 on mail-in-12.arcor-online.net
+X-Virus-Status: Clean
+X-DCC-ARCOR-Metrics: mail-in-08-z2 1242; Body=1 Fuz1=1 Fuz2=1
+X-Arcor-Antispam:  SPF_NONE
+X-ArcorSpamBlocker: Spamcount: 0 Sensitivity: 13
+
+Hallo Axel,
+
+nächstes Problem:
+
+| Subject: Re: pop empty color page stack 0
+| Date: Fri, 05 Dec 2008 17:41:39 +0100
+| From: Enrico Gregorio <gregorio@math.unipd.it>
+| Newsgroups: comp.text.tex
+| Message-ID: <051220081741395248%gregorio@math.unipd.it>
+| 
+| Enrico Gregorio <gregorio@math.unipd.it> wrote:
+| 
+| > Actually it comes out when also subfig is loaded:
+| 
+| I should have noticed that it's not subfig's fault, but that the
+| problem depends on caption:
+| 
+| \documentclass[a4paper]{book}
+| \usepackage{color}
+| \usepackage{caption}
+| \usepackage{float}
+| \newfloat{lis}{tbp}{lol}
+| \begin{document}
+| \begin{lis}
+| \caption{abc}
+| \end{lis}
+| \end{document}
+| 
+| Again the loading order is irrelevant.
+| 
+| Ciao
+| Enrico
+
+Das ist ein Bug in \caption@setfloatcapt, es verwendet ein
+\setbox mit nacktem \vbox ohne die zusätzliche Gruppe
+für den Color-Support.
+\fi
+
+\documentclass[a4paper]{book}
+\usepackage{color}
+\usepackage{caption}
+\usepackage{float}
+\newfloat{lis}{tbp}{lol}
+
+\begin{document}
+\makeatletter
+\show\color@begingroup
+\show\color@endgroup
+\show\color@vbox
+\show\color@endbox
+\makeatother
+
+\begin{lis}
+%%%\makeatletter
+%%%\long\def\caption@setfloatcapt#1{%
+%%%  \let \@makecaption \caption@@make \global \setbox \@floatcapt
+%%%  % \vbox alone doesn't support color
+%%%  \color@vbox#1\color@endbox
+%%%}
+\caption{abc}
+\end{lis}
+\end{document}
+
+Der Patch zeigt jetzt nur, dass mit der zusätzlichen Gruppe
+die pdfTeX-Warnung verschwindet. Das schöner hinzubekommen,
+überlasse ich dir.
+
+Viele Grüße
+  Heiko <oberdiek@uni-freiburg.de>

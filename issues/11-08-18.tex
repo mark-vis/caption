@@ -1,0 +1,120 @@
+% http://tex.stackexchange.com/questions/25942/latex-escape-interrupts-frame-of-listing/
+
+\errorcontextlines=9
+\documentclass{report}
+
+\usepackage{xcolor}
+
+\usepackage[style=1]{mdframed}
+\usepackage[font=small,labelfont=bf,justification=centering,debug]{caption}
+%\usepackage[pdftex,bookmarks=true]{hyperref}%pagebackref=true
+\usepackage{enumitem}
+%\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{cleveref}
+
+\usepackage{listings}
+\lstset{extendedchars=true,
+	tabsize=3,
+	frame=none,
+	breaklines=true,
+	breakautoindent=true,
+	postbreak=\space,
+	showspaces=false,
+	keywordstyle=\color{blue},
+	commentstyle=\color{red},
+	stringstyle=\color{gray},
+	identifierstyle=\color{black},
+    framesep=0pt,
+	boxpos=c,
+	float=h,
+	aboveskip=0pt,
+	belowskip=0pt,
+	escapechar=\%
+}
+\lstdefinestyle{Java}{language=Java, numbers=none, numberstyle=\tiny ,numbersep=5pt, basicstyle=\linespread{0.85}\scriptsize\ttfamily, showstringspaces=true}
+
+\lstnewenvironment{java}{\lstset{style=Java}}{}
+
+\usepackage{lipsum}
+\usepackage{needspace}
+%    \needspace{2\baselineskip}% %instead of \nopagebreak
+
+%\DeclareCaptionType[fileext=lob,placement=b,within=chapter]{boxx}[Box][List of Boxes]
+\DeclareCaptionType{boxx}[Box][List of Boxes]
+
+\makeatletter
+% Tell the caption package that we would like to use \caption@freeze and \caption@defrost
+\caption@setbool{needfreeze}{true}
+%
+\renewenvironment{boxx}{%
+  \pagebreak[2] %suggest pagebreak here
+  \captionsetup{type=boxx}%
+  \nopagebreak
+  \begin{mdframed}[%
+    linewidth=1pt,
+    linecolor=black,
+    innerlinecolor=black,
+    middlelinecolor=black,
+    outerlinecolor=black,
+    roundcorner=10pt,
+    leftmargin=.05\textwidth,
+    rightmargin=.05\textwidth,
+    skipabove=.7\baselineskip,
+    skipbelow=.7\baselineskip,
+    innerleftmargin=10pt,    
+    innerrightmargin=10pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt]%
+    \nopagebreak
+    \caption@freeze %"freeze" caption related commands
+  }{%
+  \end{mdframed}%
+  \nopagebreak
+  \caption@defrost %typeset caption, if necessary
+}
+\makeatother
+
+\crefname{boxx}{box}{boxes}
+
+
+\begin{document}
+
+\chapter{Chapter}
+
+\noindent This is a reference to \cref{box:one}.
+
+\begin{boxx}\caption[shorter]{This is a box with text}\label{box:one}
+\lipsum[2]
+
+\begin{enumerate}[label=\textbf{Req. \arabic*},ref=Req. \arabic*,leftmargin=*]
+\item one\label{req:one}
+\item two generalised.
+\end{enumerate}
+\end{boxx}
+
+\noindent \lipsum[1-2]
+Some more text, ref to item: \ref{req:one}
+
+\begin{boxx}\caption{This is a box with Java code}\label{box:two}
+\begin{java}
+class HelloWorldApp
+{
+	public float pi = 3.14159;
+	public int i = 0;
+		
+	public static void main(String[] args)
+	{
+		System.out.println("Hello World!"); //Display the string
+	}
+}
+\end{java}
+\end{boxx}
+
+\noindent Double uppercase reference: \Cref{box:one,box:two}.
+
+\noindent \lipsum[3-4]
+
+\pagebreak
+\listofboxxs
+
+\end{document}
