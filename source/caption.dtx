@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3569}
+% \CheckSum{3579}
 %
 % \iffalse
 %<*driver>
@@ -3740,6 +3740,7 @@
 % \changes{v3.1a}{2007/09/14}{Bugfix 07-09-14: Redefinition of \cs{@captionabovetrue} \& \cs{@captionabovefalse} added}
 % \changes{v3.1a}{2007/09/16}{Bugfix: This redefinition will always be done \cs{AtBeginDocument}}
 % \changes{v3.1g}{2008/01/20}{Bugfix in \cs{captionlistentry}: Table counter will not be incremented anymore, \cs{nameref} works}
+% \changes{v3.3}{2016/01/31}{Support for \cs{bicaption} added}
 % We redefine |\LT@array| here to get |\captionsetup|\marg{options}
 % working inside |longtable|s.
 % \Note{Since the \package{hyperref} package patches \cs{LT@array} as well
@@ -3809,6 +3810,11 @@
       \def\continuedfloat{\noalign{%
         \caption@Error{\noexpand\continuedfloat outside float}}}%
 %    \end{macrocode}
+% |\bicaption| for longtable:
+%    \begin{macrocode}
+      \let\bicaption\LT@bicaption
+%    \end{macrocode}
+%
 %    \begin{macrocode}
       \caption@ORI@LT@array}}%
 %    \end{macrocode}
@@ -3840,6 +3846,7 @@
 % \changes{v3.0e}{2005/05/05}{%
 %       Bugfix: \cs{captionsetup[longtable]} overrides \cs{LTcapwidth} now}
 % \changes{v3.0h}{2005/10/07}{\cs{caption@LT@make} introduced}
+% \changes{v3.3}{2016/01/31}{Support for \cs{bicaption} added}
 %  |\LT@makecaption|\marg{cmd}\marg{label}\marg{text}\par
 %  \smallskip
 %  The original definition:
@@ -3881,6 +3888,15 @@
 %  (This emulates the standard behavior of the \package{longtable} package
 %   which has no skip above the caption but a skip below it.)
 % \fi
+%
+% |\bicaption@LTsetup| is defined inside |\bicaption| (globally) and
+% contains the preparation of typesetting of the bilingual caption.
+% (Since it is defined globally we need to undefine it right after usage on so it will be used only once.)
+%    \begin{macrocode}
+      \caption@ifundefined\bicaption@LTsetup{}{%
+        \bicaption@LTsetup
+        \global\let\bicaption@LTsetup\@undefined}%
+%    \end{macrocode}
 %
 %  |position=auto| is a bad idea for longtables, but we do our very best.
 %  This works quite well for captions inside the longtable contents, but

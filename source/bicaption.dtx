@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{330}
+% \CheckSum{374}
 %
 % \iffalse
 %<*driver>
@@ -801,7 +801,7 @@
 \ProvidesPackage{bicaption}[\caption@tempa v1.1-\caption@tempb Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
-\RequirePackage{caption}[2015/09/01] % needs v3.3 or newer
+\RequirePackage{caption}[2016/01/31] % needs v3.3-128 or newer
 %    \end{macrocode}
 % \changes{v1.0}{2011/09/01}{Compatibility error added}
 %    \begin{macrocode}
@@ -1039,16 +1039,20 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@@make}
-% We patch |\caption@@make| (of the \package{caption} package kernel)
+% We redefine |\caption@@make| (of the \package{caption} package kernel)
 % so |\bi|\-|caption@@make| will be used for bilingual captions instead.
 %    \begin{macrocode}
-\let\caption@@make@ORI\caption@@make
 \renewcommand\caption@@make[2]{%
   \caption@ifundefined\bicaption@text
-    {\caption@@make@ORI{#1}{#2}}%
+    {\begingroup
+       \caption@@make@{#1}{#2}%
+     \endgroup}%
     {\expandafter\bicaption@@make\expandafter
        {\bicaption@text}{#1}{#2}%
-     \global\let\bicaption@text\@undefined}}
+     \global\let\bicaption@text\@undefined}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@@make@epilogue}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1081,7 +1085,7 @@
   \else
     \begingroup
       \caption@setoptions{bi-first}%
-      \caption@@make@ORI{#2}{#3}%
+      \caption@@make@{#2}{#3}%
     \endgroup
   \fi
 %    \end{macrocode}
@@ -1091,9 +1095,10 @@
   \else
     \begingroup
       \caption@setoptions{bi-second}%
-      \caption@@make@ORI{#2}{#1}%
+      \caption@@make@{#2}{#1}%
     \endgroup
-  \fi}
+  \fi
+}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1139,11 +1144,11 @@
 % |\@bicaption|\marg{cmd}*\oarg{entry \#1}\marg{text \#1}\oarg{entry \#2}\marg{text \#2}\ldots
 %    \begin{macrocode}
 \newcommand*\@bicaption[1]{%
-  \def\bicaption@cmd{#1}%
   \@ifstar
-    {\l@addto@macro\bicaption@cmd*%
+    {\def\bicaption@cmd{\bicaption@star{#1}}%
      \@@bicaption}%
-    {\caption@dblarg\@@@bicaption}}
+    {\def\bicaption@cmd{#1}%
+     \caption@dblarg\@@@bicaption}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\@@bicaption[1]{%
@@ -1161,6 +1166,41 @@
      \bicaption@cmd[{#3}]{#4}}%
     {\bicaption@setup{#3}{#4}%
      \bicaption@cmd[{#1}]{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\bicaption@star#1[#2]{#1*}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\LT@bicaption}
+% \changes{v1.1}{2016/01/31}{Adaption to \package{longtable} package added}
+% Same as |\@bicaption| but for |longtable| (offered by the \package{longtable} package).
+% |\bicaption@LTsetup| will be executed later on, inside |\LT@makecaption| offered by the \package{caption} package.
+%    \begin{macrocode}
+\newcommand\LT@bicaption{%
+  \noalign\bgroup
+    \@ifstar
+      {\gdef\bicaption@cmd{\LT@c@ption\@gobble}%
+       \LT@@bicaption}%
+      {\gdef\bicaption@cmd{\LT@c@ption\@firstofone}%
+       \caption@dblarg\LT@@@bicaption}}
+\newcommand\LT@@bicaption[1]{%
+  \LT@@@@bicaption{}{#1}[]}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\LT@@@bicaption[#1]#2{%
+  \caption@dblarg{\LT@@@@bicaption{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\LT@@@@bicaption#1#2[#3]#4{%
+  \gdef\bicaption@LTsetup{%
+    \caption@getlabel#2\label{}\@nil
+    \bicaption@ifswap
+      {\bicaption@setup{#1}{#2}}%
+      {\bicaption@setup{#3}{#4}}}%
+  \bicaption@ifswap
+    {\egroup\bicaption@cmd[{#3}]{#4}}%
+    {\egroup\bicaption@cmd[{#1}]{#2}}}
 %    \end{macrocode}
 % \end{macro}
 %
