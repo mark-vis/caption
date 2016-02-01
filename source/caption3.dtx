@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3641}
+% \CheckSum{3646}
 %
 % \iffalse
 %<*driver>
@@ -3481,6 +3481,8 @@
 % \changes{v1.2}{2007/11/17}{Made option \opt{size=} stronger than \opt{font=}}
 % \changes{v1.3}{2010/09/04}{Uses \cs{caption@applyfont} now}
 % \changes{v1.3}{2010/11/01}{Bugfix: If the caption text is empty, the text format will be set to \opt{simple} now}
+% \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator
+%        will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
 %  |\caption@@@make|\marg{caption label}\marg{caption text}\par
 %  This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
@@ -3517,14 +3519,28 @@
 %    \begin{macrocode}
   \caption@applyfont
   \caption@fmt
-    {\ifcaption@star\else{\captionlabelfont#1}\fi}%
-    {\ifcaption@star\else{\caption@iflf\captionlabelfont\caption@lsep}\fi}%
+    {\ifcaption@star\else
+       \begingroup
+         \captionlabelfont
+         #1%
+       \endgroup
+     \fi}%
+    {\ifcaption@star\else
+       \begingroup
+         \caption@iflf\captionlabelfont
+         \relax\caption@lsep
+       \endgroup
+     \fi}%
     {{\captiontextfont
-      \caption@ifstrut{\vrule\@height\ht\strutbox\@width\z@}{}%
+      \caption@ifstrut
+        {\vrule\@height\ht\strutbox\@width\z@}%
+        {}%
       \nobreak\hskip\z@skip % enable hyphenation
       \caption@tfmt{#2}%
 %     \caption@ifstrut{\vrule\@height\z@\@depth\dp\strutbox\@width\z@}{}%
-      \caption@ifstrut{\ifhmode\@finalstrut\strutbox\fi}{}%
+      \caption@ifstrut
+        {\ifhmode\@finalstrut\strutbox\fi}%
+        {}%
       \par}}}
 %    \end{macrocode}
 % \end{macro}
