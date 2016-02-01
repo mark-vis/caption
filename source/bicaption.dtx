@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{374}
+% \CheckSum{393}
 %
 % \iffalse
 %<*driver>
@@ -801,7 +801,7 @@
 \ProvidesPackage{bicaption}[\caption@tempa v1.1-\caption@tempb Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
-\RequirePackage{caption}[2016/01/31] % needs v3.3-128 or newer
+\RequirePackage{caption}[2016/02/01] % needs v3.3-134 or newer
 %    \end{macrocode}
 % \changes{v1.0}{2011/09/01}{Compatibility error added}
 %    \begin{macrocode}
@@ -981,11 +981,19 @@
 % \begin{macro}{\caption@addcontentsline}
 % \changes{v1.0}{2011/08/31}{Redefinition of \cs{caption@kernel@addcontentsline} added}
 % \changes{v1.0b}{2012/01/15}{\cs{caption@kernel@addcontentsline} changed to \cs{caption@addcontentsline}}
+% \changes{v1.1}{2016/02/01}{Adaption to \package{longtable} package added}
 % We patch |\caption@add|\-|contents|\-|line| (of the \package{caption} package kernel)
 % so |bi|\-|caption@add|\-|contents|\-|line| will be used for bilingual captions instead.
 %    \begin{macrocode}
 \let\bicaption@addcontentsline@ORI\caption@addcontentsline
 \renewcommand*\caption@addcontentsline[2]{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@ifundefined\bicaption@LT@setup{}{%
+    \bicaption@LT@setup
+    \global\let\bicaption@LT@setup\@undefined}%
+%    \end{macrocode}
+%    \begin{macrocode}
   \caption@ifundefined\bicaption@lentry
     {\bicaption@addcontentsline@ORI{#1}{#2}}%
     {\expandafter\bicaption@addcontentsline\expandafter
@@ -1195,12 +1203,26 @@
 \long\def\LT@@@@bicaption#1#2[#3]#4{%
   \gdef\bicaption@LTsetup{%
     \caption@getlabel#2\label{}\@nil
+    \bicaption@LT@setup}%
+  \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
       {\bicaption@setup{#1}{#2}}%
       {\bicaption@setup{#3}{#4}}}%
   \bicaption@ifswap
     {\egroup\bicaption@cmd[{#3}]{#4}}%
     {\egroup\bicaption@cmd[{#1}]{#2}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@LT@setup}
+% \changes{v1.1}{2016/01/31}{Adaption to \package{longtable} package added}
+% Execute the stuff defined by \cs{LT@bicaption} to prepare the typesetting
+% of the \package{longtable} bilingual caption.
+%    \begin{macrocode}
+\g@addto@macro\caption@LT@setup{%
+  \caption@ifundefined\bicaption@LTsetup{}{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\@undefined}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1262,3 +1284,4 @@
 % \Finale
 %
 \endinput
+
