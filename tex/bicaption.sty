@@ -41,7 +41,7 @@
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
 \ProvidesPackage{bicaption}[\caption@tempa v1.1-\caption@tempb Bilingual Captions (AR)]
-\RequirePackage{caption}[2016/01/31] % needs v3.3-128 or newer
+\RequirePackage{caption}[2016/02/01] % needs v3.3-134 or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
     The `bicaption' package does not work correctly\MessageBreak
@@ -109,6 +109,9 @@
 \caption@ProcessOptions*{bicaption}
 \let\bicaption@addcontentsline@ORI\caption@addcontentsline
 \renewcommand*\caption@addcontentsline[2]{%
+  \caption@ifundefined\bicaption@LT@setup{}{%
+    \bicaption@LT@setup
+    \global\let\bicaption@LT@setup\@undefined}%
   \caption@ifundefined\bicaption@lentry
     {\bicaption@addcontentsline@ORI{#1}{#2}}%
     {\expandafter\bicaption@addcontentsline\expandafter
@@ -208,12 +211,18 @@
 \long\def\LT@@@@bicaption#1#2[#3]#4{%
   \gdef\bicaption@LTsetup{%
     \caption@getlabel#2\label{}\@nil
+    \bicaption@LT@setup}%
+  \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
       {\bicaption@setup{#1}{#2}}%
       {\bicaption@setup{#3}{#4}}}%
   \bicaption@ifswap
     {\egroup\bicaption@cmd[{#3}]{#4}}%
     {\egroup\bicaption@cmd[{#1}]{#2}}}
+\g@addto@macro\caption@LT@setup{%
+  \caption@ifundefined\bicaption@LTsetup{}{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\@undefined}}
 \newcommand\bicaption@setup[2]{%
   \def\bicaption@lentry{#1}%
   \def\bicaption@text{\ignorespaces#2}}
