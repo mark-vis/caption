@@ -5,7 +5,7 @@
 % $Id$
 % $HeadURL$
 %
-% Copyright (C) 1994-2015 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2016 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3646}
+% \CheckSum{3664}
 %
 % \iffalse
 %<*driver>
@@ -205,6 +205,28 @@
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
 \ProvidesPackage{caption3}[\caption@tempa v1.7-\caption@tempb caption3 kernel (AR)]
+%    \end{macrocode}
+%
+% \subsection{Workaround for bug in package \package{arabtex}}
+% \package{arabtex} re-defines \cs{@gobble} as not-long so the packages of the
+% \package{caption} package bundle are doomed to fail.
+% Since this fatal bug won't be fixed in \package{arabtex} but we are dependent on a
+% proper definition of \cs{@gobble}, \cs{@firstofone}, \cs{@firstoftwo}, \cs{@secondoftwo}
+% and so on we fix this here. (Sigh!)
+%    \begin{macrocode}
+\providecommand\caption@FixArabTeX{%
+  \def\caption@tempa##1{}%
+  \ifx\caption@tempa\@gobble
+    \PackageInfo{caption3}{Fixing ArabTeX}%
+    \long\def\@gobble##1{}%
+  \fi}
+%    \end{macrocode}
+% Do the fix now and at |\begin{document}|, in case \package{arabtex} will be loaded after \package{caption}.
+%    \begin{macrocode}
+\caption@FixArabTeX
+\AtBeginDocument{%
+  \caption@FixArabTeX
+  \let\caption@FixArabTeX\@undefined}
 %    \end{macrocode}
 %
 % \subsection{Generic helpers}
