@@ -28,12 +28,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{147}
+% \CheckSum{168}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2013/04/16 v1.1 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2016/02/21 v1.2 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -904,7 +904,7 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{subcaption}[\caption@tempa v1.1-\caption@tempb Sub-captions (AR)]
+\ProvidesPackage{subcaption}[\caption@tempa v1.2-\caption@tempb Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
@@ -1023,21 +1023,42 @@
 %
 % \begin{macro}{subfigure}
 % \begin{macro}{subtable}
+% \changes{v1.2}{2016/02/21}{Optional argument values `B' and `T' added}
 % This is just an ordinary \env{minipage} environment with
 % |\setcaptionsubtype| as first contents line.
 % It will be defined using the helper macro |\caption@For{sub|\-|type|\-|list}|
 % offered by the \package{caption} kernel, so for every caption type
-% declared with |\Declare|\-|Floating|\-|Environment| a corresponding `sub' environment
-% will be defined automatically.
+% declared with |\Declare|\-|Floating|\-|Environment| a corresponding
+% `sub' environment will be defined automatically.
 %    \begin{macrocode}
 \caption@For{subtypelist}{%
   \newenvironment{sub#1}%
-    {\caption@withoptargs\subcaption@minipage}%
-    {\endminipage}}%
+    {\@ifnextchar[%]
+       \subcaption@iminipage
+       {\subcaption@iminipage[c]}}%
+    {\subcaption@endminipage
+     \endminipage}}%
 %    \end{macrocode}
+% We pass all other optional arguments using the generic helper macro
+% |\caption@with|\-|opt|\-|args| offered by the \package{caption} kernel).
 %    \begin{macrocode}
-\newcommand*\subcaption@minipage[2]{%
-  \minipage#1{#2}%
+\def\subcaption@iminipage[#1]{%
+  \caption@withoptargs{\subcaption@iiminipage{#1}}}
+%    \end{macrocode}
+% `B' and `T' will add a |\vspace{0pt}|, all other values (and additional
+% optional arguments) will be passed unseen to the |minipage| environment.
+%    \begin{macrocode}
+\newcommand*\subcaption@iiminipage[3]{%
+  \let\subcaption@endminipage\@empty
+  \if#1B%
+    \minipage[b]#2{#3}%
+    \def\subcaption@endminipage{\vspace{0pt}}%
+  \else\if#1T%
+    \minipage[t]#2{#3}%
+    \vspace{0pt}%
+  \else
+    \minipage[#1]#2{#3}%
+  \fi\fi
   \setcaptionsubtype\relax}
 %    \end{macrocode}
 % \end{macro}

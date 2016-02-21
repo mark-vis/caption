@@ -40,7 +40,7 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{subcaption}[\caption@tempa v1.1-\caption@tempb Sub-captions (AR)]
+\ProvidesPackage{subcaption}[\caption@tempa v1.2-\caption@tempb Sub-captions (AR)]
 \RequirePackage{caption}[2012/03/25] % needs v3.3 or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
@@ -80,10 +80,24 @@
   \let\phantomsubcaption\phantomcaption}
 \caption@For{subtypelist}{%
   \newenvironment{sub#1}%
-    {\caption@withoptargs\subcaption@minipage}%
-    {\endminipage}}%
-\newcommand*\subcaption@minipage[2]{%
-  \minipage#1{#2}%
+    {\@ifnextchar[%]
+       \subcaption@iminipage
+       {\subcaption@iminipage[c]}}%
+    {\subcaption@endminipage
+     \endminipage}}%
+\def\subcaption@iminipage[#1]{%
+  \caption@withoptargs{\subcaption@iiminipage{#1}}}
+\newcommand*\subcaption@iiminipage[3]{%
+  \let\subcaption@endminipage\@empty
+  \if#1B%
+    \minipage[b]#2{#3}%
+    \def\subcaption@endminipage{\vspace{0pt}}%
+  \else\if#1T%
+    \minipage[t]#2{#3}%
+    \vspace{0pt}%
+  \else
+    \minipage[#1]#2{#3}%
+  \fi\fi
   \setcaptionsubtype\relax}
 \newcommand*\subcaptionbox{%
   \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
