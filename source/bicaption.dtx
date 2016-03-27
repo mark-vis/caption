@@ -28,12 +28,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{388}
+% \CheckSum{434}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2012/04/10 v1.1 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2016/03/27 v1.2 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -64,8 +64,8 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, bicaption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage{bicaption}[2012/12/26]
-\usepackage{subcaption}[2012/04/09]
+\usepackage{bicaption}[2016/03/27]
+\usepackage{subcaption}[2016/02/21]
 %
 \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
@@ -88,7 +88,7 @@
 \newenvironment{background*}{\small\MARGINSYM{\Mountain}\ignorespaces}{\par}
 %
 \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
-%\newcommand*\NEW[2]{}%\hskip 1sp \marginpar{\footnotesize\sffamily\raggedleft#1\\#2}}
+\newcommand*\NEW[2]{\MARGINSYM{\vskip2pt\footnotesize#1\\#2}}
 %
 \newenvironment{Options}[1]%
   {\list{}{\renewcommand\makelabel[1]{\texttt{##1}\hfil}%
@@ -123,8 +123,9 @@
 % \let\docdate\filedate
 % \GetFileInfo{bicaption.sty}
 %
+% \def\pureversion#1-#2.{#1.}
 % \title{\texorpdfstring{\Thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \expandafter\pureversion\fileversion.}}%^^A
 %        {The bicaption package}}
 % \author{Axel Sommerfeldt\\
 %         \url{http://sourceforge.net/p/latex-caption/}}
@@ -231,8 +232,9 @@
 %   |\captionsetup[figure][bi-first]|\oarg{options}
 % \end{quote}
 % will limit the settings to the first heading of |figure| environments only.
-% Please note that the environment name has to be specified as first optional argument
-% while the bilingual selection as second one.
+% Please note that the environment name (|figure|, |table|, \ldots) has to be specified
+% as first optional argument while the bilingual selection (|bi|, |bi-first|, or |bi-second|)
+% as second one.
 %
 % \section{Additional options}
 % \label{sec:additional-options}
@@ -688,6 +690,7 @@
 % \medskip
 %
 % \DescribeMacro\selectcaptionlanguage
+% \NEWfeature{v1.1}
 % |\select|\-|caption|\-|lan|\-|guage| will be used internally  to select the language:
 % \begin{quote}
 %   |\selectcaptionlanguage|\marg{font-or-list-entry}\marg{language}
@@ -707,8 +710,43 @@
 %
 % \medskip
 %
-% Please note that all of this will only be relevant if the |lang=| option will be used.
-% Otherwise |\select|\-|caption|\-|lan|\-|guage| won't be used by \thispackage\ at all.
+% \DescribeMacro\DeclareCaptionLangOption
+% \NEWfeature{v1.2}
+% For internal implementation reasons the selection of language will be done delayed,
+% i.e.~not done immediately at |lang=|\meta{language}. So if you do
+% \begin{quote}
+%   |\captionsetup[bi-second]{lang=ngerman,labelsep=quad}|
+% \end{quote}
+% the language |ngerman| will only be stored internally, and the label separator will
+% be set to |quad| afterwards. Some time later, right before the caption is actually
+% typeset, the language will be set to |ngerman|.
+%
+% Usually this is no problem, but think of options which will be overwritten by the
+% language selection, or options which act on the language currently set, for example
+% \begin{quote}
+%   |\captionsetup[bi-second]{lang=ngerman,name=Bild}|\quad.
+% \end{quote}
+% |lang=ngerman| changes the environment name to ``Abbildung'', and |name=Bild|
+% changes the environment name to ``Bild''. One would expect that the name is
+% finally ``Bild'', but because of the delayed nature of |lang=ngerman| it will
+% be ``Abbildung'' instead, at least if we don't take action about this.
+%
+% For that reason the command
+% \begin{quote}
+%   |\DeclareCaptionLangOption|\marg{caption option name}
+% \end{quote}
+% is offered. Options handled this way will be applied twice if used after the |lang=|
+% option, when the option is actually used, and right after the language is selected.
+%
+% \begin{quote}
+%   |\DeclareCaptionLangOption{name}|
+% \end{quote}
+% will be done by \thispackage\ automatically, since the environment name will usually
+% be overwritten by a language selection. So actually
+% \begin{quote}
+%   |\captionsetup[bi-second]{lang=ngerman,name=Bild}|
+% \end{quote}
+% will give the expected result, i.e. the environment name is typeset as ``Bild''.
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -798,7 +836,8 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{bicaption}[\caption@tempa v1.1-\caption@tempb Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}%
+  [\caption@tempa v1.2-\caption@tempb Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
 \RequirePackage{caption}[2016/02/01] % needs v3.3-134 or newer
@@ -904,21 +943,83 @@
 %    \end{macrocode}
 %
 % The option |lang=|\meta{language} will setup the language of the caption.
+% We can't set the language immediately because otherwise we will get in trouble, e.g. when
+% using the \package{microtype} package via |\usepackage[babel]{microtype}|.
+% So we store the selected language to |\bicaption@language| instead and will set it later on.
+% But this has a drawback, option settings which will be overwritten by the selection of
+% the language do not work correctly anymore. Therefore we will save specific options
+% and set them (again) after setting the language.
 %    \begin{macrocode}
-\DeclareCaptionOption{lang}{\def\bicaption@language{#1}}
+\DeclareCaptionOption{lang}{%
+  \caption@ifundefined\bicaption@language
+    \bicaption@language@setupkeys
+    \relax
+  \def\bicaption@language{#1}%
+  \let\bicaption@language@setoptions\@empty}
+%    \end{macrocode}
+% Map |language=| to |lang=|.
+%    \begin{macrocode}
 \let\KV@caption@language\KV@caption@lang
+%    \end{macrocode}
+%
+% \begin{macro}{\DeclareCaptionLangOption}
+% \changes{v1.2}{2016/03/27}{This macro added}
+% |\DeclareCaptionLangOption|\marg{option key}\par
+% Saves the gives \meta{option key} to the list |\bicaption@language@keylist|.
+% These options will be stored and set (again) after setting the language.
+%    \begin{macrocode}
+\newcommand*\bicaption@language@keylist{}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionLangOption[1]{%
+  \@ifundefined{KV@caption@#1}%
+    {\bicaption@Error{Undefined caption option `#1'}}%
+    {\@cons\bicaption@language@keylist{{#1}}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\let\DeclareCaptionLanguageOption\DeclareCaptionLangOption
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\bicaption@language@setupkeys{%
+  \def\@elt##1{%
+    \expandafter\let\csname KV@bicaption@##1\expandafter\endcsname
+                    \csname KV@caption@##1\endcsname
+    \@namedef{KV@caption@##1}{\bicaption@KV{##1}}}%
+  \bicaption@language@keylist
+  \let\@elt\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\bicaption@KV[2]{%
+  \@bicaption@KV{#1}{#2}%
+  \l@addto@macro\bicaption@language@setoptions{%
+    \@bicaption@KV{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\@bicaption@KV[1]{%
+  \@nameuse{KV@bicaption@#1}}
+%    \end{macrocode}
+% \end{macro}
+%
+% The only option affected I'm aware off is the |name=| option, so this will be saved
+% and set later on.
+%    \begin{macrocode}
+\DeclareCaptionLangOption{name}
 %    \end{macrocode}
 %
 % \begin{macro}{\bicaption@selectlanguage}
 % \changes{v1.0}{2011/08/31}{Starred variant added}
 % \changes{v1.1}{2012/04/09}{Support of \cs{selectcaptionlanguage} added}
 % \changes{v1.1}{2016/03/25}{Patching of \cs{caption@applyfont} replaced by \cs{caption@beginhook}}
+% \changes{v1.1}{2016/03/27}{Usage of \cs{bicaption@language@setoptions} added}
+% |\bicaption@selectlanguage|\marg{font-or-list-entry}\par
 % Set the language (stored in |\bi|\-|caption@lan|\-|guage|)
 % via |\select|\-|bi|\-|caption|\-|lan|\-|guage|.
 %    \begin{macrocode}
 \newcommand*\bicaption@selectlanguage[1]{%
   \caption@ifundefined\bicaption@language{}{%
-    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}}}
+    \expandafter\selectcaptionlanguage\expandafter#1\expandafter
+      {\bicaption@language}%
+    \bicaption@language@setoptions}}
 %    \end{macrocode}
 % |\caption@beginhook| (of the \package{caption} package kernel) will be extended here
 % so the language setting will actually take effect.
@@ -948,12 +1049,15 @@
 % Set the language for the first caption.
 %    \begin{macrocode}
 \ifcsname captionmainlanguage\endcsname
-  \bicaption@InfoNoLine{main language is set to \captionmainlanguage}
+  \bicaption@InfoNoLine{%
+    main language is set to \captionmainlanguage}
 \else\ifcsname bbl@main@language\endcsname
-  \bicaption@InfoNoLine{babel found, main language is \bbl@main@language}
+  \bicaption@InfoNoLine{%
+    babel found, main language is \bbl@main@language}
   \let\captionmainlanguage\bbl@main@language
 \else\ifcsname xpg@main@language\endcsname
-  \bicaption@InfoNoLine{polyglossia found, main language is \xpg@main@language}
+  \bicaption@InfoNoLine{%
+    polyglossia found, main language is \xpg@main@language}
   \let\captionmainlanguage\xpg@main@language
 \else
   \bicaption@InfoNoLine{main language is not set}
@@ -961,7 +1065,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \ifcsname captionmainlanguage\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
+  \edef\@tempa{%
+    \noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
   \@tempa
 \fi
 %    \end{macrocode}

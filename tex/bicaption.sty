@@ -40,7 +40,8 @@
 \def\caption@tempa$Id: #1 #2 #3-#4-#5 #6${%
   \def\caption@tempa{#3/#4/#5 }\def\caption@tempb{#2 }}
 \caption@tempa $Id$
-\ProvidesPackage{bicaption}[\caption@tempa v1.1-\caption@tempb Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}%
+  [\caption@tempa v1.2-\caption@tempb Bilingual Captions (AR)]
 \RequirePackage{caption}[2016/02/01] % needs v3.3-134 or newer
 \caption@AtBeginDocument{\caption@ifcompatibility{%
   \caption@Error{%
@@ -78,29 +79,60 @@
   \caption@set@bool\bicaption@ifslc{#1}}
 \DeclareCaptionOption{bi-swap}[1]{%
   \caption@set@bool\bicaption@ifswap{#1}}
-\DeclareCaptionOption{lang}{\def\bicaption@language{#1}}
+\DeclareCaptionOption{lang}{%
+  \caption@ifundefined\bicaption@language
+    \bicaption@language@setupkeys
+    \relax
+  \def\bicaption@language{#1}%
+  \let\bicaption@language@setoptions\@empty}
 \let\KV@caption@language\KV@caption@lang
+\newcommand*\bicaption@language@keylist{}
+\newcommand*\DeclareCaptionLangOption[1]{%
+  \@ifundefined{KV@caption@#1}%
+    {\bicaption@Error{Undefined caption option `#1'}}%
+    {\@cons\bicaption@language@keylist{{#1}}}}
+\let\DeclareCaptionLanguageOption\DeclareCaptionLangOption
+\newcommand*\bicaption@language@setupkeys{%
+  \def\@elt##1{%
+    \expandafter\let\csname KV@bicaption@##1\expandafter\endcsname
+                    \csname KV@caption@##1\endcsname
+    \@namedef{KV@caption@##1}{\bicaption@KV{##1}}}%
+  \bicaption@language@keylist
+  \let\@elt\relax}
+\newcommand\bicaption@KV[2]{%
+  \@bicaption@KV{#1}{#2}%
+  \l@addto@macro\bicaption@language@setoptions{%
+    \@bicaption@KV{#1}{#2}}}
+\newcommand\@bicaption@KV[1]{%
+  \@nameuse{KV@bicaption@#1}}
+\DeclareCaptionLangOption{name}
 \newcommand*\bicaption@selectlanguage[1]{%
   \caption@ifundefined\bicaption@language{}{%
-    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}}}
+    \expandafter\selectcaptionlanguage\expandafter#1\expandafter
+      {\bicaption@language}%
+    \bicaption@language@setoptions}}
 \g@addto@macro\caption@beginhook{%
   \bicaption@selectlanguage\@firstoftwo}
 \providecommand*\selectcaptionlanguage[1]{%
   #1\select@language\selectlanguage}
 \caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0}
 \ifcsname captionmainlanguage\endcsname
-  \bicaption@InfoNoLine{main language is set to \captionmainlanguage}
+  \bicaption@InfoNoLine{%
+    main language is set to \captionmainlanguage}
 \else\ifcsname bbl@main@language\endcsname
-  \bicaption@InfoNoLine{babel found, main language is \bbl@main@language}
+  \bicaption@InfoNoLine{%
+    babel found, main language is \bbl@main@language}
   \let\captionmainlanguage\bbl@main@language
 \else\ifcsname xpg@main@language\endcsname
-  \bicaption@InfoNoLine{polyglossia found, main language is \xpg@main@language}
+  \bicaption@InfoNoLine{%
+    polyglossia found, main language is \xpg@main@language}
   \let\captionmainlanguage\xpg@main@language
 \else
   \bicaption@InfoNoLine{main language is not set}
 \fi\fi\fi
 \ifcsname captionmainlanguage\endcsname
-  \edef\@tempa{\noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
+  \edef\@tempa{%
+    \noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
   \@tempa
 \fi
 \caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
