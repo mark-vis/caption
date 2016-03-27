@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{388}
+% \CheckSum{409}
 %
 % \iffalse
 %<*driver>
@@ -904,21 +904,59 @@
 %    \end{macrocode}
 %
 % The option |lang=|\meta{language} will setup the language of the caption.
+% We can't set the language immediately because otherwise we will get in trouble, e.g. when
+% using the \package{microtype} package via |\usepackage[babel]{microtype}|.
+% So we store the selected language to |\bicaption@language| instead and will set it later on.
+% But this has a drawback, option settings which will be overwritten by the selection of
+% the language do not work correctly anymore.
+% The only option affected I'm aware off is the |name=| option, so this will be saved
+% and set later on, too.
+% (Since the user can declare own options it would be nice to have a new command for handling
+% delayed option settings because of the language selection,
+% e.g. |\DeclareCaptionLangOption|\marg{option key}.
+% This will be offered by a future version of \thispackage.)
 %    \begin{macrocode}
-\DeclareCaptionOption{lang}{\def\bicaption@language{#1}}
+\DeclareCaptionOption{lang}{%
+  \caption@ifundefined\bicaption@language
+    {\let\KV@bicaption@name\KV@caption@name
+     \def\KV@caption@name{\bicaption@KV{name}}}%
+    {}%
+  \def\bicaption@language{#1}%
+  \let\bicaption@language@options\@empty}
+%    \end{macrocode}
+%    \begin{macrocode}
 \let\KV@caption@language\KV@caption@lang
 %    \end{macrocode}
+%
+% \begin{macro}{\bicaption@KV}
+% \changes{v1.1}{2016/03/27}{This macro added}
+% |\bicaption@KV|\marg{option key}\marg{option value}\par
+% This macro do execute the given caption package option, and store it additionally for
+% delayed execution after setting the language.
+%    \begin{macrocode}
+\newcommand\bicaption@KV[2]{%
+  \@bicaption@KV{#1}{#2}%
+  \l@addto@macro\bicaption@language@options{\@bicaption@KV{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\@bicaption@KV[1]{%
+  \@nameuse{KV@bicaption@#1}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\bicaption@selectlanguage}
 % \changes{v1.0}{2011/08/31}{Starred variant added}
 % \changes{v1.1}{2012/04/09}{Support of \cs{selectcaptionlanguage} added}
 % \changes{v1.1}{2016/03/25}{Patching of \cs{caption@applyfont} replaced by \cs{caption@beginhook}}
+% \changes{v1.1}{2016/03/27}{Usage of \cs{bicaption@language@options} added}
+% |\bicaption@selectlanguage|\marg{font-or-list-entry}\par
 % Set the language (stored in |\bi|\-|caption@lan|\-|guage|)
 % via |\select|\-|bi|\-|caption|\-|lan|\-|guage|.
 %    \begin{macrocode}
 \newcommand*\bicaption@selectlanguage[1]{%
   \caption@ifundefined\bicaption@language{}{%
-    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}}}
+    \expandafter\selectcaptionlanguage\expandafter#1\expandafter{\bicaption@language}%
+    \bicaption@language@options}}
 %    \end{macrocode}
 % |\caption@beginhook| (of the \package{caption} package kernel) will be extended here
 % so the language setting will actually take effect.
