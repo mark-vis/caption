@@ -42,22 +42,34 @@
 \caption@tempa $Id$
 \ProvidesPackage{subcaption}[\caption@tempa v1.2-\caption@tempb Sub-captions (AR)]
 \RequirePackage{caption}[2012/03/25] % needs v3.3 or newer
-\caption@AtBeginDocument{\caption@ifcompatibility{%
-  \caption@Error{%
-    The `subcaption' package does not work correctly\MessageBreak
-    in compatibility mode}}{}}
-\@ifpackageloaded{subfigure}{%
-  \PackageError{subcaption}%
-    {This package can't be used in cooperation\MessageBreak
-     with the subfigure package}%
-    {RTFM}%
-  \endinput}{}%
-\@ifpackageloaded{subfig}{%
-  \PackageError{subcaption}%
-    {This package can't be used in cooperation\MessageBreak
-     with the subfig package}%
-    {RTFM}%
-  \endinput}{}%
+\newcommand\subcaption@CheckCompatibility{%
+  \@ifpackageloaded{subfigure}{%
+    \PackageError{subcaption}%
+      {This package can't be used in cooperation\MessageBreak
+       with the subfigure package}%
+      {\subcaption@EH}%
+    \endinput}{}%
+  \@ifpackageloaded{subfig}{%
+    \PackageError{subcaption}%
+      {This package can't be used in cooperation\MessageBreak
+       with the subfig package}%
+      {\subcaption@EH}%
+    \endinput}{}%
+}
+\newcommand*\subcaption@EH{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `subcaption' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
+\subcaption@CheckCompatibility
+\caption@AtBeginDocument{%
+  \caption@ifcompatibility{%
+    \caption@Error{%
+      The `subcaption' package does not work correctly\MessageBreak
+      in compatibility mode}}{}%
+  \subcaption@CheckCompatibility
+  \let\subcaption@CheckCompatibility\@undefined
+  \let\subcaption@EH\@undefined
+}
 \caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
 \caption@ExecuteOptions{subcaption}{%
   font+=small,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}

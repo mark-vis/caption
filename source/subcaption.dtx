@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{168}
+% \CheckSum{186}
 %
 % \iffalse
 %<*driver>
@@ -114,8 +114,9 @@
 % \let\docdate\filedate
 % \GetFileInfo{subcaption.sty}
 %
+% \def\pureversion#1-#2.{#1.}
 % \title{\texorpdfstring{\Thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \expandafter\pureversion\fileversion.}}%^^A
 %        {The subcaption package}}
 % \author{Axel Sommerfeldt\\
 %         \url{http://sourceforge.net/projects/latex-caption/}}
@@ -917,32 +918,61 @@
 %    \begin{macrocode}
 \RequirePackage{caption}[2012/03/25] % needs v3.3 or newer
 %    \end{macrocode}
-% \changes{v1.1}{2011/09/01}{Compatibility error added}
-%    \begin{macrocode}
-\caption@AtBeginDocument{\caption@ifcompatibility{%
-  \caption@Error{%
-    The `subcaption' package does not work correctly\MessageBreak
-    in compatibility mode}}{}}
-%    \end{macrocode}
 %
+% \begin{macro}{\subcaption@CheckCompatibility}
+% \changes{v1.1}{2011/09/01}{Compatibility error added}
+% \changes{v1.1}{2016/05/22}{The presence of \package{subfigure} or \package{subfig} will be checked \cs{AtBeginDocument}, too}
 % Since we are incompatible to them an error message will be issued when
 % the \package{subfigure} or \package{subfig} package is loaded.
 %    \begin{macrocode}
-\@ifpackageloaded{subfigure}{%
-  \PackageError{subcaption}%
-    {This package can't be used in cooperation\MessageBreak
-     with the subfigure package}%
-    {RTFM}%
-  \endinput}{}%
+\newcommand\subcaption@CheckCompatibility{%
 %    \end{macrocode}
 %    \begin{macrocode}
-\@ifpackageloaded{subfig}{%
-  \PackageError{subcaption}%
-    {This package can't be used in cooperation\MessageBreak
-     with the subfig package}%
-    {RTFM}%
-  \endinput}{}%
+  \@ifpackageloaded{subfigure}{%
+    \PackageError{subcaption}%
+      {This package can't be used in cooperation\MessageBreak
+       with the subfigure package}%
+      {\subcaption@EH}%
+    \endinput}{}%
 %    \end{macrocode}
+%    \begin{macrocode}
+  \@ifpackageloaded{subfig}{%
+    \PackageError{subcaption}%
+      {This package can't be used in cooperation\MessageBreak
+       with the subfig package}%
+      {\subcaption@EH}%
+    \endinput}{}%
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\subcaption@EH{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `subcaption' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
+%    \end{macrocode}
+%    \begin{macrocode}
+\subcaption@CheckCompatibility
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@AtBeginDocument{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@ifcompatibility{%
+    \caption@Error{%
+      The `subcaption' package does not work correctly\MessageBreak
+      in compatibility mode}}{}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \subcaption@CheckCompatibility
+  \let\subcaption@CheckCompatibility\@undefined
+  \let\subcaption@EH\@undefined
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+% \end{macro}
 %
 % \iffalse
 % \subsection{Declaration of options}
