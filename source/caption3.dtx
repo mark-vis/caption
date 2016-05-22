@@ -28,7 +28,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3664}
+% \CheckSum{3679}
 %
 % \iffalse
 %<*driver>
@@ -243,7 +243,7 @@
 % \end{macro}
 %
 % \begin{macro}{\l@addto@macro}
-% \changes{v3.3}{2013/04/26}{Revised}
+% \changes{v1.5}{2013/04/26}{Revised}
 %  The \LaTeXe\ kernel offers the internal helper macro |\g@addto@macro| which
 %  globally adds tokens to existing macros, like in |\AtBeginDocument|.
 %  This is the same but it works local, not global.
@@ -2742,9 +2742,10 @@
 %    \end{macrocode}
 %
 % \subsubsection{The beamer class (Part one)}
-% \changes{v1.1}{2007/03/10}{beamer class support added}
-% \changes{v1.3}{2011/08/06}{beamer class support revised}
-% \changes{v3.3}{2013/04/27}{The beamer template \texttt{caption label separator} will be used now}
+% \changes{v1.1}{2007/03/10}{\package{beamer} class support added}
+% \changes{v1.3}{2011/08/06}{\package{beamer} class support revised}
+% \changes{v1.5}{2013/04/27}{The \package{beamer} template \texttt{caption label separator} will be used now}
+% \changes{v1.7}{2016/05/22}{Re-definition of label format \texttt{simpleMagyar} added to \package{beamer} class support}
 %
 % \begin{macro}{\caption@ifbeamerclass}
 %    \begin{macrocode}
@@ -2774,24 +2775,41 @@
       \fi
       \nobreak\vskip\belowcaptionskip\nobreak}}
 %    \end{macrocode}
+%
 % \begin{macro}{\caption@ifbeamertemplate}
 % |\caption@ifbeamertemplate|\marg{caption template name}\marg{yes-code}\marg{no-code}\\
 % tests if the given beamer caption template was selected by the user (or not).
 %    \begin{macrocode}
-\newcommand*\caption@ifbeamertemplate[1]{%
-  \begingroup
-    \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-    \@nameuse{beamer@@tmpop@caption@#1}%
-    \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-      \endgroup\expandafter\@firstoftwo
-    \else
-      \endgroup\expandafter\@secondoftwo
-    \fi}
+  \newcommand*\caption@ifbeamertemplate[1]{%
+    \begingroup
+      \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+      \@nameuse{beamer@@tmpop@caption@#1}%
+      \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+        \endgroup\expandafter\@firstoftwo
+      \else
+        \endgroup\expandafter\@secondoftwo
+      \fi}
 %    \end{macrocode}
 % \end{macro}
+%
 %    \begin{macrocode}
   \DeclareCaptionLabelFormat{default}{%
-    #1\caption@ifbeamertemplate{numbered}{~#2}{}}
+    \caption@ifbeamertemplate{numbered}{%
+      \caption@lfmt@simple{#1}{#2}}{#1}}
+%    \end{macrocode}
+% The \package{magyar} babel package redefines the current label format to a one called |simple|\-|Magyar|,
+% defined within |\@@magyar@caption|\-|fix| which will be executed |\At|\-|Begin|\-|Document|.
+% But without accounting for the \package{beamer} document class, so we will make up leeway here.
+%    \begin{macrocode}
+  \DeclareCaptionLabelFormat{default@magyar}{%
+    \caption@ifbeamertemplate{numbered}{%
+      \caption@lfmt@simple@magyar{#1}{#2}}{#1}}
+  \@ifundefined{@@magyar@captionfix}\AtBeginDocument\@firstofone{%
+    \g@addto@macro\@@magyar@captionfix{%
+      \let\caption@lfmt@simple@magyar\caption@lfmt@simpleMagyar
+      \let\caption@lfmt@simpleMagyar\caption@lfmt@default@magyar}}
+%    \end{macrocode}
+%    \begin{macrocode}
   \caption@declarelabelseparator
     {\caption@ifbeamertemplate{caption name own line}\@gobble\@firstofone}
     {default}
@@ -2804,6 +2822,8 @@
     \usebeamercolor[fg]{caption name}%
     \usebeamerfont*{caption name}}
   \DeclareCaptionDefaultJustification{\raggedright}
+%    \end{macrocode}
+%    \begin{macrocode}
   \DeclareOption{beamerclass}{%
     \renewcommand\caption@ifslc{%
       \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
@@ -3385,7 +3405,7 @@
 % \changes{v1.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
 % \changes{v1.3}{2010/09/04}{Split into \cs{caption@slc} and \cs{caption@@slc}}
 % \changes{v1.5}{2012/12/26}{Merged into a single macro again}
-% \changes{v3.3}{2013/04/14}{Definition and usage of \cs{ifsinglelinecaption} added}
+% \changes{v1.5}{2013/04/14}{Definition and usage of \cs{ifsinglelinecaption} added}
 %  |\caption@slc|\marg{label}\marg{text}\marg{single-line-code}\marg{multi-line-code}\par
 %  This one does the single-line-check.
 %    \begin{macrocode}
@@ -3431,7 +3451,7 @@
 % \changes{v1.3}{2011/07/07}{Bugfix 11-07-06: Redefinition of \cs{footnote} and \cs{footnotemark} added, redefinition of \cs{stepcounter} and \cs{refstepcounter} dropped}
 % \changes{v1.4a}{2011/10/21}{Redefinition of \cs{pagenote} from \textsf{memoir} document class added}
 % \changes{v1.4a}{2011/10/22}{Redefinition of \cs{footnote} revised}
-% \changes{v3.3}{2013/04/13}{Redefinition os \cs{glsunset} added}
+% \changes{v1.5}{2013/04/13}{Redefinition os \cs{glsunset} added}
 %  Re-define anything which would disturb the single-line-check.
 %    \begin{macrocode}
 \newcommand*\caption@prepareslc{%
