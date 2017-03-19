@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2016/02/21 v3.3-144 Customizing captions (AR)]
+\ProvidesPackage{caption}[2017/03/19 v3.3-145 Customizing captions (AR)]
 \RequirePackage{caption3}[2016/02/01] % needs v1.7-130 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -826,11 +826,15 @@
 \newcommand*\captionbox{%
   \caption@withoptargs{\caption@ibox\@gobble}}
 \newcommand\caption@ibox[3]{%
-  \@testopt{\caption@iibox{#1}{#2}{#3}}{\wd\@tempboxa}}
+  \kernel@ifnextchar[%]
+    {\caption@iibox{#1}{#2}{#3}}%
+    {\caption@iibox@{#1}{#2}{#3}}}
 \long\def\caption@iibox#1#2#3[#4]{%
   \@testopt{\caption@iiibox{#1}{#2}{#3}{#4}}\captionbox@hj@default}
+\long\def\caption@iibox@#1#2#3#4{%
+  \setbox\@tempboxa\hbox{#4}%
+  \caption@iiibox{#1}{#2}{#3}{\wd\@tempboxa}[\captionbox@hj@default]{\unhbox\@tempboxa}}
 \long\def\caption@iiibox#1#2#3#4[#5]#6{%
-  \setbox\@tempboxa\hbox{#6}%
   \begingroup
   #1*% set \caption@position
   \caption@iftop{%
@@ -841,14 +845,14 @@
       \vbox{\caption#2{#3}}%
       \captionbox@hrule
       \csname caption@hj@#5\endcsname
-      \unhbox\@tempboxa}%
+      #6}%
   }{%
     \endgroup
     \parbox[b]{#4}{%
       #1\relax
       \caption@setposition b%
       \csname caption@hj@#5\endcsname
-      \unhbox\@tempboxa
+      #6%
       \captionbox@hrule
       \vtop{\caption#2{#3}}}%
   }}
