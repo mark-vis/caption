@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1313}
+% \CheckSum{1307}
 %
 % \iffalse
 %<*driver>
@@ -531,7 +531,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2015/09/17 v1.1-109 Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2018/03/04 v1.1a Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -609,6 +609,7 @@
 % \changes{v1.1}{2013/04/27}{Revised, only defines stuff yet undefined now}
 % \changes{v1.1}{2013/11/03}{Uses \cs{newfloat@capitalize} now}
 % \changes{v1.1}{2015/09/16}{Support of \cs{autodot} (offered by the \KOMAScript\ classes) added}
+% \changes{v1.1}{2018/03/04}{Usage of \cs{ifdefined} replaced by \cs{@ifundefined} to improve compatibility with the \package{listings} package}
 %  |\DeclareFloatingEnvironment|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareFloatingEnvironment{%
@@ -626,20 +627,20 @@
 % Set |\ftype@|\meta{type} which contains the type number for floats of type \meta{type}\par
 % (See also \url{http://tex.stackexchange.com/q/32359/2574})
 %    \begin{macrocode}
-  \ifdefined\c@float@type % from float package
-    \expandafter\edef\csname ftype@#2\endcsname{\the\value{float@type}}%
-    \addtocounter{float@type}{\value{float@type}}%
-  \else\ifdefined\c@newflo@tctr % from memoir document class
-    \expandafter\edef\csname ftype@#2\endcsname{\the\c@newflo@tctr}%
-    \advance\c@newflo@tctr \c@newflo@tctr
-  \else
-    \ifdefined\newfloat@ftype \else
-      \newcount\newfloat@ftype
-      \newfloat@ftype=8\relax
-    \fi
-    \expandafter\xdef\csname ftype@#2\endcsname{\the\newfloat@ftype}%
-    \advance\newfloat@ftype\newfloat@ftype
-  \fi\fi
+  \@ifundefined{c@float@type}%     from float package
+    {\@ifundefined{c@newflo@tctr}% from memoir document class
+       {\ifdefined\newfloat@ftype \else
+          \newcount\newfloat@ftype
+          \newfloat@ftype=8\relax
+        \fi
+        \expandafter\xdef\csname ftype@#2\endcsname{\the\newfloat@ftype}%
+        \advance\newfloat@ftype\newfloat@ftype}%
+       {\expandafter\edef\csname ftype@#2\endcsname{\the\c@newflo@tctr}%
+        \advance\c@newflo@tctr \c@newflo@tctr}}%
+    {\expandafter\edef\csname ftype@#2\endcsname{\the\value{float@type}}%
+     \addtocounter{float@type}{\value{float@type}}}%
+%    \end{macrocode}
+%    \begin{macrocode}
   \newfloat@Info{float type `#2'=\@nameuse{ftype@#2}}%
 %    \end{macrocode}
 % Define |\fnum@|\meta{type}, a macro to generate the figure number for a caption
