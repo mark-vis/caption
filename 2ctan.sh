@@ -16,7 +16,8 @@ rm -fr /tmp/caption
 mkdir /tmp/caption
 cp -a source/*.ins source/*.dtx source/*.tex source/*.eps /tmp/caption
 cp -a tex/*.sty /tmp/caption
-cp -a doc/README doc/CHANGELOG doc/SUMMARY doc/*.pdf /tmp/caption
+cp -a doc/*.pdf /tmp/caption
+cp -a README CHANGELOG SUMMARY /tmp/caption
 cd /tmp/caption
 ctanify caption.ins "*.tex=source/latex/caption" "*.eps=source/latex/caption" README "CHANGELOG=doc/latex/caption" "SUMMARY=doc/latex/caption" *.pdf
 #
