@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2553}
+% \CheckSum{2559}
 %
 % \iffalse
 %<*driver>
@@ -460,11 +460,13 @@
 % \changes{v3.1}{2007/07/21}{Option `compatibility' added}
 % \changes{v3.1}{2007/09/01}{caption v1.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v1.x$ compatibility options}
-% \changes{v3.4}{2018/04/15}{Option `compatibility' removed}
 %
 %    \begin{macrocode}
-\DeclareCaptionOption{compatibility}[1]{%
-  \caption@WarningNoLine{Obsolete option `compatibility=#1' ignored}}
+\DeclareCaptionOption{compatibility}[1]{\caption@setbool{compatibility}{#1}}
+\@onlypreamble@key{caption}{compatibility}
+%    \end{macrocode}
+%    \begin{macrocode}
+\captionsetup{compatibility=0} % default: Try not to be compatible to v1.x
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -775,8 +777,14 @@
 % our definition is the one which will be valid at last.
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \let\caption\caption@caption
-  \let\@caption\caption@@caption}
+  \caption@ifcompatibility{%
+    \caption@InfoNoLine{
+      \noexpand\caption will not be redefined since `compatibility' is set}%
+  }{%
+    \let\caption\caption@caption
+    \let\@caption\caption@@caption
+  }%
+}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
