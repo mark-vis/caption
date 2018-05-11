@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3010}
+% \CheckSum{3116}
 %
 % \iffalse
 %<*driver>
@@ -57,7 +57,7 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage[debug]{caption3}[2018/05/01]
+\usepackage{caption3}[2018/05/11]
 %
 \begin{document}
   \DocInput{caption3.dtx}
@@ -187,14 +187,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2018/05/02 v1.9 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2018/05/11 v1.9-develop caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Workaround for bug in package \package{arabtex}}
 % \package{arabtex} re-defines \cs{@gobble} as not-long so the packages of the
 % \package{caption} package bundle are doomed to fail.
 % Since this fatal bug won't be fixed in \package{arabtex} but we are dependent on a
-% proper definition of \cs{@gobble}, \cs{@firstofone}, \cs{@firstoftwo}, \cs{@secondoftwo}
+% proper definition of \cs{@gobble}, \cs{@firstofone}, \cs{@firstoftwo}, \cs{@secondoftwo},
 % and so on we fix this here. (Sigh!)
 %    \begin{macrocode}
 \providecommand\caption@FixArabTeX{%
@@ -285,6 +285,16 @@
     \expandafter\expandafter\expandafter\@firstoftwo
   \else
     \expandafter\expandafter\expandafter\@secondoftwo
+  \fi\fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@ifdefined[1]{%
+  \ifx#1\@undefined
+    \expandafter\@secondoftwo
+  \else\ifx#1\relax
+    \expandafter\expandafter\expandafter\@secondoftwo
+  \else
+    \expandafter\expandafter\expandafter\@firstoftwo
   \fi\fi}
 %    \end{macrocode}
 % \end{macro}
@@ -1991,7 +2001,7 @@
   \else
     \caption@Warning{%
       Cannot determine current font size.\MessageBreak
-      Try setting it with `size=' explicitly}%
+      Try setting it with `font=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionFont{smaller}{\caption@smaller}
 %    \end{macrocode}
@@ -2022,7 +2032,7 @@
   \else
     \caption@Warning{%
       Cannot determine current font size.\MessageBreak
-      Try setting it with `size=' explicitly}%
+      Try setting it with `font=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionFont{larger}{\caption@larger}
 %    \end{macrocode}
@@ -2036,8 +2046,8 @@
 % \changes{v1.2d}{2009/10/09}{Bugfix 09-05-18: \package{setspace} package support revised}
 %    \begin{macrocode}
 \DeclareCaptionFont{singlespacing}{%
-  \caption@ifundefined\setspace@singlespace{}{%
-    \setstretch\setspace@singlespace}}% normally 1
+  \caption@undefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
 \DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
 \DeclareCaptionFont{doublespacing}{\doublespacing}
 \DeclareCaptionFont{stretch}{\setstretch{#1}}
@@ -2538,11 +2548,99 @@
     {\let\caption@Debug\@gobble}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareOption{debug}{\setkeys{caption}{debug}}
-%    \end{macrocode}
-%    \begin{macrocode}
 \setkeys{caption}{debug=0}
 %    \end{macrocode}
+%
+% \subsection{Document classes support}
+% \changes{v1.9}{2018/05/11}{Document class support re-written}
+%
+% Determine document class used.
+% Set |\caption@documentclass| by good-guessing, if not already set.
+%    \begin{macrocode}
+\caption@setbool{documentclass}{1}%
+\caption@ifundefined\caption@documentclass{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \@ifclassloaded{beamer}{%
+    \caption@InfoNoLine{beamer document class detected}%
+    \def\caption@documentclass{beamer}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  }{\@ifclassloaded{elsarticle}{%
+    \caption@InfoNoLine{elsarticle document class detected}%
+    \def\caption@documentclass{elsarticle}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  }{\@ifclassloaded{memoir}{%
+    \caption@InfoNoLine{memoir document class detected}%
+    \def\caption@documentclass{memoir}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  }{\caption@ifdefined\scr@caption{%
+    \caption@InfoNoLine{KOMA-Script document class detected}%
+    \def\caption@documentclass{koma}%
+%    \end{macrocode}
+% If |\@captionheadfont| is defined, we assume it's a AMS or SMF document class.
+%    \begin{macrocode}
+  }{\caption@ifdefined\@captionheadfont{%
+    \caption@InfoNoLine{AMS or SMF document class detected}%
+    \def\caption@documentclass{ams}%
+%    \end{macrocode}
+% If |\@CaptionFonts| is defined, we assume it's a NTG Dutch document class.
+%    \begin{macrocode}
+  }{\caption@ifdefined\CaptionFonts{%
+    \caption@InfoNoLine{NTG document class detected}%
+    \def\caption@documentclass{ntg}%
+%    \end{macrocode}
+% If |\cph@font| and |\cpb@font| are defined, we assume it's a NTG Dutch document class.
+%    \begin{macrocode}
+  }{\caption@ifdefined\cph@font{%
+      \caption@ifdefined\cpb@font\@firstoftwo\@secondoftwo
+    }{%
+      \@secondoftwo
+    }{%
+    \caption@InfoNoLine{thesis document class detected}%
+    \def\caption@documentclass{thesis}%
+  }{%
+%    \end{macrocode}
+% If the definition of |\@makecaption| matches the one from the standard \LaTeX\ document classes
+% |article|, |report|, or |book|, we assume it's one of them.
+%    \begin{macrocode}
+    % article|report|book [2005/09/16 v1.4f Standard LaTeX document class]
+    \long\def\caption@tempa#1#2{%
+      \vskip\abovecaptionskip
+      \sbox\@tempboxa{#1: #2}%
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi
+      \vskip\belowcaptionskip}}
+    \ifx\caption@tempa\@makecaption
+      \caption@InfoNoLine{Standard document class detected}%
+    \else
+%    \end{macrocode}
+% Otherwise we are clueless and use standard default settings for the captions anyway.
+%    \begin{macrocode}
+      \caption@InfoNoLine{%
+        Unknown document class (or package),\MessageBreak
+        standard defaults will be used}%
+      \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
+      \caption@setbool{documentclass}{0}%
+    \fi
+    \let\caption@tempa\@undefined
+    \def\caption@documentclass{article}%
+  }}}}}}%
+}{}
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+\RequirePackage{caption-\caption@documentclass}
+%    \end{macrocode}
+%
+% \subsection{Babel support}
+% TODO
 %
 % \subsection{Execution of options}
 %
@@ -3169,8 +3267,8 @@
 %    \end{macrocode}
 % Support of \package{titletoc} package
 %    \begin{macrocode}
-     \caption@ifundefined\contentsuse{}{%
-       \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}%
+     \caption@ifdefined\contentsuse{%
+       \contentsuse{sub#3}{\csname ext@sub#3\endcsname}{}}%
 %    \end{macrocode}
 %    \begin{macrocode}
      \@namedef{sub#3name}{}%
@@ -3188,9 +3286,9 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@declaresublistentry{%
-  \caption@ifundefined\l@chapter
-    {\caption@@declaresublistentry\l@subsubsection}%
-    {\caption@@declaresublistentry\l@subsection}}
+  \caption@ifdefined\l@chapter
+    {\caption@@declaresublistentry\l@subsection}%
+    {\caption@@declaresublistentry\l@subsubsection}}
 \@onlypreamble\caption@declaresublistentry
 %    \end{macrocode}
 %    \begin{macrocode}
