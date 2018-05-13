@@ -27,14 +27,16 @@
 %% This work consists of the files
 %%   CHANGELOG, README, SUMMARY, caption.ins,
 %%   caption.dtx, caption2.dtx, caption3.dtx,
+%%   caption-base.dtx, caption-beamer.dtx,
 %%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
-%%   newfloat.dtx, and totalcount.dtx
+%%   newfloat.dtx, and totalcount.dtx,
 %% the derived files
 %%   caption.sty, caption2.sty, caption3.sty,
+%%   caption-base.sty, caption-beamer.sty,
 %%   bicaption.sty, ltcaption.sty, subcaption.sty,
-%%   newfloat.sty, and totalcount.sty
-%% and the user manuals
-%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%%   newfloat.sty, and totalcount.sty,
+%% and the user manual
+%%   caption-eng.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesPackage{caption3}[2018/05/13 v1.9-develop caption3 kernel (AR)]
@@ -428,6 +430,7 @@
 \DeclareCaptionOption{calcwidth*}{\caption@setcalcwidth*{#1}}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
 \DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
+\caption@set@bool\caption@iftwoside{\if@twoside 1\else 0\fi}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
 \DeclareCaptionOption{maxmargin}{\caption@setoptcmd\caption@maxmargin{#1}}
 \newcommand*\setcaptionmargin{%
@@ -548,11 +551,24 @@
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
   box=default,format=default,labelsep=default,textformat=default,%
-  justification=default,font=default,size=default,labelfont=default,textfont=default}
+  justification=default,font=default,size=default,labelfont=default,textfont=default,%
+  slc=default}
 \newcommand*\caption@setdefault[2]{%
   \@namedef{caption@#1@default}{\@nameuse{caption@#1@#2}}}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setslc{#1}}
 \DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
+\newcommand*\caption@setslc[1]{%
+  \caption@ifinlist{#1}{d,default}{%
+    \def\caption@ifslc{\caption@ifslc@default}%
+  }{%
+    \caption@set@bool\caption@ifslc{#1}%
+  }}
+\newcommand*\DeclareCaptionDefaultSinglelinecheck[1]{%
+  \def\caption@ifslc@default{#1}}
+\@onlypreamble\DeclareCaptionDefaultSinglelinecheck
+\newcommand*\SetCaptionDefaultSinglelinecheck{%
+  \caption@set@bool\caption@ifslc@default}
+\@onlypreamble\SetCaptionDefaultSinglelinecheck
 \newcommand*\DeclareCaptionBox[2]{%
   \global\long\@namedef{caption@box@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
@@ -711,9 +727,9 @@
 \newcommand*\DeclareCaptionFont[2]{%
   \define@key{caption@fnt}{#1}[]{\l@addto@macro\caption@fnt{#2}}}
 \@onlypreamble\DeclareCaptionFont
-\newcommand*\SetCaptionDefaultFont[2]{%
+\newcommand*\DeclareCaptionDefaultFont[2]{%
   \global\@namedef{caption#1@default}{#2}}
-\@onlypreamble\SetCaptionDefaultFont
+\@onlypreamble\DeclareCaptionDefaultFont
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
@@ -752,6 +768,23 @@
 \DeclareCaptionFont{rm}{\rmfamily}
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
+\DeclareCaptionFont{sansmath}{\sansmath}
+\DeclareCaptionFont{singlespacing}{%
+  \caption@ifdefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
+\DeclareCaptionFont{stretch}{\setstretch{#1}}
+\DeclareCaptionFont{normal}{%
+  \caption@font*{%
+    \KV@caption@fnt@normalcolor\@unused
+    \KV@caption@fnt@normalfont\@unused
+    \KV@caption@fnt@normalsize\@unused
+    \KV@caption@fnt@singlespacing\@unused}}
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
+\newcommand*\DeclareCaptionDefaultSize{%
+  \DeclareCaptionDefaultFont{size}}
+\@onlypreamble\DeclareCaptionDefaultSize
 \DeclareCaptionFont{tiny}{\tiny}
 \DeclareCaptionFont{scriptsize}{\scriptsize}
 \DeclareCaptionFont{footnotesize}{\footnotesize}
@@ -816,30 +849,13 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionFont{larger}{\caption@larger}
-\DeclareCaptionFont{sansmath}{\sansmath}
-\DeclareCaptionFont{singlespacing}{%
-  \caption@ifdefined\setspace@singlespace{%
-    \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
-\DeclareCaptionFont{normal}{%
-  \caption@font*{%
-    \KV@caption@fnt@normalcolor\@unused
-    \KV@caption@fnt@normalfont\@unused
-    \KV@caption@fnt@normalsize\@unused
-    \KV@caption@fnt@singlespacing\@unused}}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\newcommand*\SetCaptionDefaultSize{%
-  \SetCaptionDefaultFont{size}}
-\@onlypreamble\SetCaptionDefaultSize
 \newcommand*\DeclareCaptionJustification[2]{%
   \global\@namedef{caption@hj@#1}{#2}% for compatibility to v1.0
   \DeclareCaptionFont{#1}{#2}}
 \@onlypreamble\DeclareCaptionJustification
-\newcommand*\SetCaptionDefaultJustification{%
-  \SetCaptionDefaultFont{@hj}}
-\@onlypreamble\SetCaptionDefaultJustification
+\newcommand*\DeclareCaptionDefaultJustification{%
+  \DeclareCaptionDefaultFont{@hj}}
+\@onlypreamble\DeclareCaptionDefaultJustification
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
 \newcommand*\caption@setjustification{\caption@setfont{@hj}}
 \DeclareCaptionJustification{justified}{}
@@ -965,8 +981,9 @@
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
 \newcommand*\AtEndCaption{\l@addto@macro\caption@endhook}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\KV@caption@list{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
+\caption@setlist{on}
 \DeclareCaptionOption{listtype}{\caption@setlisttype{#1}}
 \DeclareCaptionOption{listtype+}{\caption@setlisttype@ext{#1}}
 \newcommand*\caption@setlisttype{%
@@ -1053,8 +1070,7 @@
   }}}}}}%
 }{}
 \RequirePackage{caption-\caption@documentclass}
-\captionsetup{style=default,position=default,%
-              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,listformat=default}
 \ProcessOptions*
 \newcommand\caption@addcontentsline[2]{%
   \caption@ifcontentsline{#2}{%

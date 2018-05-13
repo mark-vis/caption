@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3081}
+% \CheckSum{3103}
 %
 % \iffalse
 %<*driver>
@@ -1116,6 +1116,7 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
 \DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
+\caption@set@bool\caption@iftwoside{\if@twoside 1\else 0\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
@@ -1453,7 +1454,8 @@
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
   box=default,format=default,labelsep=default,textformat=default,%
-  justification=default,font=default,size=default,labelfont=default,textfont=default}
+  justification=default,font=default,size=default,labelfont=default,textfont=default,%
+  slc=default}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setdefault}
@@ -1467,9 +1469,43 @@
 %
 % \changes{v1.2b}{2008/05/06}{Option \opt{slc=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setslc{#1}}
 \DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@setslc}
+% \changes{v1.9}{2018/03/13}{This macro added}
+%  |\caption@setslc|\marg{boolean}
+%    \begin{macrocode}
+\newcommand*\caption@setslc[1]{%
+  \caption@ifinlist{#1}{d,default}{%
+    \def\caption@ifslc{\caption@ifslc@default}%
+  }{%
+    \caption@set@bool\caption@ifslc{#1}%
+  }}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionDefaultSinglelinecheck}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\DeclareCaptionDefaultSinglelinecheck|\marg{code}\\
+%  The code given should expand to either |\@firstoftwo| or |\@secondoftwo|.
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionDefaultSinglelinecheck[1]{%
+  \def\caption@ifslc@default{#1}}
+\@onlypreamble\DeclareCaptionDefaultSinglelinecheck
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultSinglelinecheck}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\SetCaptionDefaultSinglelinecheck|\marg{boolean}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultSinglelinecheck{%
+  \caption@set@bool\caption@ifslc@default}
+\@onlypreamble\SetCaptionDefaultSinglelinecheck
+%    \end{macrocode}
+% \end{macro}
 %
 % \section{Boxes}
 %
@@ -1867,14 +1903,14 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultFont}
+% \begin{macro}{\DeclareCaptionDefaultFont}
 % \changes{v1.1}{2006/05/14}{This macro added}
-% \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionFont} to \cs{SetCaptionDefaultFont}}
-%  |\SetCaptionDefaultFont|\marg{name}\marg{code}
+% \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionFont} to \cs{DeclareCaptionDefaultFont}}
+%  |\DeclareCaptionDefaultFont|\marg{name}\marg{code}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultFont[2]{%
+\newcommand*\DeclareCaptionDefaultFont[2]{%
   \global\@namedef{caption#1@default}{#2}}
-\@onlypreamble\SetCaptionDefaultFont
+\@onlypreamble\DeclareCaptionDefaultFont
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1962,6 +1998,53 @@
 \DeclareCaptionFont{tt}{\ttfamily}
 %    \end{macrocode}
 %
+% \changes{v1.3}{2011/01/01}{\package{sansmath} package support added}
+%    \begin{macrocode}
+\DeclareCaptionFont{sansmath}{\sansmath}
+%    \end{macrocode}
+%
+% \changes{v1.0n}{2007/04/02}{\package{setspace} package support added}
+% \changes{v1.2d}{2009/10/09}{Bugfix 09-05-18: \package{setspace} package support revised}
+%    \begin{macrocode}
+\DeclareCaptionFont{singlespacing}{%
+  \caption@ifdefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
+\DeclareCaptionFont{stretch}{\setstretch{#1}}
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+%\DeclareCaptionFont{normal}{%
+%  \caption@font{normalcolor,normalfont,normalsize,singlespacing}
+\DeclareCaptionFont{normal}{%
+  \caption@font*{%
+    \KV@caption@fnt@normalcolor\@unused
+    \KV@caption@fnt@normalfont\@unused
+    \KV@caption@fnt@normalsize\@unused
+    \KV@caption@fnt@singlespacing\@unused}}
+%    \end{macrocode}
+%
+% \changes{v1.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
+% The old versions \version{1.x} of \thispackage\ offered this
+% command to setup the font size used for captions. We still do
+% so old documents will work fine.
+%    \begin{macrocode}
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\DeclareCaptionDefaultSize}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\DeclareCaptionDefaultSize|\marg{code}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionDefaultSize{%
+  \DeclareCaptionDefaultFont{size}}
+\@onlypreamble\DeclareCaptionDefaultSize
+%    \end{macrocode}
+% \end{macro}
+%
+% These are the pre-defined size code snippets.
+%
 % \changes{v1.7}{2018/05/01}{Missing font sizes \texttt{tiny}, \texttt{LARGE}, \texttt{huge}, and \texttt{Huge} added}
 %    \begin{macrocode}
 \DeclareCaptionFont{tiny}{\tiny}
@@ -2038,51 +2121,6 @@
 \DeclareCaptionFont{larger}{\caption@larger}
 %    \end{macrocode}
 %
-% \changes{v1.3}{2011/01/01}{\package{sansmath} package support added}
-%    \begin{macrocode}
-\DeclareCaptionFont{sansmath}{\sansmath}
-%    \end{macrocode}
-%
-% \changes{v1.0n}{2007/04/02}{\package{setspace} package support added}
-% \changes{v1.2d}{2009/10/09}{Bugfix 09-05-18: \package{setspace} package support revised}
-%    \begin{macrocode}
-\DeclareCaptionFont{singlespacing}{%
-  \caption@ifdefined\setspace@singlespace{%
-    \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-%\DeclareCaptionFont{normal}{%
-%  \caption@font{normalcolor,normalfont,normalsize,singlespacing}
-\DeclareCaptionFont{normal}{%
-  \caption@font*{%
-    \KV@caption@fnt@normalcolor\@unused
-    \KV@caption@fnt@normalfont\@unused
-    \KV@caption@fnt@normalsize\@unused
-    \KV@caption@fnt@singlespacing\@unused}}
-%    \end{macrocode}
-%
-% \changes{v1.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
-% The old versions \version{1.x} of \thispackage\ offered this
-% command to setup the font size used for captions. We still do
-% so old documents will work fine.
-%    \begin{macrocode}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-%    \end{macrocode}
-%
-% \begin{macro}{\SetCaptionDefaultSize}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\SetCaptionDefaultSize|\marg{code}
-%    \begin{macrocode}
-\newcommand*\SetCaptionDefaultSize{%
-  \SetCaptionDefaultFont{size}}
-\@onlypreamble\SetCaptionDefaultSize
-%    \end{macrocode}
-% \end{macro}
-%
 % \section{Justifications}
 %
 % \begin{macro}{\DeclareCaptionJustification}
@@ -2098,15 +2136,14 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultJustification}
+% \begin{macro}{\DeclareCaptionDefaultJustification}
 % \changes{v1.1}{2007/07/03}{This macro added}
 % \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionJustification} to \cs{DeclareCaptionDefaultJustification}}
-% \changes{v1.9}{2018/05/13}{Renamed from \cs{DeclareCaptionDefaultJustification} to \cs{SetCaptionDefaultJustification}}
-%  |\SetCaptionDefaultJustification|\marg{code}
+%  |\DeclareCaptionDefaultJustification|\marg{code}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultJustification{%
-  \SetCaptionDefaultFont{@hj}}
-\@onlypreamble\SetCaptionDefaultJustification
+\newcommand*\DeclareCaptionDefaultJustification{%
+  \DeclareCaptionDefaultFont{@hj}}
+\@onlypreamble\DeclareCaptionDefaultJustification
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2443,7 +2480,7 @@
 % \changes{v1.2}{2007/11/17}{Option \opt{list=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\KV@caption@list{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setlist}
@@ -2451,6 +2488,9 @@
 %  |\caption@setlist|\marg{boolean}
 %    \begin{macrocode}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@setlist{on}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2643,8 +2683,7 @@
 % \section{Execution of options}
 %
 %    \begin{macrocode}
-\captionsetup{style=default,position=default,%
-              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,listformat=default}
 %    \end{macrocode}
 %    \begin{macrocode}
 \ProcessOptions*

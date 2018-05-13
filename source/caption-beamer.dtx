@@ -1,8 +1,8 @@
 % \iffalse meta-comment
 % 
-% This is file `caption-base.dtx'.
+% This is file `caption-beamer.dtx'.
 % 
-% Copyright (C) 1994-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -25,12 +25,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{14}
+% \CheckSum{53}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-base.drv}[2018/05/13 v1.0 Implementation of the caption-base package]
+\ProvidesFile{caption-beamer.drv}[2018/05/13 v1.0 Implementation of the caption-beamer package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -59,7 +59,7 @@
   {e-TeX}}
 %
 \begin{document}
-  \DocInput{caption-base.dtx}
+  \DocInput{caption-beamer.dtx}
 \end{document}
 %</driver>
 % \fi
@@ -70,17 +70,17 @@
 % \let\class\puresf \let\package\puresf
 % \let\env\purett \let\opt\purett
 %
-% \def\thispackage{the \package{caption-base} package}
-% \def\Thispackage{The \package{caption-base} package}
+% \def\thispackage{the \package{caption-beamer} package}
+% \def\Thispackage{The \package{caption-beamer} package}
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 % \newcommand*\version[2][]{\textit{v#2}}
 %
-% \GetFileInfo{caption-base.drv}
+% \GetFileInfo{caption-beamer.drv}
 % \let\docdate\filedate
 % \let\docversion\fileversion
-% \GetFileInfo{caption-base.sty}
+% \GetFileInfo{caption-beamer.sty}
 %
 % \title{The Implementation of
 %        \texorpdfstring{\thispackage\thanks{%^^A
@@ -92,8 +92,7 @@
 % \maketitle
 %
 % \begin{abstract}
-% This package adapts the \package{caption} package to the \LaTeX\ base classes,
-% \package{article}, \package{report}, and \package{book}.
+% This package adapts the \package{caption} package to the \package{beamer} document classes.
 % \end{abstract}
 % 
 % \section*{User manual}
@@ -165,7 +164,12 @@
 % \setlength{\parskip}{0pt plus 1pt}
 % \newcommand*\Note[2][Note]{\par{\small\emph{#1:} #2}\par}
 %
-% \changes{v1.0}{2018/05/13}{First release}
+% \changes{v1.0}{2007/03/10}{\package{beamer} class support added}
+% \changes{v1.0}{2011/08/06}{\package{beamer} class support revised}
+% \changes{v1.0}{2013/04/27}{The \package{beamer} template \texttt{caption label separator} will be used now}
+%% \changes{v1.0}{2016/05/22}{Re-definition of label format \texttt{simpleMagyar} added to \package{beamer} class support}
+%% \changes{v1.0}{2018/04/15}{Re-definition of label format \texttt{simpleMagyar} revised}
+% \changes{v1.0}{2018/05/01}{Definition of \package{beamer} default label font revised}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -181,14 +185,33 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption-base}[2018/05/13 v1.0-develop Adaption of the caption package to the LaTeX base document classes (AR)]
+\ProvidesPackage{caption-beamer}[2018/05/13 v1.0-develop Adaption of the caption package to the beamer document classes (AR)]
 %    \end{macrocode}
+%
+% \section{Helper macros}
+%
+% \begin{macro}{\caption@ifbeamertemplate}
+% |\caption@ifbeamertemplate|\marg{caption template name}\marg{yes-code}\marg{no-code}\\
+% tests if the given beamer caption template was selected by the user (or not).
+%    \begin{macrocode}
+\newcommand*\caption@ifbeamertemplate[1]{%
+  \begingroup
+    \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+    \@nameuse{beamer@@tmpop@caption@#1}%
+    \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
+      \endgroup\expandafter\@firstoftwo
+    \else
+      \endgroup\expandafter\@secondoftwo
+    \fi}
+%    \end{macrocode}
+% \end{macro}
 %
 % \section{Set default values}
 %
-% The `default' caption single line check maps to `on'.
+% The `default' single-line-check maps to the beamer template setting `caption name own line'.
 %    \begin{macrocode}
-\SetCaptionDefaultSinglelinecheck{true}
+\DeclareCaptionDefaultSinglelinecheck{%
+  \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
 %    \end{macrocode}
 %
 % The `default' caption box maps to `none'.
@@ -201,14 +224,22 @@
 \SetCaptionDefaultFormat{plain}
 %    \end{macrocode}
 %
-% The `default' caption label format maps to `simple'.
+% The `default' caption label format maps to either `simple' (if the `numbered' beamer template is set) or `unnumbered' (otherwise).
 %    \begin{macrocode}
-\SetCaptionDefaultLabelFormat{simple}
+\DeclareCaptionLabelFormat{default}{%
+  \caption@ifbeamertemplate{numbered}%
+    \caption@lfmt@simple
+    \caption@lfmt@unnumbered
+  {#1}{#2}}
 %    \end{macrocode}
 %
-% The `default' caption label separator maps to `colon'.
+% The `default' caption label separator maps to the beamer template `caption label separator'.
 %    \begin{macrocode}
-\SetCaptionDefaultLabelSeparator{colon}
+\caption@declarelabelseparator
+  {\caption@ifbeamertemplate{caption name own line}\@gobble\@firstofone}
+  {default}
+  {\caption@ifbeamertemplate{caption name own line}{\\}%
+     {\usebeamertemplate{caption label separator}}}
 %    \end{macrocode}
 %
 % The `default' caption text format maps to `simple'.
@@ -216,18 +247,43 @@
 \SetCaptionDefaultTextFormat{simple}
 %    \end{macrocode}
 %
-% There is no `default' caption font, leaving the current font settings intact.
+% The `default' caption font maps to the beamer settings for `caption' resp. `caption name'.
 %    \begin{macrocode}
-\DeclareCaptionDefaultFont{font}{}
-\DeclareCaptionDefaultFont{labelfont}{}
+\DeclareCaptionDefaultFont{font}{%
+  \usebeamerfont*{caption}%
+  \usebeamercolor[fg]{caption}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionDefaultFont{labelfont}{%
+  \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
+  \usebeamercolor[fg]{caption name}%
+  \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
+  \usebeamerfont{caption name}}
+%    \end{macrocode}
+%    \begin{macrocode}
 \DeclareCaptionDefaultFont{textfont}{}
+%    \end{macrocode}
+%
+% There is no `default' caption size, leaving the current selected size intact.
+%    \begin{macrocode}
 \DeclareCaptionDefaultSize{}
-\DeclareCaptionDefaultJustification{}
+%    \end{macrocode}
+%
+% The `default' caption justification is |\raggedright|.
+%    \begin{macrocode}
+\DeclareCaptionDefaultJustification{\raggedright}
 %    \end{macrocode}
 %
 % The `default' caption list format maps to `subsimple'.
 %    \begin{macrocode}
 \SetCaptionDefaultListFormat{subsimple}
+%    \end{macrocode}
+%
+% \section{Other adaptions}
+%
+% Since the beamer class do not offer a `List of figures' we switch it off.
+%    \begin{macrocode}
+\captionsetup{list=off}
 %    \end{macrocode}
 %
 % \iffalse
