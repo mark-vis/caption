@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{53}
+% \CheckSum{65}
 %
 % \iffalse
 %<*driver>
@@ -107,8 +107,10 @@
 % \end{quote}
 %
 % \StopEventually{}
+% \iffalse
 % \clearpage
 % \tableofcontents
+% \fi
 % 
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -167,9 +169,10 @@
 % \changes{v1.0}{2007/03/10}{\package{beamer} class support added}
 % \changes{v1.0}{2011/08/06}{\package{beamer} class support revised}
 % \changes{v1.0}{2013/04/27}{The \package{beamer} template \texttt{caption label separator} will be used now}
-%% \changes{v1.0}{2016/05/22}{Re-definition of label format \texttt{simpleMagyar} added to \package{beamer} class support}
-%% \changes{v1.0}{2018/04/15}{Re-definition of label format \texttt{simpleMagyar} revised}
+% \changes{v1.0}{2016/05/22}{Re-definition of label format \texttt{simpleMagyar} added to \package{beamer} class support}
+% \changes{v1.0}{2018/04/15}{Re-definition of label format \texttt{simpleMagyar} revised}
 % \changes{v1.0}{2018/05/01}{Definition of \package{beamer} default label font revised}
+% \changes{v1.0}{2018/05/14}{Re-definition of label format \texttt{simpleMagyar} revised}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -185,7 +188,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption-beamer}[2018/05/13 v1.0-develop Adaption of the caption package to the beamer document classes (AR)]
+\ProvidesPackage{caption-beamer}[2018/05/14 v1.0-develop Adaption of the caption package to the beamer document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Helper macros}
@@ -232,6 +235,27 @@
     \caption@lfmt@unnumbered
   {#1}{#2}}
 %    \end{macrocode}
+%
+% The \package{magyar} babel package redefines the current label format to a one called |simple|\-|Magyar|,
+% defined within |\@@magyar@caption|\-|fix| which will be executed |\At|\-|Begin|\-|Document|:
+% \begin{quote}
+%   |\DeclareCaptionLabelFormat{simpleMagyar}%|\\
+%   |  {#2.\bothIfSecond{\nobreakspace}{#1}}|
+% \end{quote}
+% When used with beamer, we need to patch it so no numbering will be used if the `numbered` template isn't selected.
+%    \begin{macrocode}
+\DeclareCaptionLabelFormat{simpleMagyar}{%
+  \caption@ifbeamertemplate{numbered}%
+    {#2.\bothIfSecond{\nobreakspace}{#1}}%
+    {\caption@lfmt@unnumbered{#1}{#2}}}
+%    \end{macrocode}
+% \begin{macro}{\@@magyar@captionfix}
+% Prevent \package{magyar} from defining this caption label format on its own.
+%    \begin{macrocode}
+\let\@@magyar@captionfix\relax
+\AtBeginDocument{\let\@@magyar@captionfix\relax}
+%    \end{macrocode}
+% \end{macro}
 %
 % The `default' caption label separator maps to the beamer template `caption label separator'.
 %    \begin{macrocode}
