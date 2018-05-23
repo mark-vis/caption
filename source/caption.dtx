@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3579}
+% \CheckSum{3624}
 %
 % \iffalse
 %<*driver>
@@ -224,7 +224,7 @@
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2018/05/01] % needs v1.8 or newer
+\RequirePackage{caption3}[2018/05/20] % needs v1.8 or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible document classes}
@@ -913,6 +913,7 @@
 % \changes{v3.2d}{2011/10/21}{Adapted to the \textsf{memoir} document class}
 % \changes{v3.2f}{2012/01/14}{Usage of \cs{M@gettitle} moved to \cs{caption@prepareanchor}}
 % \changes{v3.3}{2013/01/06}{Adapted to the \textsf{nag} package}
+% \changes{v3.3}{2018/05/20}{\package{arabic} babel package support added}
 %  As above, our version has been adapted to the packages we support.
 %  Additionally our code is nested by |\caption@beginex| \&
 %  |\caption@end| instead of |\begingroup| \& |\endgroup|.
@@ -945,7 +946,7 @@
         \let\caption@makeanchor\@firstofone
       \fi
       \@makecaption{\csname fnum@#1\endcsname}%
-                   {\ignorespaces\caption@makeanchor{#3}}\par
+                   {\ignorespaces\caption@makeanchor{\caption@rl{#3}}}\par
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
 %    \end{macrocode}
@@ -1161,6 +1162,24 @@
       \def\@currentlabelname{#2}%
       \M@gettitle{#2}%
     }}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
+    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+    \long\def\@caption#1[#2]#3{%
+      \par
+      \addtocontents{\csname ext@#1\endcsname}{\xstring\select@language{\main@Arabi@language}}%
+      \addcontentsline{\csname ext@#1\endcsname}{#1}%
+        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces \if@rl{\textRL{#2}}\else\textLR{#2}\fi}}%
+      \begingroup
+        \@parboxrestore
+        \if@minipage
+          \@setminipage
+        \fi
+        \normalsize
+        \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces \if@rl{\textRL{#3}}\else\textLR{#3}\fi}\par
+      \endgroup}}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -4449,7 +4468,7 @@
     \caption@beginex{#1}{#2}{#3}%
       \caption@boxrestore
       \caption@normalsize
-      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces\caption@rl{#3}}\par
     \caption@end}%
 %    \end{macrocode}
 % \end{macro}
@@ -4516,7 +4535,7 @@
     \caption@beginex{#1}{#2}{#3}%
       \caption@boxrestore
       \caption@normalsize
-      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+      \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces\caption@rl{#3}}\par
     \caption@end
     \global\advance\ST@pageleft -\PWSTcapht
     \ST@trace\tw@{Added caption. Space left for xtabular: \the\ST@pageleft}}%

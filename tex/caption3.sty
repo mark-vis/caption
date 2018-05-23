@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2018/05/16 v1.8 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2018/05/20 v1.8 caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -1302,6 +1302,44 @@
   \DeclareCaptionDefaultFont{labelfont}{\cph@font}
   \DeclareCaptionDefaultFont{textfont}{\cpb@font}
 }
+\AtBeginDocument{\caption@ifundefined\ArabiCoreLoaded{%
+  \let\caption@rl\@firstofone
+}{%
+  \newcommand\caption@rl[1]{\if@rl{\textRL{#1}}\else\textLR{#1}\fi}
+}}
+\caption@ifundefined\ArabiCoreLoaded{}{%
+  \DeclareCaptionLabelSeparator{arabi}{ : }
+  \DeclareCaptionLabelSeparator{default}{%
+    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+  \DeclareCaptionFormat{default}{%
+    \if@rl
+%%%   \textRL{#3}#2#1\par
+      #3#2#1\par
+    \else
+      #1#2#3\par
+    \fi
+  }
+  \caption@CheckCommand\@makecaption{%
+    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip
+      \sbox\@tempboxa{#1: #2}%
+      \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+      \if@rl{
+        \ifdim \wd\@Arabitempboxa >\hsize
+        \textRL{#2} : #1\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+      \fi}\else{
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi}\fi
+      \vskip\belowcaptionskip}}
+}
 \caption@ifundefined\FB@makecaption{}{%
   \caption@CheckCommand\@makecaption{%
     % frenchb.ldf [2005/02/06 v1.6g French support from the babel system]
@@ -1425,10 +1463,12 @@
         {\csname ext@#1\endcsname}%
         {#1}%
         {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
-        {\ignorespaces #2}}}}
+        {\ignorespaces\caption@rl{#2}}}}}
 \newcommand*\caption@add@contentsline{%
   \caption@@@addcontentsline}
 \newcommand*\caption@@@addcontentsline[4]{%
+  \caption@ifundefined\main@Arabi@language{}%
+    {\addtocontents{#1}{\xstring\select@language{\main@Arabi@language}}}%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
 \newcommand\caption@ifcontentsline[1]{%
   \caption@iflist
@@ -1598,7 +1638,8 @@
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
         {}%
-      \par}}}
+%%%   \par}}}
+      }}}
 \newcommand\caption@ifempty[1]{%
   \caption@if@empty{#1}%
   \caption@ifempty\@unused}

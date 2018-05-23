@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3843}
+% \CheckSum{3928}
 %
 % \iffalse
 %<*driver>
@@ -198,7 +198,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2018/05/16 v1.8 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2018/05/20 v1.8 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Workaround for bug in package \package{arabtex}}
@@ -3054,8 +3054,66 @@
 }
 %    \end{macrocode}
 %
+% \subsubsection{The arabic Babel option}
+% \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
+%
+% \begin{macro}{\caption@rl}
+% \changes{v1.8}{2018/05/20}{This macro added}
+%    \begin{macrocode}
+\AtBeginDocument{\caption@ifundefined\ArabiCoreLoaded{%
+  \let\caption@rl\@firstofone
+}{%
+  \newcommand\caption@rl[1]{\if@rl{\textRL{#1}}\else\textLR{#1}\fi}
+}}
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@ifundefined\ArabiCoreLoaded{}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \DeclareCaptionLabelSeparator{arabi}{ : }
+  \DeclareCaptionLabelSeparator{default}{%
+    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \DeclareCaptionFormat{default}{%
+    \if@rl
+%%%   \textRL{#3}#2#1\par
+      #3#2#1\par
+    \else
+      #1#2#3\par
+    \fi
+  }
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@CheckCommand\@makecaption{%
+    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip
+      \sbox\@tempboxa{#1: #2}%
+      \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+      \if@rl{
+        \ifdim \wd\@Arabitempboxa >\hsize
+        \textRL{#2} : #1\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+      \fi}\else{
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi}\fi
+      \vskip\belowcaptionskip}}
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+%
 % \subsubsection{The frenchb Babel option}
-% \changes{v1.1}{2006/05/14}{\package{frenchb} package support added}
+% \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
 %
 %    \begin{macrocode}
 \caption@ifundefined\FB@makecaption{}{%
@@ -3218,6 +3276,7 @@
 % \changes{v1.5}{2012/01/15}{Usage of \cs{caption@addsubcontentslines} added}
 % \changes{v1.7}{2015/09/15}{Argument \#3 which holds the environment name added to \cs{caption@lstfmt}}
 % \changes{v1.7}{2015/09/20}{Unfortunately \package{subfig} defines and uses \cs{caption@lstfmt} as well, so I replaced the third argument with \cs{captionlisttype}}
+% \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
 %  |\caption@addcontentsline|\marg{type}\marg{list entry}\par
 %  Makes an entry in the list-of-whatever, if requested,
 %  i.e.~the argument \meta{list entry} is not empty and
@@ -3252,7 +3311,7 @@
         {\csname ext@#1\endcsname}%
         {#1}%
         {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
-        {\ignorespaces #2}}}}
+        {\ignorespaces\caption@rl{#2}}}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@add@contentsline{%
@@ -3260,6 +3319,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@@addcontentsline[4]{%
+  \caption@ifundefined\main@Arabi@language{}%
+    {\addtocontents{#1}{\xstring\select@language{\main@Arabi@language}}}%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -3675,7 +3736,8 @@
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
         {}%
-      \par}}}
+%%%   \par}}}
+      }}}
 %    \end{macrocode}
 % \end{macro}
 %
