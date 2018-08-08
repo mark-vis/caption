@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/05/01 v3.3-147 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/08/08 v3.3-148 Customizing captions (AR)]
 \RequirePackage{caption3}[2018/05/01] % needs v1.8 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -287,21 +287,21 @@
 }
 \caption@SetupOptions{caption}{\caption@setkeys{#1}{#2}}
 \caption@ProcessOptions*{caption}
-\newif\ifcaption@caption
-\newif\ifcaption@subcaption
-\newif\ifcaption@ContinuedFloat
+\newcounter{caption@flags}
+\newcommand*\caption@ifflag[1]{%
+  \@tempcnta\c@caption@flags
+  \divide\@tempcnta #1\relax
+  \ifodd\@tempcnta
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
 \newcommand*\caption@clrflag[1]{%
-  \caption@chgflag{#1}{false}}
+  \caption@ifflag{#1}{\caption@addtoflags{-#1}}{}}
 \newcommand*\caption@setflag[1]{%
-  \caption@chgflag{#1}{true}}
-\newcommand*\caption@chgflag[2]{%
-  \global\csname caption@#1#2\endcsname}
-\caption@AtBeginDocument{%
-  \caption@ifundefined\FR@loc@{}{%
-    \caption@InfoNoLine{floatrow package is loaded}%
-    \g@addto@macro\FR@loc@{%
-      \renewcommand*\caption@chgflag[2]{%
-        \csname caption@#1#2\endcsname}}}}
+  \caption@ifflag{#1}{}{\caption@addtoflags{#1}}}
+\newcommand*\caption@addtoflags{%
+  \addtocounter{caption@flags}}
 \def\caption@caption{%
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
@@ -739,9 +739,7 @@
     {\caption@@settype{sub}*{sub\@captype}}%
     {\caption@@settype{sub}{sub\@captype}}}%
 \newcommand*\caption@settype{%
-  \caption@clrflag{caption}%
-  \caption@clrflag{subcaption}%
-  \caption@clrflag{ContinuedFloat}%
+  \setcounter{caption@flags}\z@
   \caption@set@type}
 \newcommand*\caption@set@type{%
   \caption@@settype{}}
@@ -880,7 +878,7 @@
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
   \fi}
 \newcommand*\caption@@ContinuedFloat{%
-  \caption@setflag{ContinuedFloat}%
+  \caption@setflag1% ContinuedFloat
   \caption@@@ContinuedFloat}
 \newcommand*\caption@@@ContinuedFloat{%
   \stepcounter{ContinuedFloat}%
@@ -909,21 +907,21 @@
     {\caption@Error{No float type '#1' defined}}%
     {\caption@ref@stepcounter{#1}%
      \caption@fixposition
-     \caption@iftop\caption@setflag\caption@clrflag{caption}%
-     \caption@clrflag{subcaption}%
+     \caption@iftop\caption@setflag\caption@clrflag2% caption
+     \caption@clrflag4% subcaption
      \@nameuse{donemaincaptiontrue}}}
 \newcommand*\caption@ref@stepcounter{%
-  \ifcaption@ContinuedFloat
+  \caption@ifflag1{% ContinuedFloat
     \let\caption@tempa\caption@@refcounter
-    \caption@clrflag{ContinuedFloat}%
-  \else
+    \caption@clrflag1% ContinuedFloat
+  }{%
     \let\caption@tempa\caption@@refstepcounter
-    \ifcaption@caption \else
-      \ifcaption@subcaption
+    \caption@ifflag2{}{% caption
+      \caption@ifflag4{% subcaption
         \let\caption@tempa\caption@@refcounter
-      \fi
-    \fi
-  \fi
+      }{}%
+    }%
+  }%
   \caption@tempa}
 \newcommand*\caption@@refcounter[1]{%
   \let\caption@stepcounter@ORI\stepcounter
@@ -1010,18 +1008,18 @@
 \newcommand*\caption@subtypehook{%
   \ifx\caption\caption@subcaption \else
     \caption@warmup
-    \ifcaption@caption \else
+    \caption@ifflag2{}{% caption
       \let\caption@add@contentsline\caption@addsubcontentsline
       \let\caption@addsubcontentslines\@gobble
-      \ifcaption@subcaption \else
-        \ifcaption@ContinuedFloat
-          \caption@clrflag{ContinuedFloat}%
-        \else
+      \caption@ifflag4{}{% subcaption
+        \caption@ifflag1{% ContinuedFloat
+          \caption@clrflag1%
+        }{%
           \caption@@stepcounter\@captype
-        \fi
-        \caption@setflag{subcaption}%
-      \fi
-    \fi
+        }%
+        \caption@setflag4% subcaption
+      }%
+    }%
     \c@ContinuedFloat=0\relax
     \let\caption@setfloatcapt\@firstofone
     \caption@setbox{none}%

@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3579}
+% \CheckSum{3567}
 %
 % \iffalse
 %<*driver>
@@ -218,7 +218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/05/01 v3.3-147 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/08/08 v3.3-148 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -818,56 +818,57 @@
 %
 % \subsection{\cs{caption}, \cs{@caption}, and \cs{@makecaption}}
 %
-% \begin{macro}{\ifcaption@caption}
+% \begin{macro}{\caption@ifflag}
 % \changes{v3.3}{2011/12/28}{This switch added}
-% \begin{macro}{\ifcaption@subcaption}
-% \changes{v3.3}{2011/12/28}{This switch added}
-% \begin{macro}{\ifcaption@ContinuedFloat}
-% \changes{v3.3}{2011/12/28}{This switch added}
+% \changes{v3.3}{2018/08/08}{Rewritten (and renamed) so a counter is used instead of a switch}
 % Since we support continued floats and sub-figures it's not an easy task
 % to manage the figure (and table) counter. (Especially since previous versions
 % of the caption package has proven that correcting a counter locally is not a good idea.)
 %
 % These three switches hold the
-% current status: |\if|\-|caption@caption| is set if the caption was already
+% current status: |\caption@if|\-|flag{2}| is set if the caption was already
 % typeset (so the counter doesn't need to be incremented for sub-figures),
-% |\if|\-|caption@sub|\-|caption| is set if there is already content which have
+% |\caption@if|\-|flag{4}| is set if there is already content which have
 % incremented the counter (so the counter doesn't need to be incremented
 % for the main caption, further sub-figures, and other stuff), and
-% |\if|\-|caption@Continued|\-|Float| is set if |\Continued|\-|Float| was given.
+% |\caption@if|\-|flag{1}| is set if |\Continued|\-|Float| was given.
+%
+% In the past three boolean switches were used to store the flags, but since some
+% packages (like the \package{floatrow} and \package{tabu} package) try hard to keep
+% counter changes locally under certain circumstances, it seems a good idea to make
+% these flags a counter value, too.
 %    \begin{macrocode}
-\newif\ifcaption@caption
-\newif\ifcaption@subcaption
-\newif\ifcaption@ContinuedFloat
+\newcounter{caption@flags}
 %    \end{macrocode}
-% \end{macro}
-% \end{macro}
+%    \begin{macrocode}
+\newcommand*\caption@ifflag[1]{%
+  \@tempcnta\c@caption@flags
+  \divide\@tempcnta #1\relax
+  \ifodd\@tempcnta
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@clrflag}
 % \changes{v3.3}{2013/04/14}{This macro added}
+% \changes{v3.3}{2018/08/08}{Rewritten so a counter is used instead of a switch}
 % \begin{macro}{\caption@setflag}
 % \changes{v3.3}{2013/04/14}{This macro added}
+% \changes{v3.3}{2018/08/08}{Rewritten so a counter is used instead of a switch}
 % Furthermore we introduce the macros \cs{caption@clrflag} and \cs{caption@setflag}
 % for clearing resp.~setting these flags.
 %    \begin{macrocode}
 \newcommand*\caption@clrflag[1]{%
-  \caption@chgflag{#1}{false}}
+  \caption@ifflag{#1}{\caption@addtoflags{-#1}}{}}
 \newcommand*\caption@setflag[1]{%
-  \caption@chgflag{#1}{true}}
-\newcommand*\caption@chgflag[2]{%
-  \global\csname caption@#1#2\endcsname}
+  \caption@ifflag{#1}{}{\caption@addtoflags{#1}}}
 %    \end{macrocode}
-% The \package{floatrow} package uses \cs{FR@loc@} to keep changes
-% (flags, counters, \ldots) local. Since it is not aware of our flags above
-% we need to extend that macro (if defined).
 %    \begin{macrocode}
-\caption@AtBeginDocument{%
-  \caption@ifundefined\FR@loc@{}{%
-    \caption@InfoNoLine{floatrow package is loaded}%
-    \g@addto@macro\FR@loc@{%
-      \renewcommand*\caption@chgflag[2]{%
-        \csname caption@#1#2\endcsname}}}}
+\newcommand*\caption@addtoflags{%
+  \addtocounter{caption@flags}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1608,9 +1609,7 @@
 %  (if |hypcap=|\-|true| and the \package{hypcap} package is not loaded).
 %    \begin{macrocode}
 \newcommand*\caption@settype{%
-  \caption@clrflag{caption}%
-  \caption@clrflag{subcaption}%
-  \caption@clrflag{ContinuedFloat}%
+  \setcounter{caption@flags}\z@
   \caption@set@type}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1925,7 +1924,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@ContinuedFloat{%
-  \caption@setflag{ContinuedFloat}%
+  \caption@setflag1% ContinuedFloat
   \caption@@@ContinuedFloat}
 \newcommand*\caption@@@ContinuedFloat{%
   \stepcounter{ContinuedFloat}%
@@ -2011,12 +2010,12 @@
 % therefore ending this part, so we set the flag to |false| in this case.)
 %    \begin{macrocode}
      \caption@fixposition
-     \caption@iftop\caption@setflag\caption@clrflag{caption}%
+     \caption@iftop\caption@setflag\caption@clrflag2% caption
 %    \end{macrocode}
 % This part does not contain content (like sub-figures) yet,
 % so we set |\if|\-|caption@sub|\-|caption| to |false|.
 %    \begin{macrocode}
-     \caption@clrflag{subcaption}%
+     \caption@clrflag4% subcaption
 %    \end{macrocode}
 % Support of the \textsf{memoir} document class.
 %    \begin{macrocode}
@@ -2024,18 +2023,18 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@ref@stepcounter{%
-  \ifcaption@ContinuedFloat
+  \caption@ifflag1{% ContinuedFloat
     \let\caption@tempa\caption@@refcounter
-    \caption@clrflag{ContinuedFloat}%
-  \else
+    \caption@clrflag1% ContinuedFloat
+  }{%
     \let\caption@tempa\caption@@refstepcounter
-    \ifcaption@caption \else
-      \ifcaption@subcaption
+    \caption@ifflag2{}{% caption
+      \caption@ifflag4{% subcaption
 % Counter was already incremented by content, so we suppress \stepcounter{#1} here
         \let\caption@tempa\caption@@refcounter
-      \fi
-    \fi
-  \fi
+      }{}%
+    }%
+  }%
   \caption@tempa}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -2337,20 +2336,20 @@
     \caption@warmup
 %    \end{macrocode}
 %    \begin{macrocode}
-    \ifcaption@caption \else
+    \caption@ifflag2{}{% caption
 % no \caption in this part of the (floating) environment yet
       \let\caption@add@contentsline\caption@addsubcontentsline
       \let\caption@addsubcontentslines\@gobble
-      \ifcaption@subcaption \else
+      \caption@ifflag4{}{% subcaption
 % no \subcaption in this part of the (floating) environment yet
-        \ifcaption@ContinuedFloat
-          \caption@clrflag{ContinuedFloat}%
-        \else
+        \caption@ifflag1{% ContinuedFloat
+          \caption@clrflag1%
+        }{%
           \caption@@stepcounter\@captype
-        \fi
-        \caption@setflag{subcaption}%
-      \fi
-    \fi
+        }%
+        \caption@setflag4% subcaption
+      }%
+    }%
 %    \end{macrocode}
 %    \begin{macrocode}
     \c@ContinuedFloat=0\relax
