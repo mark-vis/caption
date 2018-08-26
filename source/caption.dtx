@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3567}
+% \CheckSum{3563}
 %
 % \iffalse
 %<*driver>
@@ -218,7 +218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/08/26 v3.3-149 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/08/26 v3.3-150 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -3732,7 +3732,7 @@
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \RequirePackage{ltcaption}[2007/09/01]%
+  \RequirePackage{ltcaption}[2018/08/26]%
   \let\LT@@makecaption\@undefined
 %    \end{macrocode}
 %
@@ -3773,10 +3773,8 @@
 %    \begin{macrocode}
       \def\captionlistentry{%
         \noalign\bgroup
-        \@ifstar{\egroup\LT@captionlistentry}% gobble *
-                {\egroup\LT@captionlistentry}}%
-      \def\LT@captionlistentry##1{%
-        \caption@listentry\@firstoftwo[\LTcaptype]{##1}}%
+        \@ifstar{\egroup\LT@listentry}% gobble *
+                {\egroup\LT@listentry}}%
 %    \end{macrocode}
 % |\ContinuedFloat| for longtable:\\
 % {\small(Commented out, since it's not deeply tested and quite useless anyway)}
@@ -3839,26 +3837,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\LT@c@ption}
-% \changes{v3.1g}{2008/01/22}{Made it \cs{long}}
-%  The original implementation:
-%  \begin{verbatim}
-%  \def\LT@c@ption#1[#2]#3{%
-%    \LT@makecaption#1\fnum@table{#3}%
-%    \def\@tempa{#2}%
-%    \ifx\@tempa\@empty\else
-%       {\let\\\space
-%       \addcontentsline{lot}{table}{\protect\numberline{\thetable}{#2}}}%
-%    \fi}
-%  \end{verbatim}%^^A
-%  Our implementation uses |\LTcaptype| instead of |{table}|:
-%    \begin{macrocode}
-  \long\def\LT@c@ption#1[#2]#3{%
-    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-    \LT@captionlistentry{#2}}%
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\LT@makecaption}
 % \changes{v3.0d}{2004/08/10}{%
 %       Bugfix 04-08-04: \cs{abovecaptionskip} \& \cs{belowcaptionskip} will be used now}
@@ -3887,19 +3865,7 @@
 %    \begin{macrocode}
   \renewcommand\LT@makecaption[3]{%
     \caption@LT@make{%
-%    \end{macrocode}
-%
-%  If |\LTcapwidth| is not set to its default value |4in| we assume
-%  that it shall overwrite our own setting.
-%  (But |\captionsetup[longtable]{width=|\ldots|}| will overwrite |\LTcapwidth|.)
-%    \begin{macrocode}
-      \caption@settype*\LTcaptype
-      \ifdim\LTcapwidth=4in \else
-        \setcaptionwidth\LTcapwidth
-      \fi
-      \caption@setoptions{longtable}%
-%     \caption@setContinuedFloat
-      \caption@setoptions{@longtable}%
+      \caption@LT@settype\LTcaptype
 %    \end{macrocode}
 %
 % |\caption@LT@setup| is re-defined inside the \package{bicaption} package
@@ -3957,6 +3923,39 @@
         \caption@@make{#2}{#3}\endgraf
         \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}%
       \caption@end}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\LT@listentry}
+% \changes{v3.3}{2018/08/26}{This macro added}
+%    \begin{macrocode}
+  \renewcommand*\LT@listentry[2]{%
+    \caption@LT@settype{#1}%
+    \caption@listentry\@firstoftwo[#1]{#2}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@LT@settype}
+% \changes{v3.3}{2018/08/26}{This macro added}
+%    \begin{macrocode}
+  \newcommand*\caption@LT@settype[1]{%
+    \caption@settype*\LTcaptype
+%    \end{macrocode}
+%  If |\LTcapwidth| is not set to its default value |4in| we assume
+%  that it shall overwrite our own setting.
+%  (But |\captionsetup[longtable]{width=|\ldots|}| will overwrite |\LTcapwidth|.)
+%    \begin{macrocode}
+    \ifdim\LTcapwidth=4in \else
+      \setcaptionwidth\LTcapwidth
+    \fi
+%    \end{macrocode}
+%    \begin{macrocode}
+    \caption@setoptions{longtable}%
+%   \caption@setContinuedFloat
+%    \end{macrocode}
+%  Finally set options applied by |\captionsetup| inside the longtable.
+%    \begin{macrocode}
+    \caption@setoptions{@longtable}}
 %    \end{macrocode}
 % \end{macro}
 %

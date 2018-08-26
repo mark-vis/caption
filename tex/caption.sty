@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/08/26 v3.3-149 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/08/26 v3.3-150 Customizing captions (AR)]
 \RequirePackage{caption3}[2018/05/01] % needs v1.8 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -1507,7 +1507,7 @@
 }{}
 \providecommand*\LTcaptype{table}
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
-  \RequirePackage{ltcaption}[2007/09/01]%
+  \RequirePackage{ltcaption}[2018/08/26]%
   \let\LT@@makecaption\@undefined
   \caption@AtBeginDocument{%
     \let\caption@ORI@LT@array\LT@array
@@ -1524,10 +1524,8 @@
       \def\@captionabovefalse{\LT@captionsetup{position=b}}%
       \def\captionlistentry{%
         \noalign\bgroup
-        \@ifstar{\egroup\LT@captionlistentry}% gobble *
-                {\egroup\LT@captionlistentry}}%
-      \def\LT@captionlistentry##1{%
-        \caption@listentry\@firstoftwo[\LTcaptype]{##1}}%
+        \@ifstar{\egroup\LT@listentry}% gobble *
+                {\egroup\LT@listentry}}%
 %%        \let\Hy@LT@currentHlabel\@currentHlabel
 %%          \let\@currentHlabel\Hy@LT@currentHlabel
       \def\ContinuedFloat{\noalign{%
@@ -1538,17 +1536,9 @@
     \@ifstar
       {\egroup\LT@c@ption\@gobble[]}%
       {\egroup\caption@xdblarg{\LT@c@ption\@firstofone}}}
-  \long\def\LT@c@ption#1[#2]#3{%
-    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-    \LT@captionlistentry{#2}}%
   \renewcommand\LT@makecaption[3]{%
     \caption@LT@make{%
-      \caption@settype*\LTcaptype
-      \ifdim\LTcapwidth=4in \else
-        \setcaptionwidth\LTcapwidth
-      \fi
-      \caption@setoptions{longtable}%
-      \caption@setoptions{@longtable}%
+      \caption@LT@settype\LTcaptype
       \caption@LT@setup
       \caption@setautoposition{\ifcase\LT@rows t\else b\fi}%
       \caption@startrue#1\caption@starfalse
@@ -1560,6 +1550,16 @@
         \caption@@make{#2}{#3}\endgraf
         \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}%
       \caption@end}}%
+  \renewcommand*\LT@listentry[2]{%
+    \caption@LT@settype{#1}%
+    \caption@listentry\@firstoftwo[#1]{#2}}%
+  \newcommand*\caption@LT@settype[1]{%
+    \caption@settype*\LTcaptype
+    \ifdim\LTcapwidth=4in \else
+      \setcaptionwidth\LTcapwidth
+    \fi
+    \caption@setoptions{longtable}%
+    \caption@setoptions{@longtable}}
 }{}
 \providecommand*\caption@LT@setup{}
 \caption@IfPackageLoaded{picinpar}{%
