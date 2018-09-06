@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3565}
+% \CheckSum{3603}
 %
 % \iffalse
 %<*driver>
@@ -218,13 +218,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/08/26 v3.3-150 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/09/06 v3.3-151 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2018/05/01] % needs v1.8 or newer
+\RequirePackage{caption3}[2018/09/06] % needs v1.8b or newer
 %    \end{macrocode}
 %
 % \subsection{Check against incompatible document classes}
@@ -1408,6 +1408,21 @@
 %    \end{macrocode}
 %
 %    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
+    % chkfloat.sty [2012/08/19 v0.1 chkfloat: check for moved floats]
+    \def\@caption#1[#2]#3{\chkfloat@caption{#1}[#2]{#3}%
+      \addtocontents{fof}{\protect\chkfloat@{\thepage}{\chkfloat@page}{\csname fnum@#1\endcsname: #2}}%
+    }}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@CheckCommand\@caption{%
+    % chkfloat.sty [20??/??/?? v0.? chkfloat: check for moved floats]
+    \def\@caption#1[#2]#3{\chkfloat@caption{#1}[#2]{#3}%
+      \chkfloat@addcontentsline{#1}{#2}%
+    }}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
   \caption@IfCheckCommand{}{%
     \caption@InfoNoLine{%
       Incompatible package detected (regarding \string\@caption).\MessageBreak
@@ -2332,6 +2347,7 @@
 % \changes{v3.3}{2012/03/15}{Usage of \cs{caption@setbox} added}
 % \changes{v3.3}{2013/05/01}{Redefinition of \cs{caption@settype} added}
 % \changes{v3.3}{2013/06/17}{Missing redefinition of \cs{captionlistentry} added}
+% \changes{v3.3}{2018/09/06}{Adapted to the \package{chkfloat} package}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -2359,6 +2375,7 @@
 %    \begin{macrocode}
     \c@ContinuedFloat=0\relax
     \let\caption@setfloatcapt\@firstofone
+    \let\caption@chkfloat\@gobbletwo
 %    \end{macrocode}
 %    \begin{macrocode}
     \caption@setbox{none}%
@@ -2873,6 +2890,30 @@
 \let\caption@warmup\relax
 %    \end{macrocode}
 % \end{macro}
+%
+% \subsubsection{The chkfloat package}
+% \changes{v3.3}{2018/09/06}{Support of the \package{chkfloat} package added}
+%
+%    \begin{macrocode}
+\caption@IfPackageLoaded{chkfloat}[2012/08/19 v0.1]{%
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@chkfloat}
+% \changes{v3.3}{2018/09/06}{This macro added}
+%    \begin{macrocode}
+  \caption@ifundefined\chkfloat@addcontentsline{%
+    \renewcommand\caption@chkfloat[2]{%
+      \caption@ifundefined\chkfloat@page{}{%
+        \addtocontents{fof}{\protect\chkfloat@{\thepage}{\chkfloat@page}{\csname fnum@#1\endcsname: #2}}}}%
+  }{%
+    \renewcommand\caption@chkfloat{\chkfloat@addcontentsline}%
+  }%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+  }{}%
+%    \end{macrocode}
 %
 % \subsubsection{The float package}
 % \changes{v3.0f}{2005/05/31}{\package{float} package support rewritten and improved}
