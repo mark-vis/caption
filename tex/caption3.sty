@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2018/09/09 v1.8b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2018/09/12 v1.8c caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -1302,6 +1302,36 @@
   \DeclareCaptionDefaultFont{labelfont}{\cph@font}
   \DeclareCaptionDefaultFont{textfont}{\cpb@font}
 }
+\caption@ifundefined\ArabiCoreLoaded{%
+  \let\caption@rl\@firstofone
+}{%
+  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
+  \def\fnum@figure{\figurename\nobreakspace\thefigure}%
+  \def\fnum@table{\tablename\nobreakspace\thetable}%
+  \DeclareCaptionLabelSeparator{arabi}{ : }
+  \DeclareCaptionLabelSeparator{default}{%
+    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+  \caption@CheckCommand\@makecaption{%
+    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip
+      \sbox\@tempboxa{#1: #2}%
+      \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+      \if@rl{
+        \ifdim \wd\@Arabitempboxa >\hsize
+        \textRL{#2} : #1\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+      \fi}\else{
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi}\fi
+      \vskip\belowcaptionskip}}
+}
 \caption@ifundefined\FB@makecaption{}{%
   \caption@CheckCommand\@makecaption{%
     % frenchb.ldf [2005/02/06 v1.6g French support from the babel system]
@@ -1595,6 +1625,7 @@
        \endgroup
      \fi}%
     {{\captiontextfont
+      \captiontextstart
       \caption@ifstrut
         {\vrule\@height\ht\strutbox\@width\z@}%
         {}%
@@ -1603,7 +1634,9 @@
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
         {}%
-      \par}}}
+      \captiontextend}}}
+\newcommand*\captiontextstart{}
+\newcommand*\captiontextend{\par}
 \newcommand\caption@ifempty[1]{%
   \caption@if@empty{#1}%
   \caption@ifempty\@unused}

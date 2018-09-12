@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3853}
+% \CheckSum{3942}
 %
 % \iffalse
 %<*driver>
@@ -198,7 +198,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2018/09/09 v1.8b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2018/09/12 v1.8c caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \subsection{Workaround for bug in package \package{arabtex}}
@@ -3054,8 +3054,57 @@
 }
 %    \end{macrocode}
 %
+% \subsubsection{The arabic Babel option}
+% \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
+%
+%    \begin{macrocode}
+\caption@ifundefined\ArabiCoreLoaded{%
+%    \end{macrocode}
+% \begin{macro}{\caption@rl}
+% \changes{v1.8}{2018/05/20}{This macro added}
+%    \begin{macrocode}
+  \let\caption@rl\@firstofone
+}{%
+  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
+%    \end{macrocode}
+% \end{macro}
+%    \begin{macrocode}
+  \def\fnum@figure{\figurename\nobreakspace\thefigure}%
+  \def\fnum@table{\tablename\nobreakspace\thetable}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \DeclareCaptionLabelSeparator{arabi}{ : }
+  \DeclareCaptionLabelSeparator{default}{%
+    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@CheckCommand\@makecaption{%
+    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip
+      \sbox\@tempboxa{#1: #2}%
+      \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+      \if@rl{
+        \ifdim \wd\@Arabitempboxa >\hsize
+        \textRL{#2} : #1\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+      \fi}\else{
+      \ifdim \wd\@tempboxa >\hsize
+        #1: #2\par
+      \else
+        \global \@minipagefalse
+        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+      \fi}\fi
+      \vskip\belowcaptionskip}}
+%    \end{macrocode}
+%    \begin{macrocode}
+}
+%    \end{macrocode}
+%
 % \subsubsection{The frenchb Babel option}
-% \changes{v1.1}{2006/05/14}{\package{frenchb} package support added}
+% \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
 %
 %    \begin{macrocode}
 \caption@ifundefined\FB@makecaption{}{%
@@ -3263,6 +3312,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@@addcontentsline[4]{%
+% \caption@ifundefined\main@Arabi@language{}%
+%   {\addtocontents{#1}{\xstring\select@language{\main@Arabi@language}}}%
   \addcontentsline{#1}{#2}{\protect\numberline{#3}{#4}}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -3626,6 +3677,7 @@
 % \changes{v1.3}{2010/11/01}{Bugfix: If the caption text is empty, the text format will be set to \opt{simple} now}
 % \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator
 %        will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
+% \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{captiontextend}}
 %  |\caption@@@make|\marg{caption label}\marg{caption text}\par
 %  This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
@@ -3675,6 +3727,7 @@
        \endgroup
      \fi}%
     {{\captiontextfont
+      \captiontextstart
       \caption@ifstrut
         {\vrule\@height\ht\strutbox\@width\z@}%
         {}%
@@ -3684,7 +3737,11 @@
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
         {}%
-      \par}}}
+      \captiontextend}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\captiontextstart{}
+\newcommand*\captiontextend{\par}
 %    \end{macrocode}
 % \end{macro}
 %
