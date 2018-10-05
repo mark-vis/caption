@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3693}
+% \CheckSum{3695}
 %
 % \iffalse
 %<*driver>
@@ -218,7 +218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/09/12 v3.3-152 Customizing captions (AR)]
+\ProvidesPackage{caption}[2018/10/05 v3.3-153 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -3827,6 +3827,7 @@
 % \changes{v3.1a}{2007/09/16}{Bugfix: This redefinition will always be done \cs{AtBeginDocument}}
 % \changes{v3.1g}{2008/01/20}{Bugfix in \cs{captionlistentry}: Table counter will not be incremented anymore, \cs{nameref} works}
 % \changes{v3.3}{2016/01/31}{Support for \cs{bicaption} added}
+% \changes{v3.3}{2018/10/05}{Definition of \cs{captionlistentry} fixed}
 % We redefine |\LT@array| here to get |\captionsetup|\marg{options}
 % working inside |longtable|s.
 % \Note{Since the \package{hyperref} package patches \cs{LT@array} as well
@@ -3858,8 +3859,8 @@
 %    \begin{macrocode}
       \def\captionlistentry{%
         \noalign\bgroup
-        \@ifstar{\egroup\LT@listentry}% gobble *
-                {\egroup\LT@listentry}}%
+        \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
+                {\egroup\LT@listentry\LTcaptype}}%
 %    \end{macrocode}
 % |\ContinuedFloat| for longtable:\\
 % {\small(Commented out, since it's not deeply tested and quite useless anyway)}
@@ -3918,7 +3919,7 @@
   \def\LT@capti@n{%
     \@ifstar
       {\egroup\LT@c@ption\@gobble[]}%
-      {\egroup\caption@xdblarg{\LT@c@ption\@firstofone}}}
+      {\egroup\caption@xdblarg{\LT@c@ption\@firstofone}}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4013,20 +4014,22 @@
 %
 % \begin{macro}{\LT@listentry}
 % \changes{v3.3}{2018/08/26}{This macro added}
+% \changes{v3.3}{2018/10/05}{\cs{ignorespaces} added}
 %    \begin{macrocode}
   \renewcommand*\LT@listentry[2]{%
     \begingroup
       \caption@LT@settype{#1}%
       \caption@listentry\@firstoftwo[#1]{#2}%
-    \endgroup}%
+    \endgroup\ignorespaces}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@LT@settype}
 % \changes{v3.3}{2018/08/26}{This macro added}
+% \changes{v3.3}{2018/10/05}{Uses argument no. 1 instead of \cs{LTcaptype}}
 %    \begin{macrocode}
   \newcommand*\caption@LT@settype[1]{%
-    \caption@settype*\LTcaptype
+    \caption@settype*{#1}%
 %    \end{macrocode}
 %  If |\LTcapwidth| is not set to its default value |4in| we assume
 %  that it shall overwrite our own setting.
@@ -4042,7 +4045,7 @@
 %    \end{macrocode}
 %  Finally set options applied by |\captionsetup| inside the longtable.
 %    \begin{macrocode}
-    \caption@setoptions{@longtable}}
+    \caption@setoptions{@longtable}}%
 %    \end{macrocode}
 % \end{macro}
 %
