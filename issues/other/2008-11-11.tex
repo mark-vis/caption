@@ -1,0 +1,233 @@
+% "List of figure" problem
+% http://www.latex-community.org/viewtopic.php?f=5&t=3015
+
+\iffalse
+Sat Nov 08, 2008 9:34 pm
+Good Morning!
+
+I am trying to write a class file based upon the report style file.
+
+I have disabled the automatic resetting of the figure number when the chapter counter is incremented. However, there is a 10pt space included in the LOF and LOT between figures in different chapters.
+
+I know that
+
+Code: [Select all] [Expand/Collapse] [Download] (untitled.tex) Open in Overleaf
+
+    \addtocontents{lof}{\vspace*{-10pt}}
+    \addtocontents{lot}{\vspace*{-10pt}}
+
+will put a bandaid on things by adding a negative space to counter the positive space, but this sort of thing annoys me. (I assume that there is a more permanent way to do this).
+
+Below is the class file I'm working on...done a lot of internet scavenging for the code, so please assume that I know very little about writing style files.
+
+Any ideas?
+
+Code: [Select all] [Expand/Collapse] [Download] (untitled.tex) Open in Overleaf
+
+    \NeedsTeXFormat{LaTeX2e}
+    \ProvidesClass{MathThesis}
+     
+    \DeclareOption*{\PassOptionsToClass{\CurrentOption}{report}}
+     
+    \ProcessOptions
+     
+    \LoadClass[12pt]{report}
+     
+    \RequirePackage[total={6in, 8.5in}, top=1.5in, left=1.5in, headheight=15pt, headsep=0.5in, footskip=0.5in]{geometry}
+    \RequirePackage[reqno]{amsmath}
+    \RequirePackage{amsthm}
+    \RequirePackage{amsfonts}
+    \RequirePackage[mathscr]{eucal}
+    \RequirePackage{setspace}
+    \RequirePackage{cite}
+    \RequirePackage{fancyhdr}
+    \RequirePackage{graphicx}
+    \RequirePackage{subfigure}
+    \RequirePackage[subfigure]{tocloft}
+    \RequirePackage{remreset}
+     
+    %
+    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    % Modifications of the base class begin here
+    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    %
+     
+    %
+    % Definitions for Theorems, Corollaries, etc.
+    %
+    \newtheorem{corollary}{Corollary}[section]
+    \newtheorem{lemma}{Lemma}[section]
+    \newtheorem{theorem}{Theorem}[section]
+    \newtheorem{proposition}{Proposition}[section]
+    \newtheorem{definition}{Definition}[section]
+     
+    %
+    % Fix the page layout
+    %
+    \pagestyle{fancy}
+      \renewcommand{\headrulewidth}{0pt}
+      \renewcommand{\footrulewidth}{0pt}
+      \fancyhf{}
+      \fancyhead[R]{\thepage}
+      \fancypagestyle{plain}{\fancyhead{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+     
+    \newenvironment{PlainPages}  % Used to fix the Table of Contents, etc.
+    {
+    \pagestyle{plain}%
+    }
+    {\relax}  
+     
+    %
+    % Fix the naming and numbering schemes
+    %
+    \renewcommand{\contentsname}{TABLE OF CONTENTS}
+    \renewcommand{\listfigurename}{FIGURES}
+    \renewcommand{\listtablename}{TABLES}
+    \renewcommand{\bibname}{BIBLIOGRAPHY}
+    \renewcommand{\figurename}{FIGURE}
+    \renewcommand{\tablename}{TABLE}
+    \renewcommand{\chaptername}{CHAPTER}
+     
+    %
+    % Table of Contents, Figures, Tables, Equations
+    %
+    \setcounter{tocdepth}{1}  % Only display chapter and section levels
+     
+    \renewcommand{\cftsecdotsep}{\cftnodots}  % Disable the dots in the leaders for subsections
+    \setlength{\cftbeforetoctitleskip}{0.175in}
+    \setlength{\cftaftertoctitleskip}{0.5\baselineskip}
+    \renewcommand{\cfttoctitlefont}{\hfill\bfseries}
+    \renewcommand{\cftaftertoctitle}{\hfill}
+     
+    \renewcommand{\cftfigdotsep}{\cftnodots} % Disable the dots in the leaders for List of Figures
+    \setlength{\cftbeforeloftitleskip}{0\baselineskip}
+    \setlength{\cftafterloftitleskip}{0.5\baselineskip}
+    \renewcommand{\cftloftitlefont}{\bfseries}
+    \cftpagenumbersoff{subfigure}        % Don't include subfigures in List of Graphics
+     
+    \renewcommand{\cfttabdotsep}{\cftnodots} % Disable the dots in the leaders for List of Tables
+    \setlength{\cftbeforelottitleskip}{0.5\baselineskip}
+    \setlength{\cftafterlottitleskip}{0.5\baselineskip}
+    \renewcommand{\cftlottitlefont}{\bfseries}
+     
+    \renewcommand{\theequation}{\Roman{chapter}.\arabic{equation}}
+    \@removefromreset{figure}{chapter} % Keeps \thefigure counter from resetting between chapters
+    \renewcommand{\thefigure}{\arabic{figure}}  % Number things the way the grad school wants
+    \@removefromreset{table}{chapter} % Keeps \thefigure counter from resetting between chapters
+    \renewcommand{\thetable}{\Roman{table}}  % Number things the way the grad school wants
+     
+    \renewcommand{\textfraction}{0.15}
+    \renewcommand{\topfraction}{0.85}
+    \renewcommand{\bottomfraction}{0.65}
+    \renewcommand{\floatpagefraction}{0.60}
+     
+    \setlength{\@fptop}{0pt} % This is the vertical spacing above the top floatpage float. 
+                              % The default is 0pt plus 1.0fil  (fil is infinitely strechable = \vfill
+    \setlength{\@fpsep}{8pt} % This is the vertical spacing between floatpage floats. 
+                              % The default is 8pt plus 2.0fil
+    \setlength{\@fpbot}{0pt} % This is the vertical spacing below the bottom floatpage float.
+                              % The default is 0pt plus 1.0fil
+     
+    %
+    % Fix the spacing
+    %
+    \doublespacing  % Turn on double spacing
+     
+    %
+    % Fix the Chapter Headings
+    %
+    \renewcommand\chapter{\if@openright\cleardoublepage\else\clearpage\fi
+                         \thispagestyle{plain}%
+                         \global\@topnum\z@
+                         \@afterindentfalse
+                         \secdef\@chapter\@schapter}
+    \def\@chapter[#1]#2{\ifnum \c@secnumdepth >\m@ne
+                              \refstepcounter{chapter}%
+                              \typeout{\@chapapp\space\Roman{chapter}.}%
+                              \addcontentsline{toc}{chapter}%  This adds the Chapter and Number as Chapter Heading
+                                        {\protect\numberline{CHAPTER \Roman{chapter}}}%
+                              \addcontentsline{toc}{section}%  This adds the Chapter Title as Section Heading
+                                        {\protect\numberline{#1}}%  % Print the Chapter Title 
+                         \else
+                           \addcontentsline{toc}{chapter}{#1}%
+                         \fi
+                         \chaptermark{#1}%
+                         \addtocontents{lof}{\protect\addvspace{10\p@}}%
+                         \addtocontents{lot}{\protect\addvspace{10\p@}}%
+                         \if@twocolumn
+                           \@topnewpage[\@makechapterhead{#2}]%
+                         \else
+                           \@makechapterhead{#2}%
+                           \@afterheading
+                         \fi}
+    \renewcommand{\@makechapterhead}[1]{%
+    %\vspace*{50\p@}%
+    {%
+    \ifnum \c@secnumdepth >\m@ne
+    	\centering\bfseries \@chapapp\space \Roman{chapter}		% Chapter number
+    	%\par\nobreak
+    	\vskip 0.75\baselineskip
+    \fi 
+    \interlinepenalty\@M
+    \centering  #1\par	% Chapter title
+    \nobreak
+    \vskip 0.75\baselineskip
+    }}
+     
+    %
+    % Fix the Section Headings
+    %
+    \renewcommand{\section}{\@startsection
+    {section}%          							% Then name
+    {1}%                							% The "section" level
+    {0mm}%              							% The indentation
+    {0.75\baselineskip}%   							% The before skip
+    {0.125\baselineskip}% 							% The after skip
+    {\bfseries}}%		% The style
+     
+    \renewcommand{\@seccntformat}[1]{Section \Roman{chapter}.\arabic{section}\quad }
+     
+    %
+    % Fix the Bibliography
+    %
+    \renewcommand*{\bibname}{\vspace*{-1.5in}} 
+     
+    %
+    % Basic paragraph layout commands
+    %
+    \raggedright % < ----- Graduate school wants ragged right margins
+    \raggedbottom % < ---- Grad school wants this
+    \parindent 0.5in
+     
+    \endinput
+
+\fi
+
+% There shouldn't be a gap between the "list of figure" entries,
+% but there is (still) one.
+
+\documentclass[12pt]{report}
+\usepackage[within=none]{caption}
+%\makeatletter\caption@PatchChapter\makeatother
+\begin{document}
+\makeatletter
+  \show\chapter
+  \show\@chapter
+% \setlength\@chapterlistsgap{0pt}%
+\makeatother
+\listoffigures
+\chapter{Chapter1}
+\section{Section}
+\begin{figure}
+\caption{Test}
+\end{figure}
+\chapter{Chapter2}
+\section{Section}
+\begin{figure}
+\caption{Test}
+\end{figure}
+\begin{figure}
+\caption{Test}
+\end{figure}
+\end{document}
+

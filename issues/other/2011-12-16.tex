@@ -1,0 +1,55 @@
+% "Are subcaption and tabularx incompatible?"
+% http://tex.stackexchange.com/questions/38523/are-subcaption-and-tabularx-incompatible
+
+% I know that tex.sx isn't the forum for bug-reporting, but I have a bit of a problem and I'm looking for a technical workaround. The following MWE produces odd labels:
+
+\documentclass{article}
+
+\usepackage{subcaption}
+\usepackage{tabularx}
+
+\begin{document}
+
+\begin{figure*}
+  \begin{subfigure}{0.3\textwidth}
+    Figure 1a
+    \caption{Fig1a}
+    \label{fig:1a}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.5\textwidth}
+\begin{tabularx}{0.5\textwidth}{r}
+Figure 1b
+\end{tabularx}
+    \caption{Fig1b}
+    \label{fig:1b}
+  \end{subfigure}
+  \caption{Fig1}
+  \label{fig:1}
+\end{figure*}
+
+\begin{figure}
+Figure 2
+\caption{Fig2 caption}
+\label{fig:2}
+\end{figure}
+
+Figures \ref{fig:1a}, \ref{fig:1b}, and \ref{fig:1} should be 1a, 1b
+and 1; Figure \ref{fig:2} should be 2.
+
+\end{document}
+
+% Specifically, the last line of text reads, "Figures 1a, 1b, and 2 should be 1a, 1b and 1; Figure 3 should be 2." (I know that the example doesn't use any of tabularx's features; merely the use of the tabularx environment is enough to throw off the labels.) If I move the \caption{Fig1}\label{fig:1} above the subfigures, then I get the right numbering, but of course the caption is now in the wrong position.
+
+% [..]
+
+% The problem is in the fact that subfigure steps the figure counter, in order to assign correctly the meaning to the \label commands inside it. However it does it only locally, so that the main \caption command will assign the correct figure number.
+%
+% However, part of tabularx working is to save globally the value of all counters (this is because it processes twice its contents and counters need to be restored to their previous values)
+%
+% A workaround seems issuing \addtocounter{figure}{-1} before the main \caption, after a subfigure environment containing tabularx.
+%
+% Update 2013/01/09 (from Axel Sommerfeldt):
+%
+% The (now available) version 3.3 of the caption package has a different counter handling, so counters will now neither be changed locally, nor decremented temporarily anymore. This will hopefully fix all issues regarding wrong figure or table counters, so updating the caption package should help.
+

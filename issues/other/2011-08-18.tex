@@ -1,0 +1,188 @@
+% http://tex.stackexchange.com/questions/25942/latex-escape-interrupts-frame-of-listing/
+
+\iffalse
+Latex escape interrupts frame of listing
+
+I am (ab)using a framed listings environment include an enumeration environment (by escaping to latex). This compiles fine but in the resulting pdf the frame around the listing is interrupted.
+
+Minimal working example:
+
+\documentclass{report}
+
+\usepackage[english]{babel}
+\usepackage{float}
+\usepackage[margin=10pt,font=small,labelfont=bf,justification=centering]{caption}
+
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Box}
+% Setup for listings:
+\lstset{extendedchars=true,
+    tabsize=3,
+    frame=single,
+    frameround=tttt,
+    showspaces=false,
+    framesep=10pt,
+    boxpos=c,
+    float=h,
+    captionpos=b,
+    escapechar=\%
+}
+\lstdefinestyle{Normaltext}{language=,numbers=none,basicstyle=\normalfont}
+
+\lstnewenvironment{textbox}[2]
+{%
+\centering
+\minipage{0.9\textwidth}
+\lstset{style=Normaltext,label=#1,caption=#2}
+}
+{%
+\endminipage
+\endcenter
+}
+
+\begin{document}
+
+\begin{textbox}{box:somelabel}{some caption}
+%{Test 1 2 3, here comes the enumeration:
+\begin{itemize}
+\item item 1
+\item item 2
+\item item 3
+\item item 4
+\end{itemize}
+}%
+\end{textbox}
+
+\end{document}
+
+This produces something like this: Interrupted listing frame
+
+Any ideas how I can avoid that the frame is interrupted?
+
+Or maybe somebody can suggest a better alternative to abusing listings for putting plain latex text in a frame box, because that's all I really wanted. Basically what I want to achieve is this:
+
+- I want 3 types of "objects" in my document: figures, tables and boxes.
+- Figures have the "Figure" label and are listed in the listoffigures.
+- Tables have the "Table" label and are listed in the listoftables.
+- Similarly I want boxes to have the "Box" label and be listed in a listofboxes (I was planning to use listoflistings for this).
+- Boxes can either contain source code (using listings package) or plain latex text, but either way they should have the same rounded frame around them and be centered on the page and cover 90% of textwidth (I was using minipage for this, as you can see in my code).
+\fi
+
+\documentclass{report}
+
+\usepackage{xcolor}
+
+\usepackage[style=1]{mdframed}
+\usepackage[font=small,labelfont=bf,justification=centering,debug]{caption}
+%\usepackage[pdftex,bookmarks=true]{hyperref}%pagebackref=true
+\usepackage{enumitem}
+%\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{cleveref}
+
+\usepackage{listings}
+\lstset{extendedchars=true,
+	tabsize=3,
+	frame=none,
+	breaklines=true,
+	breakautoindent=true,
+	postbreak=\space,
+	showspaces=false,
+	keywordstyle=\color{blue},
+	commentstyle=\color{red},
+	stringstyle=\color{gray},
+	identifierstyle=\color{black},
+    framesep=0pt,
+	boxpos=c,
+	float=h,
+	aboveskip=0pt,
+	belowskip=0pt,
+	escapechar=\%
+}
+\lstdefinestyle{Java}{language=Java, numbers=none, numberstyle=\tiny ,numbersep=5pt, basicstyle=\linespread{0.85}\scriptsize\ttfamily, showstringspaces=true}
+
+\lstnewenvironment{java}{\lstset{style=Java}}{}
+
+\usepackage{lipsum}
+\usepackage{needspace}
+%    \needspace{2\baselineskip}% %instead of \nopagebreak
+
+%\DeclareCaptionType[fileext=lob,placement=b,within=chapter]{boxx}[Box][List of Boxes]
+\DeclareCaptionType{boxx}[Box][List of Boxes]
+
+\makeatletter
+% Tell the caption package that we would like to use \caption@freeze and \caption@defrost
+\caption@setbool{needfreeze}{true}
+%
+\renewenvironment{boxx}{%
+  \pagebreak[2] %suggest pagebreak here
+  \captionsetup{type=boxx}%
+  \nopagebreak
+  \begin{mdframed}[%
+    linewidth=1pt,
+    linecolor=black,
+    innerlinecolor=black,
+    middlelinecolor=black,
+    outerlinecolor=black,
+    roundcorner=10pt,
+    leftmargin=.05\textwidth,
+    rightmargin=.05\textwidth,
+    skipabove=.7\baselineskip,
+    skipbelow=.7\baselineskip,
+    innerleftmargin=10pt,    
+    innerrightmargin=10pt,
+    innertopmargin=10pt,
+    innerbottommargin=10pt]%
+    \nopagebreak
+    \caption@freeze %"freeze" caption related commands
+  }{%
+  \end{mdframed}%
+  \nopagebreak
+  \caption@defrost %typeset caption, if necessary
+}
+\makeatother
+
+\crefname{boxx}{box}{boxes}
+
+
+\begin{document}
+
+\chapter{Chapter}
+
+\noindent This is a reference to \cref{box:one}.
+
+\begin{boxx}\caption[shorter]{This is a box with text}\label{box:one}
+\lipsum[2]
+
+\begin{enumerate}[label=\textbf{Req. \arabic*},ref=Req. \arabic*,leftmargin=*]
+\item one\label{req:one}
+\item two generalised.
+\end{enumerate}
+\end{boxx}
+
+\noindent \lipsum[1-2]
+Some more text, ref to item: \ref{req:one}
+
+\begin{boxx}\caption{This is a box with Java code}\label{box:two}
+\begin{java}
+class HelloWorldApp
+{
+	public float pi = 3.14159;
+	public int i = 0;
+		
+	public static void main(String[] args)
+	{
+		System.out.println("Hello World!"); //Display the string
+	}
+}
+\end{java}
+\end{boxx}
+
+\noindent Double uppercase reference: \Cref{box:one,box:two}.
+
+\noindent \lipsum[3-4]
+
+\pagebreak
+\listofboxxs
+
+\end{document}
+

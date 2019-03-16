@@ -1,0 +1,47 @@
+% "An error produced when using the caption package"
+% http://tex.stackexchange.com/questions/42231/an-error-produced-when-using-the-caption-package
+
+\documentclass{article}
+\usepackage{arabtex}
+\usepackage{caption}
+\usepackage{lipsum}
+
+\begin{document}
+
+\lipsum[1-20]
+
+\end{document}
+
+% I compile with pdflatex, and I get this error:
+%
+% (/usr/local/texlive/2011/texmf-dist/tex/latex/caption/caption.sty
+% (/usr/local/texlive/2011/texmf-dist/tex/latex/caption/caption3.sty
+% Runaway argument?
+% {\caption@CheckCommand \@makecaption {\long \def \@makecaption ##1##2\ETC.
+% ! Paragraph ended before \@gobble was complete.
+% <to be read again> 
+%                    \par 
+% l.901         \unskip\kern-2\captionindent\par
+%
+% When I comment out:
+% 
+% %\usepackage{caption}
+% %\captionsetup{font=small,labelfont=bf}
+%
+% ... I get an output PDF file with no problems.
+
+% The problem is a bug in arabtex which redefines \@gobble to be non-long.
+%
+% \documentclass{article}
+% {\makeatletter\typeout{\meaning\@gobble}}
+% \usepackage{arabtex}
+% {\makeatletter\typeout{\meaning\@gobble}}
+% \stop
+%
+% One first gets \long macro:#1->, then macro:#1->. Macros must be \long to allow \par in their argument, hence the problem. One solution is to add {\makeatletter\long\gdef\@gobble#1{}} just after loading arabtex.
+%
+% \usepackage{arabtex}
+% {\makeatletter\long\gdef\@gobble#1{}}
+%
+% This restores the original definition of the LaTeX kernel function \@gobble.
+

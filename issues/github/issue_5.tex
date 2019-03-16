@@ -1,0 +1,45 @@
+% Issue #5 "The test for float being loaded fails when listings is loaded before newfloat"
+% https://github.com/axelsommerfeldt/caption/issues/5
+%
+% See also https://tex.stackexchange.com/questions/416730/diagnosing-an-incompatibility-between-pythontex-and-a-siam-cls-file
+
+\iffalse
+I'm using pythontex within a documentclass provided by SIAM (see http://www.siam.org/meetings/ns14/siam-wns-article.cls - less than 100 lines for the 2014 version which has the same problem as the 2018 version).
+
+When I compile
+\fi
+
+\documentclass{siam-wns-article}
+\usepackage{pythontex}
+
+\begin{document}
+test
+\end{document}
+
+\iffalse
+I get an error:
+
+    \c@listing=\count122
+
+    ./tmp.tex:5: You can't use `\relax' after \the.
+
+    \c@float@type
+
+The output of my actual example is fine. But the error persists and the organizers of the conference have said they will want original tex files for the final proceedings. So I'd like to make sure that I can tell them what needs to be fixed in the documentclass. But I haven't been able to figure it out.
+
+Any suggestions?
+\fi
+
+\iffalse
+Analyzing the issue presented at https://tex.stackexchange.com/questions/416730/ I became aware of
+gpoore/pythontex#61
+
+The issue, as explained in my answer https://tex.stackexchange.com/a/416739/4427, is that listings uses \@ifundefined{c@float@type} in order to see whether float has been loaded, which leaves \c@float@type equivalent to \relax.
+
+The newfloat package does the same check in the code for \DeclareFloatingEnvironment, but using \ifdefined\c@float@type. Unfortunately, if listings is loaded before newfloat, the test returns true instead of false.
+
+This can, in principle, be solved by loading newfloat before listings, but classes may load listings without loading newfloat in advance. If a package is requested by the user (in the case under examination, pythontex) loads newfloat, an error happens.
+
+In my opinion, newfloat should do its test with \@ifundefined.
+\fi
+

@@ -1,0 +1,68 @@
+\iffalse
+Date: Wed, 10 Dec 2008 17:01:19 +0100
+Subject: \caption@setfloatcapt
+Message-ID: <20081210160118.GA12851@irwin.vpn.uni-freiburg.de>
+
+Hallo Axel,
+
+nächstes Problem:
+
+| Subject: Re: pop empty color page stack 0
+| Date: Fri, 05 Dec 2008 17:41:39 +0100
+| Newsgroups: comp.text.tex
+| Message-ID: <051220081741395248%gregorio@math.unipd.it>
+| 
+| Enrico Gregorio <gregorio@math.unipd.it> wrote:
+| 
+| > Actually it comes out when also subfig is loaded:
+| 
+| I should have noticed that it's not subfig's fault, but that the
+| problem depends on caption:
+| 
+| \documentclass[a4paper]{book}
+| \usepackage{color}
+| \usepackage{caption}
+| \usepackage{float}
+| \newfloat{lis}{tbp}{lol}
+| \begin{document}
+| \begin{lis}
+| \caption{abc}
+| \end{lis}
+| \end{document}
+| 
+| Again the loading order is irrelevant.
+
+Das ist ein Bug in \caption@setfloatcapt, es verwendet ein
+\setbox mit nacktem \vbox ohne die zusätzliche Gruppe
+für den Color-Support.
+\fi
+
+\documentclass[a4paper]{book}
+\usepackage{color}
+\usepackage{caption}
+\usepackage{float}
+\newfloat{lis}{tbp}{lol}
+
+\begin{document}
+\makeatletter
+\show\color@begingroup
+\show\color@endgroup
+\show\color@vbox
+\show\color@endbox
+\makeatother
+
+\begin{lis}
+%%%\makeatletter
+%%%\long\def\caption@setfloatcapt#1{%
+%%%  \let \@makecaption \caption@@make \global \setbox \@floatcapt
+%%%  % \vbox alone doesn't support color
+%%%  \color@vbox#1\color@endbox
+%%%}
+\caption{abc}
+\end{lis}
+\end{document}
+
+Der Patch zeigt jetzt nur, dass mit der zusätzlichen Gruppe
+die pdfTeX-Warnung verschwindet. Das schöner hinzubekommen,
+überlasse ich dir.
+

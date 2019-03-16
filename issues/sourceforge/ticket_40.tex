@@ -1,0 +1,168 @@
+% Ticket #40 "Options clash for subcaption"
+% https://sourceforge.net/p/latex-caption/tickets/40/
+
+\iffalse
+Hi,
+I am trying to usepackage subcaption but get an error as the the journal template (PNAS) already uses caption with a specific set of arguments. Is there a way to make subcaption change this behavior? I tried setting the global fields as suggested but it didn't seem to work.
+
+Thanks,
+Tanu
+
+(/usr/local/texlive/2015/texmf-dist/tex/latex/caption/subcaption.sty
+
+! LaTeX Error: Option clash for package caption.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+
+l.44 \RequirePackage{caption}[2012/03/25]
+                                          % needs v3.3 or newer
+? H
+The package 'caption' has already been loaded with options:
+  [labelfont={bf,sf},labelsep=period,figurename=Fig.].
+There has now been an attempt to load it with no options. 
+Adding the global options:
+  'labelfont={bf,sf},labelsep=period,figurename=Fig.'
+to your \documentclass declaration may fix this. 
+? 
+
+Discussion
+
+    Axel Sommerfeldt
+    Axel Sommerfeldt - 2016-03-26
+
+    This shoudn't be a problem, the following example document compiles fine:
+
+    \documentclass{article}
+    \usepackage[labelfont={bf,sf},labelsep=period,figurename=Fig.]{caption}
+    \usepackage{subcaption}
+    \begin{document}
+    Test
+    \end{document}
+
+    It's not possible to resolve this ticket without further information. I need either an example document which I can compile on my own and shows the problem, or at least the log file produced when compiling your document.
+     
+    Last edit: Axel Sommerfeldt 2016-03-27
+
+        Axel Sommerfeldt
+        Axel Sommerfeldt - 2016-03-27
+
+        I took a closer look at this ticket and stumbled over this error message:
+
+        "There has now been an attempt to load it with no options. "
+
+        This is nonsense, since it's totally ok to load a package again with \RequirePackage as long as no options are given. Tons of packages do it this way, and this has never lead to problems, and this case will be handled fine by the LaTeX kernel.
+
+        A search for this error message has guided me to the catoptions package (which replaces the package loading stuff of the LaTeX kernel), and so it was easy to reproduce the problem:
+\fi
+
+        \documentclass{article}
+        \usepackage{catoptions}
+        \usepackage[labelfont=bf]{caption}
+        \usepackage{subcaption}
+        \begin{document}
+        Test
+        \end{document}
+
+\iffalse
+        It easy to reproduce it with other packages as well:
+
+        \documentclass{article}
+        \usepackage{catoptions}
+        \usepackage[balancingshow]{multicol}
+        \usepackage{doc}
+        \begin{document}
+        Test
+        \end{document}
+
+        or
+
+        \documentclass{article}
+        \usepackage{catoptions}
+        \usepackage[demo]{graphicx}
+        \usepackage{rotating}
+        \begin{document}
+        Test
+        \end{document}
+
+        And it's easy to reproduce this problem using own (trivial) packages called a and b:
+
+        \begin{filecontents}{a.sty}
+        \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+        \ProvidesPackage{a}[2016/03/27 Package A]
+        \DeclareOption*{\typeout{Option A: \CurrentOption}}
+        \ProcessOptions\relax
+        \endinput
+        \end{filecontents}
+        %
+        \begin{filecontents}{b.sty}
+        \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+        \ProvidesPackage{b}[2016/03/27 Package B]
+        \DeclareOption*{\typeout{Option B: \CurrentOption}}
+        \ProcessOptions\relax
+        \RequirePackage{a}
+        \endinput
+        \end{filecontents}
+        %
+        \documentclass{article}
+        \usepackage{catoptions}
+        \usepackage[labelfont=bf]{a}
+        \usepackage{b}
+        \begin{document}
+        Test
+        \end{document}
+
+        Since all of the above example documents are correct (in terms of syntax), and since all four compiles fine when not using the catoptions package, this is clearly a bug in the catoptions package. It has to be fixed by the author of the catoptions package.
+
+        As an extreme ugly and dirty workaround, you could try loading the subcaption package this way:
+
+        \let\RequirePackageORI\RequirePackage
+        \def\RequirePackage#1[#2]{}
+        \usepackage{subcaption}
+        \let\RequirePackage\RequirePackageORI
+
+        So I'm sorry, I cannot fix this and my advice is: Report this bug to the maintainer of the catoptions package and don't use it until this bug is fixed.
+         
+        Last edit: Axel Sommerfeldt 2016-03-27
+
+    Axel Sommerfeldt
+    Axel Sommerfeldt - 2016-03-27
+
+        labels: --> incompatibility, catoptions
+        status: open --> wont-fix
+        assigned_to: Axel Sommerfeldt
+        Milestone: 2.x --> 3.3
+     
+
+    Anonymous
+    Anonymous - 2016-06-29
+
+    For future readers of this ticket, the problem in the PNAS template (https://www.overleaf.com/latex/templates/template-for-preparing-your-research-report-submission-to-pnas-using-overleaf/fzcbzjvpvnxn#.Vst10_krJhE) is that they use xwatermark, which loads catoptions (http://tex.stackexchange.com/a/248303). The PNAS class loads caption with options, and then subcaption loads caption with no options. According to the catoptions author, this results in an options clash that LaTeX can't catch; catoptions merely highlights it (http://tex.stackexchange.com/questions/45818/catoptions-causes-option-clash-with-xcolor#comment94051_45830).
+     
+
+    Axel Sommerfeldt
+    Axel Sommerfeldt - 2016-06-29
+
+    I just opened https://tex.stackexchange.com/questions/317137/is-it-ok-to-load-a-package-twice-as-long-as-no-extra-options-are-given to clear things up.
+     
+
+    Axel Sommerfeldt
+    Axel Sommerfeldt - 2016-07-24
+
+    My personal conclusion:
+
+    Since every part of LaTeX can be changed by packages, I have to make assumptions as a package writer. A major assumption of mine is that the LaTeX kernel behaves like documented by the LaTeX team itself in "LaTeX2e for class and package writers" (ctan.org/pkg/clsguide).
+
+    After loading catoptions this assumption is not true anymore since it changes the LaTeX kernel in a way incompatible to the above-mentioned documentation of the LaTeX2e team.
+
+    The author of catoptions claims: "this results in an options clash that LaTeX can't catch". IMHO this is clearly wrong. It's a documented behaviour, that LaTeX actually can catch this situation. And it does it well, at least unless you decide to load the catoptions package.
+
+    So I'm sorry, I cannot ensure the compatibility to those kind of packages.
+     
+    Last edit: Axel Sommerfeldt 2016-07-24
+
+Axel Sommerfeldt
+Axel Sommerfeldt
+\fi
+

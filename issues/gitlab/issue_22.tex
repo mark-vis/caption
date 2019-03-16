@@ -1,0 +1,59 @@
+% Issue #22 "The xassoccnt package is incompatible to totalcount"
+% https://gitlab.com/axelsommerfeldt/caption/issues/22
+%
+% Received via e-mail
+
+% If the xassoccnt package is loaded the totalcount package stops working correctly:
+
+\documentclass{scrbook}
+\usepackage[ngerman]{babel}% neue deutsche Rechtschreibung
+
+\usepackage[figure,table]{totalcount}
+\makeatletter
+\renewcommand*\@stpelt[1]{%
+\typeout{*** stpelt: #1}%
+  \totalcount@addtocounter{#1}%
+  \totalcount@stpelt@ORI{#1}}
+\makeatother
+
+\usepackage{xassoccnt}
+\DeclareTotalAssociatedCounters{page}{totalpages}
+
+\begin{document}
+
+\typeout{*** addchap: Bibliografische Beschreibung}
+\addchap{Bibliografische Beschreibung}
+
+\totalfigures \ Abbildungen, \totaltables \ Tabellen,
+\TotalValue{totalpages} Seiten
+
+\begin{figure}
+  \centering
+    % \includegraphics[width=0.7\textwidth]{bild.jpg}
+  \caption{Erstes Bild}
+  \label{fig:Bild1}
+\end{figure}
+
+\typeout{*** chapter: Anlagenverzeichnis}
+\chapter{Anlagenverzeichnis}
+
+\end{document}
+
+% The console output is
+%
+% *** addchap: Bibliografische Beschreibung
+% *** stpelt: section
+% *** stpelt: subsubsection
+% *** stpelt: subparagraph
+% *** stpelt: equation
+% *** stpelt: figure
+% *** stpelt: table
+% *** stpelt: footnote
+% chapter without number
+% *** chapter: Anlagenverzeichnis
+% *** stpelt: subsection
+% *** stpelt: paragraph
+% chapter 1.
+%
+% and the output shows the total number of figures as zero.
+

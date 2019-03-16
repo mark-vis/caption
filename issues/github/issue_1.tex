@@ -1,0 +1,140 @@
+% Issue #1 "Caption's interaction with width-reduced listings"
+% https://github.com/axelsommerfeldt/caption/issues/1
+%
+% See https://tex.stackexchange.com/questions/394247/caption-package-breaks-centering-of-a-floating-listings-caption
+
+\iffalse
+# Setup
+
+- linux
+- texlive2017 (up to date as of 2017-10-02).
+
+# Background
+
+i tend to use floating listings, like you can observe below in the MWE.
+I saw unexpected behaviour using the caption package, in the following condition:
+
+To reduce the width of those listings, xleftmargin and xrightmargin are set to equal values to mimic centering.
+
+# Issue
+
+Depending on the resulting width of the listing (and/or the length of the caption?), the listing's caption does not respect the justification and is not centered.
+Simply removing the \usepackage{caption} (and \captionsetup therefore too of course) puts the caption right in the center where it is intended to be.
+
+Image: listing-centering
+
+# More
+
+Can you confirm?
+Can you tell a workaround?
+
+I found some info from you [1] that did not directly relate to width-reduced listings, so i poke you with a new issue ;-)
+
+I also opened a question on tex.stackexchange.com [2]
+MWE
+\fi
+
+\documentclass[]{scrbook}
+
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+
+\captionsetup{
+	justification = centering, % justified, centering, RaggedRight
+}
+
+\begin{document}
+\begin{lstlisting}[
+	frame=shadowbox %helper, to see listing's dim
+	,captionpos=b
+	%,float %float is irrelevant to the issue
+	%center the listing
+		,xleftmargin=.20\textwidth
+		,xrightmargin=.20\textwidth
+	,label=code
+	,caption={This caption is not centered at all}
+	,language=Delphi]
+i := 1;
+\end{lstlisting}
+\end{document}
+
+\iffalse
+[1] https://tex.stackexchange.com/a/88206/85772
+[2] https://tex.stackexchange.com/q/394247/85772
+\fi
+
+\iffalse
+commented on 24 Apr
+
+This just came up again (https://tex.stackexchange.com/questions/428101/package-listings-set-caption-position-posotion-top-works-fine-but-option-bott) and I investigated. Imho a change like this should remedy the problem:
+
+\documentclass{article}
+
+\usepackage{color}
+
+\usepackage{listings}
+
+
+\usepackage[justification=centering,singlelinecheck=false]{caption}
+\makeatletter
+
+ \def\lst@MakeCaption#1{% #1 is `t' or `b'
+    \begingroup 
+      \caption@setposition{#1}%
+      \caption@iftop{%
+        \ifdim\hsize>\linewidth
+          \hsize\linewidth
+        \fi
+        \@tempdima\belowcaptionskip
+        \belowcaptionskip\abovecaptionskip
+        \abovecaptionskip\@tempdima}
+        {\ifdim\hsize>\dimexpr \linewidth + \lst@xleftmargin + \lst@xrightmargin\relax
+          \hsize\dimexpr \linewidth + \lst@xleftmargin + \lst@xrightmargin\relax
+        \fi}%
+      \caption@setup{rule=0}%
+      \caption@setoptions{lstlisting}%
+      \caption@setautoposition{#1}%
+      \caption@begin{lstlisting}%
+        \caption@ORI@lst@MakeCaption{#1}%
+      \caption@end
+    \endgroup}%
+\makeatother
+
+\lstdefinestyle{SC}{
+    language=erlang,
+    xleftmargin=.2\textwidth,
+    xrightmargin=.2\textwidth
+}
+
+\lstset{
+    numbers=left,
+    numberstyle=\tiny,
+    basicstyle=\scriptsize,
+    showstringspaces=false,
+    showspaces=false,
+    commentstyle=\color{blue},
+    keywordstyle=\bfseries\color{purple},
+    captionpos=t,
+    frame=lines
+}
+
+\begin{document}
+
+\begin{lstlisting}[style=SC, caption={test},captionpos=t]
+xxxxxxxxxxxxxxxxxxxxx\\
+xxxxxxxxxxxxxxxxxxxxxxxx
+\end{lstlisting}
+
+\begin{lstlisting}[style=SC, caption={test},captionpos=b]
+% Stop all containers
+docker stop $(docker ps -a -q)
+% Delete all containers
+docker rm $(docker ps -a -q)
+% Delete all images
+docker rmi $(docker images -q)
+\end{lstlisting}
+
+\end{document}
+\fi
+
