@@ -533,7 +533,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/03/16 v1.1d Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/03/17 v1.1e Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -1068,7 +1068,7 @@
 % \begin{macro}{\ForEachFloatingEnvironment}
 % |\ForEachFloatingEnvironment|\marg{code}
 % will execute the given code for each floating environment.
-% The starred variant will only work for already existing environment,
+% The starred variant will only work for already existing environments,
 % i.e.~no hook will be placed inside |\Declare|\-|Floating|\-|Environment|.
 %    \begin{macrocode}
 \newcommand\ForEachFloatingEnvironment{%
@@ -1728,21 +1728,22 @@
 % \subsection{Support of other packages}
 %
 % \begin{macro}{\newfloat@ForEachNew}
-% |\newfloat@ForEachNew|\oarg{command}\marg{code}
+% \changes{v1.1e}{2019/03/17}{This macro revised; uses \cs{ForEachFloatingEnvironment} now}
+% |\newfloat@ForEachNew|\marg{command}\marg{code}
 % will execute the given code for every floating environment defined with
-% |\Declare|\-|Floating|\-|Environment|.
-% This will be done |\At|\-|Begin|\-|Document| so the affected package could be loaded
-% after \thispackage.
-% (If a \meta{command} is given this will only be done if \meta{command} is
-%  defined.)
+% |\Declare|\-|Floating|\-|Environment| if \meta{command} is defined.
+% This will be tried |\At|\-|Begin|\-|Document| additionally so the affected
+% package could be loaded after \thispackage.
 %    \begin{macrocode}
-\newcommand\newfloat@ForEachNew[2][newfloat@@list]{%
-  \AtBeginDocument{%
-    \ifcsname#1\endcsname
-      \def\@elt##1{#2}%
-      \newfloat@@list
-      \let\@elt\relax
-    \fi}}%
+\newcommand\newfloat@ForEachNew[2]{%
+  \ifcsname#1\endcsname
+    \ForEachFloatingEnvironment{#2}%
+  \else
+    \AtBeginDocument{%
+      \ifcsname#1\endcsname
+        \ForEachFloatingEnvironment{#2}%
+      \fi}%
+  \fi}%
 \@onlypreamble\newfloat@ForEachNew
 %    \end{macrocode}
 % \end{macro}
@@ -1754,7 +1755,7 @@
 % extensions, too. Since this list will be used for inserting chapters gaps
 % we only add the ones which are configured for chapters gaps on.
 %%    \begin{macrocode}
-\newfloat@ForEachNew[float@exts]{%
+\newfloat@ForEachNew{float@exts}{%
   \@nameuse{@ifchapterlistsgap@#1}{% if switched on
     \let\float@do=\relax
     \edef\@tempa{%
@@ -1767,7 +1768,7 @@
 %
 % We define a FP-variant of new floating environments here.
 %    \begin{macrocode}
-\newfloat@ForEachNew[FP@floatBegin]{%
+\newfloat@ForEachNew{FP@floatBegin}{%
   \newcounter{FP@#1C}%
   \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}
 %    \end{macrocode}
@@ -1789,7 +1790,7 @@
 %
 % We define a sideways-variant of new floating environments here.
 %    \begin{macrocode}
-\newfloat@ForEachNew[@rotfloat]{%
+\newfloat@ForEachNew{@rotfloat}{%
   \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
   \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}
 %    \end{macrocode}
@@ -1810,7 +1811,7 @@
 \@onlypreamble\newfloat@For@SC
 %    \end{macrocode}
 %    \begin{macrocode}
-\newfloat@ForEachNew[SC@float]{%
+\newfloat@ForEachNew{SC@float}{%
   \expandafter\newfloat@For@SC\csname SC@#1@vpos\endcsname{#1}}
 %    \end{macrocode}
 % \end{macro}
@@ -1820,7 +1821,7 @@
 %
 % We define a wrap-variant of new floating environments here.
 %    \begin{macrocode}
-\newfloat@ForEachNew[wrapfloat]{%
+\newfloat@ForEachNew{wrapfloat}{%
   \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
 %    \end{macrocode}
 %
@@ -1832,7 +1833,7 @@
 % defined for other floating environments as well.
 % (This will be used as prefix for the ``List of''.)
 %    \begin{macrocode}
-\newfloat@ForEachNew[plist@figure]{%
+\newfloat@ForEachNew{plist@figure}{%
   \expandafter\newcommand\csname plist@#1\endcsname{%
     \@nameuse{#1name}\space}}
 %    \end{macrocode}
