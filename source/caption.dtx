@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3695}
+% \CheckSum{3702}
 %
 % \iffalse
 %<*driver>
@@ -86,6 +86,8 @@
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 % \newcommand*\version[2][]{\textit{v#2}}
+%
+% \newcommand*\issue[1]{GitLab~\##1}
 %
 % \GetFileInfo{caption.drv}
 % \let\docdate\filedate
@@ -218,7 +220,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/12/26 v3.3-155 Customizing captions (AR)]
+\ProvidesPackage{caption}[2019/04/01 v3.3a Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -983,14 +985,48 @@
 %  typeset the caption.
 %    \begin{macrocode}
 \long\def\caption@makecaption#1#2{%
-  \caption@iftop
-    {\vskip\belowcaptionskip}%
-    {\caption@rule\vskip\abovecaptionskip}%
+  \caption@make@above
   \caption@@make{#1}{#2}%
-  \caption@iftop
-    {\vskip\abovecaptionskip\caption@rule}%
-    {\vskip\belowcaptionskip}}
+  \caption@make@below}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@make@above}
+% \begin{macro}{\caption@make@below}
+% \changes{v3.3a}{2019/04/02}{This macro added}
+% |\caption@make@above|\\
+% |\caption@make@below|\par
+% Typesets the stuff above resp.~below the caption, depending on |\caption@iftop|.
+%    \begin{macrocode}
+\newcommand*\caption@make@above{%
+  \caption@iftop
+    \caption@belowskip
+    {\caption@rule\caption@aboveskip}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@make@below{%
+  \caption@iftop
+    {\caption@aboveskip\caption@rule}%
+    \caption@belowskip}
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@aboveskip}
+% \begin{macro}{\caption@belowskip}
+% \changes{v3.3a}{2019/04/02}{This macro added}
+% |\caption@aboveskip|\\
+% |\caption@belowskip|\par
+% Typesets the skip above resp.~below the caption.
+%    \begin{macrocode}
+\newcommand*\caption@aboveskip{%
+  \vskip\abovecaptionskip}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@belowskip{%
+  \vskip\belowcaptionskip}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@redefine}
@@ -3934,6 +3970,7 @@
 %       Bugfix: \cs{captionsetup[longtable]} overrides \cs{LTcapwidth} now}
 % \changes{v3.0h}{2005/10/07}{\cs{caption@LT@make} introduced}
 % \changes{v3.3}{2016/02/01}{Support for \cs{bicaption} via \cs{caption@LT@setup} added}
+% \changes{v3.3a}{2019/04/02}{Work-around for problem with \package{floatrow} added}
 %  |\LT@makecaption|\marg{cmd}\marg{label}\marg{text}\par
 %  \smallskip
 %  The original definition:
@@ -4006,12 +4043,21 @@
         \vskip-\ht\strutbox
 %    \end{macrocode}
 %
+% Work-around for problem with \package{floatrow}:
+% The |\belowcaptionskip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
+% so we supress this skip if the \package{floatrow} package is loaded.
+% (This fixes \issue{50})
+%    \begin{macrocode}
+        \caption@ifundefined\FBifcaptop{}{%
+          \let\caption@belowskip\@empty}%
+%    \end{macrocode}
+%
 %  The following code should look familiar. We do our skips and use
 %  |\caption@@make| to typeset the caption itself.
 %    \begin{macrocode}
-        \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
+        \caption@make@above
         \caption@@make{#2}{#3}\endgraf
-        \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}%
+        \caption@make@below
       \caption@end}}%
 %    \end{macrocode}
 % \end{macro}

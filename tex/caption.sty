@@ -6,7 +6,7 @@
 %%
 %% caption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2018/12/26 v3.3-155 Customizing captions (AR)]
+\ProvidesPackage{caption}[2019/04/01 v3.3a Customizing captions (AR)]
 \RequirePackage{caption3}[2018/09/12] % needs v1.8c or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -342,13 +342,21 @@
   \caption@ifhypcap\caption@@start\relax
   \M@gettitle{#2}}
 \long\def\caption@makecaption#1#2{%
-  \caption@iftop
-    {\vskip\belowcaptionskip}%
-    {\caption@rule\vskip\abovecaptionskip}%
+  \caption@make@above
   \caption@@make{#1}{#2}%
+  \caption@make@below}
+\newcommand*\caption@make@above{%
   \caption@iftop
-    {\vskip\abovecaptionskip\caption@rule}%
-    {\vskip\belowcaptionskip}}
+    \caption@belowskip
+    {\caption@rule\caption@aboveskip}}
+\newcommand*\caption@make@below{%
+  \caption@iftop
+    {\caption@aboveskip\caption@rule}%
+    \caption@belowskip}
+\newcommand*\caption@aboveskip{%
+  \vskip\abovecaptionskip}
+\newcommand*\caption@belowskip{%
+  \vskip\belowcaptionskip}
 \newcommand*\caption@redefine{}
 \g@addto@macro\caption@redefine{%
   \caption@setbool{incompatible}{0}%
@@ -1604,9 +1612,11 @@
       \caption@begin\LTcaptype
         \caption@normalsize
         \vskip-\ht\strutbox
-        \caption@iftop{\vskip\belowcaptionskip}{\vskip\abovecaptionskip}%
+        \caption@ifundefined\FBifcaptop{}{%
+          \let\caption@belowskip\@empty}%
+        \caption@make@above
         \caption@@make{#2}{#3}\endgraf
-        \caption@iftop{\vskip\abovecaptionskip}{\vskip\belowcaptionskip}%
+        \caption@make@below
       \caption@end}}%
   \renewcommand*\LT@listentry[2]{%
     \begingroup
