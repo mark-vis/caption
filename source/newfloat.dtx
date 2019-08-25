@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1318}
+% \CheckSum{1391}
 %
 % \iffalse
 %<*driver>
@@ -470,7 +470,7 @@
 % \DoNotIndex{\@car,\@cdr,\@classoptionslist,\@cons,\@currext,\@currname}
 % \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
-% \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
+% \DoNotIndex{\@gobble,\@gobbletwo,\@gobblethree,\@gobblefour,\@hangfrom}
 % \DoNotIndex{\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
 % \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
@@ -533,7 +533,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/03/17 v1.1e Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/08/25 v1.1f Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -1299,7 +1299,7 @@
 %
 % \begin{macro}{planb=}
 % \changes{v1.0b}{2012/05/18}{This option added}
-% This option switches the `Plan B' on or off. (default$=$off)
+% This option switches the `Plan B' on or off. (default$=$true)
 %    \begin{macrocode}
 \define@key{newfloat}{planb}[true]{%
   \def\@tempa{#1}%
@@ -1348,29 +1348,35 @@
 % \subsection{Patching \cs{chapter}}
 %
 % \begin{macro}{\newfloat@replace@chapter}
-%   |\newfloat@replace@chapter|\marg{original code}\marg{replacement code}\par
+% \changes{v1.1f}{2019/08/25}{Parameter \meta{class name} added to macro}
+%   |\newfloat@replace@chapter|\marg{class name}\marg{original code}\marg{replacement code}\par
 %   tries to patch |\@chapter| so |\@add|\-|chapter|\-|lists|\-|gaps| will be supported.
 %   It checks for |\Hy@org@chapter|, too, since the original code will be stored here
 %   if the \package{hyperref} package was loaded.
 %    \begin{macrocode}
-\newcommand\newfloat@replace@chapter[2]{%
+\newcommand\newfloat@replace@chapter[3]{%
   \begingroup
     \let\if@twocolumn\iffalse
     \let\if@mainmatter\iffalse
     \let\if@thema\iffalse
-    \def\@tempa[##1]##2{#1}%
+    \def\@tempa[##1]##2{#2}%
     \ifx\@tempa\@chapter
-      \gdef\@chapter[##1]##2{#2}%
-      \global\let\newfloat@replace@chapter\@gobbletwo
+      \newfloat@InfoNoLine{Document class `#1' detected}%
+      \gdef\@chapter[##1]##2{#3}%
+      \global\let\newfloat@replace@chapter\newfloat@dont@replace@chapter
     \else\ifx\@tempa\Hy@org@chapter
-      \gdef\Hy@org@chapter[##1]##2{#2}%
-      \global\let\newfloat@replace@chapter\@gobbletwo
+      \newfloat@InfoNoLine{Document class `#1' detected (Hy)}%
+      \gdef\Hy@org@chapter[##1]##2{#3}%
+      \global\let\newfloat@replace@chapter\newfloat@dont@replace@chapter
     \fi\fi
   \endgroup}
 %    \end{macrocode}
 %    \begin{macrocode}
+\newcommand\newfloat@dont@replace@chapter[3]{}
+%    \end{macrocode}
+%    \begin{macrocode}
 \ifcsname @chapter\endcsname \else
-  \let\newfloat@replace@chapter\@gobbletwo
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter
 \fi
 %    \end{macrocode}
 % \end{macro}
@@ -1380,7 +1386,7 @@
 %
 %    \begin{macrocode}
 % report.cls [2005/09/16 v1.4f Standard LaTeX document class]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{report}{%
   \ifnum \c@secnumdepth >\m@ne
     \refstepcounter{chapter}%
     \typeout{\@chapapp\space\thechapter.}%
@@ -1419,7 +1425,7 @@
 %
 %    \begin{macrocode}
 % book.cls [2005/09/16 v1.4f Standard LaTeX document class]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{book}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -1470,7 +1476,7 @@
 %    \begin{macrocode}
 % amsbook.cls [2004/08/06 v2.20]
 % smfbook.cls [1999/11/15 v1.2f Classe LaTeX pour les monographies editees par la SMF]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{amsbook}{%
   \refstepcounter{chapter}%
   \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
   \else \let\@secnumber\thechapter \fi
@@ -1504,7 +1510,7 @@
 % chapters gap in |\@chapter|\-|lists|\-|gap@on| and |\@chapter|\-|lists|\-|gap@off|.
 %    \begin{macrocode}
 \@ifpackageloaded{tocbasic}{%
-  \let\newfloat@replace@chapter\@gobbletwo}{}
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter}{}
 %    \end{macrocode}
 %
 % \pagebreak[3]
@@ -1515,7 +1521,7 @@
 %    \begin{macrocode}
 \ifcsname insertchapterspace\endcsname
   \renewcommand*\insertchapterspace{\@addchapterlistsgaps}
-  \let\newfloat@replace@chapter\@gobbletwo
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter
 \fi
 %    \end{macrocode}
 %
@@ -1524,7 +1530,7 @@
 %
 %    \begin{macrocode}
 % rapport1/3.cls [2004/06/07 v2.1a NTG LaTeX document class]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{rapport}{%
   \ifnum \c@secnumdepth >\m@ne
     \refstepcounter{chapter}%
     \typeout{\@chapapp\space\thechapter.}%
@@ -1562,7 +1568,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   % boek(3).cls [2004/06/07 v2.1a NTG LaTeX document class]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{boek}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -1612,7 +1618,7 @@
 %
 %    \begin{macrocode}
 % thesis.cls [1996/25/01 1.0g LaTeX document class (wm).]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{thesis}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -1680,10 +1686,61 @@
 %    \end{macrocode}
 %
 % \pagebreak[3]
+% \subsubsection{The Springer Verlag document classes}
+% \changes{v1.1f}{2019/08/25}{Support of \package{svmono} and \package{svmult} document classes added}
+%
+%    \begin{macrocode}
+% svmono.cls [2018/06/25 v5.6 Springer Verlag global LaTeX document class for monographs]
+% svmult.cls [2018/01/11 v5.5 Springer Verlag global LaTeX document class for multi authored books]
+\newfloat@replace@chapter{svmono}{%
+  \if@chapnum  % war mal \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \if@mainmatter
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect
+        \numberline{\thechapter\thechapterend}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}{%
+  \if@chapnum  % war mal \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \if@mainmatter
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect
+        \numberline{\thechapter\thechapterend}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+%    \end{macrocode}
+%
+% \pagebreak[3]
 % \subsubsection{Compatibility warning}
 %
 %    \begin{macrocode}
-\ifx\newfloat@replace@chapter\@gobbletwo \else
+\ifx\newfloat@replace@chapter\newfloat@dont@replace@chapter \else
 %    \end{macrocode}
 % If we were not able to patch |\@chapter| an info message is issued
 % since we may not be able to support chapter lists gaps then.
@@ -1694,10 +1751,13 @@
   \newfloat@InfoNoLine{\string\@chapter\space=\space\meaning\@chapter}
   \newfloat@InfoNoLine{\string\Hy@org@chapter\space=\space\meaning\Hy@org@chapter}
 %    \end{macrocode}
-% Plan B: We patch |\addtocontents| instead, and keep our fingers crossed in the hope
-% that this redefinition actually will fit.
+% Plan B: We patch |\add|\-|to|\-|contents| instead, and keep our fingers crossed
+% in the hope that this redefinition actually will fit.
+% (Note: Since \package{biblatex} patches |\add|\-|to|\-|contents| as well we do
+% this using |\At||Begin||Document|.)
+% \changes{v1.1f}{2019/08/25}{Plan B will now be done using \cs{AtBeginDocument}}
 %    \begin{macrocode}
-  \newfloat@ifplanb{%
+  \newfloat@ifplanb{\AtBeginDocument{%
     \newfloat@InfoNoLine{Trying Plan B..}%
     \let\newfloat@addtocontents@ORI\addtocontents
     \long\def\addtocontents#1#2{%
@@ -1718,7 +1778,7 @@
             \@addchapterlistsgaps
           \endgroup
         \fi
-      \fi}}
+      \fi}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \fi

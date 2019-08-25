@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/03/17 v1.1e Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/08/25 v1.1f Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
 \newcommand*\newfloat@InfoNoLine[1]{%
@@ -398,24 +398,27 @@
 \@expandtwoargs\setkeys{newfloat}{planb,\@ptionlist{\@currname.\@currext}}%
 \AtEndOfPackage{\let\@unprocessedoptions\relax}
 \newcommand*\newfloatsetup{\setkeys{newfloat}}
-\newcommand\newfloat@replace@chapter[2]{%
+\newcommand\newfloat@replace@chapter[3]{%
   \begingroup
     \let\if@twocolumn\iffalse
     \let\if@mainmatter\iffalse
     \let\if@thema\iffalse
-    \def\@tempa[##1]##2{#1}%
+    \def\@tempa[##1]##2{#2}%
     \ifx\@tempa\@chapter
-      \gdef\@chapter[##1]##2{#2}%
-      \global\let\newfloat@replace@chapter\@gobbletwo
+      \newfloat@InfoNoLine{Document class `#1' detected}%
+      \gdef\@chapter[##1]##2{#3}%
+      \global\let\newfloat@replace@chapter\newfloat@dont@replace@chapter
     \else\ifx\@tempa\Hy@org@chapter
-      \gdef\Hy@org@chapter[##1]##2{#2}%
-      \global\let\newfloat@replace@chapter\@gobbletwo
+      \newfloat@InfoNoLine{Document class `#1' detected (Hy)}%
+      \gdef\Hy@org@chapter[##1]##2{#3}%
+      \global\let\newfloat@replace@chapter\newfloat@dont@replace@chapter
     \fi\fi
   \endgroup}
+\newcommand\newfloat@dont@replace@chapter[3]{}
 \ifcsname @chapter\endcsname \else
-  \let\newfloat@replace@chapter\@gobbletwo
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter
 \fi
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{report}{%
   \ifnum \c@secnumdepth >\m@ne
     \refstepcounter{chapter}%
     \typeout{\@chapapp\space\thechapter.}%
@@ -450,7 +453,7 @@
     \@makechapterhead{#2}%
     \@afterheading
   \fi}
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{book}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -493,7 +496,7 @@
     \@makechapterhead{#2}%
     \@afterheading
   \fi}
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{amsbook}{%
   \refstepcounter{chapter}%
   \ifnum\c@secnumdepth<\z@ \let\@secnumber\@empty
   \else \let\@secnumber\thechapter \fi
@@ -517,12 +520,12 @@
   \@addchapterlistsgaps
   \@makechapterhead{#2}\@afterheading}
 \@ifpackageloaded{tocbasic}{%
-  \let\newfloat@replace@chapter\@gobbletwo}{}
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter}{}
 \ifcsname insertchapterspace\endcsname
   \renewcommand*\insertchapterspace{\@addchapterlistsgaps}
-  \let\newfloat@replace@chapter\@gobbletwo
+  \let\newfloat@replace@chapter\newfloat@dont@replace@chapter
 \fi
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{rapport}{%
   \ifnum \c@secnumdepth >\m@ne
     \refstepcounter{chapter}%
     \typeout{\@chapapp\space\thechapter.}%
@@ -558,7 +561,7 @@
     \@afterheading
   \fi}
   % boek(3).cls [2004/06/07 v2.1a NTG LaTeX document class]
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{boek}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -601,7 +604,7 @@
     \@makechapterhead{#2}%
     \@afterheading
   \fi}
-\newfloat@replace@chapter{%
+\newfloat@replace@chapter{thesis}{%
   \ifnum \c@secnumdepth >\m@ne
     \if@mainmatter
       \refstepcounter{chapter}%
@@ -666,13 +669,55 @@
     \@makechapterhead{#2}%
     \@afterheading
   \fi}
-\ifx\newfloat@replace@chapter\@gobbletwo \else
+\newfloat@replace@chapter{svmono}{%
+  \if@chapnum  % war mal \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \if@mainmatter
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect
+        \numberline{\thechapter\thechapterend}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{10\p@}}%
+  \addtocontents{lot}{\protect\addvspace{10\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}{%
+  \if@chapnum  % war mal \ifnum \c@secnumdepth >\m@ne
+    \refstepcounter{chapter}%
+    \if@mainmatter
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect
+        \numberline{\thechapter\thechapterend}#1}%
+    \else
+      \addcontentsline{toc}{chapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+\ifx\newfloat@replace@chapter\newfloat@dont@replace@chapter \else
   \newfloat@InfoNoLine{%
     Unsupported document class, or \noexpand\@chapter\MessageBreak
     was already redefined by another package}
   \newfloat@InfoNoLine{\string\@chapter\space=\space\meaning\@chapter}
   \newfloat@InfoNoLine{\string\Hy@org@chapter\space=\space\meaning\Hy@org@chapter}
-  \newfloat@ifplanb{%
+  \newfloat@ifplanb{\AtBeginDocument{%
     \newfloat@InfoNoLine{Trying Plan B..}%
     \let\newfloat@addtocontents@ORI\addtocontents
     \long\def\addtocontents#1#2{%
@@ -693,7 +738,7 @@
             \@addchapterlistsgaps
           \endgroup
         \fi
-      \fi}}
+      \fi}}}
 \fi
 \newcommand\newfloat@ForEachNew[2]{%
   \ifcsname#1\endcsname
