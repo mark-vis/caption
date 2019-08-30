@@ -1,27 +1,52 @@
 #!/bin/bash
+#
+# 2019-08-30: 1st version
+
+basedir=$(pwd)
+logfile="$basedir/test.log"
+
+cleanup()
+{
+  # Remove interim files
+  git clean -fdx
+}
+
+compile_all()
+{
+  # Compile all files in the given directory
+  cd "$1"
+  cp -a $basedir/tex/*.sty .
+
+  shopt -s nullglob
+  files=(*.dtx *.tex)
+  for file in "${files[@]}"
+  do
+    compile "$1" "$file"
+  done
+
+  cd ..
+}
 
 compile()
 {
-  printf "%s/%s...\n" "$dir" "$file"
+  # Compile document three times (so interim files will be used)
   pdflatex "$2" || failed "$1" "$2"
   pdflatex "$2" || failed "$1" "$2"
   pdflatex "$2" || failed "$1" "$2"
+  printf "Compiling %s/%s passed.\n" "$1" "$2" | tee -a "$logfile"
 }
 
 failed()
 {
-  printf "\nCompiling %s/%s failed.\n" "$1" "$2"
+  # Print error message and exit
+  printf "\n*** Compiling %s/%s failed.\n" "$1" "$2" | tee -a "$logfile"
   exit 1
 }
 
+cleanup
+
 # Compile all documents
-cd source
-files=(*.dtx *.tex)
-for file in "${files[@]}"
-do
-  compile "$dir" "$file"
-done
-cd ..
+compile_all "source"
 
 # Compile all issues
 cd issues
@@ -30,20 +55,11 @@ for dir in "${dirs[@]}"
 do
   if [ -d $dir ]
   then
-    printf "%s...\n" "$dir"
-    cd "$dir"
-    cp -a ../../tex/*.sty .
-
-    files=(*.tex)
-    for file in "${files[@]}"
-    do
-      compile "$dir" "$file"
-    done
-
-    cd ..
+    compile_all "$dir"
   fi
 done
 cd ..
 
-printf "\nThat's all, folks!\n"
+cleanup
+printf "\nThat's all, folks!\n" | tee -a "$logfile"
 
