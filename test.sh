@@ -72,6 +72,6 @@ do
 done
 cd ..
 
-cleanup
+#cleanup
 printf "\nThat's all, folks!\n" | tee -a "$logfile"
 

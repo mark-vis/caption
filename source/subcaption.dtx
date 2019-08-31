@@ -2,7 +2,7 @@
 % 
 % This is file `subcaption.dtx'.
 % 
-% Copyright (C) 2007-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -25,12 +25,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{178}
+% \CheckSum{226}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2018/05/13 v1.2 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2019/08/31 v1.3 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -84,7 +84,7 @@
 \newenvironment{background*}{\small\MARGINSYM{\Mountain}\ignorespaces}{\par}
 %
 \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
-%\newcommand*\NEW[2]{}%\hskip 1sp \marginpar{\footnotesize\sffamily\raggedleft#1\\#2}}
+\newcommand*\NEW[2]{\MARGINSYM{\vskip2pt\footnotesize#1\\#2}}
 %
 \begin{document}
   \DocInput{subcaption.dtx}
@@ -401,6 +401,7 @@
 % \See{\Ref{hypcap}}
 % \end{itemize}
 %
+% \NEWfeature{v1.2}
 % Beside the \meta{inner-pos} values of `c', `t', and `b', \thispackage\ also offers the
 % values `T' and `B' additionally which align the |sub|\-|figure| at the
 % very top resp.~bottom. (In contrast `t' and `b' align the |sub|\-|figure| at the
@@ -597,6 +598,7 @@
 %
 % \pagebreak[3]
 % \subsection{The \cs{subref} command}
+% \label{subref}
 %
 % While |\ref|\marg{key} (and |\ref*|\marg{key}, if the \package{hyperref}
 % package is used) usually gives a combined result representing the main
@@ -625,8 +627,10 @@
 %
 % \pagebreak[3]
 % \subsection{The \opt{subrefformat=} option}
+% \label{subrefformat}
 %
 % \DescribeMacro{subrefformat=}
+% \NEWfeature{v1.1}
 % By applying |\Declare|\-|Caption|\-|Sub|\-|Type|, or by redefining |\the|\-\meta{counter}
 % and |\p@|\-\meta{counter}, you will change the look of references typeset with |\ref|
 % \emph{and} |\sub|\-|ref|.
@@ -652,6 +656,7 @@
 %
 % \DescribeMacro\phantomsubcaption
 % \DescribeMacro\phantomcaption
+% \NEWfeature{v1.1}
 % If you don't want to give a sub-figure a caption, because the picture itself
 % already contains the caption, or for some other reason, you can use the command
 % \begin{quote}
@@ -769,6 +774,19 @@
 % \bigskip
 % {\small(See also the documentation of the \package{caption} package,
 % sections about \package{hyperref} \& \package{hypcap}.)}
+%
+% \pagebreak[3]
+% \section{The \cs{subfloat} command}
+% \label{subfloat}
+%
+% \DescribeMacro\subfloat
+% \NEWfeature{v1.3}
+% To allow a smoother transition from the \package{subfig} package
+% (which is unmaintained for over 14 years)
+% this package also offers |\sub|\-|float| with the same syntax:
+% \begin{quote}
+%   |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}
+% \end{quote}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -903,14 +921,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2018/05/13 v1.2 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2019/08/31 v1.3 Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
 %
 % Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[2018/05/11] % needs v3.4 or newer
+\RequirePackage{caption}[2019/08/31] % needs v3.3c or newer
 %    \end{macrocode}
 %
 % \begin{macro}{\subcaption@CheckCompatibility}
@@ -1184,6 +1202,45 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \subcaption@setrefformat{simple}
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsubsection{The \cs{subfloat} command}
+%
+% \begin{macro}{\subfloat}
+% \changes{v0.4}{2008/03/01}{This macro added}
+% \changes{v1.0c}{2011/01/22}{This macro removed since it's too incompatible with the one from \package{subfig}}
+% \changes{v1.3}{2019/08/31}{This macro re-added and revised}
+%  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
+%  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
+%  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
+%  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
+%    \begin{macrocode}
+\newcommand*\subfloat{%
+  \@ifnextchar[\@subfloat\subfloat@}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\@subfloat[#1]{%
+  \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\@@subfloat#1[#2]{\@@@subfloat{\subcaptionbox[{#1}]}{#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\@@@subfloat[3]{%
+  \caption@getlabel#3\label{}\@nil
+  #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
+  \global\let\caption@thelabel\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\subfloat@[1]{%
+  \setbox\@tempboxa\hbox{#1}%
+  \caption@iiiibox\setcaptionsubtype
+    {}% no optional arguments for \caption
+    {}% no sub-caption
+    {\wd\@tempboxa}{\caption@hj@default}%
+    {\phantomcaption\@gobble}{\phantomcaption\@gobble}% no box with \caption
+    {\unhbox\@tempboxa}}
 %    \end{macrocode}
 % \end{macro}
 %
