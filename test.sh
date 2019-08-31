@@ -18,7 +18,7 @@ compile_all()
   cp -a $basedir/tex/*.sty .
 
   shopt -s nullglob
-  files=(*.dtx *.tex)
+  files=(*.dtx *.ltx *.tex)
   for file in "${files[@]}"
   do
     compile "$1" "$file"
@@ -48,7 +48,19 @@ cleanup
 # Compile all documents
 compile_all "source"
 
-# Compile all issues
+# Compile all test documents
+cd test
+dirs=(*)
+for dir in "${dirs[@]}"
+do
+  if [ -d $dir ]
+  then
+    compile_all "$dir"
+  fi
+done
+cd ..
+
+# Compile all issue documents
 cd issues
 dirs=(*)
 for dir in "${dirs[@]}"
