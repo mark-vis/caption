@@ -1,4 +1,90 @@
 \iffalse
+To: caption@sommerfeldt.net
+Subject: "undefined float type": Regression from 3.0?
+Date: Thu, 29 Jul 2010 15:13:30 -0400
+Message-Id: <201007291513.30859.pavlo@cs.brown.edu>
+
+I am trying to build my paper and I am hitting the following error when I try 
+to use "caption.sty" v3.1k (2009/10/09):
+
+! Package caption Error: No float type 'copyrightbox' defined.
+
+I am using this document class file:
+
+http://vldb.org/pvldb/vldb.cls
+
+Which has these lines for the copyright info:
+
+\def\ftype@copyrightbox{8}
+\def\@copyrightspace{
+\@float{copyrightbox}[b]
+\begin{center}
+\setlength{\unitlength}{1pc}
+\begin{picture}(20,5) %Space for copyright notice
+\put(0,-.95){\crnotice{\@toappear}}
+\end{picture}
+\end{center}
+\end@float}
+
+Normally I wouldn't complain because I realize that I am using an unsupported 
+class, but the funny thing is that I can build the paper using my other 
+computer that has the older "caption.sty" v3.0k (2007/01/07). Any thoughts? 
+What's the best way to work around this problem on the new version?
+
+I'm sorry for emailing you like this. I'm not sure what the best way is to 
+file a bug report for latex packages. Thank you for your time.
+
+---
+
+Message-Id: <1280558433.20123.1387627997@webmail.messagingengine.com>
+From: axel.sommerfeldt@f-m.fm
+Subject: Re: "undefined float type": Regression from 3.0?
+In-Reply-To: <201007291513.30859.pavlo@cs.brown.edu>
+Date: Sat, 31 Jul 2010 08:40:33 +0200
+
+Yes, version 3.1 is a regression from version 3.0, at least for
+unsupported document classes which have their very own caption code
+inside. But it is clearly an improvement for supported document classes
+(and document classes without own caption code).
+
+In version 3.0 I tried to be compatible as possible to all document
+classes and packages, which had the side effect that there were some
+package combinations which were not working as they should. Furthermore
+it was not possible to support some packages like the fltpackage (and
+many more). Any since the caption package "only" patched existing
+caption code, it could not fix existing incompatibilities between some
+document classes (or packages) and packages - e.g. the fltpage package
+was not working with the hyperref package.
+
+So in version 3.1 I wrote my totally own caption code which is 100%
+compatible to the document classes and packages I support (and all
+combination of them, even the ones which are not working without caption
+package!), and by using this approach I was able to support much more
+packages. The caveat of this approach is that I'm now incompatible to
+the document classes I do not support, since their code will not be
+patched anymore (like I tried to do in version 3.0) but overwritten
+instead.
+
+But if you send me a small but complete example document which shows the
+error you mention in your mail, I will see what is going wrong and will
+try to offer you a workaround - if possible.
+
+I tried it myself with this code, but unfortunately it does not show the
+problem:
+
+\PassOptionsToPackage{demo}{graphicx}
+\documentclass{vldb}
+\usepackage{caption}
+\begin{document}
+\begin{figure}[htp]
+\centering
+\includegraphics{bar}
+\caption{bar graphic}\label{bar}
+\end{figure}
+\end{document}
+
+---
+
 Subject: Re: "undefined float type": Regression from 3.0?
 Date: Mon, 30 Aug 2010 14:05:49 -0400
 Message-Id: <201008301405.49866.pavlo@cs.brown.edu>
@@ -32,7 +118,7 @@ Thanks again.
 
 \usepackage[letterpaper, top=0.75in, bottom=0.80in, inner=0.75in, outer=0.75in, columnsep=2pc, foot=.15in]{geometry}
 
-\usepackage[ps2pdf,
+\usepackage[%ps2pdf,
             hyperfigures=false,
             hyperindex=false,
             pdfborder={ 0 0 0 },
@@ -85,4 +171,34 @@ Fusce ut lectus mauris, eget porta ligula. In in erat quam. Nam congue, eros qui
 \end{figure}
 
 \end{document}
+
+\iffalse
+
+---
+
+Message-Id: <1283280493.963.1392675153@webmail.messagingengine.com>
+From: axel.sommerfeldt@f-m.fm
+Subject: Re: "undefined float type": Regression from 3.0?
+In-Reply-To: <201008301405.49866.pavlo@cs.brown.edu>
+Date: Tue, 31 Aug 2010 20:48:13 +0200
+
+Thanks a lot for the example, and yes, I can reproduce the problem now.
+
+The document class you use is defining an own float type for typesetting
+the copyright. But it defines no counter for it, so \caption would give
+an error here, but since it does not use \caption inside its copyright,
+this code is running fine. (Well at least as long as the caption package
+isn't loaded ;-))
+
+I must confess that I didn't thought about such (legal and clever) usage
+of floating environments when developing the caption package, so you
+found a real bug here. I will fix it within the next weeks and release a
+new version of the caption package afterwards.
+
+Until then, inserting this line right after loading the caption package
+should help, at least it did within your example code:
+
+\DeclareCaptionType{copyrightbox}
+
+\fi
 

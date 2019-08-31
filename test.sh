@@ -29,6 +29,9 @@ compile_all()
 
 compile()
 {
+  # Skip example documents which purpose is to produce an error
+  if [[ $1 == "email" && $2 == "2009-09-29.tex" ]]; then return; fi
+
   # Compile document three times (so interim files will be used)
   pdflatex "$2" || failed "$1" "$2"
   pdflatex "$2" || failed "$1" "$2"
