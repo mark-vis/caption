@@ -37,11 +37,15 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/08/28 v1.1g Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/08/31 v1.1h Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
 \newcommand*\newfloat@InfoNoLine[1]{%
   \newfloat@Info{#1\@gobble}}
+\newcommand*\newfloat@Warning[1]{%
+  \PackageWarning{newfloat}{#1}}
+\newcommand*\newfloat@WarningNoLine[1]{%
+  \newfloat@Warning{#1\@gobble}}
 \newcommand*\newfloat@Error[1]{%
   \PackageError{newfloat}{#1}\newfloat@eh}
 \newcommand*\newfloat@eh{%
@@ -744,28 +748,46 @@
         \fi
       \fi}}}
 \fi
-\newcommand\newfloat@ForEachNew[2]{%
-  \ifcsname#1\endcsname
-    \ForEachFloatingEnvironment{#2}%
-  \else
+\newcommand\newfloat@IfPackageLoaded[3]{%
+  \@ifpackageloaded{#1}{%
+    \newfloat@@IfPackageLoaded{#1}{#2}{#3}%
+  }{%
     \AtBeginDocument{%
-      \ifcsname#1\endcsname
-        \ForEachFloatingEnvironment{#2}%
-      \fi}%
-  \fi}%
-\@onlypreamble\newfloat@ForEachNew
+      \@ifpackageloaded{#1}{%
+        \newfloat@@IfPackageLoaded{#1}{#2}{#3}%
+        % Execute code for every previous \DeclareFloatingEnvironment as well
+        \def\@elt##1{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}%
+        \newfloat@@list
+        \let\@elt\relax
+      }{}}%
+  }}
+\@onlypreamble\newfloat@IfPackageLoaded
+\newcommand\newfloat@@IfPackageLoaded[3]{%
+  \newfloat@InfoNoLine{`#1' package detected}%
+  % Execute code when \DeclareFloatingEnvironment is used
+  \newfloat@addtohook{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}}
+\@onlypreamble\newfloat@@IfPackageLoaded
+\newcommand\newfloat@@@IfPackageLoaded[3]{%
+  \ifcsname#2\endcsname
+    \newfloat@WarningNoLine{%
+      Command \@backslashchar#2 already defined.\MessageBreak
+      (`#1' package support)}%
+  \else
+    #3%
+  \fi}
+\@onlypreamble\newfloat@@@IfPackageLoaded
 %%    \begin{macrocode}
-\newfloat@ForEachNew{float@exts}{%
+\newfloat@IfPackageLoaded{float}{newfloat@undefined}{%
   \@nameuse{@ifchapterlistsgap@#1}{% if switched on
     \let\float@do=\relax
     \edef\@tempa{%
       \noexpand\float@exts{\the\float@exts\float@do{\@nameuse{ext@#1}}}}%
     \@tempa}}
-\newfloat@ForEachNew{FP@floatBegin}{%
+\newfloat@IfPackageLoaded{fltpage}{FP#1}{%
   \newcounter{FP@#1C}%
   \newenvironment{FP#1}{\FP@floatBegin{#1}}{\FP@floatEnd}}
 \providecommand*\ext@lstlisting{lol}%
-\newfloat@ForEachNew{@rotfloat}{%
+\newfloat@IfPackageLoaded{rotating}{sideways#1}{%
   \newenvironment{sideways#1}{\@rotfloat{#1}}{\end@rotfloat}%
   \newenvironment{sideways#1*}{\@rotdblfloat{#1}}{\end@rotdblfloat}}
 \newcommand*\newfloat@For@SC[2]{%
@@ -775,11 +797,11 @@
   \newenvironment{SC#2*}%
     {\SC@dblfloat[{#1}]{#2}}{\endSC@dblfloat}}
 \@onlypreamble\newfloat@For@SC
-\newfloat@ForEachNew{SC@float}{%
+\newfloat@IfPackageLoaded{sidecap}{SC#1}{%
   \expandafter\newfloat@For@SC\csname SC@#1@vpos\endcsname{#1}}
-\newfloat@ForEachNew{wrapfloat}{%
+\newfloat@IfPackageLoaded{wrapfig}{wrap#1}{%
   \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
-\newfloat@ForEachNew{plist@figure}{%
+\newfloat@IfPackageLoaded{dgruyter}{plist@#1}{%
   \expandafter\newcommand\csname plist@#1\endcsname{%
     \@nameuse{#1name}\space}}
 \endinput
