@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1429}
+% \CheckSum{1579}
 %
 % \iffalse
 %<*driver>
@@ -533,7 +533,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/08/31 v1.1i Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/08/31 v1.1j Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -1197,6 +1197,10 @@
 %    \begin{macrocode}
   \providecommand*\@chapterlistsgap{10\p@}%
 %    \end{macrocode}
+% If the \package{dgruyter} package is loaded, the default gap is |13pt|.
+%    \begin{macrocode}
+  \@ifpackageloaded{dgruyter}{\renewcommand*\@chapterlistsgap{13\p@}}{}%
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\@addchapterlistsgap}
@@ -1733,7 +1737,8 @@
   \else
     \@makechapterhead{#2}%
     \@afterheading
-  \fi}{%
+  \fi
+}{%
   \if@chapnum  % war mal \ifnum \c@secnumdepth >\m@ne
     \refstepcounter{chapter}%
     \if@mainmatter
@@ -1745,6 +1750,81 @@
     \fi
   \else
     \addcontentsline{toc}{chapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \@addchapterlistsgaps
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi}
+%    \end{macrocode}
+%
+% \pagebreak[3]
+% \subsubsection{The dgruyter package}
+% \changes{v1.1j}{2019/08/31}{Extended support of \package{dgruyter} package added}
+%
+%    \begin{macrocode}
+% dgruyter.sty [2017/09/19 v2.00 De Gruyter layout]
+\newfloat@replace@chapter{dgruyter}{%
+  \let\thesection\theinchapsection
+  \let\theequation\theinchapequation
+  \let\thefigure\theinchapfigure
+  \let\thetable\theinchaptable
+  \ifx\bookDOI\@undefined
+  \else
+    \@tempcnta\numexpr\componentd@i+\@ne\relax
+    \xdef\componentd@i{\the\@tempcnta}%
+    \xdef\@DOI{%
+      https://doi.org/\bookDOI
+      -\ifx\thepage\thefrontmatterpage2\else\ifnum\@tempcnta<100 0\fi\fi
+      \ifnum\@tempcnta<10 0\fi\componentd@i}%
+  \fi
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}#1}%
+    \else
+      \addcontentsline{toc}{schapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{schapter}{#1}%
+  \fi
+  \chaptermark{#1}%
+  \addtocontents{lof}{\protect\addvspace{13\p@}}%
+  \addtocontents{lot}{\protect\addvspace{13\p@}}%
+  \if@twocolumn
+    \@topnewpage[\@makechapterhead{#2}]%
+  \else
+    \@makechapterhead{#2}%
+    \@afterheading
+  \fi
+}{%
+  \let\thesection\theinchapsection
+  \let\theequation\theinchapequation
+  \let\thefigure\theinchapfigure
+  \let\thetable\theinchaptable
+  \ifx\bookDOI\@undefined
+  \else
+    \@tempcnta\numexpr\componentd@i+\@ne\relax
+    \xdef\componentd@i{\the\@tempcnta}%
+    \xdef\@DOI{%
+      https://doi.org/\bookDOI
+      -\ifx\thepage\thefrontmatterpage2\else\ifnum\@tempcnta<100 0\fi\fi
+      \ifnum\@tempcnta<10 0\fi\componentd@i}%
+  \fi
+  \ifnum \c@secnumdepth >\m@ne
+    \if@mainmatter
+      \refstepcounter{chapter}%
+      \typeout{\@chapapp\space\thechapter.}%
+      \addcontentsline{toc}{chapter}{\protect\numberline{\thechapter}#1}%
+    \else
+      \addcontentsline{toc}{schapter}{#1}%
+    \fi
+  \else
+    \addcontentsline{toc}{schapter}{#1}%
   \fi
   \chaptermark{#1}%
   \@addchapterlistsgaps
