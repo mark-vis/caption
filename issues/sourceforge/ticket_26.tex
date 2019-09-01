@@ -1,5 +1,6 @@
 % Ticket #26 "conflict refcheck/​subcaption packages for label with underscores"
-% https://sourceforge.net/p/latex-caption/tickets/26/
+% Date: Oct 20 '15 at 9:42
+% URL: https://sourceforge.net/p/latex-caption/tickets/26/
 %
 % From https://tex.stackexchange.com/questions/273970/conflict-refcheck-subcaption-packages-for-label-with-underscores
 
@@ -46,4 +47,51 @@ Figure \ref{fig:A_A} %no problem with the reference here
 \end{figure}
 
 \end{document}
+
+---
+
+The problem is that refcheck isn't really compatible with hyperref, because refcheck doesn't respect hyperref's starred version of the \ref macro (this could be considered a bug with refcheck, and should probably be reported to the package maintainer).
+
+When you do \subref{fig:A_A_A} it expands to something like this:
+
+\hyperref[fig:A_A_A]{%
+  \begingroup
+    \caption@setoptions{sub}%
+    \subcaption@reffmt\p@subref{%
+      \ref*{sub@fig:A_A_A}%
+    }%
+  \endgroup
+}
+
+Note the use of \ref* here. It's because hyperref overrides the regular \ref to use \hyperref to produce a hyperlink. hyperref therefore also provides \ref* as an alternative that does the same as \ref, except that it doesn't generate a hyperlink (you can think of \ref{A} as the same as \hyperref[A]{\ref*{A}}). In the case above, the reference text and the link use different reference labels, hence the use of \ref*.
+
+Because refcheck overrides \ref without regards to hyperref's \ref* macro, you basically lose the "capabilities" of the starred version. Hence \ref*{A} will now expand as if you'd written \ref{*}{A}.
+
+In the case of \ref*{sub@fig:A_A_A}, you hence get \ref{*}{sub@fig:A_A_A}, which clearly won't work very well. You'll get a warning
+
+LaTeX Warning: Reference `*' on page 1 undefined on input line XY
+
+and since {sub@fig:A_A_A} is not an argument to the \ref macro, you'll get the normal "underscore error" that you saw.
+
+EDIT
+
+As a quick-fix, you could use something like this in your preamble:
+
+\makeatletter
+
+\AtBeginDocument{%
+  \@ifpackageloaded{refcheck}{%
+    \@ifundefined{hyperref}{}{%
+      \let\T@ref@orig\T@ref
+      \def\T@ref#1{\T@ref@orig{#1}\wrtusdrf{#1}}%
+      \let\@refstar@orig\@refstar
+      \def\@refstar#1{\@refstar@orig{#1}\wrtusdrf{#1}}%
+      \DeclareRobustCommand\ref{\@ifstar\@refstar\T@ref}%
+    }%
+  }{}%
+}
+
+\makeatother
+
+This code restores hyperref's definition of \ref, and patches the \T@ref (the non-starred version) and the \@refstar (the starred version) macros that hyperref uses.
 

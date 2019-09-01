@@ -1,10 +1,12 @@
-% Ticket #52 "longtabu table with captionsetup{labelsep=newline} problem"
-% https://sourceforge.net/p/latex-caption/tickets/52/
+% Ticket: #52
+% Title: longtabu table with captionsetup{labelsep=newline} problem
+% URL: https://sourceforge.net/p/latex-caption/tickets/52/
 %
 % From https://tex.stackexchange.com/questions/329926/longtabu-table-with-captionsetuplabelsep-newline-problem
 
 % I would like to create the table below with the "labelsep=newline"option in \captionsetup{}. However, I get an error message. Without the "labelsep=newline" parameter the code is running fine (see example). Any help would be appreciated. Thank you.
 
+\iffalse
 \documentclass[float=false, crop=false]{standalone}
 \usepackage{collcell}
 \usepackage[latin1]{inputenc}
@@ -39,6 +41,89 @@
      entry& entry     & entry & entry\\
      entry & entry           & entry & entry\\
      entry & entry                          & entry & entry\\
+\end{longtabu}
+}
+\end{document}
+\fi
+
+% ---
+
+% longtable and captions
+% 
+% The reason for this is that for longtable to be able to split a table into pages, it cannot be in a floating environment. This is problematic for the \caption-macro, which need to be in a floating environment, like table or figure. To get around this, longtable redefines the \caption-macro, essentially making it only some text in a multicolumn
+% 
+% This is described in the documentation for longtable Note that you can always locate the documentation using the command-line/terminal by writing texdoc longtable, and that works for any package. The documentation is also available at http://ctan.org/pkg/longtable
+% Why is this probematic for us?
+% 
+% when you specify that the seperator for labels should be a newline, that means that a \\ will be inserted after Table #, but in tables, \\, means something more than just to insert a newline, as you already know, it will create a new row, which gives us an error since we are effectively inside a multicolumn now, because of the redefenition of \caption, as mentioned above.
+
+% Solution
+% 
+% Add a new label seperator, with the command
+% 
+% \DeclareCaptionLabelSeparator{tableNewline}{\par}
+% 
+% which we will use only in longtables. This will give us the intended result. The downside is that we have need to keep track of two different formats.
+
+% Code
+% 
+\documentclass[float=false, crop=false]{standalone}
+\usepackage{collcell}
+\usepackage[latin1]{inputenc}
+\usepackage{longtable}
+\usepackage{tabu}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{geometry}
+\usepackage{booktabs}% some new rules for tables
+\DeclareCaptionLabelSeparator{tableNewline}{\par}
+\geometry{a4paper, top=25mm, left=40mm, right=25mm, bottom=30mm,
+    headsep=10mm, footskip=12mm}
+\captionsetup{
+  justification=centering,
+  labelsep=newline,
+  }
+\captionsetup[longtable]{
+  justification=centering,
+  labelsep=tableNewline,
+  }
+\begin{document}
+
+\begin{table}
+
+  \caption{Some test caption for a regular table}
+  \centering
+  \begin{tabular}{ll}
+    \toprule
+    Foo & Baz \\
+    \midrule
+    baz & foobaz \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+{\footnotesize
+
+\begin{longtabu} to \textwidth {
+    X[15,l]
+    X[4,l]
+    X[6,l]
+    X[8,l]
+    }
+    \caption{Caption 1}
+    \label{tab:table genral information es50} \\
+    \toprule
+    \textbf{Column 1} &
+    \textbf{Column 2} &
+    \textbf{Column 3} &
+    \textbf{Column 4}
+    \\
+    \midrule
+                            &        &         &  \\
+     entry& entry     & entry & entry\\
+     entry & entry           & entry & entry\\
+     entry & entry                          & entry & entry\\
+     \bottomrule
 \end{longtabu}
 }
 \end{document}

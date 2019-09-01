@@ -1,6 +1,4 @@
 #!/bin/bash
-#
-# 2019-08-30: 1st version
 
 basedir=$(pwd)
 logfile="$basedir/test.log"
@@ -30,8 +28,21 @@ compile_all()
 compile()
 {
   # Skip example documents which purpose is to produce an error
-  [[ $1 == "email" && $2 == "2009-09-29.tex" ]] && return
-  [[ $1 == "other" && $2 == "2007-09-13.tex" ]] && return
+  # (or cannot be compiled for a different reason)
+  [[ $1 == "email" && $2 == "2009-09-29.tex" ]] && return       # Related to floatrow, should produce error
+  [[ $1 == "other" && $2 == "2007-09-13.tex" ]] && return       # labelsep=newline + \setcaphanging, should produce error
+  [[ $1 == "other" && $2 == "2012-09-21.tex" ]] && return       # Bug in fltpage
+  [[ $1 == "other" && $2 == "2013-01-09.tex" ]] && return       # Bug in fltpage
+  [[ $1 == "sourceforge" && $2 == "ticket_2.tex"  ]] && return  # Bug in fltpage
+  [[ $1 == "sourceforge" && $2 == "ticket_4.tex"  ]] && return  # TODO: Adaption to hvfloat
+  [[ $1 == "sourceforge" && $2 == "ticket_8.tex"  ]] && return  # TODO: Should be fixed!
+  [[ $1 == "sourceforge" && $2 == "ticket_12.tex" ]] && return  # Can't compile tufte-book
+  [[ $1 == "sourceforge" && $2 == "ticket_18.tex" ]] && return  # TODO: \continuedfloat
+  [[ $1 == "sourceforge" && $2 == "ticket_26.tex" ]] && return  # Bug in refcheck
+  [[ $1 == "sourceforge" && $2 == "ticket_37.tex" ]] && return  # TODO: \iflistof
+  [[ $1 == "sourceforge" && $2 == "ticket_40.tex" ]] && return  # Bug in catoptions
+  [[ $1 == "sourceforge" && $2 == "ticket_43.tex" ]] && return  # subcaption + subfig, should produce error
+  [[ $1 == "sourceforge" && $2 == "ticket_47.tex" ]] && return  # TODO: \DeclareCaptionListHook
 
   # Compile document three times (so interim files will be used)
   pdflatex "$2" || failed "$1" "$2"
