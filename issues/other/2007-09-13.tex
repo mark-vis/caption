@@ -1,4 +1,5 @@
-% "Neues Caption Paket verträgt sich nicht mit Koma Klassen?"
+% Neues Caption Paket verträgt sich nicht mit Koma Klassen?
+% 13-09-2007, 10:51
 % http://www.mrunix.de/forums/showthread.php?t=53862
 
 % Seit ich das neuste Caption Paket v3.1 mit den KOMA-Script package v.2.97a benutze, bekomme ich die Fehlermeldung:
@@ -22,4 +23,61 @@ test
 %
 % Ich möchte nun aber, dass das Label der Beschriftung auf einer Zeile steht und darunter (im Idealfall zentriert) die Beschreibung.
 % Kann mir jemand weiterhelfen?
+
+---
+
+Das Problem lies sich damit sehr schön untersuchen; die Optionskombination "format=hang,justification=centering,labelsep=newli ne" funktioniert nicht, auch mit dem alten caption-Paket v3.0 nicht, egal ob KOMA oder nicht. Beispiel:
+Code:
+
+\documentclass[12pt]{article}
+\usepackage[format=hang,justification=centering,labelsep=newline]{caption}
+\begin{document}
+test
+\begin{figure}
+	\caption{sehr langer text sehr langer text sehr langer text sehr langer text sehr langer text sehr langer text}
+\end{figure}			
+\end{document}
+
+Selbst wenn man auf das caption-Paket verzichtet und das ganze mit KOMA-Bordmitteln einstellt, bekommt man die gleiche Fehlermeldung:
+Code:
+
+\documentclass[12pt, nochapterprefix, BCOR0mm]{scrreprt}
+\setkomafont{caption}{\centering}
+\renewcommand\captionformat{\\}
+\begin{document}
+test
+\begin{figure}
+	\caption{sehr langer text sehr langer text sehr langer text sehr langer text sehr langer text sehr langer text}
+\end{figure}			
+\end{document}
+
+Nichtsdestotrotz werde ich versuchen, in diesem Falle in Zukunft eine sinnvollere Fehlermeldung auszugeben.
+
+Was du aber vermutlich haben möchtest, ist was anderes, nämlich dies hier:
+Code:
+
+\usepackage[format=plain,justification=centering,labelsep=newline]{caption}
+
+bzw. ohne caption-Paket, sondern mit KOMA-Bordmitteln:
+Code:
+
+\setcapindent{0pt}
+\setkomafont{caption}{\centering}
+\renewcommand\captionformat{\\}
+
+(Die KOMA-Lösung liefert aber hier den gleichen Fehler, werde gleich mal Markus Kohm eine E-Mail diesbezüglich schicken...)
+
+Mit dem caption-Paket v3.0 ging dein Beispiel nur deswegen gut, weil caption v3.0 inkompatibel zu KOMA-Script war. Nun aber ist es kompatibel und übernimmt auch die KOMA-Grundeinstellungen, die nunmal \setcaphanging bzw. "format=hang" sind. (siehe auch caption-Doku, Abschnitt über die Dokumentenklassen)
+
+---
+
+Ich habe es jetzt so bei mir geändert, daß in diesem Falle die Fehlermeldung
+Code:
+
+  The option `labelsep=newline' does not work
+  with \setcaphanging (which is set by default).
+
+ausgegeben wird. (Diese Fehlermeldung kommt dann auch bei selbstdefinierten Trennern, die ein \\ beinhalten.)
+
+Die Änderung wird dann ab caption v3.1a drin sein, welches spätestens in der ersten Oktoberwoche auf CTAN frei verfügbar sein wird.
 
