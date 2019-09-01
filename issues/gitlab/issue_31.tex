@@ -1,0 +1,220 @@
+% Issue: 31
+% Title: caption.sty and caption3.sty breaks hungarian language support
+% Date:  Aug 21, 2018 3:08pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/31
+
+% Two lines of caption.sty and caption3.sty breaks hungarian (magyar) documents. I'm using lualatex with texlive 2018, but I think it's the same with others.
+% 
+% Reproduce: use "magyar" default language with \usepackage{caption}
+% 
+% Expected outcome: generate pdf
+% 
+% Actual outcome: lualatex dies with the following error message:
+% 
+% ! Undefined control sequence.
+% <recently read> \addto 
+% 
+% l.1167 \caption@tempa{magyar}
+% 
+% What’s the problem: If the following lines are active in the files caption.sty and caption3.sty tex dies:
+% 
+% \caption@tempa{hungarian}%
+% \caption@tempa{magyar}%
+% 
+% Temporary fix: If I comment out the offending lines, the compilation runs successfully.
+
+% ---
+
+% Do you have an example document for me which shows the problem? This one compiles fine, with both pdflatex and lualatex (TeXlive 2018):
+
+\iffalse
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[magyar]{babel}
+
+\usepackage{caption}
+
+\begin{document}
+
+\begin{figure}
+\centering Test
+\caption{Test}
+\end{figure}
+
+\end{document}
+\fi
+
+% The error message criticises that \addto is not defined, but \addto will be defined by the babel package. So you are using magyar support without babel?
+
+% ---
+
+% This was a complicated pandoc generated document. I managed to strip it down to a minimal version and it seems at least one another module is required to reproduce the issue. (Maybe it's the other module's fault I don't know).
+% 
+% The following fails to compile:
+
+\iffalse
+\documentclass[12pt,magyar,a4paper,oneside]{article}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage[shorthands=off,main=magyar]{babel}
+\begin{document}
+\end{document}
+\fi
+
+% If I remove the hyperref package all is fine (no output of course).
+
+% ---
+
+% Strangely, if I exchange the order of lines, everything is fine again:
+
+% \usepackage[shorthands=off,main=magyar]{babel}
+% \usepackage{caption}
+
+% Actually it's not that strange as you said \addto is defined in babel. However, what is strange is that the original order is working if the hyperref package is removed. Maybe \addto is defined elsewhere and hyperref undefines it somehow? It's not clear for me.
+
+% ---
+
+% Thanks for the document. As I found out it can be shortened even a little bit more:
+
+\documentclass{article}
+\usepackage[magyar]{hyperref}
+\usepackage{caption}
+\begin{document}
+\end{document}
+
+% I wasn't aware of the magyar option of hyperref. However, if this option is set, the command \extrasmagyar will be defined by hyperref, and the existence of this macro fools the caption package into assuming that the babel package magyar has been loaded.
+% 
+% I will fix this in a future release of the caption package. In the meanwhile changing the load order could be used as work-around, i.e. loading the caption package after the babel package. (This is the recommended load order anyway.)
+
+\documentclass{article}
+\usepackage[magyar]{hyperref}
+\usepackage[magyar]{babel}
+\usepackage{caption}
+\begin{document}
+\end{document}
+
+% or
+
+\documentclass[magyar]{article}
+\usepackage{hyperref}
+\usepackage{babel}
+\usepackage{caption}
+\begin{document}
+\end{document}
+
+---
+
+I just took a closer look into the magyar support of the hyperref package. To me it seems it's an unwanted side-effect that \extrasmagyar is defined even if the babel magyar package isn't loaded yet. I will ask Heiko Oberdiek if this is done intentional or just a bug.
+
+Compare
+
+\documentclass[magyar]{article}
+\usepackage{hyperref}
+\show\extrasmagyar
+\usepackage{babel}
+\show\extrasmagyar
+\begin{document}
+\end{document}
+
+with
+
+\documentclass[magyar]{article}
+\usepackage{babel}
+\show\extrasmagyar
+\usepackage{hyperref}
+\show\extrasmagyar
+\begin{document}
+\end{document}
+
+In the first case, \extrasmagyar will be defined as \HyLang@magyar, and this definition will be overwritten by the babel package.
+
+In the second case, \extrasmagyar will be defined by the babel package, and \HyLang@magyar will be appended to this definition by the hyperref package.
+
+Since \HyLang@magyar switches all language dependent strings (like \figureautorefname) to hungarian (magyar), this will be done only in the second case if the language is switched within the document:
+
+\documentclass{article}
+\usepackage[magyar,english]{babel}
+\usepackage{hyperref}
+\begin{document}
+\figureautorefname
+\selectlanguage{magyar}
+\figureautorefname
+\end{document}
+
+will typeset the correct result "Figure Ábra".
+
+But
+
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage[magyar,english]{babel}
+\begin{document}
+\figureautorefname
+\selectlanguage{magyar}
+\figureautorefname
+\end{document}
+
+will typeset "Figure Figure".
+
+Forcing the hyperref package to use the "magyar" strings will not make this better, just different:
+
+\documentclass{article}
+\usepackage[magyar]{hyperref}
+\usepackage[magyar,english]{babel}
+\begin{document}
+\figureautorefname
+\selectlanguage{magyar}
+\figureautorefname
+\end{document}
+
+will typeset "Ábra Ábra".
+
+So in total the hyperref support for different languages is designed to work correctly only if the hyperref package is loaded after the babel package. So changing the load order seems to be a good idea anyway.
+
+However, I will leave this issue open since loading the caption package shouldn't lead to an error message, so I still want to fix this by revising the babel support (in caption v3.4), especially the detection of different language options.
+
+---
+
+A comment for myself: hyperref uses \@ifpackagewith{babel}{#1}{...}{...} for the detection of of babel with given languages, so it seems a good idea to me to use this method for the caption package, too.
+
+---
+
+Thanks for the great explanation. It's much clearer now. Unfortunately pandoc places babel/polyglossia very late in the header by default in order to fix some RTL lang issue (as the comment says). Moving babel to the front and setting magyar the only language solves the problem (default is not enough) but quite cumbersome to do so at every round so I'll probably stick with my commented lines (hopefully it won't crash anything).
+
+In summary this error was triggered by an unexpected behavior of hyperref, so it's not strictly a caption bug, still, making caption more error prone is greatly appreciated!
+
+---
+
+I just fixed this with commit 446e2996
+
+Please note that the hungarian/magyar babel package will only be detected and fully supported if the caption package will be loaded after the caption package. Since there is no mechanism offered by LaTeX to deal with different load orders, I have no chance but copy the babel package detection mechanism from hyperref, which has the same design flaw.
+
+Babel defines \extrasxxx macros which holds the stuff done at language switch. Packages and documents can and should append their own stuff to these macros, but since babel always overrides existing \extrasxxx definitions (instead of appending its code), this can only be done after babel was loaded.
+
+So in total we have two major design flaws here: LaTeX does not offer anything which could help, neither code nor a guideline for package authors. And babel does not care about packages loaded before babel.
+
+So much for the bad news, the good news are: Using the wrong load order does not result in an compiler error anymore.
+
+Regarding the pandoc comments:
+
+% load polyglossia as late as possible as it *could* call bidi if RTL lang (e.g. Hebrew or Arabic)
+% load bidi as late as possible as it modifies e.g. graphicx
+
+It seems pandoc tries to avoid load order problems by loading babel/polyglossia as late as possible, so any stuff done by other packages (and incompatible to some other packages) will be overwritten by babel/polyglossia. This is not a good approach, this is simply surrendering to the "LaTeX load order" crap. I can comprehend this approach since I try not to give up for more than two decades now, and I am still facing issues like this one.
+
+BTW: Since you are using pandoc, why are you using the ancient and dickey output format "LaTeX"? Why not using the modern and far superior ConTeXt instead?
+
+---
+
+Super! Thank you very much. I think you mean caption package should be loaded after the babel package.
+
+Maybe I could use a custom template for pandoc to fix the problem for my project.
+
+Regarding the ConTeXt thing I didn't even know it existed. I've just tried it but most of the tables and images are messed up badly :-/ (I'm using some pandoc extensions like crossref and citeproc) I suppose context support is not that strong than latex's.
+
+---
+
+Uploaded to CTAN (Version 2018-09-12)
+

@@ -1,0 +1,65 @@
+% Issue: 42
+% Title: Feature request: provide support for chkfloat functionality
+% Date:  Jan 10, 2019 3:43pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/42
+
+% The chkfloat package is a small package that tries to check if a float is placed too far away from its (main) callout (ie its place in the source). As such I think this is a useful functionality but if done in a separate package that hooks into both the float mechansin and the caption mechanisn means that it isn't working the moment something like newfloat or the caption package is loaded as well. I therefore think it would be better handled by newfloat, float or caption directly.
+
+% ---
+
+% I have adapted the caption package to the chkfloat package on 2018/09/06. Since the chkfloat package only patches \@float and \@caption it should not interfere with the newfloat package.
+% 
+% See also: https://gitlab.com/axelsommerfeldt/caption/issues/34 (closed)
+% 
+% So could you give me a hint what exactly isn't working?
+
+% ---
+
+% Try
+
+\documentclass{article}
+
+\usepackage[]{endfloat}
+
+\usepackage{newfloat}
+\DeclareFloatingEnvironment{map}
+\DeclareDelayedFloat{map}{Maps}
+
+\usepackage{lipsum,chkfloat}
+
+\listfiles
+
+\begin{document}
+
+\lipsum[1-3]
+
+\begin{figure}[h] Foo \caption{foo}
+\end{figure}
+
+\begin{table}[h] Bar \caption{bar}
+\end{table}
+
+\begin{map}[h] map \caption{map}
+\end{map}
+
+\lipsum[4-6]
+
+\end{document}
+
+% I get
+% 
+% ./newfloat-test.tex:29: Undefined control sequence.
+% <write> ...}{Map\protect \nobreakspace  1\autodot 
+%                                                   : map}}
+% l.29 \end{document}
+% 
+% running this (with an uptodate TL)
+
+% ---
+
+% This was a problem in newfloat regarding the "autodot" feature of the KOMA-Script classes, triggered by chkfloat. (This bug was not related to chkfloat, I guess it could have been triggered by other packages as well.)
+
+% ---
+
+% Fixed with commit https://gitlab.com/axelsommerfeldt/caption/commit/f05ea986e763cf9d7c0727e03a88cdd8a7019c09
+

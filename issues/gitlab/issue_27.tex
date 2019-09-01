@@ -1,0 +1,116 @@
+% Issue: 27
+% Title: SX: Subcaptionbox in tabu: wrong numbering of subfigures
+% Date:  Aug 7, 2018 10:16am
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/27
+
+% See https://tex.stackexchange.com/questions/444942/subcaptionbox-in-tabu-wrong-numbering-of-subfigures/ (Aug 7 '18 at 9:01)
+% 
+% Currently the flags caption, subcaption, and continuedfloat are implemented as boolean values. I guess it would be a better idea to implement them as counters, so packages which prevent global counter changes for a reason (for example the tabu package on the 1st and 2nd run) should be more compatible with the caption resp. subcaption package.
+
+% ---
+
+% I'm am using the tabu environment inside figures to have some nice alignment for multi-panel figures. However, this seems to give me some problems with the numbering of the subfigures (the numbering of the subfigures in the second environments starts with c) rather than a), i.e. continues the counting from previous figures). Please see picture below.
+% 
+% What am I doing wrong here?
+% 
+% P.S.: I am using Texlive 2018 and its seems to happen for lualatex and pdflatex.
+
+\documentclass{article}
+
+\usepackage{mwe,graphicx,tabu,subcaption,float}
+
+\begin{document}
+    \begin{figure}[H]
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}
+    \end{figure}
+    \begin{figure}[H]
+        \begin{tabu} to \linewidth {XX}
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}\\
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}%
+        \end{tabu}
+    \end{figure}
+\end{document}
+
+% ---
+
+The caption resp. subcaption package needs to track if a caption or sub-caption has already been typeset in the current figure or not. If neither of them has been typeset so far, and a \caption or \subcaption(box) comes up, the figure counter needs to be incremented and the subfigure counter needs to be reset.
+
+Sounds easy, but why is this simple mechanism not working here? Because a tabu environment is typeset three times internally.
+
+Try this one:
+
+\documentclass{article}
+
+\usepackage{mwe,graphicx,tabu,subcaption,float}
+
+\makeatletter
+\newcommand\showsubcaptionflag{%
+  \show\ifcaption@subcaption}
+\makeatother
+
+\begin{document}
+    \begin{figure}[H]
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}
+    \end{figure}
+    \begin{figure}[H]
+        \begin{tabu} to \linewidth {XX}
+            \showsubcaptionflag
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}\\
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}%
+        \end{tabu}
+    \end{figure}
+\end{document}
+
+You will see that \showsubcaptionflag will be called three times, and at the 1st time the internal sub-caption flag is not set, but it is set at the 2nd and 3rd time (since \subcaptionbox has already appeared), confusing the subcaption package into not-incrementing the figure counter and not-resetting the subfigure counter on the 2rd and 3nd run of tabu.
+
+The tabu package tries hard to avoid side-effects caused by typesetting the table internally three times, but it is not aware of the internal flags of the subcaption package and therefore is doomed to fail here.
+
+Solution: I will see if the tabu package provides a hook for package authors where I can do the stuff needed for compatibility with the caption package. (It it does not there is little I can do, especially since the author of the tabu package is not making changes anymore.)
+
+Workaround: Reset the internal flag of the caption package every time the tabu tabular is typeset:
+
+\documentclass{article}
+
+\usepackage{mwe,graphicx,tabu,subcaption,float}
+
+\makeatletter
+\newcommand\clearsubcaptionflag{%
+  \@ifundefined{caption@chgflag}{}{%
+    \caption@clrflag{subcaption}}}
+% Dirty Hack: The following line will reset the
+% `subcaption` flag on every internal run of `tabu`:
+\g@addto@macro\tabu@setstrategy{\noalign{\clearsubcaptionflag}}
+\makeatother
+
+\begin{document}
+    \begin{figure}[H]
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}
+        \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}
+    \end{figure}
+    \begin{figure}[H]
+        \begin{tabu} to \linewidth {XX}
+%           \clearsubcaptionflag % no subcaptions so far
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}\\
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-a}}&%
+            \subcaptionbox{}{\includegraphics[width=1cm]{example-image-b}}%
+        \end{tabu}
+    \end{figure}
+\end{document}
+
+P.S.: I filled a bug report here: https://gitlab.com/axelsommerfeldt/caption/issues/27
+
+---
+
+Fixed with commit e0e7867d, so the dirty work-around is not needed anymore.
+
+---
+
+Uploaded to CTAN (Version 2018-09-12)
+

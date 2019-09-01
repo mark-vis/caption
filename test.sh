@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# shellcheck disable=SC2103,SC2164
+
 basedir=$(pwd)
 logfile="$basedir/test.log"
+dironly=${1:-*}
 
 cleanup()
 {
@@ -11,38 +14,44 @@ cleanup()
 
 compile_all()
 {
-  # Compile all files in the given directory
-  cd "$1"
-  cp -a $basedir/tex/*.sty .
+  # shellcheck disable=SC2053
+  if [[ $1 == $dironly ]]
+  then
+    # Compile all files in the given directory
+    cd "$1"
+    cp -a "$basedir"/tex/*.sty .
 
-  shopt -s nullglob
-  files=(*.dtx *.ltx *.tex)
-  for file in "${files[@]}"
-  do
-    compile "$1" "$file"
-  done
+    shopt -s nullglob
+    files=(*.dtx *.ltx *.tex)
+    for file in "${files[@]}"
+    do
+      compile "$1" "$file"
+    done
 
-  cd ..
+    cd ..
+  fi
 }
 
 compile()
 {
   # Skip example documents which purpose is to produce an error
   # (or cannot be compiled for a different reason)
-  [[ $1 == "email" && $2 == "2009-09-29.tex" ]] && return       # Related to floatrow, should produce error
-  [[ $1 == "other" && $2 == "2007-09-13.tex" ]] && return       # labelsep=newline + \setcaphanging, should produce error
-  [[ $1 == "other" && $2 == "2012-09-21.tex" ]] && return       # Bug in fltpage
-  [[ $1 == "other" && $2 == "2013-01-09.tex" ]] && return       # Bug in fltpage
-  [[ $1 == "sourceforge" && $2 == "ticket_2.tex"  ]] && return  # Bug in fltpage
-  [[ $1 == "sourceforge" && $2 == "ticket_4.tex"  ]] && return  # TODO: Adaption to hvfloat
-  [[ $1 == "sourceforge" && $2 == "ticket_8.tex"  ]] && return  # TODO: Should be fixed!
-  [[ $1 == "sourceforge" && $2 == "ticket_12.tex" ]] && return  # Can't compile tufte-book
-  [[ $1 == "sourceforge" && $2 == "ticket_18.tex" ]] && return  # TODO: \continuedfloat
-  [[ $1 == "sourceforge" && $2 == "ticket_26.tex" ]] && return  # Bug in refcheck
-  [[ $1 == "sourceforge" && $2 == "ticket_37.tex" ]] && return  # TODO: \iflistof
-  [[ $1 == "sourceforge" && $2 == "ticket_40.tex" ]] && return  # Bug in catoptions
-  [[ $1 == "sourceforge" && $2 == "ticket_43.tex" ]] && return  # subcaption + subfig, should produce error
-  [[ $1 == "sourceforge" && $2 == "ticket_47.tex" ]] && return  # TODO: \DeclareCaptionListHook
+  [[ $1 == "email"       && $2 == "2009-09-29.tex" ]] && return  # Related to floatrow, should produce error
+  [[ $1 == "other"       && $2 == "2007-09-13.tex" ]] && return  # labelsep=newline + \setcaphanging, should produce error
+  [[ $1 == "other"       && $2 == "2012-09-21.tex" ]] && return  # Bug in fltpage
+  [[ $1 == "other"       && $2 == "2013-01-09.tex" ]] && return  # Bug in fltpage
+  [[ $1 == "sourceforge" && $2 == "ticket_2.tex"   ]] && return  # Bug in fltpage
+  [[ $1 == "sourceforge" && $2 == "ticket_4.tex"   ]] && return  # TODO: Adaption to hvfloat
+  [[ $1 == "sourceforge" && $2 == "ticket_8.tex"   ]] && return  # TODO: Should be fixed!
+  [[ $1 == "sourceforge" && $2 == "ticket_12.tex"  ]] && return  # Can't compile tufte-book
+  [[ $1 == "sourceforge" && $2 == "ticket_18.tex"  ]] && return  # TODO: \continuedfloat
+  [[ $1 == "sourceforge" && $2 == "ticket_26.tex"  ]] && return  # Bug in refcheck
+  [[ $1 == "sourceforge" && $2 == "ticket_37.tex"  ]] && return  # TODO: \iflistof
+  [[ $1 == "sourceforge" && $2 == "ticket_40.tex"  ]] && return  # Bug in catoptions
+  [[ $1 == "sourceforge" && $2 == "ticket_43.tex"  ]] && return  # subcaption + subfig, should produce error
+  [[ $1 == "sourceforge" && $2 == "ticket_47.tex"  ]] && return  # TODO: \DeclareCaptionListHook
+  [[ $1 == "gitlab"      && $2 == "issue_29.tex"   ]] && return  # Needs Culmus fonts to compile
+  [[ $1 == "gitlab"      && $2 == "issue_35.tex"   ]] && return  # Needs <whatever> to compile (greek & farsi)
 
   # Compile document three times (so interim files will be used)
   pdflatex "$2" || failed "$1" "$2"
@@ -68,7 +77,7 @@ cd test
 dirs=(*)
 for dir in "${dirs[@]}"
 do
-  if [ -d $dir ]
+  if [[ -d $dir ]]
   then
     compile_all "$dir"
   fi
@@ -80,7 +89,7 @@ cd issues
 dirs=(*)
 for dir in "${dirs[@]}"
 do
-  if [ -d $dir ]
+  if [[ -d $dir ]]
   then
     compile_all "$dir"
   fi

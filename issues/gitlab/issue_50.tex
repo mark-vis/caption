@@ -1,6 +1,7 @@
-% wrong spacing above caption w/ floatrow + longtable
-% 2019-03-28
-% https://gitlab.com/axelsommerfeldt/caption/issues/50
+% Issue: 50
+% Title: wrong spacing above caption w/ floatrow + longtable
+% Date:  Mar 28, 2019 4:46pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/50
 
 % When using caption + floatrow + longtable, caption incorrectly adds "skip" before the caption in longtables if the caption is at the top.
 % There is a simple workaround: just add \captionsetup[longtable]{skip=0pt}.
@@ -28,4 +29,42 @@ A table cell\\
 \end{longtable}
 
 \end{document}
+
+---
+
+The floatrow package does overwrite the "position" setting of the caption package with its own setting:
+
+% from floatrow.sty:
+\newcommand\flrow@setlist@[1]{...
+  \@cap@setlist#1;%
+  \caption@setposition{\FBifcaptop tb}}
+\newcommand\@cap@setlist[1]{\caption@setoptions{#1}...}
+
+So at first the "longtable" options of the caption package will be applied using \@cap@setlist -> \caption@setoptions, but immediately afterwards the position setting will be overwritten using \caption@setposition{\FBifcaptop tb}}, i.e. either "top" or "below", depending on the contents of \FBifcaptop which will be setup by \floatsetup[...]{capposition=...}.
+
+This means \floatsetup[table]{capposition=top} has an effect, now the caption package typesets the skip below the caption (instead of above the caption). When adding \captionsetup[longtable]{skip=0pt} additionally one can see that there is no skip between caption and the table content anymore, i.e. this skip is now correctly been typeset between caption and content.
+
+But: When the floatrow package is setup this way, there is an additionally skip above the caption. This skip is not typeset by the caption package but the floatrow package. But why? This needs to be examined... (Will do so within the next days, please hold the line...)
+
+---
+
+Some more findings:
+
+While the \belowcaptionskip usually does not matter (at least if set to 0pt) the floatrow package puts the longtable caption into an environment where it actually does matter.
+
+Since fixing the floatrow package is not an option (since it's unmaintained), there are two options left:
+
+    The caption package patches the floatrow package to fix the problem.
+    The caption package implements a work-around for this problem.
+
+Since I don't like the idea of patching the floatrow package I vote for option 2. This could be done by replacing \vskip\belowcaptionskip (in \LT@makecaption) with \caption@LT@belowcaptionskip which simply drops the skip if the floatrow package is loaded:
+
+\newcommand\caption@LT@belowcaptionskip{%
+  \caption@ifundefined\FBifcaptop{\vskip\belowcaptionskip}{}}
+
+---
+
+Fixed with commit 9c8edba4
+
+Will be uploaded to CTAN on 2019/05/05
 
