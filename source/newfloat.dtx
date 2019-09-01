@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{1579}
+% \CheckSum{1605}
 %
 % \iffalse
 %<*driver>
@@ -533,7 +533,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/09/01 v1.1j Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/09/01 v1.1k Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -626,6 +626,7 @@
 % \changes{v1.1}{2018/03/04}{Usage of \cs{ifdefined} replaced by \cs{@ifundefined} to improve compatibility with the \package{listings} package}
 % \changes{v1.1b}{2018/12/26}{Bugfix: Missing curly braces added}
 % \changes{v1.1c}{2019/01/10}{Bugfix: Support of \cs{autodot} fixed}
+% \changes{v1.1k}{2019/09/01}{Adapted to the \class{beamer} document class}
 %  |\DeclareFloatingEnvironment|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareFloatingEnvironment{%
@@ -677,9 +678,11 @@
   \newfloat@ifundefined{flegtoc#2}{\@namedef{flegtoc#2}##1{}}%
 %    \end{macrocode}
 % Define the floating environment\par
-% (If the \class{tufte} document class is loaded,
+% If the \class{tufte} document class is loaded,
 % |\@tufte@float| and |\end@tufte@float| will be used instead of
-% |\@float|, |\end@float|, |\@dblfloat|, and |\end@dblfloat|.)
+% |\@float|, |\end@float|, |\@dblfloat|, and |\end@dblfloat|.\par
+% If the \class{beamer} document class is loaded,
+% |\beamer@float| and |\end@beamer@float| will be used.
 %    \begin{macrocode}
   \ifcsname @tufte@float\endcsname
     \newenvironment{#2}[1][htbp]%
@@ -689,8 +692,12 @@
       {\begin{@tufte@float}[{##1}]{#2}{star}}%
       {\end{@tufte@float}}%
   \else
-    \newenvironment{#2}{\@float{#2}}{\end@float}%
-    \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+    \@ifclassloaded{beamer}{%
+      \newenvironment{#2}[1][]{\beamer@float{#2}}{\end@beamer@float}%
+    }{%
+      \newenvironment{#2}{\@float{#2}}{\end@float}%
+      \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+    }%
   \fi
 %    \end{macrocode}
 % Define the listing command |\listof|\meta{type}(|e|)|s|
@@ -1883,6 +1890,38 @@
 %    \begin{macrocode}
 \fi
 %    \end{macrocode}
+%
+% \pagebreak[3]
+% \subsection{Support of document classes}
+%
+% \subsubsection{The beamer document class}
+%
+% \begin{macro}{\beamer@float}
+% \changes{v1.1k}{2019/09/01}{This macro added}
+% Unfortunately the \class{beamer} document class does not offer
+% |\beamer@float| and |\end@beamer@float| (yet), so we have to define them
+% for ourself.
+% (This code was taken from beamerbaselocalstructure.sty [2019/07/23 v3.56] and adapted.)
+%    \begin{macrocode}
+\ifcsname beamer@float\endcsname \else
+%    \end{macrocode}
+%    \begin{macrocode}
+  \def\beamer@float#1{%
+    \ifcsname caption@settype\endcsname
+      \caption@settype{#1}%
+    \else
+      \def\@captype{#1}%
+    \fi
+    \par\nobreak\begin{center}\nobreak}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \def\end@beamer@float{%
+    \par\nobreak\end{center}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\fi
+%    \end{macrocode}
+% \end{macro}
 %
 % \pagebreak[3]
 % \subsection{Support of other packages}

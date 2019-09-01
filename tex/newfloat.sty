@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/09/01 v1.1j Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/09/01 v1.1k Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
 \newcommand*\newfloat@InfoNoLine[1]{%
@@ -96,8 +96,12 @@
       {\begin{@tufte@float}[{##1}]{#2}{star}}%
       {\end{@tufte@float}}%
   \else
-    \newenvironment{#2}{\@float{#2}}{\end@float}%
-    \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+    \@ifclassloaded{beamer}{%
+      \newenvironment{#2}[1][]{\beamer@float{#2}}{\end@beamer@float}%
+    }{%
+      \newenvironment{#2}{\@float{#2}}{\end@float}%
+      \newenvironment{#2*}{\@dblfloat{#2}}{\end@dblfloat}%
+    }%
   \fi
   \newfloat@def{listof#2}{\newfloat@listof{#2}}%
   \newfloat@def{listof#2s}{\@nameuse{listof#2}}%
@@ -815,6 +819,17 @@
           \endgroup
         \fi
       \fi}}}
+\fi
+\ifcsname beamer@float\endcsname \else
+  \def\beamer@float#1{%
+    \ifcsname caption@settype\endcsname
+      \caption@settype{#1}%
+    \else
+      \def\@captype{#1}%
+    \fi
+    \par\nobreak\begin{center}\nobreak}
+  \def\end@beamer@float{%
+    \par\nobreak\end{center}}
 \fi
 \newcommand\newfloat@IfPackageLoaded[3]{%
   \@ifpackageloaded{#1}{%
