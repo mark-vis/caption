@@ -533,7 +533,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/08/31 v1.1j Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/09/01 v1.1j Defining new floating environments (AR)]
 %    \end{macrocode}
 %
 % \begin{macro}{\newfloat@Info}
@@ -1904,10 +1904,6 @@
     \AtBeginDocument{%
       \@ifpackageloaded{#1}{%
         \newfloat@@IfPackageLoaded{#1}{#2}{#3}%
-        % Execute code for every previous \DeclareFloatingEnvironment as well
-        \def\@elt##1{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}%
-        \newfloat@@list
-        \let\@elt\relax
       }{}}%
   }}
 \@onlypreamble\newfloat@IfPackageLoaded
@@ -1915,7 +1911,11 @@
 %    \begin{macrocode}
 \newcommand\newfloat@@IfPackageLoaded[3]{%
   \newfloat@InfoNoLine{`#1' package detected}%
-  % Execute code when \DeclareFloatingEnvironment is used
+  % Execute code for every previous \DeclareFloatingEnvironment
+  \def\@elt##1{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}%
+  \newfloat@@list
+  \let\@elt\relax
+  % Execute code for every future \DeclareFloatingEnvironment
   \newfloat@addtohook{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}}
 \@onlypreamble\newfloat@@IfPackageLoaded
 %    \end{macrocode}
@@ -1931,6 +1931,19 @@
 \@onlypreamble\newfloat@@@IfPackageLoaded
 %    \end{macrocode}
 % \end{macro}
+%
+% \pagebreak[3]
+% \subsubsection{\package{dgruyter}}
+%
+% The De Gruyter layout package (for preparing books for Walter de Gruyter GmbH)
+% is defining |\plist@figure| and |\plist@table|, and expects this to be
+% defined for other floating environments as well.
+% (This will be used as prefix for the ``List of''.)
+%    \begin{macrocode}
+\newfloat@IfPackageLoaded{dgruyter}{plist@#1}{%
+  \expandafter\newcommand\csname plist@#1\endcsname{%
+    \@nameuse{#1name}\space}}
+%    \end{macrocode}
 %
 % \pagebreak[3]
 % \subsubsection{\package{float}}
@@ -2007,19 +2020,6 @@
 %    \begin{macrocode}
 \newfloat@IfPackageLoaded{wrapfig}{wrap#1}{%
   \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
-%    \end{macrocode}
-%
-% \pagebreak[3]
-% \subsubsection{\package{dgruyter}}
-%
-% The De Gruyter layout package (for preparing books for Walter de Gruyter GmbH)
-% is defining |\plist@figure| and |\plist@table|, and expects this to be
-% defined for other floating environments as well.
-% (This will be used as prefix for the ``List of''.)
-%    \begin{macrocode}
-\newfloat@IfPackageLoaded{dgruyter}{plist@#1}{%
-  \expandafter\newcommand\csname plist@#1\endcsname{%
-    \@nameuse{#1name}\space}}
 %    \end{macrocode}
 %
 % \iffalse

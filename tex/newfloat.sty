@@ -37,7 +37,7 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{newfloat}[2019/08/31 v1.1j Defining new floating environments (AR)]
+\ProvidesPackage{newfloat}[2019/09/01 v1.1j Defining new floating environments (AR)]
 \newcommand*\newfloat@Info[1]{%
   \PackageInfo{newfloat}{#1}}
 \newcommand*\newfloat@InfoNoLine[1]{%
@@ -823,16 +823,16 @@
     \AtBeginDocument{%
       \@ifpackageloaded{#1}{%
         \newfloat@@IfPackageLoaded{#1}{#2}{#3}%
-        % Execute code for every previous \DeclareFloatingEnvironment as well
-        \def\@elt##1{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}%
-        \newfloat@@list
-        \let\@elt\relax
       }{}}%
   }}
 \@onlypreamble\newfloat@IfPackageLoaded
 \newcommand\newfloat@@IfPackageLoaded[3]{%
   \newfloat@InfoNoLine{`#1' package detected}%
-  % Execute code when \DeclareFloatingEnvironment is used
+  % Execute code for every previous \DeclareFloatingEnvironment
+  \def\@elt##1{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}%
+  \newfloat@@list
+  \let\@elt\relax
+  % Execute code for every future \DeclareFloatingEnvironment
   \newfloat@addtohook{\newfloat@@@IfPackageLoaded{#1}{#2}{#3}}}
 \@onlypreamble\newfloat@@IfPackageLoaded
 \newcommand\newfloat@@@IfPackageLoaded[3]{%
@@ -844,6 +844,9 @@
     #3%
   \fi}
 \@onlypreamble\newfloat@@@IfPackageLoaded
+\newfloat@IfPackageLoaded{dgruyter}{plist@#1}{%
+  \expandafter\newcommand\csname plist@#1\endcsname{%
+    \@nameuse{#1name}\space}}
 \newfloat@IfPackageLoaded{float}{newfloat@undefined}{%
   \@nameuse{@ifchapterlistsgap@#1}{% if switched on
     \let\float@do=\relax
@@ -868,9 +871,6 @@
   \expandafter\newfloat@For@SC\csname SC@#1@vpos\endcsname{#1}}
 \newfloat@IfPackageLoaded{wrapfig}{wrap#1}{%
   \newenvironment{wrap#1}{\wrapfloat{#1}}{\endwrapfloat}}
-\newfloat@IfPackageLoaded{dgruyter}{plist@#1}{%
-  \expandafter\newcommand\csname plist@#1\endcsname{%
-    \@nameuse{#1name}\space}}
 \endinput
 %%
 %% End of file `newfloat.sty'.
