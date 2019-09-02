@@ -25,12 +25,12 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3694}
+% \CheckSum{3704}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2011/08/06 v3.3 Implementation of the caption package]
+\ProvidesFile{caption.drv}[2015/09/16 v3.4 Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -220,7 +220,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/09/01 v3.3d Customizing captions (AR)]
+\ProvidesPackage{caption}[2019/09/02 v3.4 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -834,7 +834,7 @@
 % |\caption@if|\-|flag{4}| is set if there is already content which have
 % incremented the counter (so the counter doesn't need to be incremented
 % for the main caption, further sub-figures, and other stuff), and
-% |\caption@if|\-|flag{1}| is set if |\Continued|\-|Float| was given.
+% |\caption@if|\-|flag{1}| is set if |\continued|\-|float| was given.
 %
 % In the past three boolean switches were used to store the flags, but since some
 % packages (like the \package{floatrow} and \package{tabu} package) try hard to keep
@@ -1534,9 +1534,9 @@
     \renewcommand*\caption@redefine{}%
 %    \end{macrocode}
 %
-%  |\ContinuedFloat| is not supported in compatibility mode.
+%  |\continuedfloat| is not supported in compatibility mode.
 %    \begin{macrocode}
-    \renewcommand*\caption@ContinuedFloatX[1]{%
+    \renewcommand*\caption@continuedfloat[1]{%
       \caption@Error{Not available in compatibility mode}}%
 %    \end{macrocode}
 %
@@ -1975,9 +1975,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{ContinuedFloat}}
+% \subsection{\cs{continuedfloat}}
 %
-% \begin{macro}{\ContinuedFloat}
+% \begin{macro}{\continuedfloat}
 % \changes{v3.0i}{2005/11/12}{Optional argument added}
 % \changes{v3.0g}{2005/06/28}{Bugfix: \cs{newcounter} replaced by \cs{newcount}}
 % \changes{v3.1}{2007/07/02}{Format of \package{hyperref} extension changed}
@@ -1987,14 +1987,15 @@
 % \changes{v3.3}{2011/12/28}{Uses \cs{ifcaption@ContinuedFloat} now}
 % \changes{v3.3}{2013/05/01}{Usage of \cs{caption@restorecounters} added}
 % \changes{v3.3}{2013/12/16}{Bugfix: Does not use \cs{caption@ContinuedFloat} anymore since this breaks \cs{ContinuedFloat} offered by the \package{subfig} package}
-%  |\ContinuedFloat|\\
-%  |\ContinuedFloat*|\par
+% \changes{v3.4}{2015/09/16}{Renamed from \cs{ContinuedFloat} to \cs{continuedfloat}}
+%  |\continuedfloat|\\
+%  |\continuedfloat*|\par
 %  This mainly sets the appropriate flag, increments the
 %  continuation counter, and executes the given options.
-%  Furthermore we set |\caption@reset|\-|Continued|\-|Float| to |\@gobble| so the
+%  Furthermore we set |\caption@reset|\-|continued|\-|float| to |\@gobble| so the
 %  continuation counter will not be reset to zero inside |\caption@ref|\-|step|\-|counter|.\par
 %  When the \package{hyperref} package is used we have the problem
-%  that the usage of |\Continued|\-|Float| will create duplicate
+%  that the usage of |\continued|\-|float| will create duplicate
 %  hyper links -- |\@current|\-|Href| will be the same for the main float and
 %  the continued ones. So we have to make sure unique labels and references
 %  will be created each time. We do this by extending |\the|\-|H|\-|figure| and
@@ -2006,57 +2007,80 @@
 %  \Note{This does not help if the \package{hyperref} package option
 %        \texttt{naturalnames=true} is set.}
 %    \begin{macrocode}
-\def\ContinuedFloat{%
+\def\continuedfloat{%
   \caption@iftype
-    {\caption@ContinuedFloatX\@captype}%
-    {\caption@Error{\noexpand\ContinuedFloat outside float}}}
+    {\caption@continuedfloat\@captype}%
+    {\caption@Error{\noexpand\continuedfloat outside float}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@ContinuedFloatX[1]{%
+\newcommand*\caption@continuedfloat[1]{%
   \@ifstar
     {\caption@@refstepcounter\@captype
-     \caption@@ContinuedFloat{#1}}%
-    {\caption@Continued@Float{#1}}}
+     \caption@@continuedfloat{#1}}%
+    {\caption@continued@float{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@Continued@Float[1]{%
+\newcommand*\caption@continued@float[1]{%
   \edef\caption@tempa{#1}%
   \ifx\caption@tempa\caption@CFtype
     \caption@restorecounters
-    \caption@@ContinuedFloat{#1}%
+    \caption@@continuedfloat{#1}%
   \else
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
   \fi}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@ContinuedFloat{%
-  \caption@setflag1% ContinuedFloat
-  \caption@@@ContinuedFloat}
-\newcommand*\caption@@@ContinuedFloat{%
-  \stepcounter{ContinuedFloat}%
-  \caption@@@@ContinuedFloat}
+\newcommand*\caption@@continuedfloat{%
+  \caption@setflag1% continued float
+  \caption@@@continuedfloat}
+\newcommand*\caption@@@continuedfloat{%
+  \stepcounter{continuedfloat}%
+  \caption@@@@continuedfloat}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@@@ContinuedFloat[1]{%
-  \caption@setoptions{ContinuedFloat}%
+\newcommand*\caption@@@@continuedfloat[1]{%
+  \caption@setoptions{ContinuedFloat}% for compatibility reasons
+  \caption@setoptions{continuedfloat}%
   \caption@setoptions{continued#1}%
-  \expandafter\l@addto@macro\csname the#1\endcsname\theContinuedFloat
+  \expandafter\l@addto@macro\csname the#1\endcsname\thecontinuedfloat
   \@ifundefined{theH#1}{}{%
     \expandafter\l@addto@macro\csname theH#1\endcsname{%
-      \@alph\c@ContinuedFloat}}%
-  \let\caption@@@@ContinuedFloat\@gobble}
+      \@alph\c@continuedfloat}}%
+  \let\caption@@@@continuedfloat\@gobble}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@CFtype{??}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\theContinuedFloat}
+% \begin{macro}{\thecontinuedfloat}
+% \changes{v3.4}{2015/09/16}{Renamed from \cs{theContinuedFloat} to \cs{thecontinuedfloat}}
 % This one is preset to \cs{@empty}, so usually the continuation counter is not
 % included in the caption label or references.
 %    \begin{macrocode}
-\newcounter{ContinuedFloat}
-\let\theContinuedFloat\@empty
+\newcounter{continuedfloat}
+\let\c@ContinuedFloat\c@continuedfloat     % defined for compatibility reasons
+\def\thecontinuedfloat{\theContinuedFloat}
+\let\theContinuedFloat\@empty              % defined for compatibility reasons
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@reset@continuedfloat}
+% \changes{v3.2f}{2011/12/17}{Redefinition of \cs{continuedfloat} added}
+%  |\caption@reset@continuedfloat|\marg{type}\par
+%  If a continuation counter is defined, we reset it.
+%  (This one will be called inside |\@caption|.)
+%    \begin{macrocode}
+\newcommand*\caption@reset@continuedfloat[1]{%
+  \xdef\caption@CFtype{#1}%
+  \@stpelt{continuedfloat}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ContinuedFloat}
+% For compatibility reasons we still support |\Continued|\-|Float|.
+%    \begin{macrocode}
+\def\ContinuedFloat{\continuedfloat} % defined for compatibility reasons
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2067,20 +2091,8 @@
 % This one is used by \cs{ContinuedFloat} offered by the \package{subfig} package.
 %    \begin{macrocode}
 \def\caption@ContinuedFloat{%
-  \let\caption@resetContinuedFloat\@gobble
-  \caption@@@ContinuedFloat}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@resetContinuedFloat}
-% \changes{v3.2f}{2011/12/17}{Redefinition of \cs{ContinuedFloat} added}
-%  |\caption@resetContinuedFloat|\marg{type}\par
-%  If a continuation counter is defined, we reset it.
-%  (This one will be called inside |\@caption|.)
-%    \begin{macrocode}
-\newcommand*\caption@resetContinuedFloat[1]{%
-  \xdef\caption@CFtype{#1}%
-  \@stpelt{ContinuedFloat}}
+  \let\caption@reset@continuedfloat\@gobble
+  \caption@@@continuedfloat}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2089,7 +2101,7 @@
 % counter at |\@float|, right after |\done|\-|main|\-|caption|\-|false|,
 % we save all sub-caption counters at |\done|\-|main|\-|caption|\-|false|
 % so we can restore them using |\caption@restore|\-|counters|
-% inside |\Continued|\-|Float|.
+% inside |\continued|\-|float|.
 %    \begin{macrocode}
 \caption@ifundefined\donemaincaptionfalse{}{%
   \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}
@@ -2129,9 +2141,9 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@ref@stepcounter{%
-  \caption@ifflag1{% ContinuedFloat
+  \caption@ifflag1{% continued float
     \let\caption@tempa\caption@@refcounter
-    \caption@clrflag1% ContinuedFloat
+    \caption@clrflag1% continued float
   }{%
     \let\caption@tempa\caption@@refstepcounter
     \caption@ifflag2{}{% caption
@@ -2168,7 +2180,7 @@
 %    \begin{macrocode}
 \newcommand*\caption@prepare@stepcounter[2]{%
   \caption@addsubcontentslines{#2stepcounter}%
-  \caption@resetContinuedFloat{#1}}
+  \caption@reset@continuedfloat{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@@refstepcounter{\refstepcounter}
@@ -2207,8 +2219,7 @@
 % \changes{v3.0a}{2004/01/23}{\cs{caption@settype} changed to \cs{caption@setfloattype}}
 % \changes{v3.0e}{2005/04/12}{Check for default label format added}
 % \changes{v3.0f}{2005/06/11}{Usage of \cs{caption@resetContinuedFloat} added}
-% \changes{v3.1}{2007/05/09}{Usage of \cs{caption@setfloattype} \&
-%        \cs{caption@resetContinuedFloat} removed}
+% \changes{v3.1}{2007/05/09}{Usage of \cs{caption@setfloattype} \& \cs{caption@resetContinuedFloat} removed}
 % \changes{v3.3}{2011/12/29}{Usage of \cs{caption@fixedposition} removed}
 %  Our handling of |\caption| will always be surrounded by
 %  |\caption@begin| (or |\caption@beginex|) and |\caption@end|.\par
@@ -2449,7 +2460,7 @@
       \let\caption@addsubcontentslines\@gobble
       \caption@ifflag4{}{% subcaption
 % no \subcaption in this part of the (floating) environment yet
-        \caption@ifflag1{% ContinuedFloat
+        \caption@ifflag1{% continued float
           \caption@clrflag1%
         }{%
           \caption@@stepcounter\@captype
@@ -2459,7 +2470,7 @@
     }%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \c@ContinuedFloat=0\relax
+    \c@continuedfloat=0\relax
     \let\caption@setfloatcapt\@firstofone
     \let\caption@chkfloat\@gobbletwo
 %    \end{macrocode}
@@ -2474,7 +2485,7 @@
 % redefine \setcaptiontype
     \def\caption@settype{\caption@withoptargs\caption@sub@settype}%
     \def\caption@sub@settype##1##2{%
-      \def\caption@tempa{##2}%
+      \edef\caption@tempa{##2}%
       \ifx\caption@tempa\@captype
 %%%     \caption@setsubtype##1\relax
       \else
@@ -2881,10 +2892,10 @@
 %  Used by the \package{bicaption} package.
 %    \begin{macrocode}
     \newcommand*\caption@freeze{%
-      \let\caption@frozen@ContinuedFloat\ContinuedFloat
-      \def\ContinuedFloat{%
-        \caption@@freeze{\caption@@@@ContinuedFloat\@captype}%
-        \caption@frozen@ContinuedFloat}%
+      \let\caption@frozen@continuedfloat\continuedfloat
+      \def\continuedfloat{%
+        \caption@@freeze{\caption@@@@continuedfloat\@captype}%
+        \caption@frozen@continuedfloat}%
 %    \end{macrocode}
 %    \begin{macrocode}
       \let\caption@frozen@setup\caption@setup
@@ -2930,7 +2941,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
       \def\caption@warmup{%
-        \let\ContinuedFloat\caption@frozen@ContinuedFloat
+        \let\continuedfloat\caption@frozen@continuedfloat
         \let\caption@setup\caption@frozen@setup
         \let\caption\caption@frozen@caption
         \let\label\caption@frozen@label}}%
@@ -3559,7 +3570,7 @@
 %        instead of \texttt{xxx} now}
 %  |\caption@makestart|\marg{type}
 %  defines a \package{hyperref} anchor inside |\caption@start|.\par
-%  Since we offer |\ContinuedFloat| the float counter can change between
+%  Since we offer |\continuedfloat| the float counter can change between
 %  `now' and |\caption|, i.e., we simply don't know the figure or table counter
 %  yet and therefore we are not able to generate the `right' \package{hyperref}
 %  label.
@@ -3903,7 +3914,7 @@
         \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
                 {\egroup\LT@listentry\LTcaptype}}%
 %    \end{macrocode}
-% |\ContinuedFloat| for longtable:\\
+% |\continuedfloat| for longtable:\\
 % {\small(Commented out, since it's not deeply tested and quite useless anyway)}
 % \Note{\package{hyperref} versions $<$ v6.76j uses $2\times$ \cs{hyper@makecurrent}}
 %    \begin{macrocode}
@@ -3917,24 +3928,24 @@
 %         \def\hyper@makecurrent####1{%
 %%          \let\@currentHlabel\Hy@LT@currentHlabel
 %           \let\@currentHref\Hy@LT@currentHref}}%
-%       \let\caption@ORI@ContinuedFloat\ContinuedFloat
-%       \def\ContinuedFloat{\noalign{%
+%       \let\caption@ORI@continuedfloat\continuedfloat
+%       \def\continuedfloat{\noalign{%
 %         \gdef\caption@setContinuedFloat{%
-%           \let\caption@resetContinuedFloat\@gobble}%
+%           \let\caption@reset@continuedfloat\@gobble}%
 %         \def\caption@setoptions####1{%
 %           \g@addto@macro\caption@setContinuedFloat{%
 %             \caption@setoptions{####1}}}%
 %         \let\@captype\LTcaptype
 %         \caption@ORI@ContinuedFloat}}%
 %     }{%
-%       \def\ContinuedFloat{\noalign{%
+%       \def\continuedfloat{\noalign{%
 %         \caption@Error{%
-%           \noexpand\ContinuedFloat inside longtables\MessageBreak
+%           \noexpand\continuedfloat inside longtables\MessageBreak
 %           is only available with `hypcap=true'}}}%
 %     }%
 %     \global\let\caption@setContinuedFloat\@empty
-      \def\ContinuedFloat{\noalign{%
-        \caption@Error{\noexpand\ContinuedFloat outside float}}}%
+      \def\continuedfloat{\noalign{%
+        \caption@Error{\noexpand\continuedfloat outside float}}}%
 %    \end{macrocode}
 % |\bicaption| for longtable:
 %    \begin{macrocode}
