@@ -84,3 +84,41 @@
 
 \end{document}
 
+---
+
+The fiddling should not be necessary. I guess this has to do with the "position=auto" setting which is the default, and the subfigure package is highly dependent on this setting which is clearly a major design flaw derived from the fact that \caption increases the (sub-)figure counter, not \begin{figure}. (And while users have difficulties understanding this design from Lamport, they have even more difficulties understanding how this affects the subcaption package since the sub-figure counter is dependent on the figure counter.)
+
+But even when adding \captionsetup[figure]{position=b} to your example code the outcome is wrong, so this is clearly a bug.
+
+I guess I'll change the whole figure-subfigure-counter stuff for version 3.4 (again). I already have a new concept in mind, but am not sure how it will work in practice. Stay tuned...
+
+---
+
+As a figure can contain more than one \caption it would be imho wrong if \begin{figure} would set the figure counter. But it is a flaw that one can't separate the various tasks (increase counter, set link and ref anchors, add to lof, print, print continued version) of a caption in a clean way. A lot things were easier if there were \newcaption and \usecaption commands. It may need more typing, but save a lot time spent trying to figure out why the automatic solution doesn't work in a specific case ...
+
+---
+
+I tend to disagree regarding the counter. Most of the figures/tables have exactly one caption, so I think having a bullet-proof concept for this case should be the main goal. Currently there is a lot of guessing and making assumptions inside the code, just for the case "Maybe there is a second caption following", and I would like to replace that case with a straight-ahead approach which is more transparent to the user. The drawback would be new code which detects and handles multiple captions, and maybe the user must help the caption package in some way to handle this correctly in complex situations, for example when there are multiple captions with multiple sub-captions inside a single environment. For this reason a new command (to indicate that a new figure/table starts here inside the same environment) could be introduced. Which seems to be a good idea for me anyway since this command could set a new hyperref anchor so a reference to this figure/table does not point to the top figure/table inside the same environment anymore.
+
+Currently it's possible to have a figure with a single caption and some sub-captions which gives the wrong result - just because of a wrong "position" setting. This sounds unacceptable to me. IMHO the dependency between figure/subfigure counter (and list behaviour) and position setting must be removed. It's too complex for most users to understand and it's error-prone.
+
+---
+
+>    I tend to disagree regarding the counter. Most of the figures/tables have exactly one caption,
+
+I see (and use it) often enough that I don't want to miss it. Their main point is that it gives you better controll about the relative placement of figures. E.g. to keep them together on a page or to put them side-by-side.
+
+Beside this there are the "captions outside floats". I think it would really not a good idea if there were a fundamental difference in the working of \caption and \captionof.
+
+>    For this reason a new command (to indicate that a new figure/table starts here inside the same environment) could be introduced.
+
+Yes that's what I meant. Explizit marking instead of guessing the wanted output is more reliable.
+
+---
+
+Good argument. Will implement such command in v3.4 while dropping the dependency on the position setting.
+
+---
+
+Currently I'm re-writing the document class (and babel) support; I'll re-write the sub-caption stuff right afterwards. Please hold the line...
+

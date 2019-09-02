@@ -9,7 +9,8 @@ dironly=${1:-*}
 cleanup()
 {
   # Remove interim files
-  git clean -fdx
+  # Note: This removes all unstaged (new) files as well.
+  git clean -fdx -e source/ltxdoc.cfg
 }
 
 compile_all()
