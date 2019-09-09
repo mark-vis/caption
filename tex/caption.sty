@@ -37,14 +37,12 @@
 %%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/09/02 v3.4 Customizing captions (AR)]
-\RequirePackage{caption3}[2019/09/01] % needs v1.8d or newer
+\ProvidesPackage{caption}[2019/09/09 v3.4a Customizing captions (AR)]
+\RequirePackage{caption3}[2019/09/09] % needs v1.8e or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
-    Unsupported document class (or package) detected,\MessageBreak
-    usage of the caption package is not recommended}%
-  \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption}%
-}
+    Unknown document class (or package),\MessageBreak
+    standard defaults will be used}}
 \@ifpackageloaded{caption2}{%
   \caption@Error{%
     You can't use both, the (obsolete) caption2 *and*\MessageBreak
@@ -132,8 +130,26 @@
     {\let\caption@if@minipage\@gobbletwo}%
     {\caption@set@bool\caption@if@minipage{#1}}}
 \captionsetup{@minipage=default}
-\DeclareCaptionOption{compatibility}[1]{\caption@setbool{compatibility}{#1}}
+\DeclareCaptionOption{compatibility}[v1]{%
+  \caption@ifinlist{#1}{v1,1,true,yes,on}{%
+    \let\caption@ifcompatibility\@firstoftwo
+  }{\caption@ifinlist{#1}{v3,3,0,false,no,off}{%
+    \let\caption@ifcompatibility\@secondoftwo
+  }{%
+    \caption@Error{Undefined compatibility value `#1'}%
+  }}}
 \@onlypreamble@key{caption}{compatibility}
+\caption@setbool{compatibility}{0} % default: Try not to be compatible to v1.x
+\newcommand*\caption@setincompatible[2]{%
+  #1{%
+    \caption@WarningNoLine{%
+      #2;\MessageBreak
+      Setting compatibility to v1}%
+    \caption@setbool{compatibility}{1}%
+  }{}}
+\caption@AtBeginDocument{\caption@ifcompatibility{}{%
+  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package is loaded}%
+}}
 \DeclareCaptionOptionNoValue*{normal}{%
   \caption@setformat{plain}%
   \caption@setjustification{justified}}
@@ -195,11 +211,11 @@
 \DeclareCaptionOption{hypcap}[1]{\caption@setbool{hypcap}{#1}}
 \DeclareCaptionOption{hypcapspace}{\def\caption@hypcapspace{#1}}
 \captionsetup{hypcap=1,hypcapspace=.5\baselineskip}
-\caption@ifamsclass{%
+\caption@ifclassloaded{ams}{%
   \caption@InfoNoLine{AMS or SMF document class}%
   \setlength\belowcaptionskip{0pt}% set to 12pt by AMS class
-}
-\caption@ifkomaclass{%
+}{}
+\caption@ifclassloaded{koma}{%
   \caption@InfoNoLine{KOMA-Script document class}%
   \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}
   \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}
@@ -208,7 +224,7 @@
   \else
     \@tablecaptionabovefalse
   \fi
-  \caption@ifundefined\@figurecaptionabovetrue{}{%
+  \caption@ifdefined\@figurecaptionabovetrue{%
     \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}
     \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}
     \if@figurecaptionabove
@@ -216,7 +232,7 @@
     \else
       \@figurecaptionabovefalse
     \fi
-  }%
+  }{}%
   \g@addto@macro\onelinecaptionstrue{\let\caption@ifslc\@firstoftwo}
   \g@addto@macro\onelinecaptionsfalse{\let\caption@ifslc\@secondoftwo}
   \ifonelinecaptions
@@ -240,18 +256,18 @@
     \caption@KOMA@@setcapindent{#1}\caption@setcapindent}
   \newcommand*\caption@setcapindent{%
     \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
-  \caption@ifundefined\cap@indent{}{\caption@setcapindent}
+  \caption@ifdefined\cap@indent{\caption@setcapindent}{}
   \expandafter\let\expandafter\caption@KOMA@setcapwidth
                   \csname\string\setcapwidth\endcsname
   \@namedef{\string\setcapwidth}[#1]#2{%
     \caption@KOMA@setcapwidth[{#1}]{#2}\caption@setcapwidth{#1}}
   \newcommand*\caption@setcapwidth[1]{%
     \ifx\\#1\\\else
-      \caption@ifundefined\cap@margin{}{%
+      \caption@ifdefined\cap@margin{%
         \def\@tempa{captionbeside}%
         \ifx\@tempa\@currenvir\else\caption@Warning{%
           Ignoring optional argument [#1] of \string\setcapwidth\MessageBreak}%
-        \fi}%
+        \fi}{}%
     \fi
     \captionsetup{width=\cap@width}}
   \def\caption@tempa{\hsize}%
@@ -284,7 +300,7 @@
   \ifx\cap@margin\relax \else
     \caption@setcapmargin
   \fi
-}
+}{}
 \caption@SetupOptions{caption}{\caption@setkeys{#1}{#2}}
 \caption@ProcessOptions*{caption}
 \newcounter{caption@flags}
@@ -359,413 +375,26 @@
   \vskip\belowcaptionskip}
 \newcommand*\caption@redefine{}
 \g@addto@macro\caption@redefine{%
-  \caption@setbool{incompatible}{0}%
-  \caption@CheckCommand\caption{%
-    % ltfloat.dtx [2002/10/01 v1.1v LaTeX Kernel (Floats)]
-    \def\caption{%
-       \ifx\@captype\@undefined
-         \@latex@error{\noexpand\caption outside float}\@ehd
-         \expandafter\@gobble
-       \else
-         \refstepcounter\@captype
-         \expandafter\@firstofone
-       \fi
-       {\@dblarg{\@caption\@captype}}%
-    }}%
-  \caption@CheckCommand\caption{%
-    % beamerbaselocalstructure.sty,v 1.53 2007/01/28 20:48:21 tantau
-    \def\caption{
-      \ifx\@captype\@undefined
-        \@latex@error{\noexpand\caption outside figure or table}\@ehd
-        \expandafter\@gobble
-      \else
-        \refstepcounter\@captype
-        \expandafter\@firstofone
-      \fi
-      {\@dblarg{\@caption\@captype}}%
-    }}%
-  \caption@CheckCommand\caption{%
-    % beamerbaselocalstructure.sty, Joseph Wright committed 4ac715c 2013-09-04
-    \def\caption{%
-      \ifx\@captype\@undefined
-        \@latex@error{\noexpand\caption outside figure or table}\@ehd
-        \expandafter\@gobble
-      \else
-        \refstepcounter\@captype
-        \expandafter\@firstofone
-      \fi
-      {\@dblarg{\@caption\@captype}}%
-    }}%
-  \caption@CheckCommand\caption{%
-    % float.sty [2001/11/08 v1.3d Float enhancements (AL)]
-    \long\def\caption{%
-      \ifx\@captype\@undefined
-        \@latex@error{\noexpand\caption outside float}\@ehd
-        \expandafter\@gobble
-      \else
-        \refstepcounter\@captype
-        \let\@tempf\@caption
-        \expandafter\ifx\csname @float@c@\@captype\endcsname\relax\else
-          \expandafter\expandafter\let
-            \expandafter\@tempf\csname @float@c@\@captype\endcsname
-        \fi
-      \fi
-      \@dblarg{\@tempf\@captype}}}%
-  \caption@CheckCommand\caption{%
-    % hyperref.sty [2007/02/27 v6.75t Hypertext links for LaTeX]
-    % hyperref.sty [2007/04/09 v6.76a Hypertext links for LaTeX]
-    % hyperref.sty [2007/06/12 v6.76h Hypertext links for LaTeX]
-    \def\caption{%
-      \ifx\@captype\@undefined
-        \@latex@error{\noexpand\caption outside float}\@ehd
-        \expandafter\@gobble
-      \else
-        \H@refstepcounter\@captype
-        \@ifundefined{fst@\@captype}{%
-          \let\Hy@tempa\@caption
-        }{%
-          \let\Hy@tempa\Hy@float@caption
-        }%
-        \expandafter\@firstofone
-      \fi
-      {\@dblarg{\Hy@tempa\@captype}}%
-    }}%
-  \caption@CheckCommand\caption{%
-    % hyperref.sty [2007/08/05 v6.76j Hypertext links for LaTeX]
-    \def\caption{%
-      \ifx\@captype\@undefined
-        \@latex@error{\noexpand\caption outside float}\@ehd
-        \expandafter\@gobble
-      \else
-        \H@refstepcounter\@captype
-        \let\Hy@tempa\@caption
-        \@ifundefined{float@caption}{%
-        }{%
-          \expandafter\ifx\csname @float@c@\@captype\endcsname\float@caption
-            \let\Hy@tempa\Hy@float@caption
-          \fi
-        }%
-        \expandafter\@firstofone
-      \fi
-      {\@dblarg{\Hy@tempa\@captype}}%
-    }}%
-  \caption@CheckCommand\caption{%
-    % memhfixc.sty [2010/08/17 v1.15 nameref/hyperref package fixes for memoir class]
-    % \let\m@moldhypcaption\caption
-    \long\def\caption{\donemaincaptiontrue\m@moldhypcaption}}%
-  \caption@IfCheckCommand{}{%
-    \caption@InfoNoLine{%
-      Incompatible package detected (regarding \string\caption).\MessageBreak
-      \string\caption\space=\space\meaning\caption}%
-    \caption@setbool{incompatible}{1}}%
-  \caption@CheckCommand\@caption{%
-    % ltfloat.dtx [2002/10/01 v1.1v LaTeX Kernel (Floats)]
-    \long\def\@caption#1[#2]#3{%
-      \par
-      \addcontentsline{\csname ext@#1\endcsname}{#1}%
-        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
-      \endgroup}}%
-  \caption@CheckCommand\@caption{%
-    % beamerbaselocalstructure.sty,v 1.53 2007/01/28 20:48:21 tantau
-    \long\def\@caption#1[#2]#3{% second argument ignored
-      \par\nobreak
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \beamer@makecaption{#1}{\ignorespaces #3}\par\nobreak
-        \endgroup}}%
-  \caption@CheckCommand\@caption{%
-    % memhfixc.sty [2010/08/17 v1.15 nameref/hyperref package fixes for memoir class]
-    \long\def\@caption#1[#2]#3{%
-      \MNR@old@caption{#1}[{#2}]{#3}%
-      \def\@currentlabelname{#2}%
-      \M@gettitle{#2}%
-    }}%
-  \caption@CheckCommand\@caption{%
-    % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
-    \long\def\@caption#1[#2]#3{%
-      \par
-      \addtocontents{\csname ext@#1\endcsname}{\xstring\select@language{\main@Arabi@language}}%
-      \addcontentsline{\csname ext@#1\endcsname}{#1}%
-        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces \if@rl{\textRL{#2}}\else\textLR{#2}\fi}}%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces \if@rl{\textRL{#3}}\else\textLR{#3}\fi}\par
-      \endgroup}}%
-  \caption@CheckCommand\@caption{%
-    % rlbabel.def [2005/03/30 v2.3h Right-to-Left support from the babel system Hebrew language support from the babel system]
-    \long\def\@caption#1[#2]#3{%
-      \par
-      \addcontentsline{\csname ext@#1\endcsname}{#1}%
-        {\protect\numberline{\csname the#1\endcsname}%
-        {\ignorespaces #2}}%
-      \def\@fignm{figure}
-      \ifx#1\@fignm\addcontentsline{fol}{#1}%
-         {\protect\numberline{\csname the#1\endcsname}%
-         {\ignorespaces #2}}\fi%
-      \def\@tblnm{table}
-      \ifx#1\@tblnm\addcontentsline{tol}{#1}%
-         {\protect\numberline{\csname the#1\endcsname}%
-         {\ignorespaces #2}}\fi%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
-      \endgroup}}%
-  \caption@CheckCommand\@caption{%
-    % magyar.ldf [2005/03/30 v1.4j Magyar support from the babel system]
-    \long\def\@caption#1[#2]#3{%
-      \csname par\endcsname
-      \addcontentsline{\csname ext@#1\endcsname}{#1}%
-        {\protect\numberline{\csname the#1\endcsname.}{\ignorespaces #2}}%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \@makecaption{\csname fnum@#1\endcsname}%
-            {\ignorespaces #3}\csname par\endcsname
-      \endgroup}}%
-  \caption@CheckCommand\@caption{%
-    % hyperref.sty [2007/02/27 v6.75t Hypertext links for LaTeX]
-    \long\def\@caption#1[#2]#3{%
-      \hyper@makecurrent{\@captype}%
-      \def\@currentlabelname{#2}%
-      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
-        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
-      }%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \@makecaption{\csname fnum@#1\endcsname}{%
-          \ignorespaces
-          \ifHy@nesting
-            \hyper@@anchor{\@currentHref}{#3}%
-          \else
-            \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#3%
-          \fi
-        }%
-        \par
-      \endgroup
-    }}%
-  \caption@CheckCommand\@caption{%
-    % hyperref.sty [2007/04/09 v6.76a Hypertext links for LaTeX]
-    % hyperref.sty [2007/06/12 v6.76h Hypertext links for LaTeX]
-    % hyperref.sty [2007/08/05 v6.76j Hypertext links for LaTeX]
-    \long\def\@caption#1[#2]#3{%
-      \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                      \csname iftrue\endcsname
-        \global\let\@currentHref\hc@currentHref
-      \else
-        \hyper@makecurrent{\@captype}%
-      \fi
-      \def\@currentlabelname{#2}%
-      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
-        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
-      }%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                        \csname iftrue\endcsname
-          \global\@capstartfalse
-          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
-        \else
-          \@makecaption{\csname fnum@#1\endcsname}{%
-            \ignorespaces
-            \ifHy@nesting
-              \hyper@@anchor{\@currentHref}{#3}%
-            \else
-              \Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#3%
-            \fi
-          }%
-        \fi
-        \par
-      \endgroup
-    }}%
-  \caption@CheckCommand\@caption{%
-    % hyperref.sty [2009/11/27 v6.79k Hypertext links for LaTeX]
-    \long\def\@caption#1[#2]#3{%
-      \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                      \csname iftrue\endcsname
-        \global\let\@currentHref\hc@currentHref
-      \else
-        \hyper@makecurrent{\@captype}%
-      \fi
-      \def\@currentlabelname{#2}%
-      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
-        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
-      }%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                        \csname iftrue\endcsname
-          \global\@capstartfalse
-          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
-        \else
-          \@makecaption{\csname fnum@#1\endcsname}{%
-            \ignorespaces
-            \ifHy@nesting
-              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
-            \else
-              \Hy@raisedlink{%
-                \expandafter\hyper@@anchor\expandafter{\@currentHref}{\relax}%
-              }%
-              #3%
-            \fi
-          }%
-        \fi
-        \par
-      \endgroup
-    }}%
-  \caption@CheckCommand\@caption{%
-    % hyperref.sty [2009/12/09 v6.79m Hypertext links for LaTeX]
-    % hyperref.sty [2009/12/28 v6.79z Hypertext links for LaTeX]
-    \long\def\@caption#1[#2]#3{%
-      \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                      \csname iftrue\endcsname
-        \global\let\@currentHref\hc@currentHref
-      \else
-        \hyper@makecurrent{\@captype}%
-      \fi
-      \@ifundefined{NR@gettitle}{%
-        \def\@currentlabelname{#2}%
-      }{%
-        \NR@gettitle{#2}%
-      }%
-      \par\addcontentsline{\csname ext@#1\endcsname}{#1}{%
-        \protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}%
-      }%
-      \begingroup
-        \@parboxrestore
-        \if@minipage
-          \@setminipage
-        \fi
-        \normalsize
-        \expandafter\ifx\csname if@capstart\expandafter\endcsname
-                        \csname iftrue\endcsname
-          \global\@capstartfalse
-          \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces#3}%
-        \else
-          \@makecaption{\csname fnum@#1\endcsname}{%
-            \ignorespaces
-            \ifHy@nesting
-              \expandafter\hyper@@anchor\expandafter{\@currentHref}{#3}%
-            \else
-              \Hy@raisedlink{%
-                \expandafter\hyper@@anchor\expandafter{%
-                  \@currentHref
-                }{\relax}%
-              }%
-              #3%
-            \fi
-          }%
-        \fi
-        \par
-      \endgroup
-    }}%
-  \caption@CheckCommand\@caption{%
-    % nameref.sty [2006/12/27 v2.28 Cross-referencing by name of section]
-    \long\def\@caption#1[#2]{%
-      \def\@currentlabelname{#2}%
-      \NR@@caption{#1}[{#2}]%
-    }}%
-  \caption@CheckCommand\@caption{%
-    % nameref.sty [2009/11/27 v2.32 Cross-referencing by name of section]
-    \long\def\@caption#1[#2]{%
-      \NR@gettitle{#2}%
-      \NR@@caption{#1}[{#2}]%
-    }}%
-  \caption@CheckCommand\@caption{%
-    % subfigure.sty [2002/07/30 v2.1.4 subfigure package]
-    \long\def\@caption#1[#2]#3{%
-      \@ifundefined{if#1topcap}%
-        {\subfig@oldcaption{#1}[{#2}]{#3}}%
-        {\@nameuse{if#1topcap}%
-           \@listsubcaptions{#1}%
-           \subfig@oldcaption{#1}[{#2}]{#3}%
-         \else
-           \subfig@oldcaption{#1}[{#2}]{#3}%
-           \@listsubcaptions{#1}%
-         \fi}}}%
-  \caption@CheckCommand\@caption{%
-    % subfig.sty [2005/06/28 ver: 1.3 subfig package]
-    \def\@caption{\caption@}%
-    }%
-  \caption@CheckCommand\@caption{%
-    % chkfloat.sty [2012/08/19 v0.1 chkfloat: check for moved floats]
-    \def\@caption#1[#2]#3{\chkfloat@caption{#1}[#2]{#3}%
-      \addtocontents{fof}{\protect\chkfloat@{\thepage}{\chkfloat@page}{\csname fnum@#1\endcsname: #2}}%
-    }}%
-  \caption@CheckCommand\@caption{%
-    % chkfloat.sty [20??/??/?? v0.? chkfloat: check for moved floats]
-    \def\@caption#1[#2]#3{\chkfloat@caption{#1}[{#2}]{#3}%
-      \chkfloat@addcontentsline{#1}{#2}%
-    }}%
-  \caption@IfCheckCommand{}{%
-    \caption@InfoNoLine{%
-      Incompatible package detected (regarding \string\@caption).\MessageBreak
-      \string\@caption\space=\space\meaning\@caption}%
-    \caption@setbool{incompatible}{1}}%
-  \caption@ifundefined\caption@ifcompatibility
-    {\let\caption@ifcompatibility\caption@ifincompatible
-     \let\caption@tempa\caption@WarningNoLine}%
-    {\let\caption@tempa\@gobble}% suppress warning
   \caption@ifcompatibility{%
-    \caption@tempa{%
-      \noexpand\caption will not be redefined since it's already\MessageBreak
-      redefined by a document class or package which is\MessageBreak
-      unknown to the caption package}%
+    \caption@InfoNoLine{
+      \noexpand\caption will not be redefined since `compatibility' is set to v1}%
     \renewcommand*\caption@redefine{}%
     \renewcommand*\caption@continuedfloat[1]{%
       \caption@Error{Not available in compatibility mode}}%
     \caption@AtBeginDocument*{%
       \let\caption@start\relax
-      \caption@ifundefined\caption@ORI@capstart{}{%
+      \caption@ifdefined\caption@ORI@capstart{%
         \caption@Debug{%
           Restore hypcap definition of \string\capstart\@gobble}%
-        \let\capstart\caption@ORI@capstart}%
+        \let\capstart\caption@ORI@capstart}{}%
     }%
     \renewcommand*\caption@star[2]{#1#2}%
   }{%
-    \caption@ifincompatible{%
-      \caption@WarningNoLine{%
-        Forced redefinition of \noexpand\caption since the\MessageBreak
-        unsupported(!) package option `compatibility=false'\MessageBreak
-        was given}%
-    }{}%
     \renewcommand*\caption@redefine{%
       \let\caption\caption@caption
       \let\@caption\caption@@caption}%
-    \caption@redefine
   }%
+  \caption@redefine
   \caption@AtBeginDocument*{%
     \let\caption@ORI@capstart\@undefined}%
   \let\caption@ORI@xfloat\@xfloat
@@ -830,8 +459,7 @@
     \fi
     \caption@start}}
 \newcommand*\caption@typehook{}
-\newcommand*\caption@iftype{%
-  \caption@ifundefined\@captype\@secondoftwo\@firstoftwo}
+\newcommand*\caption@iftype{\caption@ifdefined\@captype}
 \caption@ifeTeX{%
   \newcommand*\caption@checkgrouplevel[2]{%
     \@ifundefined{#1caption@grouplevel}{%
@@ -964,8 +592,8 @@
 \def\caption@ContinuedFloat{%
   \let\caption@reset@continuedfloat\@gobble
   \caption@@@continuedfloat}
-\caption@ifundefined\donemaincaptionfalse{}{%
-  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}
+\caption@ifdefined\donemaincaptionfalse{%
+  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}{}
 \newcommand*\caption@refstepcounter[1]{%
   \@ifundefined{c@#1}%
     {\caption@Error{No float type '#1' defined}}%
@@ -1057,18 +685,18 @@
 \let\caption@freezeHref\relax
 \let\caption@defrostHref\relax
 \newcommand\caption@gettitle[1]{%
-  \caption@ifundefined\NR@gettitle
-    {\def\@currentlabelname{#1}}%
-    {\NR@gettitle{#1}}}
+  \caption@ifdefined\NR@gettitle
+    {\NR@gettitle{#1}}%
+    {\def\@currentlabelname{#1}}}
 \def\caption@DeclareSubType sub#1\@nil{%
   \caption@Debug{Initializing subtype for `#1'\@gobble}%
   \@namedef{caption@beginsub#1}{\caption@beginsubfloat{#1}}}
 \@onlypreamble\caption@DeclareSubType
 \caption@For*{subtypelist}{\caption@DeclareSubType sub#1\@nil}
 \caption@AtBeginDocument*{%
-  \caption@ifundefined\sf@counterlist{}{%
+  \caption@ifdefined\sf@counterlist{%
     \@for\sf@temp:=\sf@counterlist\do{%
-      \expandafter\caption@DeclareSubType\sf@temp\@nil}}}
+      \expandafter\caption@DeclareSubType\sf@temp\@nil}}{}}
 \newcommand*\caption@subtypehook{%
   \ifx\caption\caption@subcaption \else
     \caption@warmup
@@ -1156,17 +784,18 @@
     \caption@subcontentslines
   \endgroup
   \caption@clearsubcontentslines}
-\AtBeginDocument{\caption@ifundefined\chapter{}{%
-  \let\caption@chapter@ORI\chapter
-  \def\chapter{%
-    \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}}
-\AtBeginDocument{\caption@ifundefined\appendix{}{%
-  \let\caption@appendix@ORI\appendix
-  \def\appendix{%
-    \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}}
-\AtEndDocument{%
-  \caption@addsubcontentslines{AtEndDocument}}
-\caption@ifundefined\smf@makecaption{}{\let\smf@makecaption\@makecaption}
+\AtBeginDocument{%
+  \caption@ifdefined\chapter{%
+    \let\caption@chapter@ORI\chapter
+    \def\chapter{%
+      \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}{}%
+  \caption@ifdefined\appendix{%
+    \let\caption@appendix@ORI\appendix
+    \def\appendix{%
+      \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}{}%
+  \caption@addsubcontentslines{AtEndDocument}%
+}
+\caption@ifdefined\smf@makecaption{\let\smf@makecaption\@makecaption}{}
 \@ifclassloaded{beamer}{%
   \caption@InfoNoLine{beamer document class}%
   \let\caption@ORI@figure\figure
@@ -1174,18 +803,18 @@
   \let\caption@ORI@table\figure
   \def\table{\caption@settype{table}\caption@ORI@table}
 }{}
-\caption@ifundefined\scr@caption{}{%
-  \caption@AtBeginDocument{\let\scr@caption\caption}}
+\caption@ifdefined\scr@caption{%
+  \caption@AtBeginDocument{\let\scr@caption\caption}}{}
 \@nameuse{caption@frenchb}\@nameundef{caption@frenchb}
-\caption@AtBeginDocument{\caption@ifundefined\frenchTeXmods{}{%
+\caption@AtBeginDocument{\caption@ifdefined\frenchTeXmods{%
   \caption@InfoNoLine{frenchle/pro package is loaded}%
   \let\captionfont@ORI\captionfont
   \let\captionlabelfont@ORI\captionlabelfont
   \let\@makecaption@ORI\@makecaption
 
-  \caption@ifundefined\GOfrench
-    {\let\caption@tempa\@firstofone}%
+  \caption@ifdefined\GOfrench
     {\def\caption@tempa{\g@addto@macro\GOfrench}}%
+    {\let\caption@tempa\@firstofone}%
   \caption@tempa{%
     \let\captionfont\captionfont@ORI
     \let\captionfont@ORI\@undefined
@@ -1208,7 +837,7 @@
     \def\f@tfrench{\ifx\listoftables\relax\else\tablename~\thetable\fi}%
     \caption@tempa
   }%
-}}
+}{}}
 \def\caption@tempa#1{%
   \@ifpackagewith{babel}{#1}{%
     \caption@InfoNoLine{#1 babel option is loaded}%
@@ -1310,12 +939,13 @@
   \caption@undefbool{needfreeze}}
 \let\caption@warmup\relax
 \caption@IfPackageLoaded{chkfloat}[2012/08/19 v0.1]{%
-  \caption@ifundefined\chkfloat@addcontentsline{%
-    \renewcommand\caption@chkfloat[2]{%
-      \caption@ifundefined\chkfloat@page{}{%
-        \addtocontents{fof}{\protect\chkfloat@{\thepage}{\chkfloat@page}{\csname fnum@#1\endcsname: #2}}}}%
-  }{%
+  \caption@ifdefined\chkfloat@addcontentsline{%
     \renewcommand\caption@chkfloat{\chkfloat@addcontentsline}%
+  }{%
+    \renewcommand\caption@chkfloat[2]{%
+      \caption@ifdefined\chkfloat@page{%
+        \addtocontents{fof}{\protect\chkfloat@{\thepage}{\chkfloat@page}{\csname fnum@#1\endcsname: #2}}%
+      }{}}%
   }%
   }{}%
 \caption@IfPackageLoaded{float}[2001/11/08 v1.3d]{%
@@ -1337,9 +967,9 @@
     \caption@freezeHref % will be defrosted in \float@makebox
     \caption@ORI@float@setevery{#1}}%
   \caption@AtBeginDocument{\caption@ifcompatibility{}{%
-    \caption@ifundefined\HyOrg@float@makebox
-      {\let\caption@ORI@float@makebox\float@makebox}%
+    \caption@ifdefined\HyOrg@float@makebox
       {\let\caption@ORI@float@makebox\HyOrg@float@makebox}%
+      {\let\caption@ORI@float@makebox\float@makebox}%
     \renewcommand\float@makebox[1]{%
       \caption@ORI@float@makebox{#1\relax \caption@defrostHref}}%
   }}%
@@ -1612,8 +1242,8 @@
       \caption@begin\LTcaptype
         \caption@normalsize
         \vskip-\ht\strutbox
-        \caption@ifundefined\FBifcaptop{}{%
-          \let\caption@belowskip\@empty}%
+        \caption@ifdefined\FBifcaptop{%
+          \let\caption@belowskip\@empty}{}%
         \caption@make@above
         \caption@@make{#2}{#3}\endgraf
         \caption@make@below
