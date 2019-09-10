@@ -25,19 +25,20 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files
-%%   CHANGELOG, README, SUMMARY, caption.ins,
-%%   caption.dtx, caption2.dtx, caption3.dtx,
-%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
-%%   newfloat.dtx, and totalcount.dtx
+%%   caption.ins, caption.dtx, caption2.dtx, caption3.dtx,
+%%   caption-base.dtx, caption-beamer.dtx, caption-elsarticle.dtx,
+%%   caption-koma.dtx,
+%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx, totalcount.dtx,
 %% the derived files
 %%   caption.sty, caption2.sty, caption3.sty,
-%%   bicaption.sty, ltcaption.sty, subcaption.sty,
-%%   newfloat.sty, and totalcount.sty
+%%   caption-base.sty, caption-beamer.sty, caption-elsarticle.sty,
+%%   caption-koma.sty,
+%%   bicaption.sty, ltcaption.sty, subcaption.sty, totalcount.sty,
 %% and the user manuals
-%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2019/09/09 v1.8e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2019/09/10 v1.9 caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -428,6 +429,7 @@
 \DeclareCaptionOption{calcwidth*}{\caption@setcalcwidth*{#1}}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
 \DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
+\caption@set@bool\caption@iftwoside{\if@twoside 1\else 0\fi}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
 \DeclareCaptionOption{maxmargin}{\caption@setoptcmd\caption@maxmargin{#1}}
 \newcommand*\setcaptionmargin{%
@@ -548,12 +550,30 @@
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
   box=default,format=default,labelsep=default,textformat=default,%
-  justification=default,font=default,labelfont=default,textfont=default}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+  justification=default,font=default,size=default,labelfont=default,textfont=default,%
+  slc=default}
+\newcommand*\caption@setdefault[2]{%
+  \@namedef{caption@#1@default}{\@nameuse{caption@#1@#2}}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setslc{#1}}
 \DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
+\newcommand*\caption@setslc[1]{%
+  \caption@ifinlist{#1}{d,default}{%
+    \def\caption@ifslc{\caption@ifslc@default}%
+  }{%
+    \caption@set@bool\caption@ifslc{#1}%
+  }}
+\newcommand*\DeclareCaptionDefaultSinglelinecheck[1]{%
+  \def\caption@ifslc@default{#1}}
+\@onlypreamble\DeclareCaptionDefaultSinglelinecheck
+\newcommand*\SetCaptionDefaultSinglelinecheck{%
+  \caption@set@bool\caption@ifslc@default}
+\@onlypreamble\SetCaptionDefaultSinglelinecheck
 \newcommand*\DeclareCaptionBox[2]{%
   \global\long\@namedef{caption@box@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
+\newcommand*\SetCaptionDefaultBox{%
+  \caption@setdefault{box}}
+\@onlypreamble\SetCaptionDefaultBox
 \DeclareCaptionOption{box}{\caption@setbox{#1}}
 \DeclareCaptionOption{parbox}{\caption@set@box\caption@parbox{#1}}
 \newcommand*\caption@setbox{%
@@ -572,7 +592,6 @@
   #2}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
-\def\caption@box@default{\caption@box@none}
 \newcommand*\DeclareCaptionFormat{%
   \caption@teststar\caption@declareformat\@gobble\@firstofone}
 \@onlypreamble\DeclareCaptionFormat
@@ -591,14 +610,11 @@
     {\expandafter\let\expandafter\caption@ifh\csname caption@ifh@#1\endcsname
      \expandafter\let\expandafter\caption@slfmt\csname caption@slfmt@#1\endcsname
      \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
-\newcommand*\DeclareCaptionDefaultFormat[1]{%
-  \expandafter\def\expandafter\caption@fmt@default\expandafter
-    {\csname caption@fmt@#1\endcsname}%
-  \expandafter\def\expandafter\caption@slfmt@default\expandafter
-    {\csname caption@slfmt@#1\endcsname}%
-  \expandafter\def\expandafter\caption@ifh@default\expandafter
-    {\csname caption@ifh@#1\endcsname}}
-\@onlypreamble\DeclareCaptionDefaultFormat
+\newcommand*\SetCaptionDefaultFormat[1]{%
+  \caption@setdefault{fmt}{#1}%
+  \caption@setdefault{slfmt}{#1}%
+  \caption@setdefault{ifh}{#1}}
+\@onlypreamble\SetCaptionDefaultFormat
 \DeclareCaptionFormat{plain}{#1#2#3\par}
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
   \caption@ifin@list\caption@lsepcrlist\caption@lsepname
@@ -609,10 +625,18 @@
      \advance\caption@parindent\hangindent
      \advance\caption@hangindent\hangindent
      \caption@@par#3\par}}
-\DeclareCaptionDefaultFormat{plain}
 \newcommand*\DeclareCaptionLabelFormat[2]{%
   \global\@namedef{caption@lfmt@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionLabelFormat
+\newcommand*\SetCaptionDefaultLabelFormat{%
+  \caption@teststar\caption@setdefaultlabelformat
+    {\ifx\caption@lfmt\caption@lfmt@default\else}%
+    {\iftrue}}
+\@onlypreamble\SetCaptionDefaultLabelFormat
+\newcommand*\caption@setdefaultlabelformat[1]{%
+  \def\caption@iflfmt@default{#1}%
+  \caption@setdefault{lfmt}}
+\@onlypreamble\caption@setdefaultlabelformat
 \DeclareCaptionOption{labelformat}{\caption@setlabelformat{#1}}
 \newcommand*\caption@setlabelformat[1]{%
   \@ifundefined{caption@lfmt@#1}%
@@ -624,10 +648,21 @@
 \DeclareCaptionLabelFormat{brace}{\bothIfFirst{#1}{\nobreakspace}#2)}
 \DeclareCaptionLabelFormat{autodot}{\bothIfFirst{#1}{\nobreakspace}#2\autodot}
 \DeclareCaptionLabelFormat{unnumbered}{#1}
-\def\caption@lfmt@default{\caption@lfmt@simple}
 \newcommand\DeclareCaptionLabelSeparator{%
-  \caption@teststar\caption@declarelabelseparator\@gobble\@firstofone}
+  \@ifstar
+    {\DeclareCaptionLabelSeparator@}%
+    {\caption@declarelabelseparator\@firstofone}}
 \@onlypreamble\DeclareCaptionLabelSeparator
+\newcommand\DeclareCaptionLabelSeparator@{%
+  \@ifstar
+    {\DeclareCaptionLabelSeparator@@}%
+    {\caption@declarelabelseparator\@gobble}}
+\@onlypreamble\DeclareCaptionLabelSeparator@
+\newcommand*\DeclareCaptionLabelSeparator@@[2]{%
+  \caption@declarelabelseparator
+    {#2\@gobble\@firstofone}%
+    {#1}}
+\@onlypreamble\DeclareCaptionLabelSeparator@@
 \newcommand\caption@declarelabelseparator[3]{%
   \global\@namedef{caption@iflf@#2}{#1}%
   \global\long\@namedef{caption@lsep@#2}{#3}%
@@ -638,6 +673,10 @@
     \caption@g@addto@list\caption@lsepcrlist{#1}%
   \fi}
 \@onlypreamble\caption@@declarelabelseparator
+\newcommand*\SetCaptionDefaultLabelSeparator[1]{%
+  \caption@setdefault{lsep}{#1}%
+  \caption@setdefault{iflf}{#1}}
+\@onlypreamble\SetCaptionDefaultLabelSeparator
 \DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
 \newcommand*\caption@setlabelseparator[1]{%
@@ -653,20 +692,12 @@
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\\}
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
-\newcommand*\caption@setdefaultlabelsep[1]{%
-  \ifx\caption@lsep\caption@lsep@default
-    \caption@set@default@labelsep{#1}%
-    \caption@setlabelseparator{default}%
-  \else
-    \caption@set@default@labelsep{#1}%
-  \fi}
-\newcommand*\caption@set@default@labelsep[1]{%
-  \def\caption@lsep@default{\@nameuse{caption@lsep@#1}}%
-  \def\caption@iflf@default{\@nameuse{caption@iflf@#1}}}
-\caption@set@default@labelsep{colon}
 \newcommand*\DeclareCaptionTextFormat[2]{%
   \global\long\@namedef{caption@tfmt@#1}##1{#2}}
 \@onlypreamble\DeclareCaptionTextFormat
+\newcommand*\SetCaptionDefaultTextFormat{%
+  \caption@setdefault{tfmt}}
+\@onlypreamble\SetCaptionDefaultTextFormat
 \DeclareCaptionOption{textformat}{\caption@settextformat{#1}}
 \DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
 \newcommand*\caption@settextformat[1]{%
@@ -686,7 +717,6 @@
   \fi}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
-\def\caption@tfmt@default{\caption@tfmt@simple}
 \long\def\caption@getlabel#1\label#2#3\@nil{%
   \def\@tempa{#2}%
   \ifx\@tempa\@empty
@@ -721,13 +751,10 @@
 \@onlypreamble\DeclareCaptionDefaultFont
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
-\DeclareCaptionDefaultFont{font}{}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
-\DeclareCaptionDefaultFont{labelfont}{}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
-\DeclareCaptionDefaultFont{textfont}{}
 \newcommand*\caption@setfont[1]{%
   \expandafter\let\csname caption#1\endcsname\@empty
   \caption@addtofont{#1}}
@@ -760,6 +787,23 @@
 \DeclareCaptionFont{rm}{\rmfamily}
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
+\DeclareCaptionFont{sansmath}{\sansmath}
+\DeclareCaptionFont{singlespacing}{%
+  \caption@ifdefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
+\DeclareCaptionFont{stretch}{\setstretch{#1}}
+\DeclareCaptionFont{normal}{%
+  \caption@font*{%
+    \KV@caption@fnt@normalcolor\@unused
+    \KV@caption@fnt@normalfont\@unused
+    \KV@caption@fnt@normalsize\@unused
+    \KV@caption@fnt@singlespacing\@unused}}
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
+\newcommand*\DeclareCaptionDefaultSize{%
+  \DeclareCaptionDefaultFont{size}}
+\@onlypreamble\DeclareCaptionDefaultSize
 \DeclareCaptionFont{tiny}{\tiny}
 \DeclareCaptionFont{scriptsize}{\scriptsize}
 \DeclareCaptionFont{footnotesize}{\footnotesize}
@@ -824,21 +868,6 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionFont{larger}{\caption@larger}
-\DeclareCaptionFont{sansmath}{\sansmath}
-\DeclareCaptionFont{singlespacing}{%
-  \caption@ifdefined\setspace@singlespace{%
-    \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
-\DeclareCaptionFont{normal}{%
-  \caption@font*{%
-    \KV@caption@fnt@normalcolor\@unused
-    \KV@caption@fnt@normalfont\@unused
-    \KV@caption@fnt@normalsize\@unused
-    \KV@caption@fnt@singlespacing\@unused}}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\DeclareCaptionDefaultFont{size}{}
 \newcommand*\DeclareCaptionJustification[2]{%
   \global\@namedef{caption@hj@#1}{#2}% for compatibility to v1.0
   \DeclareCaptionFont{#1}{#2}}
@@ -848,7 +877,6 @@
   \DeclareCaptionDefaultFont{@hj}{#1}}
 \@onlypreamble\DeclareCaptionDefaultJustification
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
-\DeclareCaptionDefaultJustification{}
 \newcommand*\caption@setjustification{\caption@setfont{@hj}}
 \DeclareCaptionJustification{justified}{}
 \DeclareCaptionJustification{centering}{\centering}
@@ -973,8 +1001,9 @@
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
 \newcommand*\AtEndCaption{\l@addto@macro\caption@endhook}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\KV@caption@list{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
+\caption@setlist{on}
 \DeclareCaptionOption{listtype}{\caption@setlisttype{#1}}
 \DeclareCaptionOption{listtype+}{\caption@setlisttype@ext{#1}}
 \newcommand*\caption@setlisttype{%
@@ -988,6 +1017,9 @@
 \newcommand*\DeclareCaptionListFormat[2]{%
   \global\@namedef{caption@lstfmt@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionListFormat
+\newcommand*\SetCaptionDefaultListFormat{%
+  \caption@setdefault{lstfmt}}
+\@onlypreamble\SetCaptionDefaultListFormat
 \DeclareCaptionOption{listformat}{\caption@setlistformat{#1}}
 \newcommand*\caption@setlistformat[1]{%
   \@ifundefined{caption@lstfmt@#1}%
@@ -999,16 +1031,6 @@
 \DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subsimple}{#2}
 \DeclareCaptionListFormat{subparens}{(#2)}
-\newcommand*\caption@setdefaultlistformat[1]{%
-  \ifx\caption@lstfmt\caption@lstfmt@default
-    \caption@set@default@listformat{#1}%
-    \caption@setlistformat{default}%
-  \else
-    \caption@set@default@listformat{#1}%
-  \fi}
-\newcommand*\caption@set@default@listformat[1]{%
-  \def\caption@lstfmt@default{\@nameuse{caption@lstfmt@#1}}}
-\caption@set@default@listformat{subsimple}
 \DeclareCaptionOption{debug}[1]{%
   \caption@set@bool\caption@ifdebug{#1}%
   \caption@ifdebug
@@ -1074,121 +1096,19 @@
   \else
     \expandafter\@secondoftwo
   \fi}
-\caption@ifclassloaded{elsarticle}{%
-  \DeclareCaptionDefaultFont{font}{\footnotesize}
-}{}
-\caption@ifclassloaded{ams}{%
-  \let\captionmargin\captionindent % set to 3pc by AMS class
-  \begingroup\edef\@tempa{\endgroup
-    \noexpand\caption@g@addto@list\noexpand\caption@sty@default
-      {margin=\the\captionmargin
-       \caption@ifdefined\smf@makecaption{,maxmargin=.1\linewidth}{}}}
-  \@tempa
-  \caption@g@addto@list\caption@sls@default{margin*=.5\captionmargin}
-  \DeclareCaptionLabelSeparator{default}{.\enspace}
-  \DeclareCaptionDefaultFont{font}{\@captionfont}
-  \DeclareCaptionDefaultFont{labelfont}{\@captionheadfont}
-  \DeclareCaptionDefaultFont{textfont}{\@captionfont\upshape}
-  \captionsetup[figure]{position=b}
-  \captionsetup[table]{position=t}
-}{}
-\caption@ifclassloaded{beamer}{%
-  \newcommand*\caption@ifbeamertemplate[1]{%
-    \begingroup
-      \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-      \@nameuse{beamer@@tmpop@caption@#1}%
-      \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-        \endgroup\expandafter\@firstoftwo
-      \else
-        \endgroup\expandafter\@secondoftwo
-      \fi}
-  \DeclareCaptionLabelFormat{default}{%
-    \caption@ifbeamertemplate{numbered}%
-      \caption@lfmt@simple
-      \caption@lfmt@unnumbered
-    {#1}{#2}}
-  \DeclareCaptionLabelFormat{default@magyar}{%
-    \caption@ifbeamertemplate{numbered}%
-      \caption@lfmt@simple@magyar
-      \caption@lfmt@unnumbered
-    {#1}{#2}}
-  \@ifundefined{@@magyar@captionfix}\AtBeginDocument\@firstofone{%
-    \@ifundefined{@@magyar@captionfix}{}{%
-      \g@addto@macro\@@magyar@captionfix{%
-        \let\caption@lfmt@simple@magyar\caption@lfmt@simpleMagyar
-        \let\caption@lfmt@simpleMagyar\caption@lfmt@default@magyar}}}
-  \caption@declarelabelseparator
-    {\caption@ifbeamertemplate{caption name own line}\@gobble\@firstofone}
-    {default}
-    {\caption@ifbeamertemplate{caption name own line}{\\}%
-       {\usebeamertemplate{caption label separator}}}
-  \DeclareCaptionDefaultFont{font}{%
-    \usebeamerfont*{caption}%
-    \usebeamercolor[fg]{caption}}
-  \DeclareCaptionDefaultFont{labelfont}{%
-    \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
-    \usebeamercolor[fg]{caption name}%
-    \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
-    \usebeamerfont{caption name}}
-  \DeclareCaptionDefaultJustification{\raggedright}
-  \DeclareOption{beamerclass}{%
-    \renewcommand\caption@ifslc{%
-      \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
-    % Since the beamer class do not offer a `list of figures' we switch this support off.
-    \captionsetup{list=0}}
-  \PassOptionsToPackage{beamerclass}{caption3}
-  \defbeamertemplate{caption}{caption3}{%
-    \caption@make\insertcaptionname\insertcaptionnumber\insertcaption}
-  \DeclareOption{beamer}{%
-    % \usebeamertemplate**{caption} will set font
-    \DeclareCaptionDefaultFont{font}{}%
-    \setbeamertemplate{caption}[caption3]}
-}{}
-\caption@ifclassloaded{koma}{%
-  \DeclareCaptionFormat{default}[#1#2#3\par]{%
-    \ifdofullc@p
-      \caption@ifin@list\caption@lsepcrlist\caption@lsepname
-        {\caption@Error{%
-           The option `labelsep=\caption@lsepname' does not work\MessageBreak
-           with \noexpand\setcaphanging (which is set by default)}}%
-        {\caption@fmt@hang{#1}{#2}{#3}}%
-    \else
-      #1#2%
-      \ifdim\cap@indent<\z@
-        \par
-        \noindent\hspace*{-\cap@indent}%
-      \else\if@capbreak
-        \par
-      \fi\fi
-      #3\par
-    \fi}
-  \DeclareCaptionLabelSeparator{default}{\captionformat}
-  \DeclareCaptionDefaultFont{font}{\scr@fnt@caption}
-  \DeclareCaptionDefaultFont{labelfont}{\scr@fnt@captionlabel}
-  \let\caption@KV@parindent\KV@caption@parindent
-  \DeclareCaptionOption{parindent}[]{%
-    \ifx,#1,%
-      \caption@Debug{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}%
-  \let\caption@KV@parskip\KV@caption@parskip
-  \DeclareCaptionOption{parskip}[]{%
-    \ifx,#1,%
-      \caption@Debug{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}%
-}{}
-\caption@ifclassloaded{ntg}{%
-  \DeclareCaptionDefaultFont{labelfont}{\CaptionLabelFont}
-  \DeclareCaptionDefaultFont{textfont}{\CaptionTextFont}
-}{}
-\caption@ifclassloaded{thesis}{%
-  \DeclareCaptionDefaultFormat{hang}
-  \DeclareCaptionDefaultFont{labelfont}{\cph@font}
-  \DeclareCaptionDefaultFont{textfont}{\cpb@font}
-}{}
+\newcommand*\AtPackageCaption{%
+  \g@addto@macro\caption@documentclass@code}
+\@onlypreamble\AtPackageCaption
+\providecommand*\caption@documentclass@code{}
+\@onlypreamble\caption@documentclass@code
+\@pushfilename
+\edef\@currname{caption-\caption@documentclass}
+\edef\@currext{sto}
+\InputIfFileExists
+  {\@currname.\@currext}%
+  {}%
+  {\@missingfileerror\@currname\@currext}%
+\@popfilename
 \caption@ifdefined\ArabiCoreLoaded{%
   \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
   \def\fnum@figure{\figurename\nobreakspace\thefigure}%
@@ -1233,8 +1153,7 @@
   }{}}
 \caption@tempa{hungarian}
 \caption@tempa{magyar}
-\captionsetup{style=default,position=default,%
-              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,listformat=default}
 \ProcessOptions*
 \newcommand\caption@addcontentsline[2]{%
   \caption@ifcontentsline{#2}{%

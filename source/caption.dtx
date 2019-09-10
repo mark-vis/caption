@@ -59,14 +59,6 @@
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
   {e-TeX}}
-\DeclareRobustCommand*\AmS{\texorpdfstring
-  {{\protect\usefont{OMS}{cmsy}{m}{n}A\kern-.1667em\lower.5ex\hbox{M}\kern-.125emS}}%
-  {AMS}}
-\DeclareRobustCommand*\KOMAScript{\texorpdfstring
-  {\textsf{K\kern.05em O\kern.05em M\kern.05em A\kern.1em-\kern.1em Script}}%
-  {KOMA-Script}}
-\DeclareRobustCommand*\NTG{NTG}
-\DeclareRobustCommand*\SmF{SMF}
 %
 \begin{document}
   \DocInput{caption.dtx}
@@ -215,13 +207,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/09/09 v3.4 Customizing captions (AR)]
+\ProvidesPackage{caption}[2019/09/10 v3.4 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2019/09/09] % needs v1.8e or newer
+\RequirePackage{caption3}[2019/09/10] % needs v1.9 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -635,212 +627,21 @@
 \captionsetup{hypcap=1,hypcapspace=.5\baselineskip}
 %    \end{macrocode}
 %
-% \section{\AmS{} \& \SmF{} document classes support}
-% \changes{v3.1}{2007/07/29}{\AmS\ \& \SmF\ document classes support added}
+% \section{Document class support}
 %
+% Execute the code declared with |\AtPackageCaption|.
+% We do this right before processing the options so stuff done with
+% |\AtPackageCaption| can be overwritten by the user with \package{caption}
+% package options, e.g.:
+% \begin{quote}
+%   |\documentclass{scrartcl}|\\
+%   |\setcapwidth{5cm}|\\
+%   |\usepackage[width=6cm]{caption}|
+% \end{quote}
 %    \begin{macrocode}
-\caption@ifclassloaded{ams}{%
-  \caption@InfoNoLine{AMS or SMF document class}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \setlength\belowcaptionskip{0pt}% set to 12pt by AMS class
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \section{\KOMAScript{} document classes support}
-% \changes{v3.0a}{2004/01/18}{Minimum adaptation to \KOMAScript\ added}
-% \changes{v3.0h}{2005/08/22}{\KOMAScript\ compatibility options added}
-% \changes{v3.0i}{2005/11/17}{\KOMAScript\ compatibility commands added}
-% \changes{v3.0l}{2007/02/18}{\KOMAScript\ compatibility revised}
-% \changes{v3.1}{2007/03/17}{\KOMAScript\ compatibility options removed}
-% \changes{v3.1}{2007/04/05}{\KOMAScript\ compatibility revised \& enhanced}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{koma}{%
-  \caption@InfoNoLine{KOMA-Script document class}%
-%    \end{macrocode}
-%
-% Here we emulate the caption related commands and take over the caption 
-% related settings from the \KOMAScript\ classes.
-%
-% \begin{macro}{\@tablecaptionabovetrue}
-% \begin{macro}{\@tablecaptionabovefalse}
-% \changes{v3.1g}{2008/03/01}{\cs{def} changed to \cs{g@addto@macro}}
-%    \begin{macrocode}
-  \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}
-  \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \if@tablecaptionabove
-    \@tablecaptionabovetrue
-  \else
-    \@tablecaptionabovefalse
-  \fi
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\@figurecaptionabovetrue}
-% \begin{macro}{\@figurecaptionabovefalse}
-% \changes{v3.3}{2013/02/15}{Support of \cs{@figurecaptionabovetrue} added}
-%    \begin{macrocode}
-  \caption@ifdefined\@figurecaptionabovetrue{%
-%    \end{macrocode}
-%    \begin{macrocode}
-    \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}
-    \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}
-%    \end{macrocode}
-%    \begin{macrocode}
-    \if@figurecaptionabove
-      \@figurecaptionabovetrue
-    \else
-      \@figurecaptionabovefalse
-    \fi
-%    \end{macrocode}
-%    \begin{macrocode}
-  }{}%
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\onelinecaptionstrue}
-% \begin{macro}{\onelinecaptionsfalse}
-% \changes{v3.1g}{2008/03/01}{\cs{def} changed to \cs{g@addto@macro}}
-%    \begin{macrocode}
-  \g@addto@macro\onelinecaptionstrue{\let\caption@ifslc\@firstoftwo}
-  \g@addto@macro\onelinecaptionsfalse{\let\caption@ifslc\@secondoftwo}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \ifonelinecaptions
-    \onelinecaptionstrue
-  \else
-    \onelinecaptionsfalse
-  \fi
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\@captionabovetrue}
-% \begin{macro}{\@captionabovefalse}
-% \changes{v3.0j}{2006/03/21}{Bugfix 06-03-21:
-%        \cs{let}\cs{caption@setposition}\cs{@gobble} added}
-% \changes{v3.0n}{2006/03/09}{Accidentally this got broken in \version{3.0m}, fixed}
-% \changes{v3.1}{2007/03/31}{We redefine \cs{captionabovetrue/false} now
-%        instead of \cs{captionabove/below}}
-% \changes{v3.1g}{2008/03/01}{\cs{def} changed to \cs{g@addto@macro}}
-% \changes{v3.1k}{2009/10/09}{\opt{figureposition} and \opt{tableposition} will issue a warning now}
-%  Please note that these are stronger than the \opt{position} setting, therefore we
-%  override the options \opt{figureposition} and \opt{tableposition} to typeout a warning.
-%    \begin{macrocode}
-  \g@addto@macro\@captionabovetrue{\let\caption@position\@firstoftwo}
-  \g@addto@macro\@captionabovefalse{\let\caption@position\@secondoftwo}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareCaptionOption{figureposition}{%
-    \caption@WarningNoLine{Option `figureposition=#1' has no effect\MessageBreak
-    when used with a KOMA script document class}}
-  \DeclareCaptionOption{tableposition}{%
-    \caption@WarningNoLine{Option `tableposition=#1' has no effect\MessageBreak
-    when used with a KOMA script document class}}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
-%
-% \begin{macro}{\setcapindent}
-%    \begin{macrocode}
-  \let\caption@KOMA@setcapindent\@setcapindent
-  \renewcommand*\@setcapindent[1]{%
-    \caption@KOMA@setcapindent{#1}\caption@setcapindent}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \let\caption@KOMA@@setcapindent\@@setcapindent
-  \renewcommand*\@@setcapindent[1]{%
-    \caption@KOMA@@setcapindent{#1}\caption@setcapindent}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\caption@setcapindent{%
-    \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-  \caption@ifdefined\cap@indent{\caption@setcapindent}{}
-%    \end{macrocode}
-%
-% \begin{macro}{\setcapwidth}
-% \changes{v3.3}{2018/12/26}{Bugfix: Missing curly braces added}
-%  \Note{The optional argument of \cs{setcapwidth} if not supported (yet),
-%  so we issue a warning if used.
-%  (Since this does not seem to have an negative effect when used
-%   by the \texttt{captionbeside} environment, we suppress the warning here.)}
-%    \begin{macrocode}
-  \expandafter\let\expandafter\caption@KOMA@setcapwidth
-                  \csname\string\setcapwidth\endcsname
-  \@namedef{\string\setcapwidth}[#1]#2{%
-    \caption@KOMA@setcapwidth[{#1}]{#2}\caption@setcapwidth{#1}}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\caption@setcapwidth[1]{%
-    \ifx\\#1\\\else
-      \caption@ifdefined\cap@margin{%
-        \def\@tempa{captionbeside}%
-        \ifx\@tempa\@currenvir\else\caption@Warning{%
-          Ignoring optional argument [#1] of \string\setcapwidth\MessageBreak}%
-        \fi}{}%
-    \fi
-    \captionsetup{width=\cap@width}}
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-  \def\caption@tempa{\hsize}%
-  \ifx\caption@tempa\cap@width \else
-    \caption@setcapwidth{?}
-  \fi
-%    \end{macrocode}
-%
-% \begin{macro}{\setcapmargin}
-%    \begin{macrocode}
-  \expandafter\let\expandafter\caption@KOMA@setcapmargin
-                  \csname\string\@setcapmargin\endcsname
-  \@namedef{\string\@setcapmargin}[#1]#2{%
-    \caption@KOMA@setcapmargin[{#1}]{#2}\caption@setcapmargin}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \expandafter\let\expandafter\caption@KOMA@@setcapmargin
-                  \csname\string\@@setcapmargin\endcsname
-  \@namedef{\string\@@setcapmargin}[#1]#2{%
-    \caption@KOMA@@setcapmargin[{#1}]{#2}\caption@setcapmargin}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\caption@setcapmargin{%
-    \begingroup
-      \let\onelinecaptionsfalse\relax
-      \def\@twoside{0}%
-      \def\if@twoside{\def\@twoside{1}\iffalse}%
-      \cap@margin
-      \def\@tempa{\endgroup}%
-      \ifx\cap@left\hfill\else\ifx\cap@right\hfill\else
-        \def\hspace##1##{\@firstofone}%
-        \edef\@tempa{\endgroup
-          \noexpand\captionsetup{%
-            twoside=\@twoside,slc=0,%
-            margin={\cap@left,\cap@right}}}%
-      \fi\fi
-      \@tempa}
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-  \ifx\cap@margin\relax \else
-    \caption@setcapmargin
-  \fi
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-}{}
+\caption@documentclass@code
+\let\caption@documentclass@code\@undefined
+\let\AtPackageCaption\@firstofone
 %    \end{macrocode}
 %
 % \section{Processing of options}
@@ -1820,13 +1621,14 @@
 %
 % \begin{macro}{\caption@setfnum}
 % \changes{v3.1}{2007/03/10}{This macro added}
+% \changes{v3.4}{2018/05/24}{Usage of \cs{caption@iflfmt@default} added}
 %  |\caption@setfnum|\marg{type}\\
 %  redefines |\fnum@|\meta{type} according the caption label format
 %  set with |labelformat=|. But if |labelformat=default| is set,
 %  |\fnum@|\meta{type} will not be overwritten by us.
 %    \begin{macrocode}
 \newcommand*\caption@setfnum[1]{%
-  \@ifundefined{fnum@#1}{\iftrue}{\ifx\caption@lfmt\caption@lfmt@default\else}%
+  \@ifundefined{fnum@#1}{\iftrue}{\caption@iflfmt@default}%
     \@namedef{fnum@#1}{\caption@fnum{#1}}%
   \fi}
 %    \end{macrocode}
@@ -2188,57 +1990,7 @@
 % \end{macro}
 %
 %
-% \section{Document class \& Babel package support}
-%
-% \subsection{The \AmS{} \& \SmF{} classes}
-% \changes{v3.1}{2007/07/29}{\AmS\ \& \SmF\ classes support added}
-%
-%    \begin{macrocode}
-\caption@ifdefined\smf@makecaption{\let\smf@makecaption\@makecaption}{}
-%    \end{macrocode}
-%
-% \subsection{The beamer class}
-% \changes{v3.1}{2007/03/10}{beamer class support added}
-%
-%    \begin{macrocode}
-\@ifclassloaded{beamer}{%
-  \caption@InfoNoLine{beamer document class}%
-%    \end{macrocode}
-%
-% \begin{macro}{\figure}
-% \changes{v3.1f}{2007/12/17}{This re-definition for \class{beamer} document class added}
-% \changes{v3.3d}{2019/09/01}{This re-definition for \class{beamer} document class revised}
-%  We redefine |figure| so our type-specific options will be used etc.
-%    \begin{macrocode}
-  \let\caption@ORI@figure\figure
-  \def\figure{\caption@settype{figure}\caption@ORI@figure}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\table}
-% \changes{v3.1f}{2007/12/17}{This re-definition for \class{beamer} document class added}
-% \changes{v3.3d}{2019/09/01}{This re-definition for \class{beamer} document class revised}
-%  We redefine |table| so our type-specific options will be used etc.
-%    \begin{macrocode}
-  \let\caption@ORI@table\figure
-  \def\table{\caption@settype{table}\caption@ORI@table}
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \subsection{The \KOMAScript{} classes}
-%
-% \KOMAScript\ contains the code
-% |\AtBeginDocument{\let\scr@caption\caption}|
-% so we need to update |\scr@caption| here, too.
-%
-%    \begin{macrocode}
-\caption@ifdefined\scr@caption{%
-  \caption@AtBeginDocument{\let\scr@caption\caption}}{}
-%    \end{macrocode}
+% \section{Babel package support}
 %
 % \subsection{The frenchb Babel option}
 % \changes{v3.1}{2006/05/14}{Adaptation to \package{frenchb} added}
@@ -3415,6 +3167,15 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@AtBeginLongtable}
+% \changes{v3.4}{2018/04/15}{This macro added}
+%    \begin{macrocode}
+\providecommand*\caption@LT@array{}
+\newcommand\caption@AtBeginLongtable{%
+  \g@addto@macro\caption@LT@array}
+%    \end{macrocode}
+% \end{macro}
+%
 %    \begin{macrocode}
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
 %    \end{macrocode}
@@ -3440,70 +3201,68 @@
   \caption@AtBeginDocument{%
     \let\caption@ORI@LT@array\LT@array
     \renewcommand*\LT@array{%
+      \caption@LT@array
+      \caption@ORI@LT@array}}%
 %    \end{macrocode}
+%    \begin{macrocode}
+  \caption@AtBeginLongtable{%
 % |\captionsetup| for longtable:
 %    \begin{macrocode}
-      \global\let\caption@opt@@longtable\@undefined
-      \def\captionsetup{%
-        \noalign\bgroup
-        \@ifstar\@captionsetup\@captionsetup}% gobble *
-      \def\@captionsetup##1{\LT@captionsetup{##1}\egroup}%
-      \def\LT@captionsetup##1{%
-        \captionsetup@startrue\caption@setup@options[@longtable]{##1}%
-        \global\let\caption@opt@@longtable\caption@opt@@longtable}%
-%    \end{macrocode}
-% |\captionabove| \& |\captionbelow| for longtable: (\KOMAScript\ document class)
-%    \begin{macrocode}
-      \def\@captionabovetrue{\LT@captionsetup{position=t}}%
-      \def\@captionabovefalse{\LT@captionsetup{position=b}}%
+    \global\let\caption@opt@@longtable\@undefined
+    \def\captionsetup{%
+      \noalign\bgroup
+      \@ifstar\@captionsetup\@captionsetup}% gobble *
+    \def\@captionsetup##1{\LT@captionsetup{##1}\egroup}%
+    \def\LT@captionsetup##1{%
+      \captionsetup@startrue\caption@setup@options[@longtable]{##1}%
+      \global\let\caption@opt@@longtable\caption@opt@@longtable}%
 %    \end{macrocode}
 % |\captionlistentry| for longtable:
 %    \begin{macrocode}
-      \def\captionlistentry{%
-        \noalign\bgroup
-        \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
-                {\egroup\LT@listentry\LTcaptype}}%
+    \def\captionlistentry{%
+      \noalign\bgroup
+      \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
+              {\egroup\LT@listentry\LTcaptype}}%
 %    \end{macrocode}
 % |\continuedfloat| for longtable:\\
 % {\small(Commented out, since it's not deeply tested and quite useless anyway)}
 % \Note{\package{hyperref} versions $<$ v6.76j uses $2\times$ \cs{hyper@makecurrent}}
 %    \begin{macrocode}
-%     \caption@ifhypcap{%
-%       \let\caption@ORI@hyper@makecurrent\hyper@makecurrent
-%       \def\hyper@makecurrent##1{%
-%         \let\hyper@makecurrent\caption@ORI@hyper@makecurrent
-%         \caption@makestart{##1}%
-%%        \let\Hy@LT@currentHlabel\@currentHlabel
-%         \let\Hy@LT@currentHref\@currentHref
-%         \def\hyper@makecurrent####1{%
-%%          \let\@currentHlabel\Hy@LT@currentHlabel
-%           \let\@currentHref\Hy@LT@currentHref}}%
-%       \let\caption@ORI@continuedfloat\continuedfloat
-%       \def\continuedfloat{\noalign{%
-%         \gdef\caption@setContinuedFloat{%
-%           \let\caption@reset@continuedfloat\@gobble}%
-%         \def\caption@setoptions####1{%
-%           \g@addto@macro\caption@setContinuedFloat{%
-%             \caption@setoptions{####1}}}%
-%         \let\@captype\LTcaptype
-%         \caption@ORI@ContinuedFloat}}%
-%     }{%
-%       \def\continuedfloat{\noalign{%
-%         \caption@Error{%
-%           \noexpand\continuedfloat inside longtables\MessageBreak
-%           is only available with `hypcap=true'}}}%
-%     }%
-%     \global\let\caption@setContinuedFloat\@empty
-      \def\continuedfloat{\noalign{%
-        \caption@Error{\noexpand\continuedfloat outside float}}}%
+%   \caption@ifhypcap{%
+%     \let\caption@ORI@hyper@makecurrent\hyper@makecurrent
+%     \def\hyper@makecurrent##1{%
+%       \let\hyper@makecurrent\caption@ORI@hyper@makecurrent
+%       \caption@makestart{##1}%
+%%      \let\Hy@LT@currentHlabel\@currentHlabel
+%       \let\Hy@LT@currentHref\@currentHref
+%       \def\hyper@makecurrent####1{%
+%%        \let\@currentHlabel\Hy@LT@currentHlabel
+%         \let\@currentHref\Hy@LT@currentHref}}%
+%     \let\caption@ORI@continuedfloat\continuedfloat
+%     \def\continuedfloat{\noalign{%
+%       \gdef\caption@setContinuedFloat{%
+%         \let\caption@reset@continuedfloat\@gobble}%
+%       \def\caption@setoptions####1{%
+%         \g@addto@macro\caption@setContinuedFloat{%
+%           \caption@setoptions{####1}}}%
+%       \let\@captype\LTcaptype
+%       \caption@ORI@ContinuedFloat}}%
+%   }{%
+%     \def\continuedfloat{\noalign{%
+%       \caption@Error{%
+%         \noexpand\continuedfloat inside longtables\MessageBreak
+%         is only available with `hypcap=true'}}}%
+%   }%
+%   \global\let\caption@setContinuedFloat\@empty
+    \def\continuedfloat{\noalign{%
+      \caption@Error{\noexpand\continuedfloat outside float}}}%
 %    \end{macrocode}
 % |\bicaption| for longtable:
 %    \begin{macrocode}
-      \let\bicaption\LT@bicaption
+    \let\bicaption\LT@bicaption
 %    \end{macrocode}
-%
 %    \begin{macrocode}
-      \caption@ORI@LT@array}}%
+  }%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4392,24 +4151,6 @@
 %
 % \clearpage
 % \begin{thebibliography}{99}
-%   \bibitem{beamer}
-%   Till Tantau:\\
-%   \href{http://www.ctan.org/pkg/beamer}%
-%        {\emph{The beamer class, User Guide for version 3.25}},\\
-%   December 26, 2012
-%
-%   \bibitem{KOMAScript}
-%   Markus Kohm \& Jens-Uwe-Morawski:\\
-%   \href{http://www.ctan.org/pkg/koma-script}%
-%        {\emph{KOMA-Script -- a versatile \LaTeXe\ bundle}},\\
-%   2012-07-22
-%
-%   \bibitem{NTG}
-%   Victor Eijkhout:\\
-%   \href{http://www.ctan.org/pkg/ntgclass}%
-%        {\emph{An introduction to the Dutch \LaTeX\ document classes}},\\
-%   3 September 1989
-%
 %   \bibitem{float}
 %   Anselm Lingnau:\\
 %   \href{http://www.ctan.org/pkg/float}%

@@ -25,20 +25,21 @@
 %% This Current Maintainer of this work is Axel Sommerfeldt.
 %% 
 %% This work consists of the files
-%%   CHANGELOG, README, SUMMARY, caption.ins,
-%%   caption.dtx, caption2.dtx, caption3.dtx,
-%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
-%%   newfloat.dtx, and totalcount.dtx
+%%   caption.ins, caption.dtx, caption2.dtx, caption3.dtx,
+%%   caption-base.dtx, caption-beamer.dtx, caption-elsarticle.dtx,
+%%   caption-koma.dtx,
+%%   bicaption.dtx, ltcaption.dtx, subcaption.dtx, totalcount.dtx,
 %% the derived files
 %%   caption.sty, caption2.sty, caption3.sty,
-%%   bicaption.sty, ltcaption.sty, subcaption.sty,
-%%   newfloat.sty, and totalcount.sty
+%%   caption-base.sty, caption-beamer.sty, caption-elsarticle.sty,
+%%   caption-koma.sty,
+%%   bicaption.sty, ltcaption.sty, subcaption.sty, totalcount.sty,
 %% and the user manuals
-%%   caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+%%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/09/09 v3.4a Customizing captions (AR)]
-\RequirePackage{caption3}[2019/09/09] % needs v1.8e or newer
+\ProvidesPackage{caption}[2019/09/10 v3.4 Customizing captions (AR)]
+\RequirePackage{caption3}[2019/09/10] % needs v1.9 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -211,96 +212,9 @@
 \DeclareCaptionOption{hypcap}[1]{\caption@setbool{hypcap}{#1}}
 \DeclareCaptionOption{hypcapspace}{\def\caption@hypcapspace{#1}}
 \captionsetup{hypcap=1,hypcapspace=.5\baselineskip}
-\caption@ifclassloaded{ams}{%
-  \caption@InfoNoLine{AMS or SMF document class}%
-  \setlength\belowcaptionskip{0pt}% set to 12pt by AMS class
-}{}
-\caption@ifclassloaded{koma}{%
-  \caption@InfoNoLine{KOMA-Script document class}%
-  \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}
-  \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}
-  \if@tablecaptionabove
-    \@tablecaptionabovetrue
-  \else
-    \@tablecaptionabovefalse
-  \fi
-  \caption@ifdefined\@figurecaptionabovetrue{%
-    \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}
-    \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}
-    \if@figurecaptionabove
-      \@figurecaptionabovetrue
-    \else
-      \@figurecaptionabovefalse
-    \fi
-  }{}%
-  \g@addto@macro\onelinecaptionstrue{\let\caption@ifslc\@firstoftwo}
-  \g@addto@macro\onelinecaptionsfalse{\let\caption@ifslc\@secondoftwo}
-  \ifonelinecaptions
-    \onelinecaptionstrue
-  \else
-    \onelinecaptionsfalse
-  \fi
-  \g@addto@macro\@captionabovetrue{\let\caption@position\@firstoftwo}
-  \g@addto@macro\@captionabovefalse{\let\caption@position\@secondoftwo}
-  \DeclareCaptionOption{figureposition}{%
-    \caption@WarningNoLine{Option `figureposition=#1' has no effect\MessageBreak
-    when used with a KOMA script document class}}
-  \DeclareCaptionOption{tableposition}{%
-    \caption@WarningNoLine{Option `tableposition=#1' has no effect\MessageBreak
-    when used with a KOMA script document class}}
-  \let\caption@KOMA@setcapindent\@setcapindent
-  \renewcommand*\@setcapindent[1]{%
-    \caption@KOMA@setcapindent{#1}\caption@setcapindent}
-  \let\caption@KOMA@@setcapindent\@@setcapindent
-  \renewcommand*\@@setcapindent[1]{%
-    \caption@KOMA@@setcapindent{#1}\caption@setcapindent}
-  \newcommand*\caption@setcapindent{%
-    \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
-  \caption@ifdefined\cap@indent{\caption@setcapindent}{}
-  \expandafter\let\expandafter\caption@KOMA@setcapwidth
-                  \csname\string\setcapwidth\endcsname
-  \@namedef{\string\setcapwidth}[#1]#2{%
-    \caption@KOMA@setcapwidth[{#1}]{#2}\caption@setcapwidth{#1}}
-  \newcommand*\caption@setcapwidth[1]{%
-    \ifx\\#1\\\else
-      \caption@ifdefined\cap@margin{%
-        \def\@tempa{captionbeside}%
-        \ifx\@tempa\@currenvir\else\caption@Warning{%
-          Ignoring optional argument [#1] of \string\setcapwidth\MessageBreak}%
-        \fi}{}%
-    \fi
-    \captionsetup{width=\cap@width}}
-  \def\caption@tempa{\hsize}%
-  \ifx\caption@tempa\cap@width \else
-    \caption@setcapwidth{?}
-  \fi
-  \expandafter\let\expandafter\caption@KOMA@setcapmargin
-                  \csname\string\@setcapmargin\endcsname
-  \@namedef{\string\@setcapmargin}[#1]#2{%
-    \caption@KOMA@setcapmargin[{#1}]{#2}\caption@setcapmargin}
-  \expandafter\let\expandafter\caption@KOMA@@setcapmargin
-                  \csname\string\@@setcapmargin\endcsname
-  \@namedef{\string\@@setcapmargin}[#1]#2{%
-    \caption@KOMA@@setcapmargin[{#1}]{#2}\caption@setcapmargin}
-  \newcommand*\caption@setcapmargin{%
-    \begingroup
-      \let\onelinecaptionsfalse\relax
-      \def\@twoside{0}%
-      \def\if@twoside{\def\@twoside{1}\iffalse}%
-      \cap@margin
-      \def\@tempa{\endgroup}%
-      \ifx\cap@left\hfill\else\ifx\cap@right\hfill\else
-        \def\hspace##1##{\@firstofone}%
-        \edef\@tempa{\endgroup
-          \noexpand\captionsetup{%
-            twoside=\@twoside,slc=0,%
-            margin={\cap@left,\cap@right}}}%
-      \fi\fi
-      \@tempa}
-  \ifx\cap@margin\relax \else
-    \caption@setcapmargin
-  \fi
-}{}
+\caption@documentclass@code
+\let\caption@documentclass@code\@undefined
+\let\AtPackageCaption\@firstofone
 \caption@SetupOptions{caption}{\caption@setkeys{#1}{#2}}
 \caption@ProcessOptions*{caption}
 \newcounter{caption@flags}
@@ -655,7 +569,7 @@
 \newcommand*\caption@end{%
   \endgroup}
 \newcommand*\caption@setfnum[1]{%
-  \@ifundefined{fnum@#1}{\iftrue}{\ifx\caption@lfmt\caption@lfmt@default\else}%
+  \@ifundefined{fnum@#1}{\iftrue}{\caption@iflfmt@default}%
     \@namedef{fnum@#1}{\caption@fnum{#1}}%
   \fi}
 \newcommand*\caption@boxrestore{%
@@ -795,16 +709,6 @@
       \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}{}%
   \caption@addsubcontentslines{AtEndDocument}%
 }
-\caption@ifdefined\smf@makecaption{\let\smf@makecaption\@makecaption}{}
-\@ifclassloaded{beamer}{%
-  \caption@InfoNoLine{beamer document class}%
-  \let\caption@ORI@figure\figure
-  \def\figure{\caption@settype{figure}\caption@ORI@figure}
-  \let\caption@ORI@table\figure
-  \def\table{\caption@settype{table}\caption@ORI@table}
-}{}
-\caption@ifdefined\scr@caption{%
-  \caption@AtBeginDocument{\let\scr@caption\caption}}{}
 \@nameuse{caption@frenchb}\@nameundef{caption@frenchb}
 \caption@AtBeginDocument{\caption@ifdefined\frenchTeXmods{%
   \caption@InfoNoLine{frenchle/pro package is loaded}%
@@ -1202,32 +1106,36 @@
   \providecommand*\ext@lstlisting{lol}%
 }{}
 \providecommand*\LTcaptype{table}
+\providecommand*\caption@LT@array{}
+\newcommand\caption@AtBeginLongtable{%
+  \g@addto@macro\caption@LT@array}
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
   \RequirePackage{ltcaption}[2018/08/26]%
   \let\LT@@makecaption\@undefined
   \caption@AtBeginDocument{%
     \let\caption@ORI@LT@array\LT@array
     \renewcommand*\LT@array{%
-      \global\let\caption@opt@@longtable\@undefined
-      \def\captionsetup{%
-        \noalign\bgroup
-        \@ifstar\@captionsetup\@captionsetup}% gobble *
-      \def\@captionsetup##1{\LT@captionsetup{##1}\egroup}%
-      \def\LT@captionsetup##1{%
-        \captionsetup@startrue\caption@setup@options[@longtable]{##1}%
-        \global\let\caption@opt@@longtable\caption@opt@@longtable}%
-      \def\@captionabovetrue{\LT@captionsetup{position=t}}%
-      \def\@captionabovefalse{\LT@captionsetup{position=b}}%
-      \def\captionlistentry{%
-        \noalign\bgroup
-        \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
-                {\egroup\LT@listentry\LTcaptype}}%
-%%        \let\Hy@LT@currentHlabel\@currentHlabel
-%%          \let\@currentHlabel\Hy@LT@currentHlabel
-      \def\continuedfloat{\noalign{%
-        \caption@Error{\noexpand\continuedfloat outside float}}}%
-      \let\bicaption\LT@bicaption
+      \caption@LT@array
       \caption@ORI@LT@array}}%
+  \caption@AtBeginLongtable{%
+    \global\let\caption@opt@@longtable\@undefined
+    \def\captionsetup{%
+      \noalign\bgroup
+      \@ifstar\@captionsetup\@captionsetup}% gobble *
+    \def\@captionsetup##1{\LT@captionsetup{##1}\egroup}%
+    \def\LT@captionsetup##1{%
+      \captionsetup@startrue\caption@setup@options[@longtable]{##1}%
+      \global\let\caption@opt@@longtable\caption@opt@@longtable}%
+    \def\captionlistentry{%
+      \noalign\bgroup
+      \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
+              {\egroup\LT@listentry\LTcaptype}}%
+%%      \let\Hy@LT@currentHlabel\@currentHlabel
+%%        \let\@currentHlabel\Hy@LT@currentHlabel
+    \def\continuedfloat{\noalign{%
+      \caption@Error{\noexpand\continuedfloat outside float}}}%
+    \let\bicaption\LT@bicaption
+  }%
   \def\LT@capti@n{%
     \@ifstar
       {\egroup\LT@c@ption\@gobble[]}%

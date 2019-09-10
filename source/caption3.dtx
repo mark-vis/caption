@@ -30,7 +30,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2015/09/15 v1.8 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2019/09/10 v1.9 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -55,15 +55,6 @@
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
 \usepackage{caption3}[2019/09/09]
-%
-\DeclareRobustCommand*\AmS{\texorpdfstring
-  {{\protect\usefont{OMS}{cmsy}{m}{n}A\kern-.1667em\lower.5ex\hbox{M}\kern-.125emS}}%
-  {AMS}}
-\DeclareRobustCommand*\KOMAScript{\texorpdfstring
-  {\textsf{K\kern.05em O\kern.05em M\kern.05em A\kern.1em-\kern.1em Script}}%
-  {KOMA-Script}}
-\DeclareRobustCommand*\NTG{NTG}
-\DeclareRobustCommand*\SmF{SMF}
 %
 \begin{document}
   \DocInput{caption3.dtx}
@@ -188,7 +179,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2019/09/09 v1.8e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2019/09/10 v1.9 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Workaround for bug in package \package{arabtex}}
@@ -1125,6 +1116,7 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{twoside}[1]{\caption@set@bool\caption@iftwoside{#1}}
 \DeclareCaptionOptionNoValue{oneside}{\caption@set@bool\caption@iftwoside0}
+\caption@set@bool\caption@iftwoside{\if@twoside 1\else 0\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
@@ -1462,14 +1454,58 @@
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
   box=default,format=default,labelsep=default,textformat=default,%
-  justification=default,font=default,labelfont=default,textfont=default}
+  justification=default,font=default,size=default,labelfont=default,textfont=default,%
+  slc=default}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@setdefault}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\caption@setdefault|\marg{option}\marg{name}
+%    \begin{macrocode}
+\newcommand*\caption@setdefault[2]{%
+  \@namedef{caption@#1@default}{\@nameuse{caption@#1@#2}}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \changes{v1.2b}{2008/05/06}{Option \opt{slc=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@set@bool\caption@ifslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setslc{#1}}
 \DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@setslc}
+% \changes{v1.9}{2018/03/13}{This macro added}
+%  |\caption@setslc|\marg{boolean}
+%    \begin{macrocode}
+\newcommand*\caption@setslc[1]{%
+  \caption@ifinlist{#1}{d,default}{%
+    \def\caption@ifslc{\caption@ifslc@default}%
+  }{%
+    \caption@set@bool\caption@ifslc{#1}%
+  }}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionDefaultSinglelinecheck}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\DeclareCaptionDefaultSinglelinecheck|\marg{code}\\
+%  The code given should expand to either |\@firstoftwo| or |\@secondoftwo|.
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionDefaultSinglelinecheck[1]{%
+  \def\caption@ifslc@default{#1}}
+\@onlypreamble\DeclareCaptionDefaultSinglelinecheck
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultSinglelinecheck}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\SetCaptionDefaultSinglelinecheck|\marg{boolean}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultSinglelinecheck{%
+  \caption@set@bool\caption@ifslc@default}
+\@onlypreamble\SetCaptionDefaultSinglelinecheck
+%    \end{macrocode}
+% \end{macro}
 %
 % \section{Boxes}
 %
@@ -1480,6 +1516,16 @@
 \newcommand*\DeclareCaptionBox[2]{%
   \global\long\@namedef{caption@box@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultBox}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\SetCaptionDefaultBox|\marg{name}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultBox{%
+  \caption@setdefault{box}}
+\@onlypreamble\SetCaptionDefaultBox
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1527,11 +1573,6 @@
   #2}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
-%    \end{macrocode}
-%
-% `default' usually maps to `none`.
-%    \begin{macrocode}
-\def\caption@box@default{\caption@box@none}
 %    \end{macrocode}
 %
 % \section{Formats}
@@ -1582,17 +1623,17 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\DeclareCaptionDefaultFormat}
+% \begin{macro}{\SetCaptionDefaultFormat}
+% \changes{v1.0d}{2005/04/28}{Bugfix 05-04-28: Missing \cs{caption@ifh@default} added}
 % \changes{v1.2a}{2008/01/31}{This macro added}
+% \changes{v1.9}{2018/05/13}{Renamed from \cs{DeclareCaptionDefaultFormat} to \cs{SetCaptionDefaultFormat}}
+%  |\SetCaptionDefaultFormat|\marg{name}
 %    \begin{macrocode}
-\newcommand*\DeclareCaptionDefaultFormat[1]{%
-  \expandafter\def\expandafter\caption@fmt@default\expandafter
-    {\csname caption@fmt@#1\endcsname}%
-  \expandafter\def\expandafter\caption@slfmt@default\expandafter
-    {\csname caption@slfmt@#1\endcsname}%
-  \expandafter\def\expandafter\caption@ifh@default\expandafter
-    {\csname caption@ifh@#1\endcsname}}
-\@onlypreamble\DeclareCaptionDefaultFormat
+\newcommand*\SetCaptionDefaultFormat[1]{%
+  \caption@setdefault{fmt}{#1}%
+  \caption@setdefault{slfmt}{#1}%
+  \caption@setdefault{ifh}{#1}}
+\@onlypreamble\SetCaptionDefaultFormat
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1620,13 +1661,6 @@
      \caption@@par#3\par}}
 %    \end{macrocode}
 %
-% \changes{v1.0a}{2004/01/23}{Caption format \opt{default} linked to \opt{plain}}
-% \changes{v1.0d}{2005/04/28}{Bugfix 05-04-28: Missing \cs{caption@ifh@default} added}
-% `default' usually maps to `plain'.
-%    \begin{macrocode}
-\DeclareCaptionDefaultFormat{plain}
-%    \end{macrocode}
-%
 % \section{Label formats}
 %
 % \begin{macro}{\DeclareCaptionLabelFormat}
@@ -1637,6 +1671,25 @@
 \newcommand*\DeclareCaptionLabelFormat[2]{%
   \global\@namedef{caption@lfmt@#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionLabelFormat
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultLabelFormat}
+% \changes{v1.9}{2018/05/13}{This macro added}
+% \changes{v1.9}{2018/05/24}{Starred form added}
+%  |\SetCaptionDefaultLabelFormat*|\marg{name}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultLabelFormat{%
+  \caption@teststar\caption@setdefaultlabelformat
+    {\ifx\caption@lfmt\caption@lfmt@default\else}%
+    {\iftrue}}
+\@onlypreamble\SetCaptionDefaultLabelFormat
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setdefaultlabelformat[1]{%
+  \def\caption@iflfmt@default{#1}%
+  \caption@setdefault{lfmt}}
+\@onlypreamble\caption@setdefaultlabelformat
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1670,11 +1723,6 @@
 \DeclareCaptionLabelFormat{unnumbered}{#1}
 %    \end{macrocode}
 %
-% `default' usually maps to `simple'.
-%    \begin{macrocode}
-\def\caption@lfmt@default{\caption@lfmt@simple}
-%    \end{macrocode}
-%
 % \section{Label separators}
 %
 % \begin{macro}{\DeclareCaptionLabelSeparator}
@@ -1683,13 +1731,33 @@
 % \changes{v1.0f}{2005/08/25}{Starred variant added}
 % \changes{v1.1}{2007/07/13}{Test for CR added}
 % \changes{v1.3}{2011/08/06}{Test for CR revised}
+% \changes{v1.9}{2018/05/15}{Variant with two stars added}
 %  |\DeclareCaptionLabelSeparator|\marg{name}\marg{code}\\
-%  |\DeclareCaptionLabelSeparator*|\marg{name}\marg{code}\par
+%  |\DeclareCaptionLabelSeparator*|\marg{name}\marg{code}\\
+%  |\DeclareCaptionLabelSeparator**|\marg{name}\marg{condition}\marg{code}\par
 %  The starred form causes the label separator to be typeset \emph{without} using |\captionlabelfont|.
+%  The two-starred form uses \meta{condition} to decide if the label separator should be typeset
+%  with or without using |\captionlabelfont|.
 %    \begin{macrocode}
 \newcommand\DeclareCaptionLabelSeparator{%
-  \caption@teststar\caption@declarelabelseparator\@gobble\@firstofone}
+  \@ifstar
+    {\DeclareCaptionLabelSeparator@}%
+    {\caption@declarelabelseparator\@firstofone}}
 \@onlypreamble\DeclareCaptionLabelSeparator
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\DeclareCaptionLabelSeparator@{%
+  \@ifstar
+    {\DeclareCaptionLabelSeparator@@}%
+    {\caption@declarelabelseparator\@gobble}}
+\@onlypreamble\DeclareCaptionLabelSeparator@
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionLabelSeparator@@[2]{%
+  \caption@declarelabelseparator
+    {#2\@gobble\@firstofone}%
+    {#1}}
+\@onlypreamble\DeclareCaptionLabelSeparator@@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@declarelabelseparator[3]{%
@@ -1704,6 +1772,18 @@
     \caption@g@addto@list\caption@lsepcrlist{#1}%
   \fi}
 \@onlypreamble\caption@@declarelabelseparator
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultLabelSeparator}
+% \changes{v1.2d}{2009/03/29}{This macro added}
+% \changes{v1.9}{2018/05/13}{Renamed from \cs{caption@set@default@labelsep} to \cs{SetCaptionDefaultLabelSeparator}}
+%  |\SetCaptionDefaultLabelSeparator|\marg{name}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultLabelSeparator[1]{%
+  \caption@setdefault{lsep}{#1}%
+  \caption@setdefault{iflf}{#1}}
+\@onlypreamble\SetCaptionDefaultLabelSeparator
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1740,29 +1820,6 @@
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setdefaultlabelsep}
-% \changes{v1.2d}{2009/03/29}{This macro added}
-%    \begin{macrocode}
-\newcommand*\caption@setdefaultlabelsep[1]{%
-  \ifx\caption@lsep\caption@lsep@default
-    \caption@set@default@labelsep{#1}%
-    \caption@setlabelseparator{default}%
-  \else
-    \caption@set@default@labelsep{#1}%
-  \fi}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@set@default@labelsep[1]{%
-  \def\caption@lsep@default{\@nameuse{caption@lsep@#1}}%
-  \def\caption@iflf@default{\@nameuse{caption@iflf@#1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% `default' usually maps to `colon'.
-%    \begin{macrocode}
-\caption@set@default@labelsep{colon}
-%    \end{macrocode}
-%
 % \section{Text formats}
 %
 % \begin{macro}{\DeclareCaptionTextFormat}
@@ -1772,6 +1829,16 @@
 \newcommand*\DeclareCaptionTextFormat[2]{%
   \global\long\@namedef{caption@tfmt@#1}##1{#2}}
 \@onlypreamble\DeclareCaptionTextFormat
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultTextFormat}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\SetCaptionDefaultTextFormat|\marg{name}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultTextFormat{%
+  \caption@setdefault{tfmt}}
+\@onlypreamble\SetCaptionDefaultTextFormat
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1812,11 +1879,6 @@
 %    \begin{macrocode}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
-%    \end{macrocode}
-%
-% `default' usually maps to `simple'.
-%    \begin{macrocode}
-\def\caption@tfmt@default{\caption@tfmt@simple}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@getlabel}
@@ -1889,17 +1951,14 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
-\DeclareCaptionDefaultFont{font}{}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
-\DeclareCaptionDefaultFont{labelfont}{}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
-\DeclareCaptionDefaultFont{textfont}{}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setfont}
@@ -1972,6 +2031,53 @@
 \DeclareCaptionFont{sf}{\sffamily}
 \DeclareCaptionFont{tt}{\ttfamily}
 %    \end{macrocode}
+%
+% \changes{v1.3}{2011/01/01}{\package{sansmath} package support added}
+%    \begin{macrocode}
+\DeclareCaptionFont{sansmath}{\sansmath}
+%    \end{macrocode}
+%
+% \changes{v1.0n}{2007/04/02}{\package{setspace} package support added}
+% \changes{v1.2d}{2009/10/09}{Bugfix 09-05-18: \package{setspace} package support revised}
+%    \begin{macrocode}
+\DeclareCaptionFont{singlespacing}{%
+  \caption@ifdefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
+\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont{doublespacing}{\doublespacing}
+\DeclareCaptionFont{stretch}{\setstretch{#1}}
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+%\DeclareCaptionFont{normal}{%
+%  \caption@font{normalcolor,normalfont,normalsize,singlespacing}
+\DeclareCaptionFont{normal}{%
+  \caption@font*{%
+    \KV@caption@fnt@normalcolor\@unused
+    \KV@caption@fnt@normalfont\@unused
+    \KV@caption@fnt@normalsize\@unused
+    \KV@caption@fnt@singlespacing\@unused}}
+%    \end{macrocode}
+%
+% \changes{v1.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
+% The old versions \version{1.x} of \thispackage\ offered this
+% command to setup the font size used for captions. We still do
+% so old documents will work fine.
+%    \begin{macrocode}
+\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\DeclareCaptionDefaultSize}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\DeclareCaptionDefaultSize|\marg{code}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionDefaultSize{%
+  \DeclareCaptionDefaultFont{size}}
+\@onlypreamble\DeclareCaptionDefaultSize
+%    \end{macrocode}
+% \end{macro}
+%
+% These are the pre-defined size code snippets.
 %
 % \changes{v1.7}{2018/05/01}{Missing font sizes \texttt{tiny}, \texttt{LARGE}, \texttt{huge}, and \texttt{Huge} added}
 %    \begin{macrocode}
@@ -2049,42 +2155,6 @@
 \DeclareCaptionFont{larger}{\caption@larger}
 %    \end{macrocode}
 %
-% \changes{v1.3}{2011/01/01}{\package{sansmath} package support added}
-%    \begin{macrocode}
-\DeclareCaptionFont{sansmath}{\sansmath}
-%    \end{macrocode}
-%
-% \changes{v1.0n}{2007/04/02}{\package{setspace} package support added}
-% \changes{v1.2d}{2009/10/09}{Bugfix 09-05-18: \package{setspace} package support revised}
-%    \begin{macrocode}
-\DeclareCaptionFont{singlespacing}{%
-  \caption@ifdefined\setspace@singlespace{%
-    \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-%\DeclareCaptionFont{normal}{%
-%  \caption@font{normalcolor,normalfont,normalsize,singlespacing}
-\DeclareCaptionFont{normal}{%
-  \caption@font*{%
-    \KV@caption@fnt@normalcolor\@unused
-    \KV@caption@fnt@normalfont\@unused
-    \KV@caption@fnt@normalsize\@unused
-    \KV@caption@fnt@singlespacing\@unused}}
-%    \end{macrocode}
-%
-% \changes{v1.0a}{2004/01/23}{Option \opt{size=} now sets \cs{captionsize} instead of \cs{captionfont}}
-% The old versions \version{1.x} of \thispackage\ offered this
-% command to setup the font size used for captions. We still do
-% so old documents will work fine.
-%    \begin{macrocode}
-\DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\DeclareCaptionDefaultFont{size}{}
-%    \end{macrocode}
-%
 % \section{Justifications}
 %
 % \begin{macro}{\DeclareCaptionJustification}
@@ -2114,7 +2184,6 @@
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{justification}{\caption@setjustification{#1}}
-\DeclareCaptionDefaultJustification{}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setjustification}
@@ -2446,7 +2515,7 @@
 % \changes{v1.2}{2007/11/17}{Option \opt{list=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
+\DeclareCaptionOption{listof}[1]{\KV@caption@list{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setlist}
@@ -2454,6 +2523,9 @@
 %  |\caption@setlist|\marg{boolean}
 %    \begin{macrocode}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@setlist{on}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2498,6 +2570,17 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\SetCaptionDefaultListFormat}
+% \changes{v1.2d}{2009/03/29}{This macro added}
+% \changes{v1.9}{2018/05/13}{Renamed from \cs{caption@set@default@listformat} to \cs{SetCaptionDefaultListFormat}}
+%  |\SetCaptionDefaultListFormat|\marg{name}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultListFormat{%
+  \caption@setdefault{lstfmt}}
+\@onlypreamble\SetCaptionDefaultListFormat
+%    \end{macrocode}
+% \end{macro}
+%
 % \changes{v1.1}{2007/07/15}{Option \opt{listofformat=} added}
 % \changes{v1.2}{2007/11/17}{Option \opt{listofformat=} renamed to \opt{listformat=}}
 %    \begin{macrocode}
@@ -2527,28 +2610,6 @@
 \DeclareCaptionListFormat{subparens}{(#2)}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setdefaultlistformat}
-% \changes{v1.2d}{2009/03/29}{This macro added}
-%    \begin{macrocode}
-\newcommand*\caption@setdefaultlistformat[1]{%
-  \ifx\caption@lstfmt\caption@lstfmt@default
-    \caption@set@default@listformat{#1}%
-    \caption@setlistformat{default}%
-  \else
-    \caption@set@default@listformat{#1}%
-  \fi}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@set@default@listformat[1]{%
-  \def\caption@lstfmt@default{\@nameuse{caption@lstfmt@#1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% `default' usually maps to `subsimple'.
-%    \begin{macrocode}
-\caption@set@default@listformat{subsimple}
-%    \end{macrocode}
-%
 % \section{Debug option}
 % \changes{v1.0k}{2007/03/04}{Debug option added}
 %
@@ -2566,7 +2627,8 @@
 \setkeys{caption}{debug=0}
 %    \end{macrocode}
 %
-% \section{Document classes \& Babel support}
+% \section{Document class support}
+% \changes{v1.9}{2018/05/11}{Document class support re-written}
 %
 % \begin{macro}{\caption@ifdocumentclass}
 % Boolean switch which is set if the document class could be detected successfully,
@@ -2674,244 +2736,34 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{The standard \texorpdfstring{\LaTeX{}}{LaTeX} classes}
-%
-% Since this is the default, there is no extra work to be done here.
-%
-% \subsection{The elsarticle classes}
-% \changes{v1.5}{2013/01/06}{elsarticle class support added}
-%
+% \begin{macro}{\AtPackageCaption}
+% \changes{v1.9}{2018/05/14}{This macro added}
+%  |\AtPackageCaption|\marg{code}\\
+%  can be used by the document class adaption packages to execute extra code
+%  if the \package{caption} package is loaded (later on).
 %    \begin{macrocode}
-\caption@ifclassloaded{elsarticle}{%
+\newcommand*\AtPackageCaption{%
+  \g@addto@macro\caption@documentclass@code}
+\@onlypreamble\AtPackageCaption
 %    \end{macrocode}
 %    \begin{macrocode}
-  \DeclareCaptionDefaultFont{font}{\footnotesize}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \subsection{The \AmS{} \& \SmF{} classes}
-% \changes{v1.1}{2007/07/29}{\AmS\ \& \SmF\ classes support added}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{ams}{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \let\captionmargin\captionindent % set to 3pc by AMS class
-  \begingroup\edef\@tempa{\endgroup
-    \noexpand\caption@g@addto@list\noexpand\caption@sty@default
-      {margin=\the\captionmargin
-       \caption@ifdefined\smf@makecaption{,maxmargin=.1\linewidth}{}}}
-  \@tempa
-  \caption@g@addto@list\caption@sls@default{margin*=.5\captionmargin}
-  \DeclareCaptionLabelSeparator{default}{.\enspace}
-  \DeclareCaptionDefaultFont{font}{\@captionfont}
-  \DeclareCaptionDefaultFont{labelfont}{\@captionheadfont}
-  \DeclareCaptionDefaultFont{textfont}{\@captionfont\upshape}
-  \captionsetup[figure]{position=b}
-  \captionsetup[table]{position=t}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \subsection{The beamer class (Part one)}
-% \changes{v1.1}{2007/03/10}{\package{beamer} class support added}
-% \changes{v1.3}{2011/08/06}{\package{beamer} class support revised}
-% \changes{v1.5}{2013/04/27}{The \package{beamer} template \texttt{caption label separator} will be used now}
-% \changes{v1.7}{2016/05/22}{Re-definition of label format \texttt{simpleMagyar} added to \package{beamer} class support}
-% \changes{v1.7}{2018/04/15}{Re-definition of label format \texttt{simpleMagyar} revised}
-% \changes{v1.7}{2018/05/01}{Definition of \package{beamer} default label font revised}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{beamer}{%
-%    \end{macrocode}
-%
-% \begin{macro}{\caption@ifbeamertemplate}
-% |\caption@ifbeamertemplate|\marg{caption template name}\marg{yes-code}\marg{no-code}\\
-% tests if the given beamer caption template was selected by the user (or not).
-%    \begin{macrocode}
-  \newcommand*\caption@ifbeamertemplate[1]{%
-    \begingroup
-      \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-      \@nameuse{beamer@@tmpop@caption@#1}%
-      \ifx\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
-        \endgroup\expandafter\@firstoftwo
-      \else
-        \endgroup\expandafter\@secondoftwo
-      \fi}
+\providecommand*\caption@documentclass@code{}
+\@onlypreamble\caption@documentclass@code
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-  \DeclareCaptionLabelFormat{default}{%
-    \caption@ifbeamertemplate{numbered}%
-      \caption@lfmt@simple
-      \caption@lfmt@unnumbered
-    {#1}{#2}}
-%    \end{macrocode}
-% The \package{magyar} babel package redefines the current label format to a one called |simple|\-|Magyar|,
-% defined within |\@@magyar@caption|\-|fix| which will be executed |\At|\-|Begin|\-|Document|.
-%    \begin{macrocode}
-  \DeclareCaptionLabelFormat{default@magyar}{%
-    \caption@ifbeamertemplate{numbered}%
-      \caption@lfmt@simple@magyar
-      \caption@lfmt@unnumbered
-    {#1}{#2}}
-  \@ifundefined{@@magyar@captionfix}\AtBeginDocument\@firstofone{%
-    \@ifundefined{@@magyar@captionfix}{}{%
-      \g@addto@macro\@@magyar@captionfix{%
-        \let\caption@lfmt@simple@magyar\caption@lfmt@simpleMagyar
-        \let\caption@lfmt@simpleMagyar\caption@lfmt@default@magyar}}}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \caption@declarelabelseparator
-    {\caption@ifbeamertemplate{caption name own line}\@gobble\@firstofone}
-    {default}
-    {\caption@ifbeamertemplate{caption name own line}{\\}%
-       {\usebeamertemplate{caption label separator}}}
-  \DeclareCaptionDefaultFont{font}{%
-    \usebeamerfont*{caption}%
-    \usebeamercolor[fg]{caption}}
-  \DeclareCaptionDefaultFont{labelfont}{%
-    \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
-    \usebeamercolor[fg]{caption name}%
-    \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
-    \usebeamerfont{caption name}}
-  \DeclareCaptionDefaultJustification{\raggedright}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareOption{beamerclass}{%
-    \renewcommand\caption@ifslc{%
-      \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
-    % Since the beamer class do not offer a `list of figures' we switch this support off.
-    \captionsetup{list=0}}
-  \PassOptionsToPackage{beamerclass}{caption3}
+\@pushfilename
+\edef\@currname{caption-\caption@documentclass}
+\edef\@currext{sto}
+\InputIfFileExists
+  {\@currname.\@currext}%
+  {}%
+  {\@missingfileerror\@currname\@currext}%
+\@popfilename
 %    \end{macrocode}
 %
-% If the \package{beamer} document class is used, we offer a beamer
-% template called `caption3' which can be used with option `beamer' or
-% |\setbeamertemplate{caption}[caption3]|.\par
-% (Note that this is of no use when the \package{caption} package is used, too.)
-%    \begin{macrocode}
-  \defbeamertemplate{caption}{caption3}{%
-    \caption@make\insertcaptionname\insertcaptionnumber\insertcaption}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareOption{beamer}{%
-    % \usebeamertemplate**{caption} will set font
-    \DeclareCaptionDefaultFont{font}{}%
-    \setbeamertemplate{caption}[caption3]}
-%    \end{macrocode}
-%    \begin{macrocode}
-%
-%    \begin{macrocode]
-}{}
-%    \end{macrocode}
-%
-% \subsection{The KOMA-Script classes}
-% \changes{v1.1}{2007/03/31}{\KOMAScript\ classes support added}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{koma}{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareCaptionFormat{default}[#1#2#3\par]{%
-    \ifdofullc@p
-      \caption@ifin@list\caption@lsepcrlist\caption@lsepname
-        {\caption@Error{%
-           The option `labelsep=\caption@lsepname' does not work\MessageBreak
-           with \noexpand\setcaphanging (which is set by default)}}%
-        {\caption@fmt@hang{#1}{#2}{#3}}%
-    \else
-      #1#2%
-      \ifdim\cap@indent<\z@
-        \par
-        \noindent\hspace*{-\cap@indent}%
-      \else\if@capbreak
-        \par
-      \fi\fi
-      #3\par
-    \fi}
-  \DeclareCaptionLabelSeparator{default}{\captionformat}
-  \DeclareCaptionDefaultFont{font}{\scr@fnt@caption}
-  \DeclareCaptionDefaultFont{labelfont}{\scr@fnt@captionlabel}
-%    \end{macrocode}
-%
-% \changes{v1.0f}{2005/08/22}{Increased compatibility to KOMA-Script:
-%        A special version of options `parindent' and `parskip' added}
-% \changes{v1.0g}{2006/01/03}{Bugfix 06-01-03: KOMA-Script variants of
-%        `parskip' and `parindent' options revised and moved into caption kernel}
-% \changes{v1.0h}{2006/02/23}{KOMA-Script variants of `parskip' and
-%        `parindent' are obsolete now, removed}
-% \changes{v1.0m}{2007/03/30}{KOMA-Script variants of `parskip' and
-%        `parindent' re-added, since they still collide with the current
-%        version of the subfig package (Sigh!)}
-%
-% There is an option clash between the \KOMAScript\ document classes
-% and the \package{caption} kernel, both define the options |parindent| and
-% |parskip| but with different meaning.
-% Furthermore the ones defined by the \package{caption} kernel take a
-% value as parameter but the \KOMAScript\ ones do not.
-% So we need special versions of the options |parindent| and |parskip| here
-% which determine if a value is given (and therefore should be treated as
-% our option) or not (and therefore should be ignored by us).\footnote{%^^A
-% This problem was completely solved due a change of \cs{caption@ProcessOptions}
-% in \thispackage\ \version{1.0h}, but we still need this workaround since
-% these options would otherwise still collide with the current version $1.3$
-% of the \package{subfig} package (Sigh!)}
-%    \begin{macrocode}
-  \let\caption@KV@parindent\KV@caption@parindent
-  \DeclareCaptionOption{parindent}[]{%
-    \ifx,#1,%
-      \caption@Debug{Option `parindent' ignored}%
-    \else
-      \caption@KV@parindent{#1}%
-    \fi}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \let\caption@KV@parskip\KV@caption@parskip
-  \DeclareCaptionOption{parskip}[]{%
-    \ifx,#1,%
-      \caption@Debug{Option `parskip' ignored}%
-    \else
-      \caption@KV@parskip{#1}%
-    \fi}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \subsection{The \NTG{} Dutch classes}
-% \changes{v1.1}{2007/04/06}{NTG classes support added}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{ntg}{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareCaptionDefaultFont{labelfont}{\CaptionLabelFont}
-  \DeclareCaptionDefaultFont{textfont}{\CaptionTextFont}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
-%
-% \subsection{The thesis class}
-% \changes{v1.2a}{2008/01/31}{thesis class support added}
-% \changes{v1.2e}{2009/11/15}{Bugfix 09-11-14: thesis class support revised}
-%
-%    \begin{macrocode}
-\caption@ifclassloaded{thesis}{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareCaptionDefaultFormat{hang}
-  \DeclareCaptionDefaultFont{labelfont}{\cph@font}
-  \DeclareCaptionDefaultFont{textfont}{\cpb@font}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-%    \end{macrocode}
+% \section{Babel support}
 %
 % \subsection{The arabic Babel option}
 % \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
@@ -3014,8 +2866,7 @@
 % \section{Execution of options}
 %
 %    \begin{macrocode}
-\captionsetup{style=default,position=default,%
-              list,listformat=default,twoside=\if@twoside 1\else 0\fi}
+\captionsetup{style=default,position=default,listformat=default}
 %    \end{macrocode}
 %    \begin{macrocode}
 \ProcessOptions*
