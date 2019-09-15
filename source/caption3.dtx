@@ -54,7 +54,11 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage{caption3}[2019/09/09]
+\usepackage{caption3}[2019/09/14]
+%
+\DeclareRobustCommand*\eTeX{\texorpdfstring
+  {\leavevmode\hbox{$\varepsilon$}-\TeX}%
+  {e-TeX}}
 %
 \begin{document}
   \DocInput{caption3.dtx}
@@ -179,29 +183,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2019/09/10 v1.9 caption3 kernel (AR)]
-%    \end{macrocode}
-%
-% \section{Workaround for bug in package \package{arabtex}}
-% \package{arabtex} re-defines \cs{@gobble} as not-long so the packages of the
-% \package{caption} package bundle are doomed to fail.
-% Since this fatal bug won't be fixed in \package{arabtex} but we are dependent on a
-% proper definition of \cs{@gobble}, \cs{@firstofone}, \cs{@firstoftwo}, \cs{@secondoftwo},
-% and so on we fix this here. (Sigh!)
-%    \begin{macrocode}
-\providecommand\caption@FixArabTeX{%
-  \def\caption@tempa##1{}%
-  \ifx\caption@tempa\@gobble
-    \PackageInfo{caption3}{Fixing ArabTeX}%
-    \long\def\@gobble##1{}%
-  \fi}
-%    \end{macrocode}
-% Do the fix now and at |\begin{document}|, in case \package{arabtex} will be loaded after \package{caption}.
-%    \begin{macrocode}
-\caption@FixArabTeX
-\AtBeginDocument{%
-  \caption@FixArabTeX
-  \let\caption@FixArabTeX\@undefined}
+\ProvidesPackage{caption3}[2019/09/15 v1.9 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -219,26 +201,13 @@
 %
 % \begin{macro}{\l@addto@macro}
 % \changes{v1.5}{2013/04/26}{Revised}
+% \changes{v1.9}{2019/09/11}{Relies on \eTeX{} now}
 %  The \LaTeXe\ kernel offers the internal helper macro |\g@addto@macro| which
 %  globally adds tokens to existing macros, like in |\AtBeginDocument|.
 %  This is the same but it works local, not global.
 %    \begin{macrocode}
-\begingroup\expandafter\expandafter\expandafter\endgroup
-\expandafter\ifx\csname currentgrouplevel\endcsname\relax
-  \PackageInfo{caption3}{TeX engine: TeX}
-  \let\caption@ifeTeX\@secondoftwo
-  \providecommand\l@addto@macro[2]{%
-    \begingroup
-      \toks@\expandafter{#1#2}%
-      \xdef\caption@addto@temp{\the\toks@}%
-    \endgroup
-    \let#1\caption@addto@temp}
-\else
-  \PackageInfo{caption3}{TeX engine: e-TeX}
-  \let\caption@ifeTeX\@firstoftwo
-  \providecommand\l@addto@macro[2]{%
-    \edef#1{\unexpanded\expandafter{#1#2}}}
-\fi
+\providecommand\l@addto@macro[2]{%
+  \edef#1{\unexpanded\expandafter{#1#2}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -271,13 +240,15 @@
 % but takes a macro as argument instead of a macro name.
 %    \begin{macrocode}
 \newcommand*\caption@ifundefined[1]{%
-  \ifx#1\@undefined
-    \expandafter\@firstoftwo
-  \else\ifx#1\relax
-    \expandafter\expandafter\expandafter\@firstoftwo
+  \ifdefined#1%
+    \ifx#1\relax
+      \expandafter\expandafter\expandafter\@firstoftwo
+    \else
+      \expandafter\expandafter\expandafter\@secondoftwo
+    \fi
   \else
-    \expandafter\expandafter\expandafter\@secondoftwo
-  \fi\fi}
+    \expandafter\@firstoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -287,13 +258,15 @@
 % but takes a macro as argument instead of a macro name.
 %    \begin{macrocode}
 \newcommand*\caption@ifdefined[1]{%
-  \ifx#1\@undefined
-    \expandafter\@secondoftwo
-  \else\ifx#1\relax
-    \expandafter\expandafter\expandafter\@secondoftwo
+  \ifdefined#1%
+    \ifx#1\relax
+      \expandafter\expandafter\expandafter\@secondoftwo
+    \else
+      \expandafter\expandafter\expandafter\@firstoftwo
+    \fi
   \else
-    \expandafter\expandafter\expandafter\@firstoftwo
-  \fi\fi}
+    \expandafter\@secondoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -376,10 +349,10 @@
 % |\caption@for@list|\marg{cmd}\marg{code with \#1}
 %    \begin{macrocode}
 \newcommand*\caption@for@list[2]{%
-  \caption@ifempty@list#1{}{%
-    \def\caption@tempb##1{#2}%
-    \@for\caption@tempa:=#1\do{%
-      \expandafter\caption@tempb\expandafter{\caption@tempa}}}}
+  \caption@ifempty@list#1{}%
+    {\def\caption@tempb##1{#2}%
+     \@for\caption@tempa:=#1\do{%
+       \expandafter\caption@tempb\expandafter{\caption@tempa}}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -421,13 +394,11 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@set@bool[2]{%
-  \caption@ifinlist{#2}{1,true,yes,on}{%
-    \let#1\@firstoftwo
-  }{\caption@ifinlist{#2}{0,false,no,off}{%
-    \let#1\@secondoftwo
-  }{%
-    \caption@Error{Undefined boolean value `#2'}%
-  }}}
+  \caption@ifinlist{#2}{1,true,yes,on}%
+    {\let#1\@firstoftwo}%
+    {\caption@ifinlist{#2}{0,false,no,off}%
+       {\let#1\@secondoftwo}%
+       {\caption@Error{Undefined boolean value `#2'}}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@ifbool[1]{\@nameuse{caption@if#1}}
@@ -610,7 +581,8 @@
 %
 % \section{Using the keyval package}
 %
-% We need the \package{keyval} package for option handling, so we load it here.
+% We need the \package{keyval} package for option handling, so we load it here.\par
+% \emph{TODO:} Use some recent stuff instead, for example kvdefinekey and kvsetkeys.
 %    \begin{macrocode}
 \RequirePackage{keyval}[1997/11/10]
 %    \end{macrocode}
@@ -894,10 +866,10 @@
 %  12 $=$ ``other'').
 %    \begin{macrocode}
 \newcommand*\caption@addtooptlist[1]{%
-  \@ifundefined{caption@opt@#1@lineno}{%
-    \caption@dooptlist\caption@g@addto@list{#1}%
-    \expandafter\xdef\csname caption@opt@#1@lineno\endcsname{\the\inputlineno}%
-  }{}}
+  \@ifundefined{caption@opt@#1@lineno}%
+    {\caption@dooptlist\caption@g@addto@list{#1}%
+     \expandafter\xdef\csname caption@opt@#1@lineno\endcsname{\the\inputlineno}}%
+    {}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@removefromoptlist[1]{%
@@ -913,10 +885,10 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \AtEndDocument{%
-  \caption@for@list\caption@optlist{%
-    \caption@WarningNoLine{%
-      Unused \string\captionsetup[#1]
-      on input line \csname caption@opt@#1@lineno\endcsname}}}
+  \caption@for@list\caption@optlist
+    {\caption@WarningNoLine{%
+       Unused \string\captionsetup[#1]
+       on input line \csname caption@opt@#1@lineno\endcsname}}}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1074,6 +1046,83 @@
   \caption@packagelist
   \@tempa}
 \@onlypreamble\caption@onefilewithoptions
+%    \end{macrocode}
+% \end{macro}
+%
+% \section{Declaring and setting key values}
+%
+% \begin{macro}{\caption@decl}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@decl[3][\def]{%
+  \caption@ifinlist{#3}{,default,default@value}%
+    {\caption@Error{`#3' should not be used as name for `#2'}%
+     \long#1\caption@tempa}%
+    {\global\long\expandafter#1\csname caption@#2@#3\endcsname}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifdecl}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@ifdecl[2]{%
+  \@ifundefined{caption@#1@#2}\@secondoftwo\@firstoftwo}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checkdecl}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@checkdecl[2]{%
+  \@ifundefined{caption@#1@#2}%
+    {\caption@Error{Undefined #1 `#2'}%
+     \@gobble}%
+    \@firstofone}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@decl}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@set{%
+  \@dblarg\caption@@set}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@set[#1]#2#3{%
+  \caption@checkdecl{#1}{#3}%
+    {\expandafter\let\csname caption@#2\expandafter\endcsname\csname caption@#1@#3\endcsname}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setdefault}
+% \changes{v1.9}{2018/05/13}{This macro added}
+%  |\caption@setdefault|\marg{option}\marg{name}
+%%% TODO: \SetCaptionDefault[box]{parbox}{parbox}
+%    \begin{macrocode}
+\newcommand*\caption@setdefault{%
+  \@dblarg\caption@@setdefault}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@setdefault[#1]#2#3{%
+  \caption@checkdecl{#1}{#3}%
+    {\@namedef{caption@#2@default}{\caption@default[#1]{#2}}%
+     \@namedef{caption@#2@default@value}{#3}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@default}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\def\caption@default[#1]#2{%
+  \@nameuse{caption@#1@\@nameuse{caption@#2@default@value}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefault}
+% \changes{v1.9}{2019/09/10}{This macro added}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefault{\caption@setdefault}
+\@onlypreamble\SetCaptionDefault
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1343,16 +1392,16 @@
 % \changes{v1.0f}{2005/08/22}{Undocumented defaults for \opt{parindent=},
 %        \opt{hangindent=}, and \opt{parskip=} removed}
 %    \begin{macrocode}
-\DeclareCaptionOption{indent}[\leftmargini]{% obsolete!
-       \setlength\caption@indent{#1}}
+\DeclareCaptionOption{indent}[\leftmargini]{% obsolete
+  \setlength\caption@indent{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
-       \setlength\caption@indent{#1}}
+  \setlength\caption@indent{#1}}
 \DeclareCaptionOption{parindent}{%
-       \setlength\caption@parindent{#1}}
+  \setlength\caption@parindent{#1}}
 \DeclareCaptionOption{hangindent}{%
-       \setlength\caption@hangindent{#1}}
+  \setlength\caption@hangindent{#1}}
 \DeclareCaptionOption{parskip}{%
-       \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
+  \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 %    \end{macrocode}
 %
 % \section{Styles}
@@ -1368,8 +1417,9 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@declarestyle#1[#2]#3{%
-  \global\@namedef{caption@sls@#1}{#2}%
-  \global\@namedef{caption@sty@#1}{#3}}
+  \caption@decl{style}{#1}%
+    {\def\caption@sls{#2}%
+     \def\caption@sty{#3}}}
 \@onlypreamble\caption@declarestyle
 %    \end{macrocode}
 % \end{macro}
@@ -1396,24 +1446,16 @@
 %  defined.
 %    \begin{macrocode}
 \newcommand*\caption@setstyle{%
-  \caption@teststar\caption@@setstyle\@gobble\@firstofone}
+  \caption@teststar\caption@@setstyle\caption@ifdecl\caption@checkdecl}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@setstyle[2]{%
-  \@ifundefined{caption@sty@#2}%
-    {#1{\caption@Error{Undefined style `#2'}}}%
-    {\expandafter\let\expandafter\caption@sty\csname caption@sty@#2\endcsname
-     \ifx\caption@setstyle@flag\@undefined
-       \let\caption@setstyle@flag\relax
-       \caption@resetstyle
-       \caption@xsetup\caption@sty
-       \let\caption@setstyle@flag\@undefined
-     \else
-       \caption@xsetup\caption@sty
-     \fi
-     \expandafter\let\expandafter\caption@sls\csname caption@sls@#2\endcsname
-     \expandafter\caption@l@addto@list\expandafter\caption@opt@singleline
-       \expandafter{\caption@sls}}}
+  #1{style}{#2}%
+    {\caption@set{style}{#2}%
+     \caption@style % defines \caption@sty & \caption@sls
+     \caption@resetstyle
+     \caption@xsetup\caption@sty}%
+    {}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1435,8 +1477,7 @@
     justification=justified,font=,size=,labelfont=,textfont=,%
     margin=0pt,minmargin=0,maxmargin=0,%
     indent=0pt,parindent=0pt,hangindent=0pt,%
-    slc,rule,strut}%
-  \caption@clearsetup{singleline}}
+    slc,rule,strut}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1452,58 +1493,39 @@
 % class actually used.
 %    \begin{macrocode}
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
-\DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
+\DeclareCaptionStyle{@default}[indent=0pt,justification=centering]{%
   box=default,format=default,labelsep=default,textformat=default,%
-  justification=default,font=default,size=default,labelfont=default,textfont=default,%
-  slc=default}
+  justification=default,font=default,size=default,labelfont=default,%
+  textfont=default,slc=default}
+\SetCaptionDefault{style}{@default}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setdefault}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\caption@setdefault|\marg{option}\marg{name}
 %    \begin{macrocode}
-\newcommand*\caption@setdefault[2]{%
-  \@namedef{caption@#1@default}{\@nameuse{caption@#1@#2}}}
+\newcommand*\DeclareCaptionSinglelinecheck[2]{%
+  \caption@decl{singlelinecheck}{#1}{#2}}
+\@onlypreamble\DeclareCaptionSinglelinecheck
 %    \end{macrocode}
-% \end{macro}
 %
 % \changes{v1.2b}{2008/05/06}{Option \opt{slc=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{singlelinecheck}[1]{\caption@setslc{#1}}
+\DeclareCaptionOption{singlelinecheck}[1]{\caption@setsinglelinecheck{#1}}
 \DeclareCaptionOption{slc}[1]{\KV@caption@singlelinecheck{#1}}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setslc}
+% `default' usually maps to `on'.
+%    \begin{macrocode}
+\DeclareCaptionSinglelinecheck{@default}{\@firstoftwo}
+\SetCaptionDefault{singlelinecheck}{@default}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@setsinglelinecheck}
 % \changes{v1.9}{2018/03/13}{This macro added}
-%  |\caption@setslc|\marg{boolean}
+%  |\caption@setsinglelinecheck|\marg{value}
 %    \begin{macrocode}
-\newcommand*\caption@setslc[1]{%
-  \caption@ifinlist{#1}{d,default}{%
-    \def\caption@ifslc{\caption@ifslc@default}%
-  }{%
-    \caption@set@bool\caption@ifslc{#1}%
-  }}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\DeclareCaptionDefaultSinglelinecheck}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\DeclareCaptionDefaultSinglelinecheck|\marg{code}\\
-%  The code given should expand to either |\@firstoftwo| or |\@secondoftwo|.
-%    \begin{macrocode}
-\newcommand*\DeclareCaptionDefaultSinglelinecheck[1]{%
-  \def\caption@ifslc@default{#1}}
-\@onlypreamble\DeclareCaptionDefaultSinglelinecheck
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\SetCaptionDefaultSinglelinecheck}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\SetCaptionDefaultSinglelinecheck|\marg{boolean}
-%    \begin{macrocode}
-\newcommand*\SetCaptionDefaultSinglelinecheck{%
-  \caption@set@bool\caption@ifslc@default}
-\@onlypreamble\SetCaptionDefaultSinglelinecheck
+\newcommand*\caption@setsinglelinecheck[1]{%
+  \caption@ifdecl{singlelinecheck}{#1}%
+    {\caption@set{singlelinecheck}{#1}}%
+    {\caption@set@bool\caption@singlelinecheck{#1}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1514,42 +1536,17 @@
 %  |\DeclareCaptionBox|\marg{name}\marg{code with \#1 and \#2}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionBox[2]{%
-  \global\long\@namedef{caption@box@#1}##1##2{#2}}
+  \caption@decl{box}{#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\SetCaptionDefaultBox}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\SetCaptionDefaultBox|\marg{name}
-%    \begin{macrocode}
-\newcommand*\SetCaptionDefaultBox{%
-  \caption@setdefault{box}}
-\@onlypreamble\SetCaptionDefaultBox
 %    \end{macrocode}
 % \end{macro}
 %
 % \changes{v1.5}{2012/03/15}{Option \opt{box=} added}
 % \changes{v1.6}{2013/05/01}{Option \opt{parbox=} added}
 %    \begin{macrocode}
-\DeclareCaptionOption{box}{\caption@setbox{#1}}
-\DeclareCaptionOption{parbox}{\caption@set@box\caption@parbox{#1}}
+\DeclareCaptionOption{box}{\caption@set{box}{#1}}
+\DeclareCaptionOption{parbox}{\caption@set[box]{parbox}{#1}}
 %    \end{macrocode}
-%
-% \begin{macro}{\caption@setbox}
-%  |\caption@setbox|\marg{name}\par
-%  Selecting a caption box simply means saving the code (in |\caption@box|).
-%    \begin{macrocode}
-\newcommand*\caption@setbox{%
-  \caption@set@box\caption@box}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@set@box[2]{%
-  \@ifundefined{caption@box@#2}%
-    {\caption@Error{Undefined box `#2'}}%
-    {\expandafter\let\expandafter#1\csname caption@box@#2\endcsname}}
-%    \end{macrocode}
-% \end{macro}
 %
 % There are four pre-defined boxes, called `empty', `none',
 % `parbox', and `colorbox'.
@@ -1575,6 +1572,12 @@
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
 %    \end{macrocode}
 %
+% `default' usually maps to `none' resp.~`parbox'.
+%    \begin{macrocode}
+\SetCaptionDefault{box}{none}
+\SetCaptionDefault[box]{parbox}{parbox}
+%    \end{macrocode}
+%
 % \section{Formats}
 %
 % \begin{macro}{\DeclareCaptionFormat}
@@ -1598,44 +1601,17 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@@declareformat#1#2[#3]#4{%
-  \global\expandafter\let\csname caption@ifh@#2\endcsname#1%
-  \global\long\@namedef{caption@slfmt@#2}##1##2##3{#3}%
-  \global\long\@namedef{caption@fmt@#2}##1##2##3{#4}}
+  \caption@decl[\edef]{format}{#2}{%
+    \unexpanded{\let\caption@ifh#1}%
+    \unexpanded{\long\def\caption@slfmt}####1####2####3\unexpanded{{#3}}%
+    \unexpanded{\long\def\caption@fmt}####1####2####3\unexpanded{{#4}}}}
 \@onlypreamble\caption@@declareformat
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-\DeclareCaptionOption{format}{\caption@setformat{#1}}
+\DeclareCaptionOption{format}{\caption@set{format}{#1}\caption@format}
 %    \end{macrocode}
-%
-% \begin{macro}{\caption@setformat}
-%  |\caption@setformat|\marg{name}\par
-%  Selecting a caption format simply means saving the code (in |\caption@fmt|)
-%  and if the code should be used in horizontal or vertical mode (|\caption@ifh|).
-%    \begin{macrocode}
-\newcommand*\caption@setformat[1]{%
-  \@ifundefined{caption@fmt@#1}%
-    {\caption@Error{Undefined format `#1'}}%
-    {\expandafter\let\expandafter\caption@ifh\csname caption@ifh@#1\endcsname
-     \expandafter\let\expandafter\caption@slfmt\csname caption@slfmt@#1\endcsname
-     \expandafter\let\expandafter\caption@fmt\csname caption@fmt@#1\endcsname}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\SetCaptionDefaultFormat}
-% \changes{v1.0d}{2005/04/28}{Bugfix 05-04-28: Missing \cs{caption@ifh@default} added}
-% \changes{v1.2a}{2008/01/31}{This macro added}
-% \changes{v1.9}{2018/05/13}{Renamed from \cs{DeclareCaptionDefaultFormat} to \cs{SetCaptionDefaultFormat}}
-%  |\SetCaptionDefaultFormat|\marg{name}
-%    \begin{macrocode}
-\newcommand*\SetCaptionDefaultFormat[1]{%
-  \caption@setdefault{fmt}{#1}%
-  \caption@setdefault{slfmt}{#1}%
-  \caption@setdefault{ifh}{#1}}
-\@onlypreamble\SetCaptionDefaultFormat
-%    \end{macrocode}
-% \end{macro}
 %
 % \changes{v1.0a}{2004/01/23}{%
 %         Caption format \opt{default} renamed to \opt{normal}}
@@ -1661,6 +1637,11 @@
      \caption@@par#3\par}}
 %    \end{macrocode}
 %
+% `default' usually maps to `plain'.
+%    \begin{macrocode}
+\SetCaptionDefault{format}{plain}
+%    \end{macrocode}
+%
 % \section{Label formats}
 %
 % \begin{macro}{\DeclareCaptionLabelFormat}
@@ -1669,44 +1650,14 @@
 %  |\DeclareCaptionLabelFormat|\marg{name}\marg{code with \#1 and \#2}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionLabelFormat[2]{%
-  \global\@namedef{caption@lfmt@#1}##1##2{#2}}
+  \caption@decl{labelformat}{#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionLabelFormat
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultLabelFormat}
-% \changes{v1.9}{2018/05/13}{This macro added}
-% \changes{v1.9}{2018/05/24}{Starred form added}
-%  |\SetCaptionDefaultLabelFormat*|\marg{name}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultLabelFormat{%
-  \caption@teststar\caption@setdefaultlabelformat
-    {\ifx\caption@lfmt\caption@lfmt@default\else}%
-    {\iftrue}}
-\@onlypreamble\SetCaptionDefaultLabelFormat
+\DeclareCaptionOption{labelformat}{\caption@set{labelformat}{#1}}
 %    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@setdefaultlabelformat[1]{%
-  \def\caption@iflfmt@default{#1}%
-  \caption@setdefault{lfmt}}
-\@onlypreamble\caption@setdefaultlabelformat
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-\DeclareCaptionOption{labelformat}{\caption@setlabelformat{#1}}
-%    \end{macrocode}
-%
-% \begin{macro}{\caption@setlabelformat}
-%  |\caption@setlabelformat|\marg{name}\par
-%  Selecting a caption label format simply means saving the code (in |\caption@lfmt|).
-%    \begin{macrocode}
-\newcommand*\caption@setlabelformat[1]{%
-  \@ifundefined{caption@lfmt@#1}%
-    {\caption@Error{Undefined label format `#1'}}%
-    {\expandafter\let\expandafter\caption@lfmt\csname caption@lfmt@#1\endcsname}}
-%    \end{macrocode}
-% \end{macro}
 %
 % \changes{v1.2}{2007/12/16}{Caption label format \opt{brace} added}
 % \changes{v1.7}{2015/09/16}{Caption label format \opt{autodot} added}
@@ -1721,6 +1672,11 @@
 \DeclareCaptionLabelFormat{brace}{\bothIfFirst{#1}{\nobreakspace}#2)}
 \DeclareCaptionLabelFormat{autodot}{\bothIfFirst{#1}{\nobreakspace}#2\autodot}
 \DeclareCaptionLabelFormat{unnumbered}{#1}
+%    \end{macrocode}
+%
+% `default' usually maps to `simple'.
+%    \begin{macrocode}
+\SetCaptionDefault{labelformat}{simple}
 %    \end{macrocode}
 %
 % \section{Label separators}
@@ -1761,8 +1717,9 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@declarelabelseparator[3]{%
-  \global\@namedef{caption@iflf@#2}{#1}%
-  \global\long\@namedef{caption@lsep@#2}{#3}%
+  \caption@decl{labelseparator}{#2}%
+    {\def\caption@iflf{#1}%
+     \def\caption@lsep{#3}}%
   \caption@@declarelabelseparator{#2}#3\\\@nil}
 \@onlypreamble\caption@declarelabelseparator
 %    \end{macrocode}
@@ -1775,35 +1732,10 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultLabelSeparator}
-% \changes{v1.2d}{2009/03/29}{This macro added}
-% \changes{v1.9}{2018/05/13}{Renamed from \cs{caption@set@default@labelsep} to \cs{SetCaptionDefaultLabelSeparator}}
-%  |\SetCaptionDefaultLabelSeparator|\marg{name}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultLabelSeparator[1]{%
-  \caption@setdefault{lsep}{#1}%
-  \caption@setdefault{iflf}{#1}}
-\@onlypreamble\SetCaptionDefaultLabelSeparator
+\DeclareCaptionOption{labelsep}{\caption@set{labelseparator}{#1}}
+\DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-\DeclareCaptionOption{labelsep}{\caption@setlabelseparator{#1}}
-\DeclareCaptionOption{labelseparator}{\caption@setlabelseparator{#1}}
-%    \end{macrocode}
-%
-% \begin{macro}{\caption@setlabelseparator}
-%  |\caption@setlabelseparator|\marg{name}\par
-%  Selecting a caption label separator simply means saving the code (in |\caption@lsep|).
-%    \begin{macrocode}
-\newcommand*\caption@setlabelseparator[1]{%
-  \@ifundefined{caption@lsep@#1}%
-    {\caption@Error{Undefined label separator `#1'}}%
-    {\edef\caption@lsepname{#1}%
-     \expandafter\let\expandafter\caption@iflf\csname caption@iflf@#1\endcsname
-     \expandafter\let\expandafter\caption@lsep\csname caption@lsep@#1\endcsname}}
-%    \end{macrocode}
-% \end{macro}
 %
 % \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator
 %         \opt{newline} implementation changed from \cs{newline} to \cs{\textbackslash}}
@@ -1820,6 +1752,11 @@
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 %    \end{macrocode}
 %
+% `default' usually maps to `colon'.
+%    \begin{macrocode}
+\SetCaptionDefault{labelseparator}{colon}
+%    \end{macrocode}
+%
 % \section{Text formats}
 %
 % \begin{macro}{\DeclareCaptionTextFormat}
@@ -1827,38 +1764,14 @@
 %  |\DeclareCaptionTextFormat|\marg{name}\marg{code with \#1}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionTextFormat[2]{%
-  \global\long\@namedef{caption@tfmt@#1}##1{#2}}
+  \caption@decl{textformat}{#1}##1{#2}}
 \@onlypreamble\DeclareCaptionTextFormat
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultTextFormat}
-% \changes{v1.9}{2018/05/13}{This macro added}
-%  |\SetCaptionDefaultTextFormat|\marg{name}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultTextFormat{%
-  \caption@setdefault{tfmt}}
-\@onlypreamble\SetCaptionDefaultTextFormat
+\DeclareCaptionOption{textformat}{\caption@set{textformat}{#1}}
 %    \end{macrocode}
-% \end{macro}
-%
-% \changes{v1.0c}{2005/02/12}{Option \opt{strut=} added}
-%    \begin{macrocode}
-\DeclareCaptionOption{textformat}{\caption@settextformat{#1}}
-\DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
-%    \end{macrocode}
-%
-% \begin{macro}{\caption@settextformat}
-% \changes{v1.0j}{2007/02/18}{This macro added}
-%  |\caption@settextformat|\marg{name}\par
-%  Selecting a caption text format simply means saving the code (in |\caption@tfmt|).
-%    \begin{macrocode}
-\newcommand*\caption@settextformat[1]{%
-  \@ifundefined{caption@tfmt@#1}%
-    {\caption@Error{Undefined text format `#1'}}%
-    {\expandafter\let\expandafter\caption@tfmt\csname caption@tfmt@#1\endcsname}}
-%    \end{macrocode}
-% \end{macro}
 %
 % There are three pre-defined text formats, called `empty', `simple' and `period'.
 % \changes{v1.4}{2011/10/05}{Pre-defined text format `empty' added}
@@ -1879,6 +1792,11 @@
 %    \begin{macrocode}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
+%    \end{macrocode}
+%
+% `default' usually maps to `simple'.
+%    \begin{macrocode}
+\SetCaptionDefault{textformat}{simple}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@getlabel}
@@ -1922,6 +1840,11 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \changes{v1.0c}{2005/02/12}{Option \opt{strut=} added}
+%    \begin{macrocode}
+\DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
+%    \end{macrocode}
+%
 % \section{Fonts}
 %
 % \begin{macro}{\DeclareCaptionFont}
@@ -1933,18 +1856,8 @@
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionFont[2]{%
   \define@key{caption@fnt}{#1}[]{\l@addto@macro\caption@fnt{#2}}}
+%%%  \caption@decl{fnt}{#1}{#2}}
 \@onlypreamble\DeclareCaptionFont
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\DeclareCaptionDefaultFont}
-% \changes{v1.1}{2006/05/14}{This macro added}
-% \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionFont} to \cs{DeclareCaptionDefaultFont}}
-%  |\DeclareCaptionDefaultFont|\marg{name}\marg{code}
-%    \begin{macrocode}
-\newcommand*\DeclareCaptionDefaultFont[2]{%
-  \global\@namedef{caption#1@default}{#2}}
-\@onlypreamble\DeclareCaptionDefaultFont
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1969,6 +1882,7 @@
 %  in |\caption|\meta{name}.
 %    \begin{macrocode}
 \newcommand*\caption@setfont[1]{%
+% TODO: ... xxx \xxx
   \expandafter\let\csname caption#1\endcsname\@empty
   \caption@addtofont{#1}}
 %    \end{macrocode}
@@ -3177,7 +3091,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@singleline{%
-  \caption@xsetup\caption@opt@singleline
+  \caption@xsetup\caption@sls
   \let\caption@fmt\caption@slfmt}
 %    \end{macrocode}
 % \end{macro}
