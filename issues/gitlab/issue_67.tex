@@ -1,0 +1,60 @@
+% Issue: 67
+% Title: \DeclareCaptionLabelFormat not working
+% Date:  Dec 16, 2019 2:15pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/67
+
+% https://tex.stackexchange.com/questions/520606/declarecaptionlabelformat-not-working
+
+% The float package uses `\fname@#1` to store the prosa name instead of `\#1name`. This needs to be taken into consideration when calling macros declared with `\DeclareCaptionLabelFormat`.
+
+\documentclass{article}
+
+\usepackage{caption}
+\usepackage{float}
+
+\floatstyle{plaintop}
+\newfloat{graph}{tbph}{loh}
+\floatname{graph}{Graph}
+
+\DeclareCaptionLabelFormat{test}{%
+  \xdef\firstarg{#1}%
+  #1 #2}
+%\captionsetup[graph]{labelformat=test}
+\captionsetup{labelformat=test}
+
+\newcommand\test[1]{%
+    \def\temp{#1}%
+    \ifx\temp\firstarg
+      \typeout{#1 test passed}%
+    \else
+      \typeout{*** #1 test failed}%
+      \show\firstarg
+    \fi}
+
+\restylefloat{figure}
+\floatname{figure}{Fig.} % does not have an effect w/o caption package => [1]
+
+\restylefloat{Table}
+\renewcommand\tablename{Tab.} % does have an effect w/o caption package => [1]
+
+% [1] \fname@#1 should only be used if \#1name isn't defined yet
+
+\begin{document}
+
+    \begin{graph}[h]
+    \caption{Testing}
+    \end{graph}
+    \test{Graph}
+
+    \begin{figure}[h]
+    \caption{Testing}
+    \end{figure}
+    \test{Figure}
+
+    \begin{table}[h]
+    \caption{Testing}
+    \end{table}
+    \test{Tab.}
+
+\end{document}
+
