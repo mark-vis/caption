@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2973}
+% \CheckSum{3012}
 %
 % \iffalse
 %<*driver>
@@ -215,13 +215,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/12/16 v3.4b Customizing captions (AR)]
+\ProvidesPackage{caption}[2019/12/31 v3.4c Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2019/09/09] % needs v1.8e or newer
+\RequirePackage{caption3}[2019/12/31] % needs v1.8f or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -3320,25 +3320,69 @@
 % \changes{v3.1g}{2008/01/20}{Bugfix: Skips are handled correctly now}
 % \changes{v3.1k}{2008/03/29}{Bugfix 08-10-16-dctt: \texttt{rule=0} added}
 % \changes{v3.2}{2010/10/26}{Bugfix 10-07-20a: Set \cs{hsize} to \cs{linewidth}, if necessary}
+% \changes{v3.4c}{2019/12/31}{Ugly workaround for usage in lists added}
 %  To support the \package{listings} package we need to redefine
 %  |\lst@MakeCaption| so the original stuff is nested with
-%  |\caption@begin| and |\caption@end| etc.
-%  \Note{This macro is always called twice (with `t' resp. `b' as
-%    parameter), therefore we need an extra group here.}
+%  |\caption@begin| and |\caption@end| etc.\par
+%  Unfortunately |\lst@MakeCaption| is sometimes used with |\linewidth| intact but sometimes with |\linewidth| adapted.
+%  So we either could write a bunch of very ugly code which is using internals of the \package{listings} package, or
+%  we could simply ignore this fact since |\hsize| will be left untouched by the \package{listings} package.
+%  (This is reason why the caption is mis-aligned when using one of the options |linewidth=|, |xleftmargin=|, |yleftmargin=|, or |resetmargins=|,
+%   even the \package{caption} package isn't used. This needs to be fixed within the \package{listings} package, for example by using
+%   |\lst@MakeCaption| inside a parbox of correct width.)
+%
+% The \package{listings} package calls |\lst@MakeCaption| sometimes with original |\linewidth|, sometimes with adapted |\linewidth|.
+% So we need to detect if |\linewidth| is already adapted or not.
+% We realize this by setting a flag inside the "Init" hook of the \package{listings} package (where the adaption takes place).
+%    \begin{macrocode}
+%%  \caption@setbool{lst@Init}{0}%
+%%  \lst@AddToHook{Init}{\caption@setbool{lst@Init}{1}}%
+%    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
   \def\lst@MakeCaption#1{% #1 is `t' or `b'
+%    \end{macrocode}
+% This macro is always called twice (with `t' resp. `b' as parameter), therefore we need an extra group here.
+%    \begin{macrocode}
     \begingroup
 %    \end{macrocode}
-% Workaround for bug in \package{listings} package:
-% If |\hsize| seems not to be set correctly, we set it to |\linewidth|.
-% \changes{v3.3}{2018/04/30}{Bugfix from Ulrike Fischer applied, see also \url{https://github.com/axelsommerfeldt/caption/issues/1}}
 %    \begin{macrocode}
-      \@tempdima\linewidth
-      \advance\@tempdima\lst@xleftmargin
-      \advance\@tempdima\lst@xrightmargin
-      \ifdim\hsize>\@tempdima
-        \hsize\@tempdima
+%%      \caption@Debug{%
+%%        linewidth=\lst@linewidth,
+%%        xleftmargin=\lst@xleftmargin,\MessageBreak
+%%        xrightmargin=\lst@xrightmargin,
+%%        resetmargins=\lst@ifresetmargins true\else false\fi}%
+%    \end{macrocode}
+% If |\linewidth| isn't adapted by the \package{listings} package yet, do the adaption here.
+%    \begin{macrocode}
+%%      \caption@iflst@Init{}{%\lsthk@PreInit\lsthk@Init => has unwanted side-effects (like an extra horizontal line)
+%%        \linewidth\lst@linewidth\relax
+%%        \lst@ifresetmargins
+%%          \advance\linewidth\@totalleftmargin
+%%          \advance\linewidth\rightmargin
+%%          \@totalleftmargin\z@
+%%        \fi
+%%        \advance\linewidth-\lst@xleftmargin
+%%        \advance\linewidth-\lst@xrightmargin
+%%        \advance\@totalleftmargin\lst@xleftmargin\relax}%
+%    \end{macrocode}
+% Add the extra margins to |\linewidth| again.
+% As an alternative we could add horizontal space of |\lst@xleftmargin| here,
+% But this stuff is more consistent with the look+feel of the caption w/o caption package.
+%    \begin{macrocode}
+%%      \advance\linewidth\lst@xleftmargin
+%%      \advance\linewidth\lst@xrightmargin
+%    \end{macrocode}
+% Lists (like |enumerate|) do not adapt |\hsize|.
+% Instead |\linewidth| is used, but since we decided to ignore it we need a very ugly work-around here
+% to support listings inside lists. (Note that we cannot use |\@totalleftmargin| since it could be
+% resetted by the \package{listings} package.)
+% This does not result in correct justification of the caption, but captions inside listings inside
+% lists are not justified correctly anyway. Again, this needs to be fixed by the \package{listings} package.
+%    \begin{macrocode}
+      \ifnum\@listdepth>0\relax
+        \advance\hsize-\leftmargin
+        \advance\hsize-\rightmargin
       \fi
 %    \end{macrocode}
 % First of all, we set |position=#1| and if it was set to `top',
