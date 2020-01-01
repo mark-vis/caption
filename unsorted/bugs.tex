@@ -1,0 +1,3086 @@
+\listfiles
+\documentclass{article}
+\hbadness=10000 \newcount\hbadness \hfuzz=\maxdimen % Make TeX shut up.
+
+%\usepackage{pkgindoc}
+\makeatletter
+\let\@onlypreamble\@gobble
+\makeatother
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\usepackage{booktabs}
+\usepackage{array,chngpage}
+\usepackage[demo]{graphicx}
+
+\usepackage{caption,float,longtable,subfig}
+\usepackage{algorithm2e}
+
+\newcommand*\bug[1]{%
+  \clearpage\section*{Bug #1}\noindent
+  \bugi}
+\newcommand*\bugi[2][]{%
+  \def\temp{#1}\ifx\temp\empty
+    \textit{(solved in #2)}
+  \else
+    \textit{(introduced in #1, solved in #2)}
+  \fi
+  \par\noindent\ignorespaces}
+\newenvironment{example}{\medskip\hrule\nopagebreak\captionsetup}{\nopagebreak\hrule}
+
+\begin{document}
+
+%******************************************************************************%
+
+\bug{04-01-17}{v3.0a}
+
+\begin{verbatim}
+Date: Sat, 17 Jan 2004 12:24:25 +0100
+From: Frank Mittelbach <frank.mittelbach@latex-project.org>
+Reply-To: Frank Mittelbach <frank.mittelbach@latex-project.org>
+To: Steven Douglas Cochran <Steven_Douglas_Cochran@maps.cs.cmu.edu>
+Cc: Axel Sommerfeldt <axel@sommerfeldt.net>,
+	David Carlisle <davidc@nag.co.uk>,
+	Harald Harders <h.harders@tu-bs.de>
+Subject: Re: Update: The subfig package 1.1
+
+[...]
+that would work except that it shows a bug in the caption package (sorry
+Axel). The caption package doesn't allow
+
+  \captionsetup[table]   {position=top,aboveskip=5pt}
+
+ie spaces between the option argument and the main argument.
+The reason is the following definition:
+
+%FMi need to pass arg #2 or spaces might show up in def!
+\def\caption@setuptype[#1]#2{%
+  \@ifundefined{caption@typ@#1}%
+%FMi missing percent
+    {\@namedef{caption@typ@#1}{#2}}%
+    {\expandafter\l@addto@macro\csname caption@typ@#1\endcsname,%
+     \expandafter\l@addto@macro\csname caption@typ@#1\endcsname{#2}}}
+
+the missing percent is not important (it only save space) but one has to pass
+#2 otherwise \@namedef will actually define a macro
+
+ \caption@typ@table 
+
+that has to be followed by a space
+
+Axel, can you please fix that since one should always be allowed to put spaces
+in such a place without doing any harm
+
+thanks
+frank
+\end{verbatim}
+
+\begingroup
+\captionsetup[table]   {position=top,aboveskip=5pt}
+\DeclareCaptionLabelSeparator{period-newline}  {.\newline}
+\endgroup
+
+%******************************************************************************%
+
+\bug{04-05-05}{v3.0b}
+\bugi[v3.0j]{v3.0l}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: subfig und caption mit format=hang
+Date: Wed, 5 May 2004 20:52:12 +0200
+Message-ID: <s4db7c.pm3.ln@pjl.fqdn.th-h.de>
+
+Hallo,
+
+mal wieder ein kleines Problem:
+Beim u.a. Minimalbeispiel werden nicht nur die Folgezeilen der Legende,
+sondern bereits die erste Zeile _inklusive_ "Numerierung" eingezogen.
+Sieht etwa so aus:
+
++----------+
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
+|          |
++----------+
+
+  (a) laaaaaaaaaaang
+  kurz kurz
+  kurz 
+
+Mache ich "laaaaaaaang" kürzer, fängt die Legende schön linksbündig an.
+
+Das Beispiel:
+
+\documentclass{article}
+\usepackage[format=hang]{caption}
+\usepackage{subfig}
+\listfiles
+\begin{document}
+\begin{figure}
+\subfloat[laaaaaaaaaaaaaaaaang kurz kurz kurz]{\rule{2cm}{5cm}}
+\end{figure}
+\end{document}
+
+Die fraglichen Pakete sind m.E. auf dem neusten Stand:
+ article.cls    2001/04/21 v1.4e Standard LaTeX document class
+  size10.clo    2001/04/21 v1.4e Standard LaTeX file (size option)
+ caption.sty    2004/01/23 v3.0a Customising captions (AS)
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+  subfig.sty    2004/01/28 ver: 1.2 subfig package
+ragged2e.sty    1999/06/08 v1.02 Ragged2e Package (MS)
+everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+
+Weiß jemand Abhilfe?
+
+Danke,
+Peter
+\end{verbatim}
+
+\begin{example}{format=hang}
+%\captionsetup[figure]{twoside=false}
+
+\begin{figure}[H]
+\subfloat[laaaaaaaaaaaaaaaaang kurz kurz kurz]{\rule{2cm}{5cm}}
+\end{figure}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{04-05-06}{v3.0b}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Re: subfig und caption mit format=hang
+Date: Thu, 6 May 2004 14:24:26 +0200
+Message-ID: <qpad7c.942.ln@pjl.fqdn.th-h.de>
+
+Hallo Axel,
+
+Axel Sommerfeldt <sommerfee@despammed.com> wrote:
+> 
+> Dann sollte es gehen. Magst du das mal ausprobieren und bestätigen? Das 
+> wäre nett.
+
+Das leistet das Verlangte. Allerdings gibt es noch folgende Unschönheit:
+Im ersten Wort der Legende findet keine Silbentrennung statt, selbst
+dann nicht, wenn man einen trennbaren Text wählt (das erste Bsp. war in
+dieser Hinsicht suboptimal). Lasse ich "format=hang" weg, wird getrennt!
+
+Das neue Beispiel:
+
+\documentclass{article}
+\usepackage{caption}
+\usepackage[format=hang]{subfig}
+\begin{document}
+\begin{figure}
+\subfloat[Donaudampfschifffahrtsgesellschaft]{\rule{2cm}{5cm}}
+\end{figure}
+\end{document}
+
+Peter
+\end{verbatim}
+
+\begin{example}{format=hang}
+
+\hyphenation{Do-nau-dampf-schiff-fahrts-ge-sell-schaft}
+\begin{figure}[H]
+\subfloat[Donaudampfschifffahrtsgesellschaft]{\rule{2cm}{5cm}}
+\end{figure}
+%\begin{figure}[H]
+%\subfloat[Donaudampfschifffahrtsgesellschaft Donaudampfschifffahrtsgesellschaft Donaudampfschifffahrtsgesellschaft]{\rule{2cm}{5cm}}
+%\end{figure}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{04-07-15}[v3.0b]{v3.0c}
+
+\begin{verbatim}
+Newsgroups: comp.text.tex
+Subject: Compile error with TLC2 6-5-15.ltx
+Date: Thu, 15 Jul 2004 09:42:47 -0700
+Message-ID: <qlcdf01sk66hjm3da7kdi5mvip2htsv7r1@4ax.com>
+
+The following statements are belong to the log file.
+My caption.sty is made at 5/16/2004. Do you know what is wrong with
+it?
+
+! Undefined control sequence.
+<argument> \SC@CAPsetup 
+                        
+l.33 \end{SCtable}
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{04-08-04}{v3.0d}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Date: Wed, 4 Aug 2004 08:15:02 +0200
+Message-ID: <41107ee6$0$412$ba620e4c@news.skynet.be>
+Subject: caption +longtable
+
+1. Caption klebt an der Longtable (als Vergleich hab ich noch eine 
+normale Tabelle mitgepostet)
+2. Stilistische Frage: würdet ihr den Seitenumbruch in der Longtable 
+anders gestalten?
+
+Danke für die Mühe.
+
+Package: scrlfile 2004/01/07 v2.9p LaTeX2e KOMA package
+Package: booktabs 2003/03/28 v1.618 publication quality tables
+Package: longtable 2004/02/01 v4.11 Multi-page Table package (DPC)
+Package: caption 2004/05/16 v3.0b Customising captions (AS)
+
+
+\documentclass[pdftex, headsepline]{scrbook}
+
+\usepackage[ngerman]{babel}
+\usepackage[applemac]{inputenc}
+\usepackage[T1]{fontenc}	
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage[indention=1em,font=small,labelfont=bf,margin=1.5em,parindent=1em]{caption}
+\newcommand{\ebf}[1]{{\emph{\textbf{#1}}}}
+
+\begin{document}
+
+\begin{table}[htbp]
+\setlength{\tabcolsep}{0.3em}
+\footnotesize
+\centering
+\begin{tabular}{@{} *{11}{l} @{}}
+	\toprule
+	\multicolumn{11}{@{} l @{}}{\ebf{Ziel:} Happy TeXing} \\
+	\midrule
+	\ebf{OR}	& 1.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+	\bottomrule
+\end{tabular}
+\caption{Happy TeXing: de.comp.text.tex}
+\label{tab:Angriffsbaum-A}
+\end{table}
+Hier ist ein normaler Abstand zur Tabelle.
+
+
+{%
+\setlength{\tabcolsep}{0.3em}
+\footnotesize
+\centering
+\begin{longtable}{@{} *{11}{l} @{}}
+	\toprule
+	\multicolumn{11}{@{} l @{}}{\ebf{Ziel:} Happy TeXing} \\
+	\midrule
+	\endfirsthead
+	
+	\midrule
+	\endhead
+	
+	\midrule
+	\multicolumn{11}{@{} r @{}}{Fortsetzung auf der nächsten Seite} \\
+	\midrule
+	\endfoot
+	
+	\bottomrule
+	\caption{Happy TeXing: de.comp.text.tex}
+	\label{tab:Angriffsbaum-B}
+	\endlastfoot	
+	\ebf{OR}	& 1.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+\end{longtable}
+}
+Hier ist kein normaler Abstand zur Tabelle und die Caption klebt an der 
+Tabelle.
+
+\end{document}
+\end{verbatim}
+
+\begin{example}{indention=1em,font=small,labelfont=bf,margin=1.5em,parindent=1em}
+\captionsetup[table]{position=bottom}
+\newcommand{\ebf}[1]{{\emph{\textbf{#1}}}}
+
+\begin{table}[H]
+\setlength{\tabcolsep}{0.3em}
+\footnotesize
+\centering
+\begin{tabular}{@{} *{11}{l} @{}}
+	\toprule
+	\multicolumn{11}{@{} l @{}}{\ebf{Ziel:} Happy TeXing} \\
+	\midrule
+	\ebf{OR}	& 1.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+	\bottomrule
+\end{tabular}
+\caption{Happy TeXing: de.comp.text.tex}
+\label{tab:Angriffsbaum-A}
+\end{table}
+Hier ist ein normaler Abstand zur Tabelle.
+
+
+{%
+\setlength{\tabcolsep}{0.3em}
+\footnotesize
+\centering
+\begin{longtable}{@{} *{11}{l} @{}}
+	\toprule
+	\multicolumn{11}{@{} l @{}}{\ebf{Ziel:} Happy TeXing} \\
+	\midrule
+	\endfirsthead
+	
+	\midrule
+	\endhead
+	
+	\midrule
+	\multicolumn{11}{@{} r @{}}{Fortsetzung auf der nächsten Seite} \\
+	\midrule
+	\endfoot
+	
+	\bottomrule
+	\caption{Happy TeXing: de.comp.text.tex}
+	\label{tab:Angriffsbaum-B}
+	\endlastfoot	
+	\ebf{OR}	& 1.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+%\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			& 2.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+%			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+%\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			& 3.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+%			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+%\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+%			& 4.	& \multicolumn{9}{l@{}}{de.comp.text.tex} \\
+%			&	& \ebf{OR}	& 1.	& \multicolumn{7}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	& \ebf{OR}	& 1.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	&			& 	& 			& 2.	& \multicolumn{5}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& \ebf{OR}	& 1.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	&			& 2.	& \multicolumn{3}{l@{}}{de.comp.text.tex} \\
+%			&	& 			&	&			& 	& 			&	& \ebf{AND}	& 1.	& 
+\multicolumn{1}{l@{}}{de.comp.text.tex} \\
+			&	& 			&	&			& 	&			& 	&			& 2.	& \multicolumn{1}{l@{}}{de.comp.text.tex} \\
+\end{longtable}
+}
+Hier ist kein normaler Abstand zur Tabelle und die Caption klebt an der 
+Tabelle.
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{04-10-26}{v3.0d \& v3.0i}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Re: subfig inkompatibel mit Komascript ?
+Date: Tue, 26 Oct 2004 09:37:12 +0200
+Message-ID: <clkupd$23m$04$1@news.t-online.com>
+
+Axel Sommerfeldt wrote:
+
+> Matthias Pospiech <matthiasPUNKTpospiech@gmx.de> wrote:
+> 
+>> Leider setzt caption bei Raggedright die erste Zeile nicht mehr mittig
+>> (so wie KOMAscript) sondern auch nach Rechts. Ich sehe auch nicht wie
+>> ich das caption abgewöhnen könnte.
+> 
+> Mir ist nicht ganz klar, was du damit meinst. Hast du ein KOMA-
+> Minimalbeispiel für mich, was das produziert, wie du es haben möchtest?
+
+Hier ist eins. Es ist nicht wirklich minimal, da ich auch selbst definierte
+Befehle brauche, aber es zeigt sehr deutich den Unterschied. Für Komascript
+Anweisungen einfach bei diesen die Kommentare wegnehmen.
+----------------------------------------
+
+\documentclass[a4paper, 11pt,german]{scrreprt}
+
+\usepackage[NewCommands]{ragged2e}
+
+%\setkomafont{caption}{\footnotesize\sffamily\RaggedRight}
+% Schrift für
+%\setkomafont{captionlabel}{\small}   % Schrift für 'Abbildung' usw.
+%\setcapindent{0em}
+
+\usepackage[margin=0pt,textfont={sf,footnotesize},labelfont={sf,small},%
+  justification=RaggedRight,singlelinecheck=true]{caption}
+
+\usepackage[final]{graphicx}
+\usepackage{array}
+
+\makeatletter
+\newlength{\figcaptionwidth}
+%
+\newcommand\figcaption{\def\@captype{figure}\caption}
+\newcommand\tabcaption{\def\@captype{table}\caption}
+%
+\newcommand\figurecaption[2]{
+\setlength{\figcaptionwidth}{#1}
+\\\begin{minipage}{\figcaptionwidth}
+\figcaption{#2}
+\end{minipage}
+}
+\makeatother
+
+\newcolumntype{v}[1]{%
+        >{\raggedright\hspace{0pt}}p{#1}%
+}
+\newenvironment{wide}[2]{%
+\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{#1}%
+\setlength{\rightmargin}{#2}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parskip}%
+}%
+\item[]}%
+{\end{list}}%
+
+\newlength{\marginwidth}
+\setlength{\marginwidth}{\marginparwidth}
+\addtolength{\marginwidth}{\marginparsep}
+        
+\begin{document}
+
+\begin{wide}{-\marginwidth}{0pt}
+        %\tablestylecommon
+        %\tablealtcolored
+        \begin{flushright}
+                        \begin{tabular}{*{7}{v{0.14\textwidth}}}
+                \hline
+ Current &
+ Power LD A &
+ Power LD B &
+ LD-Power together &
+ LD-Power behind pump optics &
+ Losses through pump optics &
+ IR Power Mephisto Module \tabularnewline
+                \hline
+\end{tabular}
+        \end{flushright}
+\tabcaption{\label{tab:leistung}Leistungsmessdaten eines Produktionslasers}
+\end{wide}
+
+\begin{center}
+%\includegraphics[scale=1]{data/powerP100}
+\fbox{Bild}
+\figcaption{\label{fig:leistung}Pump und Laserausgangsleistung}
+\end{center}
+
+\begin{center}
+        %\includegraphics[width=0.7\textwidth]{images/pdf/FPmeasure}
+        \fbox{Bild}
+        \figurecaption{0.7\textwidth}{\label{fig:FPmeasure} Emissionsspektrum eines
+Mephistolasers aufgenommen mit einem Scanning Fabry-Perot Interferometer
+(FPI)}
+\end{center}
+
+
+\end{document}
+\end{verbatim}
+
+\begin{example}{margin=0pt,textfont={sf,footnotesize},labelfont={sf,small},%
+  justification=RaggedRight,singlelinecheck=true}
+
+\newenvironment{wide}[2]{%
+\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{#1}%
+\setlength{\rightmargin}{#2}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parskip}%
+}%
+\item[]}%
+{\end{list}}%
+
+\newcolumntype{v}[1]{%
+        >{\raggedright\hspace{0pt}}p{#1}%
+}
+
+\newlength{\marginwidth}
+\setlength{\marginwidth}{\marginparwidth}
+\addtolength{\marginwidth}{\marginparsep}
+
+\begin{wide}{-\marginwidth}{0pt}
+        %\tablestylecommon
+        %\tablealtcolored
+        \begin{flushright}
+                        \begin{tabular}{*{7}{v{0.14\textwidth}}}
+                \hline
+ Current &
+ Power LD A &
+ Power LD B &
+ LD-Power together &
+ LD-Power behind pump optics &
+ Losses through pump optics &
+ IR Power Mephisto Module \tabularnewline
+                \hline
+\end{tabular}
+        \end{flushright}
+\captionof{table}{\label{tab:leistung}Leistungsmessdaten eines Produktionslasers}
+\end{wide}
+
+\begin{wide}{-\marginwidth}{0pt}
+        %\tablestylecommon
+        %\tablealtcolored
+        \begin{flushright}
+                        \begin{tabular}{*{7}{v{0.14\textwidth}}}
+                \hline
+ Current &
+ Power LD A &
+ Power LD B &
+ LD-Power together &
+ LD-Power behind pump optics &
+ Losses through pump optics &
+ IR Power Mephisto Module \tabularnewline
+                \hline
+\end{tabular}
+        \end{flushright}
+\captionof{table}{Leistungsmessdaten eines Produktionslasers
+ -- Leistungsmessdaten eines Produktionslasers -- Leistungsmessdaten eines Produktionslasers
+ -- Leistungsmessdaten eines Produktionslasers}
+\end{wide}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{04-12-19}{v3.0d}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Zeilenabstände mit \usepackage[font=small]{caption}
+Date: Sun, 19 Dec 2004 14:59:42 +0100
+Message-ID: <cq41in$qdn$03$1@news.t-online.com>
+
+Hallo NG,
+
+folgendes Minimalbeispiel
+
+\documentclass[12pt,a4paper]{scrartcl}
+\usepackage{ngerman}
+\usepackage[latin1]{inputenc}
+\usepackage[font=small]{caption}[2004/07/16]
+
+\begin{document}
+\begin{figure}
+  \centering
+  \caption{Dies ist ein Text, der nur zu Testzwecken eingefügt ist, um die
+    Zeilenabstände sichtbar zu machen.  Hier taucht jetzt ein \AA{}
+    auf, an dem aufgezeigt werden soll, dass eben die Zeilenabstände nicht
+    stimme.  Und noch mehr Text taucht hier auf, damit auch gesichert
+    mindestens vier Zeilen in dem fertigen Dokument stehen.}
+\end{figure}
+\end{document}
+
+führt bei mir zu einem Dokument, in dem die Zeilenabstände nicht
+gleichverteilt erscheinen.  Irgendeine Idee, woran das liegen
+könnte?
+
+
+Danke im voraus,
+Jürgen
+
+
+Newsgroups: de.comp.text.tex
+Subject: Re: Zeilenabstände mit \usepackage[font=small]{caption}
+Date: Sun, 19 Dec 2004 18:57:22 +0100
+Message-ID: <3sebs0hkmsjobnn6di971hbqqpaiat9nd1@4ax.com>
+
+On Sun, 19 Dec 2004 14:59:42 +0100, Juergen Wieferink wrote:
+
+>Hallo NG,
+>
+>folgendes Minimalbeispiel
+
+[snip]
+
+>führt bei mir zu einem Dokument, in dem die Zeilenabstände nicht
+>gleichverteilt erscheinen.  Irgendeine Idee, woran das liegen
+>könnte?
+
+Vermutlich an der Stütze die vor dem Label eingefügt wird. Wie man das
+Ganze sauber löst kann ich dir nicht sagen, aber vielleicht reicht dir
+unten angeführte Lösung. Jedenfalls kannst du den Unterschied sehen.
+
+\usepackage{caption}
+
+\DeclareCaptionFont{small*}{\small\setbox\strutbox=\box255}
+\captionsetup{font=small*}
+
+Wenn es sich nur um einzelne Zeichen handelt, kannst du diese auch in
+eine Box geben, anschließend die Höhe der Box reduzieren und diese
+ausgeben.
+
+Prinzip:
+
+\setlength{\fboxsep}{0pt}
+\fbox{xxx\setbox0\hbox{\AA}\ht0=0pt\box0xxx}
+
+
+Chris
+\end{verbatim}
+
+\begin{example}{font=small}
+
+\begin{figure}[H]
+  \centering
+  \caption{Dies ist ein Text, der nur zu Testzwecken eingefügt ist, um die
+    Zeilenabstände sichtbar zu machen.  Hier taucht jetzt ein \AA{}
+    auf, an dem aufgezeigt werden soll, dass eben die Zeilenabstände nicht
+    stimme.  Und noch mehr Text taucht hier auf, damit auch gesichert
+    mindestens vier Zeilen in dem fertigen Dokument stehen.}
+\end{figure}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{05-01-23}{v3.0d}
+
+\begin{verbatim}
+Message-ID: <000701c5015d$04dc9b40$b9653ac2@home196ib52sok>
+To: "Axel Sommerfeldt" <axel.sommerfeldt@arcor.de>
+Subject: Re: rotfloat question
+Date: Sun, 23 Jan 2005 18:04:27 +0300
+
+[...]
+
+If I build row of floats where first caption has last line with letters,
+like g, j, p, q, y (with descenders), but in second caption there are not
+any of them, so the baselines of that two captions are not aligned. I found
+that you start text in caption@make stuff with strut. I think it is good to
+finish text of caption with \strut too, or, like in footnotes, with
+\@finalstrut\strutbox (this two-command combination adds only depth of
+strut). [I redefined \caption@@@make in test file and get correct result.]
+
+This \strut could get empty line only if someone writes like:
+\caption{Text of caption
+
+}
+I never see such variant, and, in anyway, this is wrong.(?)
+
+That not visible with usage of standard
+\abovecaptionskip(\belowcaptionskip)=10pt, but if they reduced to
+somewhat=3pt
+the difference could be visible. This is also could be visible in beside
+subcaptions.
+
+Regards,
+Olga
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{05-04-08}{v3.0e}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: algorithm2e und caption
+Date: Fri, 08 Apr 2005 10:35:51 +0200
+Message-ID: <7cshi2-ped.ln1@ID-80222.user.uni-berlin.de>
+
+Hallo,
+
+ich wollte algorithm2e zusammen mit dem caption Paket benutzen. Leider
+werden nach dem Laden von caption die Label der Algorithmen nicht mehr
+gezeigt. Anstatt "Algorithm 5: Move" sehe ich nur noch "5: Move".
+
+Kennt jemand das Problem
+
+
+Newsgroups: de.comp.text.tex
+Subject: Re: algorithm2e und caption
+Date: Fri, 08 Apr 2005 11:08:22 +0200
+Message-ID: <79uhi2-5ee.ln1@ID-80222.user.uni-berlin.de>
+
+Alois Steindl wrote:
+
+> Christoph Bartoschek writes:
+> 
+>> Hallo,
+>> 
+>> ich wollte algorithm2e zusammen mit dem caption Paket benutzen. Leider
+>> werden nach dem Laden von caption die Label der Algorithmen nicht mehr
+>> gezeigt. Anstatt "Algorithm 5: Move" sehe ich nur noch "5: Move".
+>> 
+>> Kennt jemand das Problem
+>> 
+> Wie wäre es mit einem Minimalbeispiel? Caption lässt sich gut
+> konfigurieren. Eventuell Reihenfolge beim Laden der Pakete ändern.
+> Alois
+
+Hier ein relativ kleines Beispiel:
+
+
+\documentclass{article}
+
+\usepackage{algorithm2e}
+%\usepackage{caption}
+
+\begin{document}
+
+\begin{algorithm}
+$c \leftarrow d$ \;
+\caption{Testalgorithm}
+\end{algorithm}
+
+\end{document}
+
+Wenn man den Kommentar bei caption entfernt, verschwindet das Wort Algorithm
+und die 1 ist auch nicht mehr fett.
+Ein Vertauschen der Pakete bringt nichts. 
+\end{verbatim}
+
+\begin{example}{}
+\begin{algorithm}
+$c \leftarrow d$ \;
+\caption{Testalgorithm}
+\end{algorithm}
+\end{example}
+
+%******************************************************************************%
+
+\bug{05-04-28}[v3.0d]{v3.0e}
+
+\begin{verbatim}
+Message-ID: <4270EAF4.700@web.de>
+Date: Thu, 28 Apr 2005 15:53:56 +0200
+To: caption@sommerfeldt.net
+Subject: [caption] Fehler bei indent
+
+Hallo Herr Sommerfeldt,
+
+ich habe gerade ein Update des caption Paketes eingespielt und habe nun
+folgendes Problem:
+
+Die Option "indention" erzeugt nicht mehr einen Einzug für alle Zeilen
+der Beschriftung, sondern einen "Auszug" der ersten Zeile. Das bedeutet,
+dass die erste Zeile in den Seitenrand hineinragt. Ich verwende die
+Paketeversionen
+
+caption.sty    2004/11/28 v3.0d Customising captions (AS)
+caption3.sty    2005/02/12 v3.0d caption3 kernel (AS)
+
+und z.B. den Befehl
+
+\usepackage[labelfont=bf,indention=2cm]{caption}
+
+Zur Demonstration folgt eine Beisppieldatei:
+
+--------------------
+\documentclass[12pt]{article}
+
+\usepackage[labelfont=bf,indention=2cm]{caption}
+
+\begin{document}
+
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+
+\begin{figure}
+
+\begin{center}
+\framebox[5cm]{}
+\end{center}
+
+\caption{test test test test test test test test test test test test test
+test test test test test test test test test test test test test test
+test test test test test test test test test test test test test test}
+
+\end{figure}
+
+\end{document}
+-------------------------------
+
+Das Ergebnis habe ich als PDF angehängt.
+
+Danke und Gruß
+Uwe
+\end{verbatim}
+
+\begin{example}{labelfont=bf,indention=2cm}
+
+\begin{figure}[H]
+  \caption{test test test test test test test test test test test test test
+  test test test test test test test test test test test test test test
+  test test test test test test test test test test test test test test}
+\end{figure}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{05-03-23}{v3.0f}
+
+\begin{verbatim}
+Message-ID: <20050323213047.26829.qmail@web52507.mail.yahoo.com>
+Date: Wed, 23 Mar 2005 13:30:46 -0800 (PST)
+Subject: Fwd: [texhax] Problems specifying captions (with the captions package)
+To: caption@sommerfeldt.net
+
+Hello Mr. Sommerfeldt.
+I am trying to use your LaTeX captions package and I'm
+running into some trouble. I submitted a question to
+the texhax list, but no one responded. I was wondering
+if you would be so kind to address my question, which
+I suspect for you would only take a minute. Thank you
+very much and have a wonderful day.
+Take Care,
+Ken
+P.S. Thanks for your work on LaTeX and for sharing
+that work with others.
+
+Note: forwarded message attached.
+
+Date: Tue, 22 Mar 2005 21:37:29 -0800 (PST)
+To: texhax@tug.org
+Subject: [texhax] Problems specifying captions (with the captions package)
+
+Hello all.
+
+I'm trying to get table captions that are centered,
+with the table identifier (i.e., TABLE 1) also in
+caps, centered, and with no period after the
+identifier. I'm trying to use the caption package to
+make this happen, but I'm running into trouble. Most
+of the options I need are not there and some of the
+ones that are are not working out too well. I can
+specify centered, but the table identifier part (e.g.,
+TABLE 1 isn't actually centered). Furthermore, I
+cannot figure out how to get the identifier in caps
+(TABLE 1 rather than Table 1) . I've found a way to
+cheat so that the caption itself is double spaced, but
+this isn't convenient (by adding \newline commands
+in). Any help would be greatly appreciate (it isn't my
+idea to center and double space the table headings,
+rather they are ridged guidelines I must follow).
+Below is an example of what I'm coming up with (simply
+past into the text editor and run LaTeX on it). I
+can't find anything that discusses these problems on
+line anywhere.
+
+Thanks very much for any help.
+
+
+% This is example code of what I'm getting.
+\documentclass{amsart}
+\usepackage{caption}
+\captionsetup[table]{justification=centering,
+labelsep=newline,font=small}
+\begin{document}
+\setcounter{table}{0}
+\renewcommand{\thetable}{C-\arabic{table}}
+\begin{table}
+\begin{center}
+\caption{\newline TABLE IDENTIFYING THE NUMBER OF
+FAILURES THAT OCCURRED
+IN THE\newline\newline SIMULATION STUDY FOR EACH OF
+THE SITUATIONS
+(CONDITION BY\newline\newline
+SCENARIO)}\label{Failure.Table}
+\begin{tabular}{|c|c|c|c|}
+  \hline
+  Condition & Scenario 1 & Scenario 2 & Scenario 3 \\
+  \hline
+  1 & 0 & 0 & 2 \\
+  2 & 2 & 1 & 2 \\
+  3 & 2 & 1 & 2 \\
+  4 & 2 & 0 & 2 \\
+  5 & 0 & 0 & 0 \\
+  6 & 0 & 0 & 0 \\
+  7 & 0 & 0 & 2 \\
+  8 & 2 & 1 & 3 \\\hline
+  9 & 0 & 1 & 2 \\
+  10 & 2 & 1 & 0 \\
+  11 & 0 & 1 & 3 \\
+  12 & 1 & 2 & 4\\
+  13 & 1 & 0 & 3 \\
+  14 & 0 & 0 & 2 \\
+  15 & 8 & 4 & 6 \\
+  16 & 1 & 4 & 7 \\\hline
+  17 & 0 & 0 & 0 \\
+  18 & 0 & 0 & 0 \\
+  19 & 0 & 1 & 6 \\
+  20 & 1 & 1 & 0 \\
+  21 & 0 & 0 & 3 \\
+  22 & 0 & 0 & 1 \\
+  23 & 1 & 4 & 16 \\
+  24 & 2 & 3 & 12 \\
+  \hline
+\end{tabular}
+\end{center}
+\end{table}
+\clearpage \pagebreak
+\end{document}
+% ----------------------------------
+_______________________________________________
+TeX FAQ: http://www.tex.ac.uk/faq
+TeX newsgroup: http://groups.google.com/groups?group=comp.text.tex
+Mailing list archives: http://tug.org/pipermail/texhax/
+More links: http://tug.org/begin.html
+
+Automated subscription management: http://tug.org/mailman/listinfo/texhax
+Human mailing list managers: postmaster@tug.org
+\end{verbatim}
+
+\begin{example}{justification=centering,labelsep=newline,font=small,position=t}
+\setcounter{table}{0}
+\renewcommand{\thetable}{C-\arabic{table}}
+\begin{table}[H]
+\caption{TABLE IDENTIFYING THE NUMBER OF
+FAILURES THAT OCCURRED
+IN THE SIMULATION STUDY FOR EACH OF
+THE SITUATIONS
+(CONDITION BY SCENARIO)}
+\centering
+\begin{tabular}{|c|c|c|c|}
+  \hline
+  Condition & Scenario 1 & Scenario 2 & Scenario 3 \\
+  \hline
+  1 & 0 & 0 & 2 \\
+  2 & 2 & 1 & 2 \\
+  3 & 2 & 1 & 2 \\
+  \hline
+\end{tabular}
+\end{table}
+\end{example}
+
+%******************************************************************************%
+
+\bug{05-06-28}[v3.0f]{v3.0g}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Re: Problem mit captcont
+Date: Mon, 27 Jun 2005 14:45:31 +0200
+Message-ID: <87psu8x91w.fsf@ID-223132.user.uni-berlin.de>
+
+Axel Sommerfeldt <sommerfee@despammed.com> writes:
+
+> Wenn irgendetwas nicht funktioniert oder du weitere Wünsche hast, zögere 
+> bitte nicht, diese auch auszusprechen.
+
+Ein Problem ist mir aufgefallen (Version 2005/06/22 v3.0f-BETA). Wenn
+ich mit \include und \includeonly arbeite, so kreige ich die
+Fehlermeldung
+
+ERROR: LaTeX Error: No counter 'CF@figure' defined.
+
+wenn ich den Abschnitt nicht übersetzte, in dem ich \ContinuedFloat
+benutze. Wobei ich auch etwas überrascht war, das bei drei eingebundenen
+Dateien foo.tex, bar.tex und baz.tax in foo.aux und bar.aux CF@figure
+auf 2 gesetzt wurde, während es in baz.aux auf 0 gestzt wurde. Dabei
+habe ich in foo.tex 2x \ContinuedFloat verwendet.
+
+cheerio
+ralf
+
+Newsgroups: de.comp.text.tex
+Subject: Re: Problem mit captcont
+Date: Mon, 27 Jun 2005 22:31:22 +0200
+Message-ID: <87k6kfy21x.fsf@ID-223132.user.uni-berlin.de>
+
+Axel Sommerfeldt <sommerfee@despammed.com> writes:
+
+>> ERROR: LaTeX Error: No counter 'CF@figure' defined.
+>
+> Auch, wenn du die aux-Dateien vorher löschst?
+
+Dann nicht. Allerdings ist aus meiner Sicht das Vorhandensein und Lesen
+der aux Dateien der eigentlich Witz bei include(only), da dadurch
+Referenzen weiterhin möglich sind. Ich habe mal dazu ein Beispiel
+gebastelt: 
+
+%%%%%%%%%% main.tex %%%%%%%
+\documentclass{article}
+\usepackage{caption}[2005/06/22]
+\usepackage{hyperref}
+%\includeonly{bar}
+\begin{document}
+\include{foo}
+\include{bar}
+\include{baz}
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%% foo.tex %%%%%%%%
+\begin{figure}
+  foo1
+  \caption{foo1}\label{fig:foo1}
+\end{figure}
+
+\begin{figure}\ContinuedFloat
+  foo2
+  \caption{foo2}\label{fig:foo2}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%% bar.tex %%%%%%%%
+See figure~\ref{fig:foo1}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%% baz.tex %%%%%%%%
+\begin{figure}
+  baz
+  \caption{baz}\label{fig:baz}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Dabei dient baz.tex nur zur Illustration des unterscheidlich gesetzten
+Zählers in den aux Dateien dient. Bei einer ältern caption Version kann
+ich nach einem Komplettdurchlauf auf \includeonly umsteigen, wobei der
+Querverweis in bar.tex weiterhin funktioniert. Das geht aber nur, wenn
+die aus Dateien aus dem Komplettdurchlauf vorhanden sind.
+
+cheerio
+ralf
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{05-08-12}{v3.0h}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Problem mit captionof und newfloat
+Date: 12 Aug 2005 02:41:32 -0700
+Message-ID: <1123839692.460760.151930@g43g2000cwa.googlegroups.com>
+
+Hallo!
+
+Ich möchte eine figure und den Inhalt einer mit \newfloat definierten
+Umgebung zusammen halten, d.h. sie sollen gemeinsam in einer
+Fließumgebung sitzen, aber ihre eigenen captions bekommen. Bei der
+Suche in dieser Gruppe wurde ein ähnliches Problem schonmal
+diskutiert, daraus habe ich die \captionof Definition von Axel
+Sommerfeldt. Bei Nutzung von caption2 gehen die Formatierungen des
+KOMA-Skripts verloren.
+
+Die Probleme:
+- der Abstand der caption zur Umgebung ist zu klein
+- hyperlinks auf die eigene Umgebung (im Bsp. Algorithmus 1.2)
+funktionieren nicht
+
+Ich hoffe, jemand kann helfen,
+Gruß,
+Florian
+
+hier das Beispiel:
+
+\documentclass[a5paper,10pt,pdftex,DIVcalc,ngerman,headsepline,liststotoc]{scrbook}
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{babel}
+
+%\usepackage{caption2} % für captionof
+% -> ändert KOMA-Formatierungen der captions
+
+\setkomafont{caption}{\slshape}
+\setkomafont{captionlabel}{\normalfont\bfseries}
+\setcapwidth{.85\textwidth}
+
+\usepackage{float}
+
+\usepackage[linktocpage,bookmarksnumbered,bookmarksopen]{hyperref}
+
+\floatstyle{komaabove}
+\newfloat{algorithmus}{htb}{loa}[chapter]
+\floatname{algorithmus}{Algorithmus}
+
+\makeatletter
+  \newcommand*\captionof[1]{\def\@captype{#1}%
+    \@ifundefined{fst@#1}{}{%
+      \@nameuse{fst@#1}%
+      \@ifundefined{@float@setevery}{}{\@float@setevery{#1}}%
+      \let\caption@fs@capt\@fs@capt
+      \renewcommand\@fs@capt[2]{\egroup
+        \vskip\abovecaptionskip
+        \normalsize\caption@fs@capt{##1}{##2}%
+        \vskip\belowcaptionskip
+        \bgroup}}%
+    \caption}
+\makeatother
+
+\listfiles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\chapter{Bla}
+bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla bla
+bla bla bla
+
+\section{Abschnitt eins}
+
+Siehe Algorithmus \ref{alg:eins}
+
+\section{Abschnitt zwei}
+Siehe Algorithmus \ref{alg:zwei} auf Seite \pageref{alg:zwei} und Abb.
+\ref{fig:eins}.
+\newpage
+
+\begin{algorithmus}
+\hrule
+\smallskip
+\centering
+\begin{minipage}{.9\textwidth} % etwas schmaler als Fließtext
+\begin{itemize}
+	\item bla1
+	\item bla2
+	\item bla3
+\end{itemize}
+\end{minipage}
+\smallskip
+\hrule
+\caption{Ein einzelner Code}
+\label{alg:eins}
+\end{algorithmus}
+
+\begin{figure}
+	\centering
+\fbox{DUMMY}\par
+\caption{Einzelnes Bild}
+\label{fig:eins}
+\end{figure}
+
+\newpage
+
+\begin{figure}
+	\centering
+\fbox{DUMMY}\par
+\caption{Bild zusammen mit Code}
+\label{fig:zwei}
+\vspace{\floatsep} % zusaetzlicher Abstand zwischen zwei `floats'
+\captionof{algorithmus}{Code zusammen mit Bild}
+\label{alg:zwei}
+\hrule
+\smallskip
+\centering
+\begin{minipage}{.9\textwidth} % etwas schmaler als Fließtext
+\begin{itemize}
+	\item bla1
+	\item bla2
+	\item bla3
+\end{itemize}
+\end{minipage}
+\smallskip
+\hrule
+\end{figure}
+
+\end{document}
+\end{verbatim}
+%
+% *File List*
+% scrbook.cls    2004/09/16 v2.9t LaTeX2e KOMA document class
+%scrlfile.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+%    bk10.clo    2004/02/16 v1.4f Standard LaTeX file (size option)
+%typearea.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+%inputenc.sty    2004/02/05 v1.0d Input encoding file
+%  latin1.def    2004/02/05 v1.0d Input encoding file
+% fontenc.sty
+%   t1enc.def    2004/02/22 v1.99f Standard LaTeX file
+%   babel.sty    2004/02/19 v3.8a The Babel package
+%ngermanb.ldf    2004/02/20 v2.6m new German support from the babel system
+%   float.sty    2001/11/08 v1.3d Float enhancements (AL)
+%hyperref.sty    2003/11/30 v6.74m Hypertext links for LaTeX
+%  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+%  pd1enc.def    2003/11/30 v6.74m Hyperref: PDFDocEncoding definition (HO)
+%hyperref.cfg    2003/03/08 v1.0 MiKTeX 'hyperref' configuration
+%     url.sty    2004/03/15  ver 3.1  Verb mode for urls, etc.
+% hpdftex.def    2003/11/30 v6.74m Hyperref driver for pdfTeX
+%  pifont.sty    2004/09/15 PSNFSS-v9.2 Pi font support (SPQR)
+%    upzd.fd    2001/06/04 font definitions for U/pzd.
+%    upsy.fd    2001/06/04 font definitions for U/psy.
+% nameref.sty    2003/12/03 v2.21 Cross-referencing by name of section float_captionof.out
+%float_captionof.out
+%  t1cmss.fd    1999/05/25 v2.5h Standard LaTeX font definitions
+%  omscmr.fd    1999/05/25 v2.5h Standard LaTeX font definitions
+%\end{verbatim}
+
+%******************************************************************************%
+
+\bug{05-11-30}{v3.0i}
+
+\begin{verbatim}
+Message-ID: <20051201044932.25609.qmail@web54204.mail.yahoo.com>
+Date: Wed, 30 Nov 2005 20:49:32 -0800 (PST)
+Subject: caption problem
+To: caption@sommerfee.de
+
+Axel,
+
+I hope all is well.
+
+I am very close to releasing my updated
+epslatex document, and I noticed an 
+interaction with the rotating and 
+caption packages.
+
+Attached is a pdflatex file that uses a
+\rotcaption command.  When the caption
+package is not used, the caption is 
+typeset with a short width (so after
+rotation it takes up very little 
+vertical space).  When I use the caption
+package, the caption has a very large 
+width (so after rotation it takes up a
+lot of vertical space).
+
+Look through the attached file (with and
+without \usepackage{caption}) and let
+me know if you have any questions.
+
+Thanks,
+Keith
+
+
+\documentclass[letterpaper,11pt,oneside,pdftex]{article}
+\usepackage{rotating}
+\usepackage{graphicx}
+% \usepackage{caption}
+
+\begin{document}
+
+\noindent
+The following commands
+\begin {verbatim}
+     \begin{figure}[!ht]
+       \centering
+       \begin{minipage}[c]{3cm}
+          \hfill\includegraphics[width=4cm,angle=90]{graphic}
+       \end{minipage}%
+       \hspace{20pt}%
+       \begin{minipage}[c]{30pt}
+          % \captionsetup{width=4cm}
+          \rotcaption{Rotcaption Caption}
+          \label{fig:rotcaption}
+       \end{minipage}
+     \end{figure}
+\end {verbatim}
+produce Figure~\ref{fig:rotcaption}.
+
+     \begin{figure}[!ht]
+       \centering
+       \begin{minipage}[c]{3cm}
+          \hfill\includegraphics[width=4cm,angle=90]{graphic}
+       \end{minipage}%
+       \hspace{20pt}%
+       \begin{minipage}[c]{30pt}
+          % \captionsetup{width=4cm}
+          \rotcaption{Rotcaption Caption}
+          \label{fig:rotcaption}
+       \end{minipage}
+     \end{figure}
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+Text text text text text text text text text text text text text text.
+
+\end{document}
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-01-03}{v3.0i}
+
+\begin{verbatim}
+Date: Tue, 03 Jan 2006 09:47:44 +0100
+Newsgroups: de.comp.text.tex
+Subject: KOMA-Script (scrbook) und subfig
+Message-ID: <43ba3a30$1@news1.ethz.ch>
+
+Erst mal ein Frohes Neues allerseits!
+
+Bei mir tritt mal wieder ein Problem mit scrbook und subfig auf, mit dem
+Minimalbeispiel unten bekomme ich folgende Fehlermeldung (latex und
+pdflatex unter Miktex 2.4 (aktuell)):
+
+! Package keyval Error: No value specified for parskip.
+
+See the keyval package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...
+
+l.9   \subfloat
+               {a}
+?
+
+
+An dem bekannten Problem mit dem caption-Paket scheint es nicht direkt
+zu liegen, da \usepackage[caption=false]{subfig} zum gleichen Fehler führt.
+
+Auf meinem Mac unter tetex3 läuft das ganze dann interessanterweise wieder.
+
+Minimalbeispiel:
+
+\documentclass[parskip]{scrbook}
+\usepackage{subfig}
+\listfiles
+
+\begin{document}
+
+\begin{figure}
+  \subfloat{a}
+  \qquad
+  \subfloat{b}
+\end{figure}
+
+\end{document}
+
+das pdflatex-logfile dazu habe ich mal angehängt.
+\end{verbatim}
+
+%\begin{verbatim}
+%This is pdfeTeX, Version 3.141592-1.21a-2.2 (MiKTeX 2.4) (preloaded format=latex 2006.1.3)  3 JAN 2006 09:47
+%entering extended mode
+%**test.tex
+%(test.tex
+%LaTeX2e <2003/12/01>
+%Babel <v3.8g> and hyphenation patterns for ukenglish, english, german, ngerman,
+% dumylang, nohyphenation, loaded.
+%(C:\program files\texmf\tex\latex\koma-script\scrbook.cls
+%Document Class: scrbook 2004/09/16 v2.9t LaTeX2e KOMA document class
+%(C:\program files\texmf\tex\latex\koma-script\scrlfile.sty
+%Package: scrlfile 2004/09/16 v2.9t LaTeX2e KOMA package
+%
+%Package scrlfile, 2004/09/16 v2.9t LaTeX2e KOMA package
+%                  Copyright (C) Markus Kohm
+%
+%) (C:\program files\texmf\tex\latex\base\bk11.clo
+%File: bk11.clo 2004/02/16 v1.4f Standard LaTeX file (size option)
+%)
+%(C:\program files\texmf\tex\latex\koma-script\typearea.sty
+%Package: typearea 2004/09/16 v2.9t LaTeX2e KOMA package
+%
+%Package typearea, 2004/09/16 v2.9t LaTeX2e KOMA package
+%                  Copyright (C) Frank Neukam, 1992-1994
+%                  Copyright (C) Markus Kohm, 1994-2002
+%
+%\ta@bcor=\skip41
+%\ta@div=\count79
+%\ta@hblk=\skip42
+%\ta@vblk=\skip43
+%\ta@temp=\skip44
+%Package typearea Info: These are the values describing the layout:
+%(typearea)             DIV  = 10
+%(typearea)             BCOR = 0.0pt
+%(typearea)             \paperwidth      = 597.50793pt
+%(typearea)              \textwidth      = 418.25555pt
+%(typearea)              \columnwidth    = 0.0pt
+%(typearea)              \columnsep      = 0.0pt
+%(typearea)              DIV-departure   = -6/100
+%(typearea)              \evensidemargin = 47.2316pt
+%(typearea)              \oddsidemargin  = -12.5192pt
+%(typearea)             \paperheight     = 845.04694pt
+%(typearea)              \textheight     = 595.80026pt
+%(typearea)              \topmargin      = -25.16531pt
+%(typearea)              \headheight     = 17.0pt
+%(typearea)              \headsep        = 20.40001pt
+%(typearea)              \topskip        = 11.0pt
+%(typearea)              \footskip       = 47.60002pt
+%(typearea)              \baselineskip   = 13.6pt
+%(typearea)              on input line 633.
+%)
+%\c@part=\count80
+%\c@chapter=\count81
+%\c@section=\count82
+%\c@subsection=\count83
+%\c@subsubsection=\count84
+%\c@paragraph=\count85
+%\c@subparagraph=\count86
+%\c@figure=\count87
+%\c@table=\count88
+%\abovecaptionskip=\skip45
+%\belowcaptionskip=\skip46
+%\c@pti@nb@sid@b@x=\box26
+%\bibindent=\dimen102
+%) (C:\program files\texmf\tex\latex\subfig\subfig.sty
+%Package: subfig 2005/06/28 ver: 1.3 subfig package
+%
+%(C:\program files\texmf\tex\latex\graphics\keyval.sty
+%Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+%\KV@toks@=\toks14
+%)
+%(C:\program files\texmf\tex\latex\caption\caption.sty
+%Package: caption 2005/10/24 v3.0h Customising captions (AR)
+%
+%(C:\program files\texmf\tex\latex\caption\caption3.sty
+%Package: caption3 2005/10/24 v3.0h caption3 kernel (AR)
+%\captionmargin=\dimen103
+%\captionmarginx=\dimen104
+%\captionwidth=\dimen105
+%\captionindent=\dimen106
+%\captionparindent=\dimen107
+%\captionhangindent=\dimen108
+%)
+%Package caption Info: Option `parskip' ignored on input line 146.
+%)
+%\c@KVtest=\count89
+%\sf@farskip=\skip47
+%\sf@captopadj=\dimen109
+%\sf@capskip=\skip48
+%\sf@nearskip=\skip49
+%\c@subfigure=\count90
+%\c@subfigure@save=\count91
+%\c@lofdepth=\count92
+%\c@subtable=\count93
+%\c@subtable@save=\count94
+%\c@lotdepth=\count95
+%\sf@top=\skip50
+%\sf@bottom=\skip51
+%) (test.aux)
+%LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 5.
+%LaTeX Font Info:    ... okay on input line 5.
+%
+%(C:\program files\texmf\tex\latex\ms\ragged2e.sty
+%Package: ragged2e 2003/03/25 v2.04 ragged2e Package (MS)
+%
+%(C:\program files\texmf\tex\latex\ms\everysel.sty
+%Package: everysel 1999/06/08 v1.03 EverySelectfont Package (MS)
+%LaTeX Info: Redefining \selectfont on input line 125.
+%)
+%\CenteringLeftskip=\skip52
+%\RaggedLeftLeftskip=\skip53
+%\RaggedRightLeftskip=\skip54
+%\CenteringRightskip=\skip55
+%\RaggedLeftRightskip=\skip56
+%\RaggedRightRightskip=\skip57
+%\CenteringParfillskip=\skip58
+%\RaggedLeftParfillskip=\skip59
+%\RaggedRightParfillskip=\skip60
+%\JustifyingParfillskip=\skip61
+%\CenteringParindent=\skip62
+%\RaggedLeftParindent=\skip63
+%\RaggedRightParindent=\skip64
+%\JustifyingParindent=\skip65
+%)
+%Package caption Info: KOMA-Script class detected on input line 5.
+%
+%
+%! Package keyval Error: No value specified for parskip.
+%
+%See the keyval package documentation for explanation.
+%Type  H <return>  for immediate help.
+% ...                                              
+%                                                  
+%l.8   \subfloat
+%               {a}
+%? 
+%
+%! Package keyval Error: No value specified for parskip.
+%
+%See the keyval package documentation for explanation.
+%Type  H <return>  for immediate help.
+% ...                                              
+%                                                  
+%l.10   \subfloat
+%                {b}
+%? 
+%[1{psfonts.map}] (test.aux)
+%
+% *File List*
+% scrbook.cls    2004/09/16 v2.9t LaTeX2e KOMA document class
+%scrlfile.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+%    bk11.clo    2004/02/16 v1.4f Standard LaTeX file (size option)
+%typearea.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+%  subfig.sty    2005/06/28 ver: 1.3 subfig package
+%  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+% caption.sty    2005/10/24 v3.0h Customising captions (AR)
+%caption3.sty    2005/10/24 v3.0h caption3 kernel (AR)
+%ragged2e.sty    2003/03/25 v2.04 ragged2e Package (MS)
+%everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+% ***********
+%
+% ) 
+%Here is how much of TeX's memory you used:
+% 1380 strings out of 95509
+% 20066 string characters out of 1189015
+% 77790 words of memory out of 1081545
+% 4495 multiletter control sequences out of 60000
+% 4293 words of font info for 16 fonts, out of 1000000 for 2000
+% 22 hyphenation exceptions out of 8191
+% 43i,7n,38p,175b,162s stack positions out of 5000i,500n,10000p,200000b,32768s
+%PDF statistics:
+% 7 PDF objects out of 300000
+% 0 named destinations out of 300000
+% 1 words of extra memory for PDF output out of 65536
+%<C:\program files\texmf\fonts\type1\bluesky\cm\cmr10.pfb>
+%Output written on test.pdf (1 page, 4252 bytes).
+%\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-01-08}{v3.0i}
+
+\begin{verbatim}
+Message-ID: <20060108231644.29592.qmail@web54208.mail.yahoo.com>
+Date: Sun, 8 Jan 2006 15:16:44 -0800 (PST)
+Subject: Re: Some remarks regarding the caption package within your  epslatex document
+To: Axel Sommerfeldt <axel.sommerfeldt@arcor.de>
+In-Reply-To: <5.2.1.1.2.20051229171835.01a04ad0@pop3.arcor.de>
+
+Axel,
+
+Happy New Year...
+
+Thank you very much for those comments.  I have incorporated 
+them in my document and will be releasing a typo-fixed version 
+in the next few days.
+
+I have also attached a latex source file "test_cap.tex" and its 
+output "test_cap.pdf" which shows a couple questions I have 
+with the caption package.
+
+The first example shows a custom caption format where I don't
+understand why I get a newline before the \gg command.
+
+The second example shows a figure that extends into the
+margin.  The caption is centered in the document's text width, 
+not in the wider figure width.  I am not sure if you consider
+this a bug or not.
+
+Thanks,
+Keith
+
+
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{verbatim}
+\usepackage{geometry}
+
+\geometry{left=0.8in, right=0.9in, top=0.6in, bottom=0.6in,
+          includeall, reversemp, %
+          marginparwidth=2in, marginparsep=0.15in,  % marginal notes
+          headheight=0pt,       % default 12pt
+          headsep=0pt,          % default 20pt
+          footskip=24pt}        % default 36pt
+
+%-----------------------------------------------------------------
+% \begin{narrow}{1.0in}{0.5in}   produces text which is narrowed
+% by 1.0 on left margin and 0.5 inches on right margin
+% \begin{narrow}{-1.0in}{-0.5in} produces text which is widened
+% by 1.0 on left margin and 0.5 inches on right margin
+% Narrow environments can be nested and are ended by \end{narrow}
+%-----------------------------------------------------------------
+\newenvironment{narrow}[2]{%
+ \begin{list}{}{%
+  \setlength{\topsep}{0pt}%
+  \setlength{\leftmargin}{#1}%
+  \setlength{\rightmargin}{#2}%
+  \setlength{\listparindent}{\parindent}%
+  \setlength{\itemindent}{\parindent}%
+  \setlength{\parsep}{\parskip}%
+ }%
+\item[]}{\end{list}}
+
+\DeclareCaptionFormat{angle}{\ensuremath{\ll}#1#2#3\ensuremath{\gg}}
+
+\begin{document}
+
+\newlength{\marginwidth}
+\setlength{\marginwidth}{\marginparwidth}
+\addtolength{\marginwidth}{\marginparsep}
+
+\section{Custom Caption Format}
+
+For example, the following command in the document's preamble
+\begin {verbatim}
+    \DeclareCaptionFormat{angle}{\ensuremath{\ll}#1#2#3\ensuremath{\gg}}
+\end {verbatim}
+defines the \texttt{angle} format with double angle brackets 
+\verb+\ll+ and \verb+\gg+ surrounding the caption.
+The following code
+\begin {verbatim}
+   \captionsetup{format=angle}
+   \caption{This Caption has a Custom Format}
+\end {verbatim}
+produces the caption in Figure~\ref{fig:caption:angle}.
+\begin{figure}[htbp]
+    \centering
+    \captionsetup{format=angle}
+    \includegraphics[width=2in]{wide}
+    \captionof{figure}{This Caption has a Custom Format}
+    \label{fig:caption:angle}
+\end{figure}
+
+\section{Wide Figures}
+When the narrow environment is defined as
+\begin {verbatim}
+     \newenvironment{narrow}[2]{% 
+      \begin{list}{}{% 
+       \setlength{\topsep}{0pt}% 
+       \setlength{\leftmargin}{#1}% 
+       \setlength{\rightmargin}{#2}% 
+       \setlength{\listparindent}{\parindent}% 
+       \setlength{\itemindent}{\parindent}% 
+       \setlength{\parsep}{\parskip}% 
+      }% 
+     \item[]}{\end{list}} 
+\end {verbatim}
+The following code 
+\begin {verbatim}
+     \begin{figure}
+     \begin{narrow}{-2in}{0in}
+        \includegraphics[width=\linewidth]{wide}
+        \caption{This is a wide figure}
+     \end{narrow}
+     \end{figure}
+\end {verbatim}
+uses this \texttt{narrow} environment to 
+make the figure extend 2~inches into the left margin,
+producing Figure~\ref{fig:wide}.
+
+\begin{figure}[htbp]
+\begin{narrow}{-2in}{0in}
+    \includegraphics[width=\linewidth]{wide}
+    \caption{This is a wide figure}
+    \label{fig:wide}
+\end{narrow}
+\end{figure}
+
+\end{document}
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-02-22}{v3.0j}
+
+\begin{verbatim}
+Date:         Wed, 22 Feb 2006 16:03:30 +0100
+Reply-To:     German Language TeX Users Group Communication List
+              <TEX-D-L@LISTSERV.DFN.DE>
+Sender:       German Language TeX Users Group Communication List
+              <TEX-D-L@LISTSERV.DFN.DE>
+Subject:      caption und hyperref
+
+Moin,
+
+ein Schuß ins Blaue, bevor ich mir ein Minimalbeispiel
+aus den Rippen schneide. Vielleicht hat jemand eine 
+frisch polierte Kristallkugel dabei ...
+
+In welcher Richtung habe ich zu suchen, wenn die unten
+angehängte Fehlermeldung beim LaTeXen auftaucht? Der
+Hinweis, in der caption-Doku zu suchen, hat mich leider
+nicht erleuchtet.
+
+Gruß und vielen Dank im voraus
+
+Jürgen
+
+
+
+(c:/Program Files/TeXLive/texmf-local/tex/latex/subfig/subfig.sty
+Package: subfig 2004/01/28 ver: 1.2 subfig package
+
+(c:/Program Files/TeXLive/texmf-local/tex/latex/caption/caption.sty
+Package: caption 2006/01/12 v3.0i Customising captions (AR)
+
+(c:/Program Files/TeXLive/texmf-local/tex/latex/caption/caption3.sty
+Package: caption3 2006/01/12 v3.0i caption3 kernel (AR)
+\captionmargin=\dimen163
+\captionmarginx=\dimen164
+\captionwidth=\dimen165
+\captionindent=\dimen166
+\captionparindent=\dimen167
+\captionhangindent=\dimen168
+)
+
+! Package caption Error: No value specified for hyperref.
+
+See the caption package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...
+
+l.122 \ProcessOptionsWithKV{caption}
+
+?
+Package caption Info: float package v1.3 (or newer) detected on input line 263.
+
+
+
+--
+FAQ: http://www.dante.de/faq/de-tex-faq/
+
+Durchsuchbares Archiv: http://tinyurl.com/cdcb6
+Unsubscribe/Verwaltung: http://tinyurl.com/b9tod
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-03-08}{v3.1i}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Bilder nebeneinander und Abstände von \captionof
+Date: Wed, 08 Mar 2006 16:23:35 +0100
+Message-ID: <dumstu$gg8$1@sagnix.uni-muenster.de>
+
+Hallo,
+
+ich möchte zwei Bilder nebeneinander setzten, oben bündig ausrichten und
+mit je einer Unterschrift versehen.
+Prinzipiell klappt das auch, bis darauf, dass der Abstand zwischen Bild
+und Unterschrift nicht immer gleich groß ist, sondern davon abhängt, ob
+die Unterschrift ein- oder mehrzeilig ist.
+
+Wie kann man das beheben?
+
+Minimalbsp:
+
+\documentclass{scrartcl}
+\usepackage{caption}
+
+\begin{document}
+\noindent\begin{minipage}{\linewidth}
+  \parbox[t]{0.3\linewidth}{%
+    \vspace{0pt}
+    \centering
+    \rule{3cm}{3cm}
+    \captionof{figure}{short caption}
+    }%
+  \parbox[t]{0.3\linewidth}{%
+    \vspace{0pt}
+    \centering
+    \rule{3cm}{3cm}
+    \captionof{figure}{long caption long caption long caption long
+                       caption long caption}
+  }%
+  \parbox[t]{0.3\linewidth}{%
+    \vspace{0pt}
+    \centering
+    \rule{3cm}{3cm}
+    \captionof{figure}{longer caption longer caption longer caption
+                       longer caption longer caption}
+  }%
+\end{minipage}
+\end{document}
+
+Ein \listfiles liefert mir
+
+ *File List*
+scrartcl.cls    2003/01/31 v2.9n LaTeX2e KOMA document class
+scrlfile.sty    2003/01/31 v2.9n LaTeX2e KOMA package
+  size11.clo    2001/04/21 v1.4e Standard LaTeX file (size option)
+typearea.sty    2003/01/31 v2.9n LaTeX2e KOMA package
+ caption.sty    2006/01/12 v3.0i Customising captions (AR)
+caption3.sty    2006/01/12 v3.0i caption3 kernel (AR)
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+ragged2e.sty    2003/02/24 v2.02 ragged2e Package (MS)
+everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+ ***********
+
+
+Besten Dank
+Christoph
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-03-14}{v3.1}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: \hrule vs. addmargin-Umgebung
+Date: 14 Mar 2006 15:05:17 GMT
+Message-ID: <47o4ddFgdt0iU1@news.dfncis.de>
+
+Guten Tag,
+
+ich habe hier ein eigenes \caption Layout, das die jeweilige
+Beschriftung zwischen zwei \hrule setzt. Diese \caption benutze
+ich jetzt neuerdings auch in addmargin Umgebungen, da meine
+Tabellen den Satzspiegel verlassen.
+
+Jetzt habe ich das Problem, dass allerdings die \hrule innerhalb
+der addmargin-Umgebung nicht länger geworden ist, d.h. also zu kurz
+ist.
+
+Wie könnte ich a) mein \caption Layout umdefinieren, so dass ich
+entscheiden kann, ob ich in einer addmargin-Umgebung bin oder nicht
+(um dann ggfs. eine entsprechend längere \hrule zu setzen) oder b)
+eine eigene \hrule basteln, die automatisch länger wird, falls wir
+in einer addmargin Umgebung sind?
+
+Herzlichen Gruß,
+
+Michael.
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-03-21}{v3.0j}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: [KOMA+caption]: Seitliche Tabellenüberschriften
+Date: Mon, 20 Mar 2006 16:22:44 +0100
+Message-ID: <uu09tp2d7.fsf@uwe-siart.de>
+
+Hallo,
+
+ich weiß, dass sich KOMA-Klassen und das 'caption'-Paket zwar schon sehr
+gut, aber noch nicht in allen Punkten vertragen. Markus und Axel haben
+mir vor etwa zwei Jahren auch erklärt, was alles getan wird, um das zu
+ändern und dass zur Zeit der einzige Weg sein kann, entweder auf KOMA
+oder auf 'caption' zu verzichten.
+
+Weil ich in einem großen Dokument scrbook.cls und das 'subfig'-Paket
+(und damit auch das 'caption'-Paket) verwende, möchte ich fragen, ob es
+für folgenden Effekt nicht trotzdem einen Workaround gibt:
+
+Wenn KOMA + 'caption' verwendet wird und man Tabellenüberschriften haben
+möchte, dann kommt es bei seitlichen Überschriften mittels der
+{captionbeside}-Umgebung zu einer Fehlpositionierung der Legende: Sie
+wird zu hoch platziert.
+
+Den Effekt sieht man hier, vergleiche mit/ohne {caption}:
+
+% --------------------------------------------
+\documentclass{scrartcl}
+\usepackage[tableposition=top]{caption}
+\begin{document}
+\begin{table}
+  \begin{captionbeside}{Tabellen\"uberschrift}
+    \begin{tabular}{ll}\hline
+      Zelle & Zelle \\ \hline
+    \end{tabular}
+  \end{captionbeside}
+\end{table}
+\end{document}
+% --------------------------------------------
+
+Gibt einen Trick, das zu retten?
+
+ *File List*
+scrartcl.cls    2004/09/16 v2.9t LaTeX2e KOMA document class
+scrlfile.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+  size11.clo    2004/02/16 v1.4f Standard LaTeX file (size option)
+typearea.sty    2004/09/16 v2.9t LaTeX2e KOMA package
+ caption.sty    2006/01/12 v3.0i Customising captions (AR)
+caption3.sty    2006/01/12 v3.0i caption3 kernel (AR)
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+ragged2e.sty    2003/03/25 v2.04 ragged2e Package (MS)
+everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+ ***********
+
+-- 
+Uwe
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-05-15}{v3.0k}
+
+\begin{verbatim}
+Date: Mon, 15 May 2006 10:04:33 -0400
+Newsgroups: comp.text.tex
+Subject: wrapfig and caption
+Message-ID: <44688a65$0$558$b45e6eb0@senator-bedfellow.mit.edu>
+
+Hi,
+
+I found that when I use both wrapfig, caption, and setspace packages 
+together, the line spacing in caption changes to the spacing of the 
+text.  I want to use different line spacing for my captions.  I found an 
+instruction in caption package but it does not work with either wrapfig 
+or setspace.
+
+Thanks.
+
+Dan
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{06-05-31}{-- , Bug is in subfig package, not in caption package}
+
+\begin{verbatim}
+Newsgroups: comp.text.tex
+Subject: new caption (3.0j) and adjustwidth (regression?)
+Date: Wed, 31 May 2006 21:36:24 +0000 (UTC)
+Message-ID: <e5l28o$na9$1@netlx020.civ.utwente.nl>
+
+Hello,
+
+I am trying set two floats next to each other with subfig. This works
+all ok, unless it's wider than \textwidth. Below is a minimal example to
+demonstrate. I am using adjustwidth of package chngpage.
+
+Using caption version 3.0c it all looks ok (the main caption of figure 1.1
+is not exactly centered though):
+
+ *File List*
+ article.cls    2004/02/16 v1.4f Standard LaTeX document class
+  size10.clo    2004/02/16 v1.4f Standard LaTeX file (size option)
+ caption.sty    2004/07/16 v3.0c Customising captions (AS)
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+  subfig.sty    2005/06/28 ver: 1.3 subfig package
+chngpage.sty    2003/08/10 v1.2 change page layout
+ragged2e.sty    2003/03/25 v2.04 ragged2e Package (MS)
+everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+ ***********
+
+But using newer version 3.0j, I get the following output. The overfull
+boxes are both subcaptions. The first exceeds in the second. The second
+exceeds the margin.
+
+Overfull \hbox (113.811pt too wide) in paragraph at lines 22--22
+[] []
+
+Overfull \hbox (113.811pt too wide) in paragraph at lines 27--27
+[] []
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] (./subfl.aux)
+
+ *File List*
+ article.cls    2004/02/16 v1.4f Standard LaTeX document class
+  size10.clo    2004/02/16 v1.4f Standard LaTeX file (size option)
+ caption.sty    2006/03/21 v3.0j Customising captions (AR)
+caption3.sty    2006/03/16 v3.0j caption3 kernel (AR)
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC)
+  subfig.sty    2005/06/28 ver: 1.3 subfig package
+chngpage.sty    2003/08/10 v1.2 change page layout
+ragged2e.sty    2003/03/25 v2.04 ragged2e Package (MS)
+everysel.sty    1999/06/08 v1.03 EverySelectfont Package (MS)
+ ***********
+
+But the release notes of caption 3.0i says:
+Now works correctly inside list-based environments like "narrow" or "wide"
+
+The real reason I am trying this, is because I want to put two source
+listings (lstlisting environment) inside subfloat. I created the
+following package to achieve this:
+
+http://composestar.cvs.sourceforge.net/composestar/home/thesis2006/style/lstsub.sty?view=markup
+
+It creates a newsubfloat for lstlisting.
+
+Can anyone shed some light on this problem?
+
+Cheers
+ -Olaf
+
+The is the minimal example (which goes wrong with caption v3.0j):
+
+
+\documentclass{article}
+
+\usepackage{caption}
+\usepackage{subfig}
+\usepackage{chngpage}
+
+\listfiles
+
+\begin{document}
+
+\section{Hello}
+
+This is one paragraph of text.
+Foo foo foo foo foo foo foo foo.
+
+\begin{figure}[t]
+  \begin{adjustwidth}{-2cm}{-2cm}
+  \centering
+  \subfloat[One subcaption. Let's make this subcaption a bit longer.]{%
+    \label{fig:example_one_a}%
+    \parbox{7cm}{One one one one one one one one one one one one one one one one.}%
+  }%
+  \qquad
+  \subfloat[Another subcaption.]{%
+    \label{fig:example_one_b}%
+    \parbox{7cm}{Two two two two two two two two two two two two two two two two.}%
+  }
+  \caption{The main caption is here.}%
+  \label{fig:example_one}%
+  \end{adjustwidth}%
+\end{figure}
+
+This is also one paragraph of text to conclude this example, see Figure~\ref{fig:example_one}.
+Bar bar bar bar bar bar bar bar.
+
+\begin{figure}[b]
+  \centering
+  \subfloat[One subcaption. Let's make this subcaption a bit longer.]{%
+    \label{fig:example_two_a}%
+    \parbox{5cm}{One one one one one one one one one one one one one one one one.}%
+  }%
+  \qquad
+  \subfloat[Another subcaption.]{%
+    \label{fig:example_two_b}%
+    \parbox{5cm}{Two two two two two two two two two two two two two two two two.}%
+  }
+  \caption{The main caption is here.}%
+  \label{fig:example_two}%
+\end{figure}
+
+\end{document}
+\end{verbatim}
+
+\begin{example}{}
+
+\begin{figure}[H]
+  \begin{adjustwidth}{-2cm}{-2cm}
+  \centering
+  \subfloat[One subcaption. Let's make this subcaption a bit longer.]{%
+    \label{fig:example_one_a}%
+    \parbox{7cm}{One one one one one one one one one one one one one one one one.}%
+  }%
+  \qquad
+  \subfloat[Another subcaption.]{%
+    \label{fig:example_one_b}%
+    \parbox{7cm}{Two two two two two two two two two two two two two two two two.}%
+  }
+  \caption{The main caption is here.}%
+  \label{fig:example_one}%
+  \end{adjustwidth}%
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \subfloat[One subcaption. Let's make this subcaption a bit longer.]{%
+    \label{fig:example_two_a}%
+    \parbox{5cm}{One one one one one one one one one one one one one one one one.}%
+  }%
+  \qquad
+  \subfloat[Another subcaption.]{%
+    \label{fig:example_two_b}%
+    \parbox{5cm}{Two two two two two two two two two two two two two two two two.}%
+  }
+  \caption{The main caption is here.}%
+  \label{fig:example_two}%
+\end{figure}
+
+\end{example}
+
+%******************************************************************************%
+
+\bug{06-10-12}{v3.1}
+
+\begin{verbatim}
+Newsgroups: de.comp.text.tex
+Subject: Unverträglichkeit von caption.sty und captionsbeside (KOMAScript)?
+Date: 12 Oct 2006 06:17:13 -0700
+Message-ID: <1160659033.196840.138750@c28g2000cwb.googlegroups.com>
+
+Moin,
+
+mein Problem mit captionbeside aus KOMAScript zeigt das
+unten stehende Beispiel (sofern ich es nicht wieder vergesse):
+In der enumerate-Umgebung fällt die Gesamt-Breite von
+Abbildung und caption zu gering aus. Ich habe schon versucht,
+in einer Gruppe direkt um die Umgebung die \linewidth wieder
+auf \textwidth zu setzen, aber dieser naive Ansatz war
+offensichtlich untauglich. Das Problem tritt allerdings erst auf,
+wenn ich \usepackage{caption} im Header habe. Und auf
+dieses Paket möchte ich nicht so gerne verzichten. Wie kann
+ich captionbeside überreden, die ganze Textbreite zu nutzen?
+
+Gruß
+
+Jürgen
+
+P. S.: Diese Frage ging gestern früh schon an TeX-D-L, bisher
+allerdings ohne Erfolg. Da es klein wenig eilt, hier der zweite
+Ansatz.
+
+
+\documentclass[parskip]{scrartcl}
+\usepackage{caption}
+\usepackage{blindtext}
+\begin{document}
+\begin{enumerate}
+\item \blindtext
+%
+\begin{figure}
+\begin{captionbeside}{Diese caption steht neben der Abbildung und so
+weiter und so fort}
+ \rule{0.5\linewidth}{10\baselineskip}
+\end{captionbeside}
+\end{figure}
+%
+\blindtext
+\end{enumerate}
+\end{document}
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-01-19}{v3.0l}
+
+\begin{verbatim}
+To: caption@sommerfee.de
+Subject: Caption version 2006/03/16 v3.0j problem and solution
+Date: 19 Jan 2007 12:39:22 +0100
+Message-ID: <418xfzfdp1.fsf@obel19.ida.liu.se>
+
+One of our PhD students encountered a problem with the caption package
+when used in conjunction with the combine package.
+
+When using caption and combine together, \caption causes LaTeX to go
+into an endless loop.
+
+Caption uses \AtBeginDocument to patch the \caption macro, but does
+not protect against defining it twice. When using combine,
+AtBeginDocument code is expanded once for the master document and once
+for each included document. On the second expansion, \caption@old is
+redefined as the patched \caption, so when \caption is expanded, a
+never-ending sequence of \caption@caption is produced.
+
+I suggest you don't patch \caption if \caption@old is defined, similar
+to how \caption is not patched if \cc@caption is defined. Something
+like this ought to get the job done (though this patch is *not* tested
+since I patched the sty file directly).
+
+
+--- caption.dtx.old     Fri Jan 19 12:36:41 2007
++++ caption.dtx Fri Jan 19 10:51:28 2007
+@@ -3701,6 +3701,7 @@
+ %
+ %    \begin{macrocode}
+   \@ifundefined{cc@caption}{%
++  \@ifundefined{caption@old}{%
+ %    \end{macrocode}
+ %
+ % \begin{macro}{\caption}
+@@ -3730,7 +3731,7 @@
+ % \end{macro}
+ %
+ %    \begin{macrocode}
+-  }{%
++  }}{%
+ %    \end{macrocode}
+ %
+ % \changes{v3.0c}{2004/07/16}{Bugfix 04-07-15: \package{captcont} support fixed}
+
+
+
+-- 
+David Byers.
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-01-20}{v3.0l}
+
+\begin{verbatim}
+Message-ID: <000f01c73c80$d3ca4f00$3e653ac2@home196ib52sok>
+To: "Axel Sommerfeldt" <axel.sommerfeldt@arcor.de>
+Subject: \captionsetup and keyval errmessages
+Date: Sat, 20 Jan 2007 13:49:25 +0300
+
+Hi Axel,
+
+I occasionally mistyped option in \usepackage..{floatrow} and get error
+message
+
+----------------
+! Package caption Error: wrongkey undefined.
+
+
+See the caption package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...
+
+l.122 \ProcessOptionsWithKV{caption}
+---------------
+
+
+With other packages this error message addressed from keyval package itself.
+I found that this error message ``corrected'' by \captionsetup command
+inside caption3.sty. The same you could get in the case of wrong key in
+hyperref after caption loaded.
+
+My mind is in big mess: whether I can follow your ``hack'' to get correctly
+addressed error messages or... I found that hyperref's keyval options get
+error messages addressed from keyval unless the caption package loaded
+before.
+Maybe it is a good way to follow you and restore \KV@errx in
+\AtEndOfPackage?
+
+Best regards
+Olga
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-03-09}[v3.0k]{v3.0n}
+
+\begin{verbatim}
+To: caption@sommerfee.de
+Message-Id: <B32FAB42-2B00-4DBA-91CD-C478E7C75262@gmx.de>
+Subject: Bug in caption.sty
+Date: Fri, 9 Mar 2007 18:33:47 +0100
+
+Sehr geehrter Herr Sommerfeldt,
+
+sie sind in der Beschreibung zum Caption-Style als Maintainer genannt.
+Der aktuelle caption.sty (10.Jan.07, Teil der TexLive Distribution)  
+scheint
+Probleme zu haben, die Höhe umgebrochener Beschriftungen korrekt zu  
+berechnen.
+Der unten angefügte Testfall definiert zwei Minipages, die bündig zur  
+unteren
+Seite ausgerichtet sind. Die beiden angehängten PFDs zeigen die  
+Ausgabe des
+alten bzw. des neuen Styles. Meiner Meinung nach verhält sich der  
+alte Style
+korrekt. Gibt es für das Problem einen einfachen workaround?
+
+\documentclass[a4paper,12pt,twoside,fleqn]{book}
+\RequirePackage[font={small},labelfont= {small,bf,up},singlelinecheck=off,%
+  tableposition=bottom]{caption}
+
+\begin{document}
+\framebox{
+\begin{minipage}[b][2cm][b]{2cm}
+bla bla
+\end{minipage}}
+\framebox{
+\begin{minipage}[b][2cm][b]{2cm}
+\captionof{figure}{Test}
+\end{minipage}}
+
+\end{document}
+\end{verbatim}
+
+\begin{example}{font={small},labelfont= {small,bf,up},singlelinecheck=off}
+%\captionsetup[table]{position=bottom}
+\vspace*{1ex}
+
+\framebox{
+\begin{minipage}[b][2cm][b]{2cm}
+\small bla bla\strut
+\end{minipage}}
+\framebox{
+\begin{minipage}[b][2cm][b]{2cm}
+\captionof{figure}{Test}
+\end{minipage}}
+
+\vspace*{1ex}
+\end{example}
+
+%******************************************************************************%
+
+\bug{07-09-13a}[v3.1]{v3.1a}
+
+\begin{verbatim}
+Date: Thu, 13 Sep 2007 09:43:52 +0200 (CEST)
+Subject: Caption-Paket
+To: caption@sommerfee.de
+Message-ID: <23724.62814.qm@web26911.mail.ukl.yahoo.com>
+
+Guten Tag Herr Sommerfeld,
+
+bitte entschuldigen Sie, dass ich Sie direkt
+anspreche.
+Ist es möglich das die neueste Version Ihres
+Caption-Paketes Probleme mit dem Listings-Paket
+hervorruft?
+Ich hatte gestern auf die neue Version umgestellt und
+seit dem kann ich bei meinen Listings die Optionen
+Captions und Label nicht mehr verwenden.
+Kann ich irgendwie die alte Version wieder herstellen,
+um weiterarbeiten zu können? Oder gibt es eine Art
+Workaround?
+
+Mit freundlichen Grüßen
+Frank
+
+
+Date: Thu, 13 Sep 2007 13:06:05 +0200 (CEST)
+Subject: Re: Caption-Paket
+To: Axel Sommerfeldt <caption@sommerfee.de>
+Message-ID: <745787.93831.qm@web26906.mail.ukl.yahoo.com>
+
+Hallo Herr Sommerfeld,
+
+vielen Dank für Ihre schnelle Antwort.
+
+> Könnten Sie mir ein Beispieldokument zuschicken,
+> welches das Problem 
+> aufzeigt? 
+Bei diesen Einstellungen gab es das Problem. Ich habe
+es auch schon auf das Caption-Paket eingegrenzt. Da
+der Fehler verschwindet, sobald das Paket
+auskommentiert wird.
+
+\documentclass[a4paper, 12pt, german, halfparskip]{scrreprt} 
+
+\usepackage[german]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+
+\usepackage{listings}
+
+\usepackage[margin=10pt, font=small, labelfont=bf, format=plain]{caption, subfig}
+\usepackage[pdfborder = false, bookmarksnumbered = true]{hyperref}
+
+\begin{document}
+  \begin{lstlisting}[float=htb, caption={Messung der Ausführungszeit},
+                     label=list:ZeitMarkert]
+    \\Code
+  \end{lstlisting}
+\end{document}
+
+Das folgende ist ein Ausschnitt aus der log-Datei
+! Argument of \strip@prefix has an extra }.
+ 
+                \par 
+l.22 ...Ausführungszeit}, label=list:ZeitMarkert ]
+                                                  
+I've run across a `}' that doesn't seem to match
+anything.
+For example, `\def\a#1{...}' and `\a}' would produce
+this error. If you simply proceed now, the `\par' that
+I've just inserted will cause me to report a runaway
+argument that might be the root of the problem. But if
+your `}' was spurious, just type `2' and it will go
+away.
+
+Runaway argument?
+\relax
+\end{verbatim}
+%! Paragraph ended before \strip@prefix was complete.
+% 
+%                   \par 
+%l.22 ...Ausführungszeit}, label=list:ZeitMarkert ]
+%                                                  
+%I suspect you've forgotten a `}', causing me to apply
+%this
+%control sequence to too much text. How can we recover?
+%My plan is to forget the whole thing and hope for the
+%best.
+%
+%Runaway argument?
+%! Paragraph ended before \strip@period was complete.
+% 
+%                   \par 
+%l.22 ...Ausführungszeit}, label=list:ZeitMarkert ]
+%                                                  
+%I suspect you've forgotten a `}', causing me to apply
+%this
+%control sequence to too much text. How can we recover?
+%My plan is to forget the whole thing and hope for the
+%best.
+%
+%! Undefined control sequence.
+%\label ... \@currentlabelname \relax .\relax \@@@ 
+%                                                 
+%}\protected@write \@auxout...
+%l.22 ...Ausführungszeit}, label=list:ZeitMarkert ]
+%                                                  
+%The control sequence at the end of the top line
+%of your error message was never \def'ed. If you have
+%misspelled it (e.g., `\hobx'), type `I' and the
+%correct
+%spelling (e.g., `I\hbox'). Otherwise just continue,
+%and I'll forget about whatever was undefined.
+\begin{verbatim}
+Grüße
+Frank
+\end{verbatim}
+
+\bigskip
+\noindent\emph{Anmerkung: Der Fehlerfall wurde in das Testdokument
+{\normalfont\texttt{hypcap\_base.tex}} eingepflegt}
+
+%******************************************************************************%
+
+\bug{07-09-13b}[v3.1]{v3.1a}
+
+\begin{verbatim}
+http://www.mrunix.de/forums/showthread.php?t=53862
+Neues Caption Paket verträgt sich nicht mit Koma Klassen?
+
+Hallo
+Seit ich das neuste Caption Paket v3.1 mit den KOMA-Script package v.2.97a
+benutze, bekomme ich die Fehlermeldung:
+
+"Something's wrong -- perhaps a missing \item"
+
+Dies nur dann, wenn ich beim Caption Paket die Optionen justification=centering,
+labelsep=newline kombiniere und die Caption so lange ist, dass sie automatisch
+auf mehrere Zeilen umbricht.
+
+Hier mal ein Minimalbeispiel:
+Code:
+
+\documentclass[12pt, nochapterprefix, BCOR0mm]{scrreprt}
+\usepackage[justification=centering,labelsep=newline]{caption}
+\begin{document}
+test
+\begin{figure}
+	\caption{sehr langer text sehr langer text sehr langer text sehr langer
+      text sehr langer text sehr langer text}
+\end{figure}			
+\end{document}
+
+Weiter scheint es so, dass beim Weglassen der Option justification=centering
+zwar keine Fehlermeldung mehr erscheint, die Option labelsep=newline aber
+unwirksam ist.
+
+Ich möchte nun aber, dass das Label der Beschriftung auf einer Zeile steht und
+darunter (im Idealfall zentriert) die Beschreibung.
+Kann mir jemand weiterhelfen?
+
+Besten Dank!
+__________________
+Grüsse
+
+Thomas
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-09-14}[v3.1]{v3.1a}
+
+\begin{verbatim}
+Date: Fri, 14 Sep 2007 01:45:53 +0200
+To:  caption@sommerfee.de
+Subject: [caption-Paket] Fehler mit neuem caption 3.1 und longtables
+
+Hallo Axel,
+
+ich habe gerade das neue caption-Paket installiert und kann nun meine
+Dokumente nicht mehr texen. Das Problem sind captions in longtables:
+
+\documentclass{scrartcl}
+\usepackage{longtable}
+\usepackage{caption}
+
+\begin{document}
+\begin{longtable}{c|c|c|c|c}
+\caption[Longtable]{Longtable with caption}\\
+\hline
+1 & 2 & 3 & 4 & 5\tabularnewline
+\hline
+asd & s & s & s & asd\tabularnewline
+\hline
+\end{longtable}
+\end{document}
+
+Die Fehlermeldung lautet:
+! You can't use a prefix with `\noalign'.
+<to be read again>
+                   \noalign
+l.16 \caption
+             [Longtable]{Longtable with caption}\\
+
+Der Fehler taucht aber nur auf, wenn ich eine koma-skript Klasse verwende.
+Gibt es da einen Workaround? caption for longtable zu laden hilft leider
+nicht weiter. (Ich schreibe für das Programm LyX die Dokus und mit dem
+neuen caption 3.1 kann man nun die Handbücher nicht mehr kompilieren.)
+
+Danke und Gruß
+Uwe
+\end{verbatim}
+
+\bigskip
+\noindent\emph{Anmerkung: Der Fehlerfall wurde in das Testdokument
+{\normalfont\texttt{koma-script.tex}} eingepflegt}
+
+%******************************************************************************%
+
+\bug{07-09-15}[v3.1]{v3.1a}
+
+\begin{verbatim}
+Date: Fri, 14 Sep 2007 15:48:18 +0200
+To: Axel Sommerfeldt <caption@sommerfee.de>
+Subject: Re: [caption-Paket] Fehler mit neuem caption 3.1 und longtables
+In-Reply-To: <5.2.1.1.2.20070914064227.01a53c60@post.strato.de>
+
+Axel Sommerfeldt schrieb:
+
+Danke für den Bug-Report. Ich habe den Fehler nachgestellt, beseitigt,
+und werde wohl in den nächsten Tagen eine neue Version 3.1a nach CTAN packen.
+
+Wow, das ging aber schnell!
+
+> 2.  Die dieser E-Mail anhängende Version 3.1a des caption-Paketes
+> ausprobieren. Eine Rückmeldung, ob damit deine Probleme beseitigt sind,
+> wäre toll!
+
+Leider ist jetzt ein neuer Fehler drin:
+
+-------
+\documentclass{scrartcl}
+
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+
+\usepackage{longtable}
+\usepackage{subfigure}
+
+\usepackage{caption}
+
+\begin{document}
+
+\begin{longtable}{c|c|c|c|c}
+\caption[Longtable]{Longtable with caption}\\
+\hline
+1 & 2 & 3 & 4 & 5\tabularnewline
+\hline
+asd & s & s & s & asd\tabularnewline
+\hline
+\end{longtable}
+
+\end{document}
+-------
+
+Die Fehlermeldung lautet nun:
+
+! Undefined control sequence.
+<argument> if\@captype
+                       topcap
+l.14 \caption[Longtable]{Longtable with caption}
+                                                \\
+
+Jetzt stört sich caption am Paket subfigure.
+
+Danke und Gruß
+Uwe
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-09-17a}[v3.1]{v3.1b}
+
+\begin{verbatim}
+Subject: Caption / hyperref bug
+Date: Mon, 17 Sep 2007 07:18:02 +0200
+Message-ID: <9C48EEFF0A9A1147A920EBEF2CE8CBF0E1438D@STBEVS01.stb.sun.ac.za>
+To: <caption@sommerfee.de>
+
+Axel 
+
+There is a clash between caption and hyperref in the newest versions of
+both packages. It occurs with the breaklinks=true option of hyperref in
+Latex. PdfLatex do not give the same error. See the example that follows
+
+Danie Els 
+
+   %--- test.tex ------------------- 
+   \documentclass{article} 
+   \usepackage{caption} 
+   \usepackage{hyperref} 
+   \hypersetup{breaklinks=true} %--> = false, then there is no error 
+   \begin{document} 
+      \begin{figure} 
+      \end{figure} 
+   \end{document} 
+   %-------------------------------- 
+
+If I run: 
+
+   pdflatex test.tex  --> No errors 
+
+   latex test.tex     --> This gives the following error: 
+
+        ! You can't use `\prevdepth' in horizontal mode. 
+            \caption@@anchor ...ption@hypcapspace }\prevdepth\@tempdima \endgroup 
+
+This is for Miktex 2.7 Beta 2 
+
+ *File List* 
+ article.cls    2005/09/16 v1.4f Standard LaTeX document class 
+  size10.clo    2005/09/16 v1.4f Standard LaTeX file (size option) 
+ caption.sty    2007/09/16 v3.1a Customising captions (AR) 
+caption3.sty    2007/09/16 v3.1a caption3 kernel (AR) 
+  keyval.sty    1999/03/16 v1.13 key=value parser (DPC) 
+hyperref.sty    2007/06/14 v6.76i Hypertext links for LaTeX 
+ hycolor.sty    2007/04/11 v1.1 Code for color options of hyperref/bookmark (HO) 
+  pd1enc.def    2007/06/14 v6.76i Hyperref: PDFDocEncoding definition (HO) 
+etexcmds.sty    2007/05/06 v1.0 Providing prefix for e-TeX command names (HO) 
+infwarerr.sty   2007/06/14 v1.1 Providing info/warning/message (HO) 
+hyperref.cfg    2002/06/06 v1.2 hyperref configuration of TeXLive 
+kvoptions.sty   2007/06/11 v2.7 Connects package keyval with LaTeX options (HO) 
+     url.sty    2005/06/27  ver 3.2  Verb mode for urls, etc. 
+  hdvips.def    2007/06/14 v6.76i Hyperref driver for dvips 
+ pdfmark.def    2007/06/14 v6.76i Hyperref definitions for pdfmark specials 
+ nameref.sty    2007/05/29 v2.31 Cross-referencing by name of section 
+refcount.sty    2006/02/20 v3.0 Data extraction from references (HO)  
+*********** 
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-09-17b}[v3.1]{v3.1b}
+
+\begin{verbatim}
+http://www.mrunix.de/forums/showthread.php?t=53862
+Neues Caption Paket verträgt sich nicht mit Koma Klassen?
+
+Hi Axel
+Hab zwar caption 3.1a noch nicht drauf, aber ich hab rausgefunden, woran es
+vorher lag. Anscheinend verursacht \centering innerhalb der figure Umgebung
+den Fehler. Hier ein Minimalbeispiel:
+
+Code:
+
+\documentclass{scrreprt}
+\usepackage[format=plain,labelsep=newline]{caption}
+\begin{document}
+test
+\begin{figure}
+	\centering
+	\caption{sehr langer text sehr langer text sehr langer text sehr langer
+	    text sehr langer text sehr langer text}
+\end{figure}			
+\end{document}
+
+Werde jetzt dann dein neues Packet drauf tun und schauen, ob sich was tut.
+
+Grüsse
+
+Thomas
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-10-17}[v3.1]{v3.1c}
+
+\begin{verbatim}
+http://www.mrunix.de/forums/showthread.php?t=54472
+Float too large Problem bei sidewaystable nach Miktex Update 
+
+Hallo,
+
+ich hab vor ein paar Tagen ein Miktex Update gemacht (weiss aber nicht mehr,
+welche Pakete da alle aktualisiert wurden) und habe seit dem ein Problem mit
+gedrehten Tabellen:
+
+Ich nutze sidewaystable mit tabularx:
+
+Code:
+
+\begin{sidewaystable}[htb]
+	\begin{tabularx}{\textwidth}{l|X|X}
+        ...
+	\end{tabularx}
+	\caption{bla bla}
+	\label{tab:konfiguebersicht}
+\end{sidewaystable}
+
+Jetzt spuckt mir LaTeX bei jeder gedrehten Tabelle die Warnung:
+"Float too large for page by 1.0pt".
+
+Am Inhalt der Tabelle scheint es nicht zu liegen. Auch wenn man in jede Spalte
+nur einen Buchstaben einträgt kommt die Warnung. Und dass die Tabelle (oder
+der Float) genau 1pt zu groß ist, ist ja auch etwas merkwürdig.
+
+Ich hab nochmal ein kleines Beispiel gebastelt:
+
+Code:
+
+\documentclass[%
+	pdftex,%        PDFTex verwenden
+	a4paper,%       A4 Papier
+]{scrreprt}
+
+\usepackage{scrpage2}
+
+\usepackage[german,ngerman]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage[pdftex,
+	]
+	{hyperref}
+
+\usepackage[
+	bf,			% fett
+	hang		% hängend	
+] {caption}
+
+\usepackage{tabularx}
+\usepackage{rotating}
+
+
+\begin{document}
+
+\chapter{Hallo}
+
+\begin{sidewaystable}[htb]
+	\begin{tabularx}{\textwidth}{l|l|l}
+		\textbf{A}	&	\textbf{B} 	&	\textbf{C}\\
+	\end{tabularx}
+	\caption{Caption}
+	\label{tab:tabelle}
+\end{sidewaystable}
+
+\end{document}
+
+Das komische ist: Die Warnung verschwindet, wenn man das caption- oder das
+hyperref-Paket weglässt. Beide brauche ich aber.
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-10-24}[v3.0f]{v3.1d}
+
+\begin{verbatim}
+http://www.mrunix.de/forums/showthread.php?t=54618
+Package caption error: Undefined format 'normal'
+
+Hi,
+
+I'm writing my thesis in latex using Miktex as distribution and TeXnicCenter
+as editor. I can compile my script but I'm getting every time the error
+message mentioned above:
+Code:
+
+!Package caption error: Undefined format 'normal'
+See the caption package documentation for explanation.
+
+I just can't find out neither in the doc files nor over the net what this
+kind of error suppose to mean. I can also get an output which seems quite
+good to me.
+
+I'm not sure if it's important ( but I learned, that it almost never not
+important ) but I also get the warning:
+
+Code:
+
+Package caption warning: Unused \captionsetup[floatfoot] on input line 473.
+
+This line is empty and lay between two subsections that are not written yet.
+
+I downloaded Miktex yesterday and installed it this morning, so the reason
+can't be an old package.
+
+I looked into the caption Package directory and there are there three
+*.sty files (caption.sty, caption2.sty, caption3.sty)
+
+Has someone else this problem too?
+Has anyone an idea where is this coming from?
+
+THX
+
+frymor
+\end{verbatim}
+
+%******************************************************************************%
+
+\bug{07-11-09}[v3.0]{v3.1f}
+
+\begin{verbatim}
+Date: Fri, 09 Nov 2007 22:19:11 +0100
+Newsgroups: comp.text.tex
+Subject: figures, captions and skips
+Message-ID: <4734cee5$0$13123$9b4e6d93@newsspool2.arcor-online.net>
+
+Hi all,
+
+while including figures/images of various widths, I noticed
+that within the figure environment apparently the space/skip
+generated between the caption and the included image changes
+proportionally to the width of the image being included.  To
+be precise, I would expect the code
+
+\documentclass{book}
+
+...
+
+\usepackage{graphicx}
+\usepackage{caption}
+\captionsetup{position=bottom,font=small,labelfont=bf,format=hang}
+\usepackage{subfig}
+
+...
+
+\begin{figure}
+\centering
+\includegraphics[keepaspectratio=true]{the-image.pdf}
+\captionsetup{aboveskip=1em,belowskip=1em}
+\caption[the title]{the caption}
+\end{figure}
+
+to place a caption below the image (which is assumed to be of
+\textwidth width) using the same aboveskip amount that is being
+generated for an image of half that width.  However, the code
+
+...
+
+\begin{figure}
+\centering
+\subfloat[][]{\includegraphics[keepaspectratio=true]{the-image.pdf}}
+\captionsetup{aboveskip=1em,belowskip=1em}
+\caption{...}
+\end{figure}
+
+...
+
+does produce the intended aboveskip but with the drawback of a
+subnumber on a one image figure which is somewhat undesirable.
+Setting the global \abovecaptionskip had the same effect as
+\captionsetup{aboveskip=1em}, ie, only producing an offset
+bt not an absolute distance.
+
+Is there a way to unconditionally/globally set the aboveskip
+for a caption of a figure to a value that remains constant for
+all images irrespective of their dimension ?
+
+Thanks and regards,
+Christian Boehme
+\end{verbatim}
+\bigskip
+\begin{verbatim}
+Date: Thu, 15 Nov 2007 03:18:51 +0100
+Newsgroups: comp.text.tex
+Subject: Re: figures, captions and skips
+Message-ID: <473bac9d$0$27139$9b4e6d93@newsspool1.arcor-online.net>
+
+Martin Heller wrote:
+
+> \documentclass{book}
+> \usepackage[demo]{graphicx}
+> \usepackage{caption}
+> \captionsetup{position=bottom,font=small,labelfont=bf,format=hang}
+> \usepackage{subfig}
+> \usepackage{lipsum}
+> 
+> \begin{document}
+> 
+> \lipsum[1]
+> 
+> \begin{figure}[hbt]
+> \centering
+> \includegraphics[keepaspectratio=true,width=\textwidth]{the-image.pdf}
+
+Replace "width=\textwidth" with "width=0.5\textwidth" here and you
+will notice that the spacing between the image and the caption decreases.
+
+> \begin{figure}[hbt]
+> \centering
+> \subfloat[][]{\includegraphics[keepaspectratio=true,width=0.5\textwidth]
+
+Doing the opposite here (ie, width=\textwidth) does _not_ change the
+spacing, which was the point I was making.  However, it appears that the
+caption package code introduces these variable spacings (why I have no
+idea).  Throwing away all the \captionsetup{} statements in the figure
+environments and a
+
+\setlength{\abovecaptionskip}{0em}
+
+in the preamble will work and show consistent behaviour but bombs me back
+to where I started.  Needless to say, redefining \figurename does not
+do anything.
+
+Are there different Latex variants out there ?  I keep reading things
+that just Don't Work (TM) when trying them out myself.  I use
+
+pdfTeX using libpoppler 3.141592-1.40.3-2.2 (Web2C 7.5.6)
+
+to generate PDFs from Latex.
+
+Cheers,
+Christian
+\end{verbatim}
+\clearpage
+
+\begin{example}{}
+\begin{figure}[H]
+\centering
+\includegraphics[keepaspectratio=true,width=0.5\linewidth]{the-image.pdf}
+\captionsetup{aboveskip=1em,belowskip=1em}
+\caption[the title]{the caption}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[keepaspectratio=true,width=0.7\linewidth]{the-image.pdf}
+\captionsetup{aboveskip=1em,belowskip=1em}
+\caption[the title]{the caption}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[keepaspectratio=true,width=1.0\linewidth]{the-image.pdf}
+\captionsetup{aboveskip=1em,belowskip=1em}
+\caption[the title]{the caption}
+\end{figure}
+\end{example}
+
+%******************************************************************************%
+
+\bug{07-12-06}[v3.1]{v3.1f}
+
+\begin{verbatim}
+Newsgroups: comp.text.tex
+Subject: Re: Error using the caption package - Undefined control sequence
+Date: Wed, 5 Dec 2007 05:37:26 -0800 (PST)
+Message-ID: <b5bdef42-68c8-4b3e-8043-f635aaf92d28@v4g2000hsf.googlegroups.com>
+
+On Dec 5, 1:05 pm, Ulrike Fischer <ne...@nililand.de> wrote:
+> Am Wed, 5 Dec 2007 04:30:55 -0800 (PST) schrieb larse...@gmail.com:
+>
+> > Hi,
+>
+> > I just installed the newest version of the caption package as it was
+> > required in order to use subfig. However, now I get an error message
+> > upon using the \caption{} command which I, to my surprise, could not
+> > find anywhere on the web. Applying pdflatex to the document
+> > now results in the following message:
+>
+> > ! Undefined control sequence.
+> > \caption@dblarg #1->\kernel@ifnextchar
+>
+> I can't reproduce the error but I doubt anyway that caption is at
+> fault. \kernel@ifnextchar is here defined in latex.ltx (LaTeX2e
+> <2005/12/01>):
+>
+> \documentclass{article}
+> \makeatletter
+> \show\kernel@ifnextchar
+> \makeatother
+>
+> \begin{document}
+> test
+> \end{document}
+>
+> gives
+>
+> > \kernel@ifnextchar=\long macro:
+>
+> ....
+> l.3 \show\kernel@ifnextchar
+>
+> Is it also defined on your side?
+>
+> --
+> Ulrike Fischer
+
+From the source, \kernel@ifnextchar was added 2004/01/23.  So any
+LaTeX before that will be in trouble, I guess.
+
+Joseph Wright
+\end{verbatim}
+
+%******************************************************************************%
+
+\end{document}
+

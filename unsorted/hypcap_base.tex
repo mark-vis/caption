@@ -1,0 +1,688 @@
+\ifx\section\undefined
+  \PackageError{caption}{Use hypcap_false.tex or hypcap_true.tex}
+  \endinput
+\fi
+
+\errorcontextlines=3
+\sloppy
+
+\usepackage{float}
+\usepackage{floatflt}
+\usepackage[rightFloats]{fltpage}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{picins}
+\usepackage{picinpar} % must be loaded *after* picins! (why?)
+\usepackage{sidecap}
+\usepackage{supertabular}
+\usepackage{threeparttable}
+\usepackage{wrapfig}
+
+\usepackage{hyperref}
+\csname AfterHyperref\endcsname
+
+\captionsetup{figurewithin=section,tablewithin=section}
+
+\newcommand\sample{Some text for our page
+ that is reused over and over again. }
+
+\ifx\floatstyle\undefined \else
+\floatstyle{ruled}
+\newfloat{Program}{tbp}{lop}[section]
+%\floatname{Program}{Programm} % german translation
+\floatstyle{boxed}
+\newfloat{Example}{t}{lox}[section]
+%\floatname{Example}{Beispiel} % german translation
+\fi
+
+\usepackage{shortvrb}
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+
+\newcommand{\CAPi}{%
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+}
+  
+\newcommand{\CAPii}{%
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+}
+  
+\newcommand{\SHORTCAPi}{%
+  The dazed brown fox etc.}  
+
+\begin{document}
+
+\section{Lists}
+
+\listoffigures
+\listoftables
+\ifx\listof\undefined \else
+\listof{Program}{List of Programs}
+\listof{Example}{List of Examples}
+\fi
+\ifx\lstlistoflistings\undefined \else
+\lstlistoflistings
+\fi
+
+\clearpage
+\section{References}
+\makeatletter
+\newcommand*\Ref{\@ifstar{\@Ref{\texttt{***} \cs{nameref} \textit{does not work for} \texttt}}{\@Ref\nameref}}
+\newcommand*\@Ref[2]{\autoref{#2}: #1{#2} (on page \pageref{#2})}
+\makeatother
+
+\noindent
+\Ref{floatingfigure.1}\\
+\Ref{floatingfigure.2}\\
+\Ref{FPfigure.1}\\
+\Ref{figwindow.1}\\
+% \nameref{} does not work with parpic & SCfigure, at least without caption package
+\ifx\captionlistentry\undefined
+\Ref*{parpic.1}\\
+\Ref*{parpic.2}\\
+\Ref*{parpic.3}\\
+\Ref*{SCfigure.1}\\
+\else
+\Ref{parpic.1}\\
+\Ref{parpic.2}\\
+\Ref{parpic.3}\\
+\Ref{SCfigure.1}\\
+\fi
+%\Ref{measuredfigure.1}\\ % hyperref anchor is ok, but reference is broken
+%\Ref{measuredfigure.2}\\ %  due to an error in the threeparttable package
+\Ref{wrapfigure.1}\\
+ \\
+\Ref{longtable.1}\\
+\Ref{longtable.2}\\
+\Ref{longtable.3}\\
+\Ref{longtable.4}\\
+\Ref{longtable.5}\\
+\Ref{longtable.6}\\
+\Ref{longtable.7}\\
+\Ref{longtable.8}\\
+% \nameref{} does not work with parpic & SCfigure, at least without caption package
+\ifx\captionlistentry\undefined
+\Ref*{SCtable.1}\\
+\else
+\Ref{SCtable.1}\\
+\fi
+\Ref{supertabular.1}\\
+\Ref{supertabular.2}\\
+\Ref{threeparttable.1}\\
+\Ref{threeparttable.2}\\
+ \\
+\def\Programname{Program}%
+\Ref{program.1}\\
+\def\Examplename{Example}%
+\Ref{example.1}\\
+\Ref{example.2}\\
+ \\
+\Ref{listing.1}\\
+\Ref{listing.2}\\
+\Ref{list:ZeitMarkert}
+
+\ifx\floatstyle\undefined \else
+\clearpage
+\section{The float package}
+
+\begin{Program}[H]
+\begin{verbatim}
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+       int i;
+       for (i = 0; i < argc; ++i)
+               printf("argv[%d] = %s\n", i, argv[i]);
+       return 0;
+}
+\end{verbatim}
+\caption[The first program]{%
+  The first program. This hasn't got anything to do with the package
+  but is included as an example. Note the \texttt{ruled} float style.%
+  \label{program.1}}
+\end{Program}
+
+\MakeShortVerb{\|}
+
+\begin{Example}[H]
+\begin{verse}
+|\floatstyle{ruled}|\\
+|\newfloat{Program}{tbp}{lop}[section]|\\
+\dots\ loads o' stuff \dots\\
+|\begin{Program}|\\
+|\begin{verbatim}|\\
+\dots\ program text \dots\\
+|\end{verbatim}|\\
+|\caption{|\dots\ caption \dots|}|\\
+|\end{Program}|
+\end{verse}
+\caption[This is another silly floating Example]{%
+  This is another silly floating Example. Except that this one
+  doesn't actually float because it uses the {\tt[H]} optional parameter
+  to appear \textbf{Here}. (Gotcha.)}\label{example.1}
+\end{Example}
+
+% Same, but with \label inside \caption:
+\begin{Example}[H]
+\begin{verse}
+|\floatstyle{ruled}|\\
+|\newfloat{Program}{tbp}{lop}[section]|\\
+\dots\ loads o' stuff \dots\\
+|\begin{Program}|\\
+|\begin{verbatim}|\\
+\dots\ program text \dots\\
+|\end{verbatim}|\\
+|\caption{|\dots\ caption \dots|}|\\
+|\end{Program}|
+\end{verse}
+\caption[This is another silly floating Example]{%
+  This is another silly floating Example. Except that this one
+  doesn't actually float because it uses the {\tt[H]} optional parameter
+  to appear \textbf{Here}. (Gotcha.)\label{example.2}}
+\end{Example}
+
+\DeleteShortVerb{\|}
+\fi
+
+\ifx\floatingfigure\undefined \else
+\clearpage
+\section{The floatflt package}
+
+\begin{center}
+Internet Wiretap Edition of\\[2mm]
+{\large THE TELL-TALE HEART}\\
+by\\ {\large EDGAR ALLAN POE}\\[2mm]
+From \textit{The Works of Edgar Allan Poe: Tales Vol I}\\
+J. B. Lippincott Co, Copyright 1895.\\[2mm]
+This text is placed into the Public Domain (May 1993).\\
+\end{center}
+
+\noindent\textit{\Large The Tell-Tale Heart}
+
+\noindent TRUE! nervous, very, very dreadfully nervous
+I had been and am; but why WILL you say
+that I am mad? The disease had sharpened
+my senses, not destroyed, not dulled them. Above
+all was the sense of hearing acute. I heard all things
+in the heaven and in the earth. I heard many things
+in hell. How then am I mad? Hearken! and observe how healthily, how
+calmly, I can tell you the
+whole story.
+
+\begin{floatingfigure}{60mm}
+\caption[The \texttt{floatingfigure} environment with \texttt{60mm}]%
+        {The \texttt{floatingfigure} environment with \texttt{60mm}
+         for \textit{width} and no \textit{option}.}
+\label{floatingfigure.1}
+\centering %\begin{center}
+The first figure to\\ use the environment\\ \texttt{floatingfigure}
+%\end{center}
+\end{floatingfigure}
+It is impossible to say how first the idea entered
+my brain, but, once conceived, it haunted me day
+and\linebreak night. Object there was none. Passion there
+was none. I loved the old man. He had never
+wronged me. He had never given me insult. For
+his gold I had no desire. I think it was his eye!
+Yes, it was this! One of his eyes resembled that
+of a vulture -- a pale blue eye with a film over it.
+Whenever it fell upon me my blood ran cold, and
+so by degrees, very gradually, I made up my mind
+to take the life of the old man, and thus rid myself
+of the eye for ever.
+
+\begin{floatingfigure}[r]{40mm}
+\begin{center}
+Another figure to\\ use the environment\\ \texttt{floatingfigure}
+\end{center}
+\caption[The \texttt{floatingfigure} environment with \texttt{40mm}]%
+        {The \texttt{floatingfigure} environment with \texttt{40mm}
+for \textit{width} and the \texttt{r} \textit{option}.}\label{floatingfigure.2}
+\end{floatingfigure}
+Now this is the point. You fancy me mad. Madmen
+know nothing. But you should have seen me.
+You should have seen how wisely I proceeded --
+with what caution -- with what foresight, with what
+dissimulation, I went to work! I was never kinder
+to the old man than during the whole week before
+I killed him. And every night about midnight I
+turned the latch of his door and opened it oh, so
+gently! And then, when I had made an opening
+sufficient for my head, I put in a dark lantern all
+closed, closed so that no light shone out, and then
+I thrust in my head. Oh, you would have laughed
+to see how cunningly I thrust it in! I moved it
+slowly, very, very slowly, so that I might not
+disturb the old man's sleep. It took me an hour to
+place my whole head within the opening so far that
+I could see him as he lay upon his bed. Ha! would
+a madman have been so wise as this? And then
+when my head was well in the room I undid the
+lantern cautiously -- oh, so cautiously -- cautiously
+(for the hinges creaked), I undid it just so much
+that a single thin ray fell upon the vulture eye.
+And this I did for seven long nights, every night
+just at midnight, but I found the eye always closed,
+and so it was impossible to do the work, for it was
+not the old man who vexed me but his Evil Eye\ldots
+\fi
+
+\ifx\FPfigure\undefined \else
+\clearpage
+\section{The fltpage package}
+\captionsetup[FPfigure]{labelfont=bf}
+
+The following example will produce a caption below and an almost empty facing
+page:
+\begin{FPfigure}
+ \captionsetup{textfont=it}
+ \caption[A caption alone on a page]%
+         {A caption alone on a page will belong to the
+          following figure without a caption!}
+ \label{FPfigure.1}
+ \newlength\tempdima
+ \setlength\tempdima\textheight
+ \addtolength\tempdima{-7pt}%
+ \fbox{\rule[-10cm]{0pt}{\tempdima}Frame symbolizing figure on a whole page.\hspace{5cm}}
+\end{FPfigure}
+\begin{quote}
+  \verb|\usepackage[rightFloats]{fltpage}|\\
+  \ldots\\
+  \verb|\begin{FPfigure}|\\
+  \verb|  \caption{A caption alone ... figure without a caption!}|\\
+  \verb|  \fbox{\rule[-10cm]{0pt}{\textheight}Frame ... page.\hspace{5cm}}|\\
+  \verb|\end{FPfigure}|
+\end{quote}
+
+\par\bigskip\noindent
+(The caption label font should be `bf', the text font `it')
+
+\fi
+
+\ifx\lstlisting\undefined \else
+\clearpage
+\section{The listings package}
+
+   \begin{lstlisting}[caption={Useless code},label=listing.1]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+   \begin{lstlisting}[caption={Useless code},label=listing.2,captionpos=b]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+
+   \begin{lstlisting}[float=htb, caption={Messung der Ausfuehrungszeit}, label=list:ZeitMarkert]
+     \\Code
+   \end{lstlisting}
+
+\fi
+
+\ifx\longtable\undefined \else
+\clearpage
+\section{The longtable package}
+
+\noindent\rule{\textwidth}{1pt}% show textwidth
+
+\begin{longtable}[l]{l}
+\caption{Left aligned longtable}\label{longtable.1}\\
+This is only a test\\
+\end{longtable}
+
+\begin{longtable}[l]{l}
+\caption[Left aligned longtable (2)]%
+        {Left aligned longtable left aligned longtable
+         left aligned longtable left aligned longtable}\label{longtable.2}\\
+This is only a test\\
+\end{longtable}
+
+\noindent\rule{\textwidth}{1pt}% show textwidth
+
+\begin{longtable}[r]{l}
+\caption{Right aligned longtable}\label{longtable.3}\\
+This is only a test\\
+\end{longtable}
+
+\begin{longtable}[r]{l}
+\caption[Right aligned longtable (2)]%
+        {Right aligned longtable right aligned longtable
+         right aligned longtable right aligned longtable}\label{longtable.4}\\
+This is only a test\\
+\end{longtable}
+
+\noindent\rule{\textwidth}{1pt}% show textwidth
+
+\begin{longtable}[c]{l}
+\caption{Centered longtable}\label{longtable.5}\\
+This is only a test\\
+\end{longtable}
+
+\begin{longtable}[c]{l}
+\caption[Centered longtable (2)]%
+        {Centered longtable centered longtable centered longtable
+         centered longtable centered longtable}\label{longtable.6}\\
+This is only a test\\
+\end{longtable}
+
+\noindent\rule{\textwidth}{1pt}% show textwidth
+
+\begin{longtable}{c}
+This is only a test\\
+\caption{Longtable with `below' caption}\label{longtable.7}\\
+\end{longtable}
+
+\begin{longtable}{c}
+This is only a test\\
+\caption[Longtable with `below' caption (2)]%
+        {Longtable with `below' caption Longtable with `below' caption
+         Longtable with `below' caption Longtable with `below' caption}\label{longtable.8}\\
+\end{longtable}
+
+\noindent\rule{\textwidth}{1pt}% show textwidth
+\fi
+
+\ifx\window\undefined \else
+\clearpage
+\section{The picinpar package}
+
+\font\yn=cmss17 scaled \magstep5 % or something else which is big (yinit?)
+\begin{verbatim}
+\begin{window}[0,l,{\yn V},{}]
+or einigen Jahren wurde von ...
+... Abschnitts erfolgten automatisch.
+\end{window}
+\end{verbatim}
+
+\begin{window}[0,l,{\yn V},{}]
+or einigen Jahren wurde von Donald E.~Knuth im TUGboat ein kleines
+Problem mit der Bitte um L"osung vorgestellt. Es handelte sich darum,
+in einem Paragraphen ein Fenster zu erzeugen, in das man beliebigen Text
+oder eine Zeichnung hineinsetzen kann. Prompt kamen dann in den folgenden
+Ausgaben L"osungsvorschl"age: Einer von DEK pers"onlich, der andere von
+Alan Hoenig. Der letztgenannte brachte die elegantere L"osung, die keine
+manuellen Korrekturen mehr notwendig machte. Sein Makro verlangte lediglich
+in den Parametern Informationen "uber die Breite und H"ohe der
+freizulassenden Stelle im Paragraphen. Die Einz"uge und der Satz der
+Fragmente des Abschnitts erfolgten automatisch.
+\end{window}
+
+\begin{verbatim}
+\begin{figwindow}[2,r,{
+\unitlength1cm
+\begin{picture}(3,1.4)
+\put(0.7,0.7){\circle*{0.2}}     \put(0.7,0.7){\circle{1.2}}
+\put(0.7,0.7){\vector(0,1){0.6}} \put(2.5,0.7){\circle*{0.5}}
+\end{picture}
+},{Kreise und Pfeile}]
+Was leisten nun diese Macros ...
+... sieht hierbei wie folgt aus:
+\end{figwindow}
+\end{verbatim}
+
+\begin{figwindow}[2,r,{
+\unitlength1cm
+\begin{picture}(3,1.4)
+\put(0.7,0.7){\circle*{0.2}}     \put(0.7,0.7){\circle{1.2}}
+\put(0.7,0.7){\vector(0,1){0.6}} \put(2.5,0.7){\circle*{0.5}}
+\end{picture}
+},{Kreise und Pfeile\label{figwindow.1}}]
+Was leisten nun diese Macros? Einen kleinen Eindruck hat man schon
+zu Anfang dieses Artikels bekommen: der erste Buchstabe des Absatzes
+ist in einer anderen Schriftgr"o"se gedruckt und in den Absatz eingepa"st.
+Es mu"s aber nicht unbedingt Text sein, der so einger"uckt wird. Es kann
+ebenso eine \verb?picture?--Umgebung sein, die so in den Absatz eingef"ugt
+wird. Das rechts stehende Beispiel, das aus "'\LaTeX , Eine Einf"uhrung"'
+bekannt sein d"urfte, ist in einer \verb?minipage?--Umgebung gesetzt
+worden. Die Eingabe im Text sieht hierbei wie oben aus.
+\end{figwindow}
+\fi
+
+\ifx\parpic\undefined \else
+\clearpage
+\section{The picins package}
+
+\newcommand\FOR{\(\displaystyle E=mc^2\)}
+
+\piccaptioninside
+%\pichskip{1.5em}
+\piccaption{Einstein's formula.\label{parpic.1}}
+\parpic(50mm,10mm)[s]{\FOR}
+\sample\sample\sample
+
+\piccaptionside
+\piccaption{Einstein's formula.\label{parpic.2}}
+\parpic(30mm,10mm)[s]{\FOR}
+\sample
+
+\piccaptiontopside
+\piccaption{Einstein's formula.\label{parpic.3}}
+\parpic(30mm,10mm)[sr]{\FOR}
+\sample\sample
+\fi
+
+\ifx\SCfigure\undefined \else
+\clearpage
+\section{The sidecap package}
+
+\newcommand{\FIG}[2][]{%
+  \begingroup
+    \def\xxx{#1}%
+    \ifx\xxx\empty
+      \setlength{\unitlength}{\linewidth}%
+      \addtolength{\unitlength}{-2\fboxrule}%
+      \setlength{\unitlength}{.1\unitlength}%
+    \else  
+      \setlength{\unitlength}{#1}%
+    \fi% 
+    \setlength{\fboxsep}{0pt}%
+    \ifcase#2\relax
+    \or%
+      \fbox{%
+	\begin{picture}(4,6)%
+	  \put(1,5){\circle{1}}%
+	  \put(3,5){\circle{1}}%
+	  \put(2,3){\circle{1}}%
+	  \put(1,1){\circle{1}}%
+	  \put(3,1){\circle{1}}%     
+	\end{picture}}%
+    \or%	
+      \fbox{%
+	\begin{picture}(10,4)%
+	  \put(1,3){\circle{1}}%
+	  \put(9,3){\circle{1}}%
+	  \put(5,2){\circle{1}}%
+	  \put(1,1){\circle{1}}%
+	  \put(9,1){\circle{1}}%     
+	\end{picture}}%
+    \or% (doesn't make a difference to use [b] or [t] or [c] here !!!)
+      \begin{minipage}{5\unitlength}%
+        text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text.
+      \end{minipage}%	
+    \or% (doesn't make a difference to use [b] or [t] or [c] here !!!)
+      \begin{minipage}{5\unitlength}%
+        \strut
+        text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text.
+	\unskip\strut
+      \end{minipage}%	
+    \fi	
+  \endgroup  
+}
+
+\begin{SCfigure}[][!hb]
+  \FIG[1cm]{1}%
+  \caption[\SHORTCAPi]{\CAPi}
+  \label{SCfigure.1}
+\end{SCfigure}
+
+\begin{SCtable}[][!hb]
+  \caption[\SHORTCAPi]{\CAPi}  
+  \FIG[1cm]{1}%
+  \label{SCtable.1}
+\end{SCtable}
+
+\begin{SCfigure}[][!hb]
+  \FIG[0.5cm]{1}%
+  \caption*{\SHORTCAPi}
+% \label{SCfigure.2}
+\end{SCfigure}
+\fi
+
+\ifx\supertabular\undefined \else
+\clearpage
+\section{The supertabular package}
+
+\begin{center}
+\tablecaption{The ISOGRK3 entity set (tablecaption)\label{supertabular.1}}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+
+\begin{center}
+\bottomcaption{The ISOGRK3 entity set (bottomcaption)}\label{supertabular.2}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+\fi
+
+\ifx\threeparttable\undefined \else
+\clearpage
+\section{The threeparttable package}
+
+\hrule
+
+\begin{center}
+\begin{threeparttable}
+\caption{The Skewing Angles ($\beta$) for $\fam0 Mu(H)+X_2$ and
+   $\fam0 Mu(H)+HX$~\tnote{a}}
+   \label{threeparttable.1}
+\begin{tabular}{rlcc}
+\hline
+&   & $\fam0 H(Mu)+F_2$ & $\fam0 H(Mu)+Cl_2$ \\
+\hline
+&$\beta$(H)  & $80.9^\circ\tnote{b}$ & $83.2^\circ$ \\
+&$\beta$(Mu) & $86.7^\circ$ & $87.7^\circ$ \\
+\hline
+\end{tabular}
+\begin{tablenotes}
+\item[a] for the abstraction reaction, $\fam0 Mu+HX \rightarrow MuH+X$.
+\item[b] 1 degree${} = \pi/180$ radians.
+\end{tablenotes}
+\end{threeparttable}
+\end{center}
+
+\hrule
+
+\begin{center}
+\begin{threeparttable}
+\begin{tabular}{rlcc}
+\hline
+&   & $\fam0 H(Mu)+F_2$ & $\fam0 H(Mu)+Cl_2$ \\
+\hline
+&$\beta$(H)  & $80.9^\circ\tnote{b}$ & $83.2^\circ$ \\
+&$\beta$(Mu) & $86.7^\circ$ & $87.7^\circ$ \\
+\hline
+\end{tabular}
+\begin{tablenotes}
+\item[a] for the abstraction reaction, $\fam0 Mu+HX \rightarrow MuH+X$.
+\item[b] 1 degree${} = \pi/180$ radians.
+\end{tablenotes}
+\caption{The Skewing Angles ($\beta$) for $\fam0 Mu(H)+X_2$ and
+   $\fam0 Mu(H)+HX$~\tnote{a}}
+   \label{threeparttable.2}
+\end{threeparttable}
+\end{center}
+
+\hrule
+
+\begin{center}
+\begin{measuredfigure}
+\begin{tabular}{rlcc}
+\hline
+&   & $\fam0 H(Mu)+F_2$ & $\fam0 H(Mu)+Cl_2$ \\
+\hline
+&$\beta$(H)  & $80.9^\circ\tnote{b}$ & $83.2^\circ$ \\
+&$\beta$(Mu) & $86.7^\circ$ & $87.7^\circ$ \\
+\hline
+\end{tabular}
+\caption{The Skewing Angles ($\beta$) for $\fam0 Mu(H)+X_2$ and
+   $\fam0 Mu(H)+HX$~\tnote{a}}
+%%%   \label{measuredfigure.1}
+\end{measuredfigure}
+\end{center}
+
+\hrule
+
+\begin{center}
+\begin{measuredfigure}
+\caption{The Skewing Angles ($\beta$) for $\fam0 Mu(H)+X_2$ and
+   $\fam0 Mu(H)+HX$~\tnote{a}}
+%%%   \label{measuredfigure.2}
+\begin{tabular}{rlcc}
+\hline
+&   & $\fam0 H(Mu)+F_2$ & $\fam0 H(Mu)+Cl_2$ \\
+\hline
+&$\beta$(H)  & $80.9^\circ\tnote{b}$ & $83.2^\circ$ \\
+&$\beta$(Mu) & $86.7^\circ$ & $87.7^\circ$ \\
+\hline
+\end{tabular}
+\end{measuredfigure}
+\end{center}
+
+\hrule
+\fi
+
+\ifx\wrapfigure\undefined \else
+\clearpage
+\section{The wrapfig package}
+
+The starting place for the wrapfigure
+environment was manually determined in
+the current ex-
+\begin{wrapfigure}[7]{l}[0.2\width]{0pt}
+  \centering
+  \fbox{This is a ``wrapfigure''.}
+  \caption{An example of the
+    \texttt{wrapfigure} environment}
+  \label{wrapfigure.1}
+\end{wrapfigure}
+sample by first setting the text without
+the figure to find the linebreaks.
+
+\sample \sample \sample
+\fi
+
+\clearpage
+That's all folks!
+\end{document}
