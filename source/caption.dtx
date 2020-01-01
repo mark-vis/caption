@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3012}
+% \CheckSum{3006}
 %
 % \iffalse
 %<*driver>
@@ -215,7 +215,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2019/12/31 v3.4c Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/01/01 v3.4c Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -3320,7 +3320,7 @@
 % \changes{v3.1g}{2008/01/20}{Bugfix: Skips are handled correctly now}
 % \changes{v3.1k}{2008/03/29}{Bugfix 08-10-16-dctt: \texttt{rule=0} added}
 % \changes{v3.2}{2010/10/26}{Bugfix 10-07-20a: Set \cs{hsize} to \cs{linewidth}, if necessary}
-% \changes{v3.4c}{2019/12/31}{Ugly workaround for usage in lists added}
+% \changes{v3.4c}{2020/01/01}{Ugly workaround for usage in lists added}
 %  To support the \package{listings} package we need to redefine
 %  |\lst@MakeCaption| so the original stuff is nested with
 %  |\caption@begin| and |\caption@end| etc.\par
@@ -3342,7 +3342,8 @@
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
   \def\lst@MakeCaption#1{% #1 is `t' or `b'
 %    \end{macrocode}
-% This macro is always called twice (with `t' resp. `b' as parameter), therefore we need an extra group here.
+% This macro is always called twice by the \package{listings} package (with `t' resp. `b' as parameter),
+% therefore we need an extra group here.
 %    \begin{macrocode}
     \begingroup
 %    \end{macrocode}
@@ -3366,24 +3367,17 @@
 %%        \advance\linewidth-\lst@xrightmargin
 %%        \advance\@totalleftmargin\lst@xleftmargin\relax}%
 %    \end{macrocode}
-% Add the extra margins to |\linewidth| again.
-% As an alternative we could add horizontal space of |\lst@xleftmargin| here,
-% But this stuff is more consistent with the look+feel of the caption w/o caption package.
-%    \begin{macrocode}
-%%      \advance\linewidth\lst@xleftmargin
-%%      \advance\linewidth\lst@xrightmargin
-%    \end{macrocode}
-% Lists (like |enumerate|) do not adapt |\hsize|.
-% Instead |\linewidth| is used, but since we decided to ignore it we need a very ugly work-around here
-% to support listings inside lists. (Note that we cannot use |\@totalleftmargin| since it could be
-% resetted by the \package{listings} package.)
+% Inside lists the \package{listings} package ignores the left margin (|\@totalleftmargin|) for captions.
+% We emulate this behaviour by adding a negativ skip which will be typeset ahead of |\caption@box|.\par
 % This does not result in correct justification of the caption, but captions inside listings inside
-% lists are not justified correctly anyway. Again, this needs to be fixed by the \package{listings} package.
+% lists are not justified correctly anyway. (Again, this needs to be fixed by the \package{listings} package.)\par
+% Note: We cannot use |\@totalleftmargin| here since it was usually resetted by the \package{listings} package.
+% So we have to calculate the total left margin on our own which makes this code even more dirty.
 %    \begin{macrocode}
-      \ifnum\@listdepth>0\relax
-        \advance\hsize-\leftmargin
-        \advance\hsize-\rightmargin
-      \fi
+      \l@addto@macro\caption@beginhook{%
+        \@tempdima\leftmargin
+        \multiply\@tempdima\@listdepth
+        \hskip-\@tempdima\relax}%
 %    \end{macrocode}
 % First of all, we set |position=#1| and if it was set to `top',
 % we swap the skips so the default behavior of the \package{listings} package
