@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3006}
+% \CheckSum{2974}
 %
 % \iffalse
 %<*driver>
@@ -215,7 +215,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/01/01 v3.4c Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/01/01 v3.4d Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -3321,22 +3321,23 @@
 % \changes{v3.1k}{2008/03/29}{Bugfix 08-10-16-dctt: \texttt{rule=0} added}
 % \changes{v3.2}{2010/10/26}{Bugfix 10-07-20a: Set \cs{hsize} to \cs{linewidth}, if necessary}
 % \changes{v3.4c}{2020/01/01}{Ugly workaround for usage in lists added}
+% \changes{v3.4d}{2020/01/01}{Ugly workaround for usage in lists revised}
 %  To support the \package{listings} package we need to redefine
 %  |\lst@MakeCaption| so the original stuff is nested with
 %  |\caption@begin| and |\caption@end| etc.\par
 %  Unfortunately |\lst@MakeCaption| is sometimes used with |\linewidth| intact but sometimes with |\linewidth| adapted.
 %  So we either could write a bunch of very ugly code which is using internals of the \package{listings} package, or
 %  we could simply ignore this fact since |\hsize| will be left untouched by the \package{listings} package.
-%  (This is reason why the caption is mis-aligned when using one of the options |linewidth=|, |xleftmargin=|, |yleftmargin=|, or |resetmargins=|,
-%   even the \package{caption} package isn't used. This needs to be fixed within the \package{listings} package, for example by using
+%  (This is the reason why the caption is mis-aligned when using one of the options |linewidth=|, |xleftmargin=|, |yleftmargin=|, or |resetmargins=|,
+%   even if the \package{caption} package isn't used. This needs to be fixed within the \package{listings} package, for example by using
 %   |\lst@MakeCaption| inside a parbox of correct width.)
 %
 % The \package{listings} package calls |\lst@MakeCaption| sometimes with original |\linewidth|, sometimes with adapted |\linewidth|.
 % So we need to detect if |\linewidth| is already adapted or not.
 % We realize this by setting a flag inside the "Init" hook of the \package{listings} package (where the adaption takes place).
 %    \begin{macrocode}
-%%  \caption@setbool{lst@Init}{0}%
-%%  \lst@AddToHook{Init}{\caption@setbool{lst@Init}{1}}%
+  \caption@setbool{lst@Init}{0}%
+  \lst@AddToHook{Init}{\caption@setbool{lst@Init}{1}}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
@@ -3347,39 +3348,15 @@
 %    \begin{macrocode}
     \begingroup
 %    \end{macrocode}
-%    \begin{macrocode}
-%%      \caption@Debug{%
-%%        linewidth=\lst@linewidth,
-%%        xleftmargin=\lst@xleftmargin,\MessageBreak
-%%        xrightmargin=\lst@xrightmargin,
-%%        resetmargins=\lst@ifresetmargins true\else false\fi}%
-%    \end{macrocode}
-% If |\linewidth| isn't adapted by the \package{listings} package yet, do the adaption here.
-%    \begin{macrocode}
-%%      \caption@iflst@Init{}{%\lsthk@PreInit\lsthk@Init => has unwanted side-effects (like an extra horizontal line)
-%%        \linewidth\lst@linewidth\relax
-%%        \lst@ifresetmargins
-%%          \advance\linewidth\@totalleftmargin
-%%          \advance\linewidth\rightmargin
-%%          \@totalleftmargin\z@
-%%        \fi
-%%        \advance\linewidth-\lst@xleftmargin
-%%        \advance\linewidth-\lst@xrightmargin
-%%        \advance\@totalleftmargin\lst@xleftmargin\relax}%
-%    \end{macrocode}
 % Inside lists the \package{listings} package ignores the left margin (|\@totalleftmargin|) for captions.
 % We emulate this behaviour by adding a negativ skip which will be typeset ahead of |\caption@box|.\par
-% This does not result in correct justification of the caption, but captions inside listings inside
-% lists are not justified correctly anyway. (Again, this needs to be fixed by the \package{listings} package.)\par
-% Note: We cannot use |\@totalleftmargin| here since it was usually resetted by the \package{listings} package.
-% So we have to calculate the total left margin on our own which makes this code even more dirty.
+% Note: We only need to do this if the ``Init'' hook of the \package{listings} package wasn't called yet.
 %    \begin{macrocode}
-      \l@addto@macro\caption@beginhook{%
-        \@tempdima\leftmargin
-        \multiply\@tempdima\@listdepth
-        \hskip-\@tempdima\relax}%
+      \caption@iflst@Init{}{%
+        \edef\caption@lst@leftskip{\noexpand\hskip-\the\@totalleftmargin\noexpand\relax}%
+        \l@addto@macro\caption@beginhook\caption@lst@leftskip}%
 %    \end{macrocode}
-% First of all, we set |position=#1| and if it was set to `top',
+% We set |position=#1| and if it was set to `top',
 % we swap the skips so the default behavior of the \package{listings} package
 % will not be changed. (Note that the \package{listings} package has set its
 % own |\abovecaptionskip| \& |\belowcaptionskip| values prior to calling
@@ -3391,7 +3368,7 @@
         \belowcaptionskip\abovecaptionskip
         \abovecaptionskip\@tempdima}{}%
 %    \end{macrocode}
-% Workaround for issue with wrong skips (FIXME: should be examined further)
+% Workaround for issue with wrong skips (FIXME: This should be examined further)
 %    \begin{macrocode}
       \caption@setup{rule=0}%
 %    \end{macrocode}
