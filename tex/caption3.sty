@@ -6,7 +6,7 @@
 %%
 %% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2019/12/31 v1.8f caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/01/02 v1.8g caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -1485,10 +1485,10 @@
   \caption@ifdefined\ForEachFloatingEnvironment
     {\ForEachFloatingEnvironment{#1}}%
     {\def\@elt##1{#1}%
-      \caption@ifdefined\c@figure\@elt\@gobble{figure}%
-      \caption@ifdefined\c@table\@elt\@gobble{table}%
-      \let\@elt\relax
-      \newfloat@addtohook{#1}}}
+     \caption@ifdefined\c@figure\@elt\@gobble{figure}%
+     \caption@ifdefined\c@table\@elt\@gobble{table}%
+     \let\@elt\relax
+     \newfloat@addtohook{#1}}}
 \providecommand\newfloat@addtohook[1]{%
   \toks@=\expandafter{\newfloat@hook{##1}#1}%
   \edef\@tempa{\def\noexpand\newfloat@hook####1{\the\toks@}}%
@@ -1503,14 +1503,25 @@
 \def\caption@@declaresubtype#1[#2]#3{%
   \@ifundefined{c@#3}%
     {\caption@Error{No float type '#3' defined}}%
-    {\@ifundefined{c@sub#3}%
-       {\caption@Debug{New subtype `sub#3'}%
-        \newcounter{sub#3}%
-        \@addtoreset{sub#3}{#3}%
-        \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
-        \caption@declaresublistentry{#3}%
-        \@cons\caption@subtypelist{{#3}}}%
-       {\caption@Debug{Modify caption `sub#3'}}%
+    {\begingroup
+       \let\next\@firstoftwo
+       \edef\@tempa{#3}%
+       \def\@elt##1{%
+         \def\@tempb{##1}%
+         \ifx\@tempa\@tempb
+           \let\next\@secondoftwo
+        \fi}%
+       \caption@subtypelist
+     \expandafter\endgroup\next
+     {\caption@Debug{New subtype `sub#3'}%
+      \@ifundefined{c@sub#3}%
+        {\newcounter{sub#3}\relax}%
+        {\caption@Warning{Using already defined counter `sub#3'}}%
+      \@addtoreset{sub#3}{#3}%
+      \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
+      \caption@declaresublistentry{#3}%
+      \@cons\caption@subtypelist{{#3}}}%
+     {\caption@Debug{Modify subtype `sub#3'}}%
      \caption@ifdefined\contentsuse{%
        \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}{}%
      \@namedef{sub#3name}{}%

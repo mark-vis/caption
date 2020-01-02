@@ -2,7 +2,7 @@
 % 
 % This is file `caption3.dtx'.
 % 
-% Copyright (C) 1994-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3405}
+% \CheckSum{3428}
 %
 % \iffalse
 %<*driver>
@@ -191,7 +191,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2019/12/31 v1.8f caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/01/02 v1.8g caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Workaround for bug in package \package{arabtex}}
@@ -3607,10 +3607,10 @@
   \caption@ifdefined\ForEachFloatingEnvironment
     {\ForEachFloatingEnvironment{#1}}%
     {\def\@elt##1{#1}%
-      \caption@ifdefined\c@figure\@elt\@gobble{figure}%
-      \caption@ifdefined\c@table\@elt\@gobble{table}%
-      \let\@elt\relax
-      \newfloat@addtohook{#1}}}
+     \caption@ifdefined\c@figure\@elt\@gobble{figure}%
+     \caption@ifdefined\c@table\@elt\@gobble{table}%
+     \let\@elt\relax
+     \newfloat@addtohook{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \providecommand\newfloat@addtohook[1]{%
@@ -3632,6 +3632,7 @@
 % \changes{v1.5}{2011/12/29}{Usage of \cs{caption@addtoreset} replaced by \cs{@addtoreset}}
 % \changes{v1.5}{2013/01/10}{Bugfix: Definition of autoref string corrected}
 % \changes{v1.6}{2013/06/17}{Bugfix: \cs{c@tocdepth} will be set (locally) now}
+% \changes{v1.8g}{2020/01/02}{Check revised if the sub-type is already defined or not}
 %  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\par
 %  The starred variant provides the numbering format
@@ -3652,15 +3653,28 @@
   \@ifundefined{c@#3}%
     {\caption@Error{No float type '#3' defined}}%
 %    \end{macrocode}
+% Check if the sub-type was already defined by |\Declare|\-|Sub|\-|Type|.
+% If not, define the counter and list entry.
 %    \begin{macrocode}
-    {\@ifundefined{c@sub#3}%
-       {\caption@Debug{New subtype `sub#3'}%
-        \newcounter{sub#3}%
-        \@addtoreset{sub#3}{#3}%
-        \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
-        \caption@declaresublistentry{#3}%
-        \@cons\caption@subtypelist{{#3}}}%
-       {\caption@Debug{Modify caption `sub#3'}}%
+    {\begingroup
+       \let\next\@firstoftwo
+       \edef\@tempa{#3}%
+       \def\@elt##1{%
+         \def\@tempb{##1}%
+         \ifx\@tempa\@tempb
+           \let\next\@secondoftwo
+        \fi}%
+       \caption@subtypelist
+     \expandafter\endgroup\next
+     {\caption@Debug{New subtype `sub#3'}%
+      \@ifundefined{c@sub#3}%
+        {\newcounter{sub#3}\relax}%
+        {\caption@Warning{Using already defined counter `sub#3'}}%
+      \@addtoreset{sub#3}{#3}%
+      \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
+      \caption@declaresublistentry{#3}%
+      \@cons\caption@subtypelist{{#3}}}%
+     {\caption@Debug{Modify subtype `sub#3'}}%
 %    \end{macrocode}
 % Support of \package{titletoc} package
 %    \begin{macrocode}
