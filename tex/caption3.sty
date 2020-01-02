@@ -1503,16 +1503,8 @@
 \def\caption@@declaresubtype#1[#2]#3{%
   \@ifundefined{c@#3}%
     {\caption@Error{No float type '#3' defined}}%
-    {\begingroup
-       \let\next\@firstoftwo
-       \edef\@tempa{#3}%
-       \def\@elt##1{%
-         \def\@tempb{##1}%
-         \ifx\@tempa\@tempb
-           \let\next\@secondoftwo
-        \fi}%
-       \caption@subtypelist
-     \expandafter\endgroup\next
+    {\caption@ifsubtype{sub#3}%
+     {\caption@Debug{Modify subtype `sub#3'}}%
      {\caption@Debug{New subtype `sub#3'}%
       \@ifundefined{c@sub#3}%
         {\newcounter{sub#3}\relax}%
@@ -1521,7 +1513,6 @@
       \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
       \caption@declaresublistentry{#3}%
       \@cons\caption@subtypelist{{#3}}}%
-     {\caption@Debug{Modify subtype `sub#3'}}%
      \caption@ifdefined\contentsuse{%
        \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}{}%
      \@namedef{sub#3name}{}%
@@ -1577,6 +1568,17 @@
   \fi}
 \@onlypreamble\caption@@@@@@declaresublistentry
 \newcommand*\caption@subtypelist{}
+\newcommand*\caption@ifsubtype[1]{%
+  \begingroup
+    \let\next\@secondoftwo
+    \edef\@tempa{#1}%
+    \def\@elt##1{%
+      \def\@tempb{sub##1}%
+      \ifx\@tempa\@tempb
+        \let\next\@firstoftwo
+     \fi}%
+    \caption@subtypelist
+  \expandafter\endgroup\next}
 \newcommand*\caption@restorecounters{%
   \caption@restore@counters
   \global\let\caption@restore@counters\@empty}
