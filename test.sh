@@ -77,6 +77,7 @@ compile()
   [[ $1 == "sourceforge" && $2 == "ticket_37.tex"  ]] && return  # TODO: \iflistof
   [[ $1 == "sourceforge" && $2 == "ticket_40.tex"  ]] && return  # Bug in catoptions
   [[ $1 == "sourceforge" && $2 == "ticket_43.tex"  ]] && return  # subcaption + subfig, should produce error
+  [[ $1 == "sourceforge" && $2 == "ticket_44.tex"  ]] && return  # \captionof{subfigure}, should produce error
   [[ $1 == "sourceforge" && $2 == "ticket_47.tex"  ]] && return  # TODO: \DeclareCaptionListHook
   [[ $1 == "gitlab"      && $2 == "issue_29.tex"   ]] && return  # Needs Culmus fonts to compile
   [[ $1 == "gitlab"      && $2 == "issue_35.tex"   ]] && return  # Needs <whatever> to compile (greek & farsi)

@@ -418,9 +418,7 @@
   \caption@settype}
 \newcommand\setcaptionsubtype{%
   \caption@iftype
-    {\caption@ifsubtype{sub\@captype}%
-     {\caption@setsubtype}%
-     {\caption@Error{Undefined subtype `sub\@captype'}}}%
+    \caption@setsubtype
     {\caption@Error{\noexpand\setcaptionsubtype outside float}}}%
 \newcommand\caption@setsubtype{%
   \@ifstar
@@ -435,31 +433,42 @@
   \caption@teststar{\caption@@@settype{#1}}\@firstoftwo\@secondoftwo}
 \newcommand*\caption@@@settype[3]{%
   \caption@Debug{#1type=#3}%
-  \caption@checkgrouplevel{#1}{%
-    \captionsetup{#1type#2*\@empty=...}#2{ or
-                  \@backslashchar#1captionof}{}}%
-  \edef\caption@tempa{#3}%
-  \expandafter\ifx\csname @#1captype\endcsname\caption@tempa \else
-    \ifcaptionsetup@star\else\@nameuse{caption@#1type@warning}\fi
-  \fi
-  \expandafter\let\csname @#1captype\endcsname\caption@tempa
-  \@nameuse{caption@#1typehook}%
-  \caption@setoptions{#3}%
-  \ifx\caption@opt\relax
-    \@nameundef{caption@#1type@warning}%
-  \else
-    \@namedef{caption@#1type@warning}{\caption@Warning{%
-      The #1caption type was already set to
-      `\csname @#1captype\endcsname'\MessageBreak}}%
-  \fi
-  #2{}{%
-    \let\@currentlabel\caption@undefinedlabel
-    \ifx\caption@x@label\@undefined
-      \let\caption@x@label\label
-      \let\label\caption@xlabel
-    \fi
-    \caption@start}}
+  \@nameuse{caption@check#1type}{#3}%
+    {\caption@checkgrouplevel{#1}{%
+       \captionsetup{#1type#2*\@empty=...}#2{ or
+                     \@backslashchar#1captionof}{}}%
+     \edef\caption@tempa{#3}%
+     \expandafter\ifx\csname @#1captype\endcsname\caption@tempa \else
+       \ifcaptionsetup@star\else\@nameuse{caption@#1type@warning}\fi
+     \fi
+     \expandafter\let\csname @#1captype\endcsname\caption@tempa
+     \@nameuse{caption@#1typehook}%
+     \caption@setoptions{#3}%
+     \ifx\caption@opt\relax
+       \@nameundef{caption@#1type@warning}%
+     \else
+       \@namedef{caption@#1type@warning}{\caption@Warning{%
+         The #1type was already set to
+         `\csname @#1captype\endcsname'\MessageBreak}}%
+     \fi
+     #2{}{%
+       \let\@currentlabel\caption@undefinedlabel
+       \ifx\caption@x@label\@undefined
+         \let\caption@x@label\label
+         \let\label\caption@xlabel
+       \fi
+       \caption@start}}}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
+\newcommand*\caption@checktype[1]{%
+  \caption@ifsubtype{#1}%
+     {\caption@Error{Should not be used with subtype `#1'}%
+      \@gobble}%
+     \@firstofone}
+\newcommand*\caption@checksubtype[1]{%
+  \caption@ifsubtype{#1}%
+     \@firstofone
+     {\caption@Error{Undefined subtype `#1'}%
+      \@gobble}}
 \caption@ifeTeX{%
   \newcommand*\caption@checkgrouplevel[2]{%
     \@ifundefined{#1caption@grouplevel}{%

@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3010}
+% \CheckSum{3019}
 %
 % \iffalse
 %<*driver>
@@ -1215,6 +1215,7 @@
 %
 % \begin{macro}{\setcaptiontype}
 % \changes{v3.2}{2010/10/24}{This macro added}
+% \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 %  Like |\captionsetup{type=xxx}|, but also works if \cs{captionsetup} was redefined.
 %    \begin{macrocode}
 \newcommand\setcaptiontype{%
@@ -1225,14 +1226,11 @@
 %
 % \begin{macro}{\setcaptionsubtype}
 % \changes{v3.2a}{2011/08/15}{This macro added}
-% \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 % Same, but sets the sub-type.
 %    \begin{macrocode}
 \newcommand\setcaptionsubtype{%
   \caption@iftype
-    {\caption@ifsubtype{sub\@captype}%
-     {\caption@setsubtype}%
-     {\caption@Error{Undefined subtype `sub\@captype'}}}%
+    \caption@setsubtype
     {\caption@Error{\noexpand\setcaptionsubtype outside float}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1252,6 +1250,7 @@
 % \changes{v3.1g}{2008/01/12}{Usage of \cs{ifcaptionsetup@star} added}
 % \changes{v3.2}{2010/10/26}{Error message moved from here to \cs{caption@refstepcounter}}
 % \changes{v3.3}{2011/12/28}{Resetting of \cs{ifcaption@caption} and \cs{ifcaption@subcaption} added}
+% \changes{v3.4e}{2020/01/02}{Checks added to prevent misuse regading subtypes}
 %  |\caption@settype*|\marg{type}\par
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@set|\-|options|).
@@ -1279,41 +1278,42 @@
 \newcommand*\caption@@@settype[3]{%
 % #1 = "" or "sub"
 % #2 = \@firstoftwo in star form, \@secondoftwo otherwise
-% #3 = <type>, e.g. "figure" or "table"
+% #3 = <type>, e.g. "figure" or "subfigure"
   \caption@Debug{#1type=#3}%
-  \caption@checkgrouplevel{#1}{%
-    \captionsetup{#1type#2*\@empty=...}#2{ or
-                  \@backslashchar#1captionof}{}}%
+  \@nameuse{caption@check#1type}{#3}%
+    {\caption@checkgrouplevel{#1}{%
+       \captionsetup{#1type#2*\@empty=...}#2{ or
+                     \@backslashchar#1captionof}{}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \edef\caption@tempa{#3}%
-  \expandafter\ifx\csname @#1captype\endcsname\caption@tempa \else
-    \ifcaptionsetup@star\else\@nameuse{caption@#1type@warning}\fi
-  \fi
-  \expandafter\let\csname @#1captype\endcsname\caption@tempa
+     \edef\caption@tempa{#3}%
+     \expandafter\ifx\csname @#1captype\endcsname\caption@tempa \else
+       \ifcaptionsetup@star\else\@nameuse{caption@#1type@warning}\fi
+     \fi
+     \expandafter\let\csname @#1captype\endcsname\caption@tempa
 %    \end{macrocode}
 %    \begin{macrocode}
-  \@nameuse{caption@#1typehook}%
+     \@nameuse{caption@#1typehook}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \caption@setoptions{#3}%
-  \ifx\caption@opt\relax
-    \@nameundef{caption@#1type@warning}%
-  \else
-    \@namedef{caption@#1type@warning}{\caption@Warning{%
-      The #1caption type was already set to
-      `\csname @#1captype\endcsname'\MessageBreak}}%
-  \fi
+     \caption@setoptions{#3}%
+     \ifx\caption@opt\relax
+       \@nameundef{caption@#1type@warning}%
+     \else
+       \@namedef{caption@#1type@warning}{\caption@Warning{%
+         The #1type was already set to
+         `\csname @#1captype\endcsname'\MessageBreak}}%
+     \fi
 %    \end{macrocode}
 %    \begin{macrocode}
-  #2{}{%
-    \let\@currentlabel\caption@undefinedlabel
-%   \let\@currentHlabel\@undefined
-    \ifx\caption@x@label\@undefined
-      \let\caption@x@label\label
-      \let\label\caption@xlabel
-    \fi
-    \caption@start}}
+     #2{}{%
+       \let\@currentlabel\caption@undefinedlabel
+%      \let\@currentHlabel\@undefined
+       \ifx\caption@x@label\@undefined
+         \let\caption@x@label\label
+         \let\label\caption@xlabel
+       \fi
+       \caption@start}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1323,6 +1323,26 @@
 %  are inside a floating environment) this helper macro was introduced.
 %    \begin{macrocode}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checktype}
+% \changes{v3.4g}{2020/01/02}{This macro and its usage added}
+% |\setcaptiontype| should not be used with a subtype,
+% and |\setcaptionsubtype| should not be used with an undefined subtype.
+%    \begin{macrocode}
+\newcommand*\caption@checktype[1]{%
+  \caption@ifsubtype{#1}%
+     {\caption@Error{Should not be used with subtype `#1'}%
+      \@gobble}%
+     \@firstofone}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@checksubtype[1]{%
+  \caption@ifsubtype{#1}%
+     \@firstofone
+     {\caption@Error{Undefined subtype `#1'}%
+      \@gobble}}
 %    \end{macrocode}
 % \end{macro}
 %
