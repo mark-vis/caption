@@ -2,7 +2,7 @@
 % 
 % This is file `subcaption.dtx'.
 % 
-% Copyright (C) 2007-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{235}
+% \CheckSum{229}
 %
 % \iffalse
 %<*driver>
@@ -924,7 +924,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2019/09/01 v1.3a Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/01/03 v1.3b Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
@@ -1214,48 +1214,42 @@
 % \changes{v0.4}{2008/03/01}{This macro added}
 % \changes{v1.0c}{2011/01/22}{This macro removed since it's too incompatible with the one from \package{subfig}}
 % \changes{v1.3}{2019/08/31}{This macro re-added and revised}
-% \changes{v1.3a}{2019/09/01}{\cs{ignorespaces} copied from \cs{\sf@@@subfloat}}
+% \changes{v1.3a}{2019/09/01}{\cs{ignorespaces} copied from \cs{sf@@@subfloat}}
+% \changes{v1.3b}{2020/01/03}{Previous definition of \cs{subfloat} will be overwritten}
 %  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
 %  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
 %  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
 %  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
 %  In both cases we do a |\ignore|\-|spaces| at the end since the original implementation of |\sub|\-|float| does this, too.
 %    \begin{macrocode}
-\caption@ifundefined\subfloat{%
+\def\subfloat{%
+  \@ifnextchar[\@subfloat\subfloat@}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \newcommand*\subfloat{%
-    \@ifnextchar[\@subfloat\subfloat@}
+\long\def\@subfloat[#1]{%
+  \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \long\def\@subfloat[#1]{%
-    \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
+\long\def\@@subfloat#1[#2]{%
+  \@@@subfloat{\subcaptionbox[{#1}]}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \long\def\@@subfloat#1[#2]{\@@@subfloat{\subcaptionbox[{#1}]}{#2}}
+\long\def\@@@subfloat#1#2#3{%
+  \caption@getlabel#3\label{}\@nil
+  #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
+  \global\let\caption@thelabel\relax
+  \ignorespaces}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \newcommand\@@@subfloat[3]{%
-    \caption@getlabel#3\label{}\@nil
-    #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
-    \global\let\caption@thelabel\relax
-    \ignorespaces}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\subfloat@[1]{%
-    \setbox\@tempboxa\hbox{#1}%
-    \caption@iiiibox\setcaptionsubtype
-      {\phantomcaption\@gobble}{\phantomcaption\@gobble}% no box with \caption
-      {}% no optional arguments for \caption
-      {}% no sub-caption
-      [\wd\@tempboxa][\caption@hj@default]%
-      {\unhbox\@tempboxa}%
-    \ignorespaces}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{%
-  \PackageInfo{subcaption}{\protect\subfloat\space is already defined\@gobble}
-}
+\def\subfloat@#1{%
+  \setbox\@tempboxa\hbox{#1}%
+  \caption@iiiibox\setcaptionsubtype
+    {\phantomcaption\@gobble}{\phantomcaption\@gobble}% no box with \caption
+    {}% no optional arguments for \caption
+    {}% no sub-caption
+    [\wd\@tempboxa][\caption@hj@default]%
+    {\unhbox\@tempboxa}%
+  \ignorespaces}
 %    \end{macrocode}
 % \end{macro}
 %
