@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3022}
+% \CheckSum{3042}
 %
 % \iffalse
 %<*driver>
@@ -218,7 +218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/01/03 v3.4f Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/01/03 v3.4g Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -3720,6 +3720,27 @@
 %  Finally set options applied by |\captionsetup| inside the longtable.
 %    \begin{macrocode}
     \caption@setoptions{@longtable}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\flrow@setlist}
+% \changes{v3.4g}{2020/01/03}{Redefinition of this macro added}
+% The \package{floatrow} package uses |\flrow@setlist{{table}{longtable}}| inside its redefinition of |\LT@array| without setting |\@captype| first,
+% and this makes |\captionsetup[table]{name=...}| doomed to fail for longtables (``Undefined control sequence'').
+% Unfortunately we cannot easily patch |\LT@array| again to fix this bug in \package{floatrow} since it will be patched |\AtBeginDocument|.
+% Therefore we patch |\flrow@setlist| instead to catch and fix the bug on-the-fly.
+%    \begin{macrocode}
+  \caption@AtBeginDocument{\caption@ifdefined\flrow@setlist@{%
+    \caption@InfoNoLine{Fixing longtable code of `floatrow' package}%
+    \let\caption@flrow@setlist@\flrow@setlist@
+    \renewcommand\flrow@setlist@[1]{%
+      \def\caption@tempa{{table}{longtable}}%
+      \def\caption@tempb{#1}%
+      \ifx\caption@tempa\caption@tempb
+        \def\@captype{table}%
+      \fi
+      \caption@flrow@setlist@{#1}}%
+  }{}}%
 %    \end{macrocode}
 % \end{macro}
 %
