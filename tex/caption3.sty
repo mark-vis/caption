@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/01/02 v1.8g caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/01/03 v1.8h caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -252,13 +252,21 @@
        \caption@setup@options@i{#1}{@\caption@thecounter}}}%
     {\caption@setup@options@{#1}}}
 \newcommand*\caption@setup@options@i[4]{%
-  \caption@setup@options@{#1}{#2}%
-  \caption@declare@option{#2}[]{\captionsetup#3{#4}}}
+  \caption@declare@option{#2}[]{\captionsetup#3{#4}}%
+  \caption@setup@options@{#1}{#2}}
 \newcommand*\caption@setup@options@[2]{%
   \@bsphack
     \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
+    \caption@checkoptions{#2}%
     \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
   \@esphack}
+\newcommand*\caption@checkoptions[1]{%
+  \begingroup
+    \caption@prepare@optioncheck
+    \caption@setup{#1}%
+  \endgroup}
+\newcommand*\caption@prepare@optioncheck{%
+  \def\@captype{figure}}
 \newcommand*\clearcaptionsetup{%
   \caption@teststar@\@clearcaptionsetup\@gobble\@firstofone}
 \newcommand*\@clearcaptionsetup[1]{%
@@ -712,8 +720,11 @@
   \caption@@getlabel#2\@nil}
 \let\caption@thelabel\relax
 \newcommand*\DeclareCaptionFont[2]{%
-  \define@key{caption@fnt}{#1}[]{\l@addto@macro\caption@fnt{#2}}}
+  \define@key{caption@fnt}{#1}[]{\caption@addto@fnt{#2}}}
 \@onlypreamble\DeclareCaptionFont
+\newcommand*\caption@addto@fnt[1]{%
+  \caption@check@ragged{#1}%
+  \l@addto@macro\caption@fnt{#1}}
 \newcommand*\DeclareCaptionDefaultFont[2]{%
   \global\@namedef{caption#1@default}{#2}}
 \@onlypreamble\DeclareCaptionDefaultFont
@@ -826,9 +837,13 @@
 \DeclareCaptionFont{singlespacing}{%
   \caption@ifdefined\setspace@singlespace{%
     \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
+\DeclareCaptionFont{onehalfspacing}{%
+  \caption@setspace{onehalfspacing}\onehalfspacing\relax}
+\DeclareCaptionFont{doublespacing}{%
+  \caption@setspace{doublespacing}\doublespacing\relax}
+\DeclareCaptionFont{stretch}{%
+  \caption@setspace{stretch}\setstretch\@gobble{#1}}
+\newcommand*\caption@setspace{\caption@ifpackageloaded{setspace}}
 \DeclareCaptionFont{normal}{%
   \caption@font*{%
     \KV@caption@fnt@normalcolor\@unused
@@ -870,54 +885,54 @@
   \leftskip\z@\@plus 1fil%
   \rightskip\z@\@plus -1fil%
   \parfillskip\z@\@plus 2fil\relax}
-\DeclareCaptionJustification{Centering}{%
-  \caption@ragged\Centering\centering}
-\DeclareCaptionJustification{RaggedLeft}{%
-  \caption@ragged\RaggedLeft\raggedleft}
-\DeclareCaptionJustification{RaggedRight}{%
-  \caption@ragged\RaggedRight\raggedright}
+\DeclareCaptionJustification{Centering}{\caption@Centering}
+\DeclareCaptionJustification{RaggedLeft}{\caption@RaggedLeft}
+\DeclareCaptionJustification{RaggedRight}{\caption@RaggedRight}
+\newcommand*\caption@Centering{%
+  \caption@ragged{Centering}\Centering\centering}
+\newcommand*\caption@RaggedLeft{%
+  \caption@ragged{RaggedLeft}\RaggedLeft\raggedleft}
+\newcommand*\caption@RaggedRight{%
+  \caption@ragged{RaggedRight}\RaggedRight\raggedright}
 \newcommand*\caption@ragged{\caption@ifpackageloaded{ragged2e}}
-\newcommand*\caption@ifpackageloaded[1]{%
-  \@ifundefined{caption@ifpkg@#1}%
-    {\caption@RequirePackage{#1}%
-     \caption@pkg@true{#1}}%
-    {}%
-  \caption@ifpkg{#1}}
-\AtBeginDocument{\renewcommand*\caption@ifpackageloaded[1]{%
-  \@ifundefined{caption@ifpkg@#1}%
-    {\caption@addto@pkg@list{#1}%
-     \caption@pkg@false{#1}%
-     \caption@Warning{%
-       `#1' support has been changed.\MessageBreak
-       Rerun to get captions right}}%
-    {}%
-  \caption@ifpkg{#1}}}
-\newcommand*\caption@ifpkg[1]{%
-  \csname caption@ifpkg@#1\endcsname}
-\newcommand*\caption@pkg@true[1]{%
-  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@firstoftwo}
-\newcommand*\caption@pkg@false[1]{%
-  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@secondoftwo}
+\newcommand*\caption@ifpackageloaded[4]{%
+  \caption@ifdefined#3#3{%
+    \caption@Error{Option `#2' requires the `#1' package\MessageBreak
+      (or an alternative definition of \string#3)}%
+    #4}}
 \newcommand*\caption@pkg@list{}
-\newcommand*\caption@addto@pkg@list[1]{%
-  \protected@write\@auxout{}{%
-    \string\@cons\string\caption@pkg@list{{#1}}}}
-\AtBeginDocument{%
+\caption@AtBeginDocument{%
   \def\caption@tempa{\endgroup}%
   \begingroup
   \def\@elt#1{%
     \g@addto@macro\caption@tempa{%
-      \caption@RequirePackage{#1}%
-      \@namedef{caption@ifpkg@#1}{%
-        \caption@addto@pkg@list{#1}%
-        \caption@pkg@true{#1}%
-        \caption@ifpkg{#1}}}}%
+      \caption@InfoNoLine{Load package `#1'}%
+      \RequirePackage{#1}\relax}}%
   \caption@pkg@list
   \caption@tempa}
-\newcommand*\caption@RequirePackage[1]{%
-  \caption@Info{We need package `#1'}%
-  \RequirePackage{#1}}
-\@onlypreamble\caption@RequirePackage
+\@ifpackageloaded{ragged2e}{\let\caption@check@ragged\@gobble}{%
+  \newcommand*\caption@check@ragged[1]{%
+    \begingroup
+      \def\caption@tempa{#1}%
+      \caption@check@ragged@{Centering}%
+      \caption@check@ragged@{RaggedLeft}%
+      \caption@check@ragged@{RaggedRight}%
+    \endgroup}%
+  \newcommand*\caption@check@ragged@[1]{%
+    \expandafter\def\expandafter\caption@tempb\expandafter{\csname caption@#1\endcsname}%
+    \ifx\caption@tempa\caption@tempb % our definition of `ragged2e' option?
+      \@ifundefined{#1}{%
+        \caption@Info{Usage of `ragged2e' command \expandafter\string\csname #1\endcsname\space detected}%
+        \@cons\caption@pkg@list{{ragged2e}}% load `ragged2e' package later on
+        \global\let\caption@check@ragged\@gobble}{}%
+    \fi
+  }%
+  \caption@AtBeginDocument{%
+    \let\caption@check@ragged\@gobble
+    \let\caption@check@ragged@\@undefined}}
+%%\@ifl@aded{dtx}{subfig}{\RequirePackage{ragged2e}\relax}{} % not needed
+\DeclareCaptionOption{lofdepth}[2]{\caption@ifdefined\c@lofdepth{\setcounter{lofdepth}{#1}}{}}
+\DeclareCaptionOption{lotdepth}[2]{\caption@ifdefined\c@lotdepth{\setcounter{lotdepth}{#1}}{}}
 \caption@ifundefined\abovecaptionskip{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
 \caption@ifundefined\belowcaptionskip{%

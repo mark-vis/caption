@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3431}
+% \CheckSum{3476}
 %
 % \iffalse
 %<*driver>
@@ -191,7 +191,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/01/02 v1.8g caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/01/03 v1.8h caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Workaround for bug in package \package{arabtex}}
@@ -727,6 +727,7 @@
 % \changes{v1.2}{2007/11/16}{Bugfix 07-11-09: `space hack' added}
 % \changes{v1.2a}{2008/01/12}{\cs{ifcaptionsetup@star} will be set now}
 % \changes{v1.5}{2012/04/09}{Support of multiple optional arguments added}
+% \changes{v1.8h}{2020/01/03}{Syntax check of saved options added}
 %  |\captionsetup|\oarg{type}\ldots\marg{keyval-list of options}\\
 %  |\captionsetup*|\oarg{type}\ldots\marg{keyval-list of options}\par
 %  If the optional argument `type' is specified, we simply save or append
@@ -756,15 +757,35 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setup@options@i[4]{%
-  \caption@setup@options@{#1}{#2}%
-  \caption@declare@option{#2}[]{\captionsetup#3{#4}}}
+  \caption@declare@option{#2}[]{\captionsetup#3{#4}}%
+  \caption@setup@options@{#1}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setup@options@[2]{%
   \@bsphack
     \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
+    \caption@checkoptions{#2}%
     \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
   \@esphack}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checkoptions}
+% \changes{v1.8h}{2020/01/03}{This macro added}
+% Check the syntax of the given options by executing them inside a group.
+% (This way the \package{ragged2e} package check will be done for these options, too.)
+%    \begin{macrocode}
+\newcommand*\caption@checkoptions[1]{%
+  \begingroup
+    \caption@prepare@optioncheck
+    \caption@setup{#1}%
+  \endgroup}
+%    \end{macrocode}
+% Some caption options depend on the definition of |\@captype|,
+% so we set it to |figure| before executing them.
+%    \begin{macrocode}
+\newcommand*\caption@prepare@optioncheck{%
+  \def\@captype{figure}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1867,15 +1888,19 @@
 % \section{Fonts}
 %
 % \begin{macro}{\DeclareCaptionFont}
-% \changes{v1.0a}{2004/01/22}{%
-%         Bugfix: Multi token arguments are allowed now}
-% \changes{v1.1}{2007/05/07}{%
-%         Internal: Uses \cs{caption@fnt} instead of \cs{caption@temp} now}
+% \changes{v1.0a}{2004/01/22}{Bugfix: Multi token arguments are allowed now}
+% \changes{v1.1}{2007/05/07}{Internal: Uses \cs{caption@fnt} instead of \cs{caption@temp} now}
+% \changes{v1.8h}{2020/01/03}{Check for \package{ragged2e} package related options added}
 %  |\DeclareCaptionFont|\marg{name}\marg{code}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionFont[2]{%
-  \define@key{caption@fnt}{#1}[]{\l@addto@macro\caption@fnt{#2}}}
+  \define@key{caption@fnt}{#1}[]{\caption@addto@fnt{#2}}}
 \@onlypreamble\DeclareCaptionFont
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@addto@fnt[1]{%
+  \caption@check@ragged{#1}%
+  \l@addto@macro\caption@fnt{#1}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2064,9 +2089,15 @@
 \DeclareCaptionFont{singlespacing}{%
   \caption@ifdefined\setspace@singlespace{%
     \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{\onehalfspacing}
-\DeclareCaptionFont{doublespacing}{\doublespacing}
-\DeclareCaptionFont{stretch}{\setstretch{#1}}
+\DeclareCaptionFont{onehalfspacing}{%
+  \caption@setspace{onehalfspacing}\onehalfspacing\relax}
+\DeclareCaptionFont{doublespacing}{%
+  \caption@setspace{doublespacing}\doublespacing\relax}
+\DeclareCaptionFont{stretch}{%
+  \caption@setspace{stretch}\setstretch\@gobble{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setspace{\caption@ifpackageloaded{setspace}}
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -2174,31 +2205,33 @@
 %
 % \subsection{The ragged2e package}
 % \changes{v1.0b}{2004/05/16}{Improved \package{ragged2e} package support}
+% \changes{v1.8h}{2020/01/03}{Revised \package{ragged2e} package support}
 %
 % We also support the upper-case commands offered by the \package{ragged2e}
 % package.
 % Note that these just map to their lower-case variants if the
 % \package{ragged2e} package is not available.
 %    \begin{macrocode}
-\DeclareCaptionJustification{Centering}{%
-  \caption@ragged\Centering\centering}
-\DeclareCaptionJustification{RaggedLeft}{%
-  \caption@ragged\RaggedLeft\raggedleft}
-\DeclareCaptionJustification{RaggedRight}{%
-  \caption@ragged\RaggedRight\raggedright}
+\DeclareCaptionJustification{Centering}{\caption@Centering}
+\DeclareCaptionJustification{RaggedLeft}{\caption@RaggedLeft}
+\DeclareCaptionJustification{RaggedRight}{\caption@RaggedRight}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@Centering{%
+  \caption@ragged{Centering}\Centering\centering}
+\newcommand*\caption@RaggedLeft{%
+  \caption@ragged{RaggedLeft}\RaggedLeft\raggedleft}
+\newcommand*\caption@RaggedRight{%
+  \caption@ragged{RaggedRight}\RaggedRight\raggedright}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@ragged}
-% \changes{v1.0n}{2007/04/07}{The `ragged2e' package will now only been
-%         loaded when needed}
-% \changes{v1.0o}{2007/04/11}{Bugfix: Usage of \cs{caption@Info} replaced
-%         by \cs{caption@Debug}}
+% \changes{v1.0n}{2007/04/07}{The `ragged2e' package will now only been loaded when needed}
+% \changes{v1.0o}{2007/04/11}{Bugfix: Usage of \cs{caption@Info} replaced by \cs{caption@Debug}}
 % \changes{v1.1}{2007/04/16}{A different warning will be given on first \LaTeX\ run}
-% \changes{v1.4f}{2012/01/12}{Uses \cs{caption@IfPackageLoaded} now}
+% \changes{v1.4f}{2012/01/12}{Uses \cs{caption@ifpackageloaded} now}
 % |\caption@ragged|\marg{yes-code}\marg{no-code}
-% executes the \meta{yes-code} if the \package{ragged2e} package is loaded
-% and \meta{no-code} if not. Additionally it tries to load the \package{ragged2e}
-% package.
+% executes the \meta{yes-code} if the \package{ragged2e} package is loaded and \meta{no-code} if not.
 %    \begin{macrocode}
 \newcommand*\caption@ragged{\caption@ifpackageloaded{ragged2e}}
 %    \end{macrocode}
@@ -2206,61 +2239,80 @@
 %
 % \begin{macro}{\caption@ifpackageloaded}
 % \changes{v1.4f}{2012/01/12}{This macro added}
-% |\caption@ifpackageloaded|\marg{package}\marg{yes-code}\marg{no-code}
-% executes the \meta{yes-code} if the given package is loaded
-% and \meta{no-code} if not. Additionally it tries to load the package.
+% \changes{v1.8h}{2020/01/03}{Does not load the package anymore but issue an error message instead}
+% |\caption@ifpackageloaded|\marg{package}\marg{option}\marg{yes-code}\marg{no-code}
+% executes the \meta{yes-code} if the given package is loaded and \meta{no-code} if not.
 %    \begin{macrocode}
-\newcommand*\caption@ifpackageloaded[1]{%
-  \@ifundefined{caption@ifpkg@#1}%
-    {\caption@RequirePackage{#1}%
-     \caption@pkg@true{#1}}%
-    {}%
-  \caption@ifpkg{#1}}
+\newcommand*\caption@ifpackageloaded[4]{%
+  \caption@ifdefined#3#3{%
+    \caption@Error{Option `#2' requires the `#1' package\MessageBreak
+      (or an alternative definition of \string#3)}%
+    #4}}
 %    \end{macrocode}
-%    \begin{macrocode}
-\AtBeginDocument{\renewcommand*\caption@ifpackageloaded[1]{%
-  \@ifundefined{caption@ifpkg@#1}%
-    {\caption@addto@pkg@list{#1}%
-     \caption@pkg@false{#1}%
-     \caption@Warning{%
-       `#1' support has been changed.\MessageBreak
-       Rerun to get captions right}}%
-    {}%
-  \caption@ifpkg{#1}}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@ifpkg[1]{%
-  \csname caption@ifpkg@#1\endcsname}
-\newcommand*\caption@pkg@true[1]{%
-  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@firstoftwo}
-\newcommand*\caption@pkg@false[1]{%
-  \global\expandafter\let\csname caption@ifpkg@#1\endcsname\@secondoftwo}
-%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@pkg@list}
+% \changes{v1.4f}{2012/01/12}{This macro added}
+% We use this as list of packages loaded |\AtBeginDocument|.
+% (Note: Old |.aux| files could contain |\@cons|\-|\caption@pkg@list|\-|{{|\meta{package}|}}|,
+% so this macro should always be defined, even if we change the following code in the future.)
 %    \begin{macrocode}
 \newcommand*\caption@pkg@list{}
-\newcommand*\caption@addto@pkg@list[1]{%
-  \protected@write\@auxout{}{%
-    \string\@cons\string\caption@pkg@list{{#1}}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\AtBeginDocument{%
+\caption@AtBeginDocument{%
   \def\caption@tempa{\endgroup}%
   \begingroup
   \def\@elt#1{%
     \g@addto@macro\caption@tempa{%
-      \caption@RequirePackage{#1}%
-      \@namedef{caption@ifpkg@#1}{%
-        \caption@addto@pkg@list{#1}%
-        \caption@pkg@true{#1}%
-        \caption@ifpkg{#1}}}}%
+      \caption@InfoNoLine{Load package `#1'}%
+      \RequirePackage{#1}\relax}}%
   \caption@pkg@list
   \caption@tempa}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@check@ragged}
+% \changes{v1.4h}{2020/01/03}{This macro added}
+% In the past we tried to load the \package{ragged2e} package automatically if needed.
+% But since we have dropped this unreliable code users will get an error message instead.
+% To compensate for this change we try to detect the usage of the \package{ragged2e}
+% at least within the preamble of the document.
+% (Note: Checking the name of the option is not sufficient here since it could have
+%  been re-defined by the user. So we have to check the option code instead.)
 %    \begin{macrocode}
-\newcommand*\caption@RequirePackage[1]{%
-  \caption@Info{We need package `#1'}%
-  \RequirePackage{#1}}
-\@onlypreamble\caption@RequirePackage
+\@ifpackageloaded{ragged2e}{\let\caption@check@ragged\@gobble}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\caption@check@ragged[1]{%
+    \begingroup
+      \def\caption@tempa{#1}%
+      \caption@check@ragged@{Centering}%
+      \caption@check@ragged@{RaggedLeft}%
+      \caption@check@ragged@{RaggedRight}%
+    \endgroup}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\caption@check@ragged@[1]{%
+    \expandafter\def\expandafter\caption@tempb\expandafter{\csname caption@#1\endcsname}%
+    \ifx\caption@tempa\caption@tempb % our definition of `ragged2e' option?
+      \@ifundefined{#1}{%
+        \caption@Info{Usage of `ragged2e' command \expandafter\string\csname #1\endcsname\space detected}%
+        \@cons\caption@pkg@list{{ragged2e}}% load `ragged2e' package later on
+        \global\let\caption@check@ragged\@gobble}{}%
+    \fi
+  }%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@AtBeginDocument{%
+    \let\caption@check@ragged\@gobble
+    \let\caption@check@ragged@\@undefined}}
+%    \end{macrocode}
+% Make the \package{subfig} package documentation compile.
+%    \begin{macrocode}
+%%\@ifl@aded{dtx}{subfig}{\RequirePackage{ragged2e}\relax}{} % not needed
+\DeclareCaptionOption{lofdepth}[2]{\caption@ifdefined\c@lofdepth{\setcounter{lofdepth}{#1}}{}}
+\DeclareCaptionOption{lotdepth}[2]{\caption@ifdefined\c@lotdepth{\setcounter{lotdepth}{#1}}{}}
 %    \end{macrocode}
 % \end{macro}
 %
