@@ -70,9 +70,7 @@ compile()
   [[ $1 == "other"       && $2 == "2013-01-09.tex" ]] && return  # Bug in fltpage
   [[ $1 == "sourceforge" && $2 == "ticket_2.tex"   ]] && return  # Bug in fltpage
   [[ $1 == "sourceforge" && $2 == "ticket_4.tex"   ]] && return  # TODO: Adaption to hvfloat
-  [[ $1 == "sourceforge" && $2 == "ticket_8.tex"   ]] && return  # TODO: Should be fixed!
   [[ $1 == "sourceforge" && $2 == "ticket_12.tex"  ]] && return  # Can't compile tufte-book
-  [[ $1 == "sourceforge" && $2 == "ticket_18.tex"  ]] && return  # TODO: \continuedfloat
   [[ $1 == "sourceforge" && $2 == "ticket_26.tex"  ]] && return  # Bug in refcheck
   [[ $1 == "sourceforge" && $2 == "ticket_37.tex"  ]] && return  # TODO: \iflistof
   [[ $1 == "sourceforge" && $2 == "ticket_40.tex"  ]] && return  # Bug in catoptions
