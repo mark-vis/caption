@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/05/05 v1.9 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/05/10 v1.10 caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -265,8 +265,10 @@
     \caption@prepare@optioncheck
     \caption@setup{#1}%
   \endgroup}
-\newcommand*\caption@prepare@optioncheck{%
-  \def\@captype{figure}}
+\providecommand*\caption@prepare@optioncheck{}
+\let\IfCaptionOptionCheck\@secondoftwo
+\g@addto@macro\caption@prepare@optioncheck{%
+  \let\IfCaptionOptionCheck\@firstoftwo}
 \newcommand*\clearcaptionsetup{%
   \caption@teststar@\@clearcaptionsetup\@gobble\@firstofone}
 \newcommand*\@clearcaptionsetup[1]{%
@@ -719,12 +721,53 @@
   \l@addto@macro\caption@thelabel{[{#1}]}%
   \caption@@getlabel#2\@nil}
 \let\caption@thelabel\relax
-\newcommand*\DeclareCaptionFont[2]{%
-  \define@key{caption@fnt}{#1}[]{\caption@addto@fnt{#2}}}
+\newcommand*\DeclareCaptionFont{%
+  \@ifnextchar[%]
+    \caption@declare@font
+    \caption@declarefont}
 \@onlypreamble\DeclareCaptionFont
-\newcommand*\caption@addto@fnt[1]{%
-  \caption@check@ragged{#1}%
-  \l@addto@macro\caption@fnt{#1}}
+\def\caption@declare@font[#1]#2{%
+  \global\@namedef{caption@fnt@#2@package}{#1}%
+  \caption@declarefont{#2}}
+\@onlypreamble\caption@declare@font
+\newcommand*\caption@declarefont[2]{%
+  \define@key{caption@fnt}{#1}[]{\caption@addto@fnt{#1}{#2}}%
+  \caption@@declarefont{#1}{#2}}
+\@onlypreamble\caption@declarefont
+\newcommand*\caption@@declarefont[2]{}% will be used by \DeclareCaptionJustification
+\@onlypreamble\caption@@declarefont
+\newcommand*\caption@addto@fnt[2]{%
+  \expandafter\let\expandafter\caption@package\csname caption@fnt@#1@package\endcsname
+  \caption@ifdefined\caption@package
+    {\caption@ifpackageloaded\caption@package
+       {}%
+       {\caption@require@package{#1}\caption@package}}%
+    {}%
+  \l@addto@macro\caption@fnt{#2}}
+\newcommand*\caption@ifpackageloaded[1]{%
+  \expandafter\ifx\csname ver@#1.\caption@pkgextension\endcsname\relax
+    \expandafter\@secondoftwo
+  \else
+    \expandafter\@firstoftwo
+  \fi}
+\let\caption@pkgextension\@pkgextension
+\newcommand*\caption@require@package[2]{%
+  \caption@Info{Option `#1' requires the `#2' package}%
+  \@cons\caption@pkg@list{{#2}}}% load package later on
+\newcommand*\caption@pkg@list{}
+\caption@AtBeginDocument{%
+  \def\caption@tempa{\endgroup}%
+  \begingroup
+  \def\@elt#1{%
+    \caption@ifpackageloaded{#1}{}{%
+      \g@addto@macro\caption@tempa{%
+        \caption@InfoNoLine{Loading package `#1'..}%
+        \RequirePackage{#1}\relax}}}%
+  \caption@pkg@list
+  \caption@tempa
+  \renewcommand*\caption@require@package[2]{%
+    \caption@Error{Option `#1' requires the `#2' package}}%
+  }
 \newcommand*\DeclareCaptionDefaultFont[2]{%
   \global\@namedef{caption#1@default}{#2}}
 \@onlypreamble\DeclareCaptionDefaultFont
@@ -833,17 +876,7 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionFont{larger}{\caption@larger}
-\DeclareCaptionFont{sansmath}{\sansmath}
-\DeclareCaptionFont{singlespacing}{%
-  \caption@ifdefined\setspace@singlespace{%
-    \setstretch\setspace@singlespace}{}}% normally 1
-\DeclareCaptionFont{onehalfspacing}{%
-  \caption@setspace{onehalfspacing}\onehalfspacing\relax}
-\DeclareCaptionFont{doublespacing}{%
-  \caption@setspace{doublespacing}\doublespacing\relax}
-\DeclareCaptionFont{stretch}{%
-  \caption@setspace{stretch}\setstretch\@gobble{#1}}
-\newcommand*\caption@setspace{\caption@ifpackageloaded{setspace}}
+\DeclareCaptionFont{singlespacing}{}
 \DeclareCaptionFont{normal}{%
   \caption@font*{%
     \KV@caption@fnt@normalcolor\@unused
@@ -852,9 +885,11 @@
     \KV@caption@fnt@singlespacing\@unused}}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 \DeclareCaptionDefaultFont{size}{}
-\newcommand*\DeclareCaptionJustification[2]{%
-  \global\@namedef{caption@hj@#1}{#2}% for compatibility to v1.0
-  \DeclareCaptionFont{#1}{#2}}
+\newcommand*\DeclareCaptionJustification{%
+  \def\caption@@declarefont##1##2{%
+    \global\@namedef{caption@hj@##1}{##2}% for compatibility to v1.0, needed by floatrow package
+    \let\caption@@declarefont\@gobbletwo}%
+  \DeclareCaptionFont}
 \@onlypreamble\DeclareCaptionJustification
 \newcommand*\DeclareCaptionDefaultJustification[1]{%
   \global\@namedef{caption@hj@default}{#1}% for compatibility to v1.0
@@ -885,57 +920,6 @@
   \leftskip\z@\@plus 1fil%
   \rightskip\z@\@plus -1fil%
   \parfillskip\z@\@plus 2fil\relax}
-\DeclareCaptionJustification{Justified}{\caption@Justified}
-\DeclareCaptionJustification{Centering}{\caption@Centering}
-\DeclareCaptionJustification{RaggedLeft}{\caption@RaggedLeft}
-\DeclareCaptionJustification{RaggedRight}{\caption@RaggedRight}
-\newcommand*\caption@Justified{%
-  \caption@ragged{Justified}\justifying\relax}
-\newcommand*\caption@Centering{%
-  \caption@ragged{Centering}\Centering\centering}
-\newcommand*\caption@RaggedLeft{%
-  \caption@ragged{RaggedLeft}\RaggedLeft\raggedleft}
-\newcommand*\caption@RaggedRight{%
-  \caption@ragged{RaggedRight}\RaggedRight\raggedright}
-\newcommand*\caption@ragged{\caption@ifpackageloaded{ragged2e}}
-\newcommand*\caption@ifpackageloaded[4]{%
-  \caption@ifdefined#3#3{%
-    \caption@Error{Option `#2' requires the `#1' package\MessageBreak
-      (or an alternative definition of \string#3)}%
-    #4}}
-\newcommand*\caption@pkg@list{}
-\caption@AtBeginDocument{%
-  \def\caption@tempa{\endgroup}%
-  \begingroup
-  \def\@elt#1{%
-    \g@addto@macro\caption@tempa{%
-      \caption@InfoNoLine{Load package `#1'}%
-      \RequirePackage{#1}\relax}}%
-  \caption@pkg@list
-  \caption@tempa}
-\@ifpackageloaded{ragged2e}{\let\caption@check@ragged\@gobble}{%
-  \newcommand*\caption@check@ragged[1]{%
-    \begingroup
-      \def\caption@tempa{#1}%
-      \caption@check@ragged@{Centering}%
-      \caption@check@ragged@{RaggedLeft}%
-      \caption@check@ragged@{RaggedRight}%
-    \endgroup}%
-  \newcommand*\caption@check@ragged@[1]{%
-    \expandafter\def\expandafter\caption@tempb\expandafter{\csname caption@#1\endcsname}%
-    \ifx\caption@tempa\caption@tempb % our definition of `ragged2e' option?
-      \@ifundefined{#1}{%
-        \caption@Info{Usage of `ragged2e' command \expandafter\string\csname #1\endcsname\space detected}%
-        \@cons\caption@pkg@list{{ragged2e}}% load `ragged2e' package later on
-        \global\let\caption@check@ragged\@gobble}{}%
-    \fi
-  }%
-  \caption@AtBeginDocument{%
-    \let\caption@check@ragged\@gobble
-    \let\caption@check@ragged@\@undefined}}
-%%\@ifl@aded{dtx}{subfig}{\RequirePackage{ragged2e}\relax}{} % not needed
-\DeclareCaptionOption{lofdepth}[2]{\caption@ifdefined\c@lofdepth{\setcounter{lofdepth}{#1}}{}}
-\DeclareCaptionOption{lotdepth}[2]{\caption@ifdefined\c@lotdepth{\setcounter{lotdepth}{#1}}{}}
 \caption@ifundefined\abovecaptionskip{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
 \caption@ifundefined\belowcaptionskip{%
@@ -1249,6 +1233,60 @@
   }{}}
 \caption@tempa{hungarian}
 \caption@tempa{magyar}
+\DeclareCaptionJustification[ragged2e]{Justified}{\justifying}
+\DeclareCaptionJustification[ragged2e]{Centering}{\Centering}
+\DeclareCaptionJustification[ragged2e]{RaggedLeft}{\RaggedLeft}
+\DeclareCaptionJustification[ragged2e]{RaggedRight}{\RaggedRight}
+\DeclareCaptionFont[sansmath]{sansmath}{\sansmath}
+\DeclareCaptionFont{singlespacing}{%
+  \caption@ifdefined\setspace@singlespace{%
+    \setstretch\setspace@singlespace}{}}% normally 1
+\DeclareCaptionFont[setspace]{onehalfspacing}{\onehalfspacing}
+\DeclareCaptionFont[setspace]{doublespacing}{\doublespacing}
+\DeclareCaptionFont[setspace]{stretch}{\setstretch{#1}}
+\caption@AtBeginDocument{%
+  \def\@tempa{2005/06/28 ver: 1.3 subfig package}%
+  \expandafter\ifx\csname ver@subfig.sty\endcsname\@tempa
+    \caption@InfoNoLine{subfig package v1.3 is loaded}%
+    \let\caption@setfloattype\@gobble
+    \let\@dottedxxxline\sf@NEW@dottedxxxline
+    \let\sf@subfloat\sf@NEW@subfloat
+  \fi
+  \let\sf@NEW@dottedxxxline\@undefined
+  \let\sf@NEW@subfloat\@undefined}
+\def\sf@NEW@dottedxxxline#1#2#3#4#5#6#7{%
+  \begingroup
+    \caption@setfloattype{#1}%
+    \caption@setoptions{subfloat}%
+    \caption@setoptions{sub#1}%
+    \ifnum #3>\@nameuse{c@#2depth}\else
+      \@dottedtocline{\z@}{#4}{#5}{#6}{#7}%
+    \fi
+  \endgroup}
+\def\sf@NEW@subfloat{%
+  \begingroup
+    \@nameuse{caption@warmup}%
+    \caption@setfloattype\@captype
+    \sf@ifpositiontop{%
+      \maincaptiontoptrue
+    }{%
+      \maincaptiontopfalse
+    }%
+    \caption@setoptions{subfloat}%
+    \caption@setoptions{sub\@captype}%
+    \let\sf@oldlabel=\label
+    \let\label=\subfloat@label
+    \ifmaincaptiontop\else
+      \advance\@nameuse{c@\@captype}\@ne
+    \fi
+    \refstepcounter{sub\@captype}%
+    \setcounter{sub\@captype @save}{\value{sub\@captype}}%
+    \@ifnextchar [%  %] match left bracket
+      {\sf@@subfloat}%
+      {\sf@@subfloat[\@empty]}}
+%%\@ifl@aded{dtx}{subfig}{\RequirePackage{ragged2e}\relax}{} % not needed
+\DeclareCaptionOption{lofdepth}[2]{\caption@ifdefined\c@lofdepth{\setcounter{lofdepth}{#1}}{}}
+\DeclareCaptionOption{lotdepth}[2]{\caption@ifdefined\c@lotdepth{\setcounter{lotdepth}{#1}}{}}
 \captionsetup{style=default,position=default,%
               list,listformat=default,twoside=\if@twoside 1\else 0\fi}
 \ProcessOptions*
@@ -1616,46 +1654,6 @@
     \def\@elt##1{#3}%
     \@nameuse{caption@#2}%
     \let\@elt\relax}}%
-\caption@AtBeginDocument{%
-  \def\@tempa{2005/06/28 ver: 1.3 subfig package}%
-  \expandafter\ifx\csname ver@subfig.sty\endcsname\@tempa
-    \caption@InfoNoLine{subfig package v1.3 is loaded}%
-    \let\caption@setfloattype\@gobble
-    \let\@dottedxxxline\sf@NEW@dottedxxxline
-    \let\sf@subfloat\sf@NEW@subfloat
-  \fi
-  \let\sf@NEW@dottedxxxline\@undefined
-  \let\sf@NEW@subfloat\@undefined}
-\def\sf@NEW@dottedxxxline#1#2#3#4#5#6#7{%
-  \begingroup
-    \caption@setfloattype{#1}%
-    \caption@setoptions{subfloat}%
-    \caption@setoptions{sub#1}%
-    \ifnum #3>\@nameuse{c@#2depth}\else
-      \@dottedtocline{\z@}{#4}{#5}{#6}{#7}%
-    \fi
-  \endgroup}
-\def\sf@NEW@subfloat{%
-  \begingroup
-    \@nameuse{caption@warmup}%
-    \caption@setfloattype\@captype
-    \sf@ifpositiontop{%
-      \maincaptiontoptrue
-    }{%
-      \maincaptiontopfalse
-    }%
-    \caption@setoptions{subfloat}%
-    \caption@setoptions{sub\@captype}%
-    \let\sf@oldlabel=\label
-    \let\label=\subfloat@label
-    \ifmaincaptiontop\else
-      \advance\@nameuse{c@\@captype}\@ne
-    \fi
-    \refstepcounter{sub\@captype}%
-    \setcounter{sub\@captype @save}{\value{sub\@captype}}%
-    \@ifnextchar [%  %] match left bracket
-      {\sf@@subfloat}%
-      {\sf@@subfloat[\@empty]}}
 \endinput
 %%
 %% End of file `caption3.sty'.
