@@ -2,7 +2,7 @@
 % 
 % This is file `subcaption.dtx'.
 % 
-% Copyright (C) 2007-2019 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -18,19 +18,22 @@
 % 
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
-% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
-% the derived files caption.sty, caption2.sty, caption3.sty,
-% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
-% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+% This work consists of the files
+%   caption.ins, caption.dtx, caption2.dtx, caption3.dtx,
+%   bicaption.dtx, ltcaption.dtx, subcaption.dtx, totalcount.dtx,
+% the derived files
+%   caption.sty, caption2.sty, caption3.sty,
+%   bicaption.sty, ltcaption.sty, subcaption.sty, totalcount.sty,
+% and the user manuals
+%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{235}
+% \CheckSum{232}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2019/08/31 v1.3 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2019/09/10 v1.3 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -102,10 +105,10 @@
 % \newcommand\NEWdescription{\NEW{New description}}
 %
 % \makeatletter
-% \newcommand*\Ref{\@ifstar{\@Ref\ref}{\@Ref\autoref}}
-% \newcommand*\@Ref[2]{#1{#2}: \textit{\nameref{#2}}}
+% \def\Ref{\@ifstar{\@Ref\ref}{\@Ref\autoref}}
+% \def\@Ref#1#2{#1{#2}: \textit{\nameref{#2}}}
 % \makeatother
-% \newcommand*\See[1]{\nopagebreak{\small (See #1)}}
+% \def\See#1{\nopagebreak{\small (See #1)}}
 %
 % \GetFileInfo{subcaption.drv}
 % \let\docdate\filedate
@@ -402,7 +405,7 @@
 % \end{itemize}
 %
 % \NEWfeature{v1.2}
-% Beside the \meta{inner-pos} values of `c', `t', and `b', \thispackage\ also offers the
+% Beside the \meta{outer-pos} values of `c', `t', and `b', \thispackage\ also offers the
 % values `T' and `B' additionally which align the |sub|\-|figure| at the
 % very top resp.~bottom. (In contrast `t' and `b' align the |sub|\-|figure| at the
 % top resp.~bottom \textit{baseline}.)
@@ -410,7 +413,7 @@
 % \bigskip
 %
 % \begin{background}
-% The |subfigure| \& |subtable| environments are just simple minipage
+% The |subfigure| \& |subtable| environments are just simple |minipage|
 % environments with |\set|\-|caption|\-|sub|\-|type| as first contents line.
 % These environments are defined with the help of
 % |\caption@For{subtypelist}|, which executes code for every sub-type
@@ -921,14 +924,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2019/09/01 v1.3a Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/01/22 v1.3d Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
 %
 % Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[2019/09/01] % needs v3.3c or newer
+\RequirePackage{caption}[2020/01/03] % needs v3.4h or newer
 %    \end{macrocode}
 %
 % \begin{macro}{\subcaption@CheckCompatibility}
@@ -982,23 +985,6 @@
 }
 %    \end{macrocode}
 % \end{macro}
-%
-% \iffalse
-% \subsection{Declaration of options}
-% We do not have own options.
-% \fi
-%
-% \subsection{Execution of options}
-%
-% We use |\caption@ExecuteOptions| and |\caption@ProcessOptions| here to add
-% the options to the `|sub|' option list instead of executing them immediately.
-% \changes{v1.1}{2018/05/01}{Bugfix: Option \texttt{font+=small} changed to \texttt{size=smaller}}
-%    \begin{macrocode}
-\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
-\caption@ExecuteOptions{subcaption}{%
-  size=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
-\caption@ProcessOptions*{subcaption}
-%    \end{macrocode}
 %
 % \subsection{Main code}
 %
@@ -1068,6 +1054,7 @@
 % \begin{macro}{subfigure}
 % \begin{macro}{subtable}
 % \changes{v1.2}{2016/02/21}{Optional argument values `B' and `T' added}
+% \changes{v1.3d}{2020/01/22}{Definition and usage of \cs{@subfloatboxreset} added}
 % This is just an ordinary \env{minipage} environment with
 % |\setcaptionsubtype| as first contents line.
 % It will be defined using the helper macro |\caption@For{sub|\-|type|\-|list}|
@@ -1103,7 +1090,11 @@
   \else
     \minipage[#1]#2{#3}%
   \fi\fi
+  \@subfloatboxreset
   \setcaptionsubtype\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\@subfloatboxreset{}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1205,54 +1196,63 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \subsection{Execution of options}
+%
+% We use |\caption@ExecuteOptions| and |\caption@ProcessOptions| here to add
+% the options to the `|sub|' option list instead of executing them immediately.
+% \changes{v1.1}{2018/05/01}{Bugfix: Option \texttt{font+=small} changed to \texttt{size=smaller}}
+%    \begin{macrocode}
+\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
+\caption@ExecuteOptions{subcaption}{%
+  size=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
+\caption@ProcessOptions*{subcaption}
+%    \end{macrocode}
+%
+% \subsection{Bonus material}
+%
 % \subsubsection{The \cs{subfloat} command}
 %
 % \begin{macro}{\subfloat}
 % \changes{v0.4}{2008/03/01}{This macro added}
 % \changes{v1.0c}{2011/01/22}{This macro removed since it's too incompatible with the one from \package{subfig}}
 % \changes{v1.3}{2019/08/31}{This macro re-added and revised}
-% \changes{v1.3a}{2019/09/01}{\cs{ignorespaces} copied from \cs{\sf@@@subfloat}}
+% \changes{v1.3a}{2019/09/01}{\cs{ignorespaces} copied from \cs{sf@@@subfloat}}
+% \changes{v1.3b}{2020/01/03}{Previous definition of \cs{subfloat} will be overwritten}
 %  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
 %  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
 %  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
 %  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
 %  In both cases we do a |\ignore|\-|spaces| at the end since the original implementation of |\sub|\-|float| does this, too.
 %    \begin{macrocode}
-\caption@ifundefined\subfloat{%
+\def\subfloat{%
+  \@ifnextchar[\@subfloat\subfloat@}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \newcommand*\subfloat{%
-    \@ifnextchar[\@subfloat\subfloat@}
+\long\def\@subfloat[#1]{%
+  \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \long\def\@subfloat[#1]{%
-    \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
+\long\def\@@subfloat#1[#2]{%
+  \@@@subfloat{\subcaptionbox[{#1}]}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \long\def\@@subfloat#1[#2]{\@@@subfloat{\subcaptionbox[{#1}]}{#2}}
+\long\def\@@@subfloat#1#2#3{%
+  \caption@getlabel#3\label{}\@nil
+  #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
+  \global\let\caption@thelabel\relax
+  \ignorespaces}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \newcommand\@@@subfloat[3]{%
-    \caption@getlabel#3\label{}\@nil
-    #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
-    \global\let\caption@thelabel\relax
-    \ignorespaces}
-%    \end{macrocode}
-%    \begin{macrocode}
-  \newcommand*\subfloat@[1]{%
-    \setbox\@tempboxa\hbox{#1}%
-    \caption@iiiibox\setcaptionsubtype
-      {\phantomcaption\@gobble}{\phantomcaption\@gobble}% no box with \caption
-      {}% no optional arguments for \caption
-      {}% no sub-caption
-      [\wd\@tempboxa][\caption@hj@default]%
-      {\unhbox\@tempboxa}%
-    \ignorespaces}
-%    \end{macrocode}
-%    \begin{macrocode}
-}{%
-  \PackageInfo{subcaption}{\protect\subfloat\space is already defined\@gobble}
-}
+\def\subfloat@#1{%
+  \setbox\@tempboxa\hbox{#1}%
+  \caption@iiiibox
+    \setcaptionsubtype
+    {\phantomcaption\@gobble}{\phantomcaption\@gobble}% no box with \caption
+    {}% no optional arguments for \caption
+    {}% no sub-caption
+    [\wd\@tempboxa][\caption@hj@default]%
+    {\unhbox\@tempboxa}%
+  \ignorespaces}
 %    \end{macrocode}
 % \end{macro}
 %

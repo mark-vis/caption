@@ -1,0 +1,150 @@
+\documentclass{article}
+
+\errorcontextlines9
+\def\StartTracing{\typeout{StartTracing}\tracingmacros=1\tracingcommands=1\relax}
+\def\StopTracing{\tracingmacros=0\tracingcommands=0\relax\typeout{StopTracing}}
+
+\usepackage[debug]{caption}
+\usepackage{float,subfig}
+\newcommand\LCap{A longer caption with more text}
+\newcommand\FIG{\fbox{\parbox{.4\textwidth}{\strut}}}
+
+\floatstyle{plain}
+\newfloat{newfigure}{ht}{newlof}
+\floatname{newfigure}{New figure}
+\newsubfloat{newfigure}
+
+\floatstyle{plaintop}
+\newfloat{newtable}{ht}{newlot}
+\floatname{newtable}{New table}
+\newsubfloat{newtable}
+
+\setcounter{lofdepth}{2}
+\setcounter{lotdepth}{2}
+
+\makeatletter
+\let\caption@setposition@old\caption@setposition
+\def\caption@setposition#1{%
+  \typeout{\thetest: position = #1}\caption@setposition@old{#1}}
+\makeatother
+\def\thetest{none}
+
+\begin{document}
+\makeatletter
+%\show\sf@counterlist
+\makeatother
+
+\begingroup
+
+\def\thetest{test1}
+
+\begin{figure}[H]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Default subfigures}
+\end{figure}
+
+\captionsetup[subfloat]{format=hang,textfont=it,labelfont={rm,bf},labelformat=simple,labelsep=period,margin=5pt,justification=raggedright}
+
+\def\thetest{test2}
+
+\begin{figure}[H]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Customized subfigures}
+\end{figure}
+
+\endgroup
+
+
+Test of \texttt{position=auto}\ \ldots
+
+\begingroup
+
+\def\thetest{auto0}
+\captionsetup{position=auto}
+
+\def\thetest{auto1}
+
+\begin{figure}[H]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Default subfigures}
+\end{figure}
+
+\def\thetest{auto2}
+
+%\StartTracing
+\begin{table}[H]  \centering
+  \caption{Default subfigures}
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+\end{table}
+%\StopTracing
+
+\endgroup
+
+Test of empty sub-captions\ldots
+\def\thetest{empty caption}
+
+\begin{figure}[H]  \centering
+  \captionsetup[subfloat]{labelsep=period} % should not have a visible effect!
+  \subfloat[]{\FIG}
+  \subfloat[\label{subfloat:1}]{\FIG}
+  \caption{Default subfigures}
+\end{figure}
+
+\clearpage
+Test of the \texttt{float} package\ldots
+
+\begingroup
+\captionsetup{position=bottom} % should have no effect!
+
+\def\thetest{newfigure}
+
+\begin{newfigure}[H]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Default subfigures}
+\end{newfigure}
+
+\def\thetest{newtable}
+
+\begin{newtable}[H]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Default subfigures}
+\end{newtable}
+
+\endgroup
+
+Test of the sub-caption feature\ldots\par
+\renewcommand\thesubfigure{\thefigure.\arabic{subfigure}}
+%\bigskip
+\begin{figure}[H]  \centering
+  \begin{minipage}[b]{.5\linewidth}
+    \captionsetup{subtype}
+    \centering\large A
+    \caption{A subfigure}\label{fig:1a}
+  \end{minipage}%^^A
+  \begin{minipage}[b]{.5\linewidth}
+    \captionsetup{subtype}
+    \centering\large B
+    \caption{Another subfigure}\label{fig:1b}
+  \end{minipage}
+  \caption{A figure}\label{fig:1}
+\end{figure}
+
+Test of \texttt{\string\ContinuedFloat}\ldots\par
+%\bigskip
+\begin{figure}[H]  \ContinuedFloat \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{A figure (cont.)}
+\end{figure}
+
+\clearpage
+\listoffigures
+\listoftables
+
+\end{document}

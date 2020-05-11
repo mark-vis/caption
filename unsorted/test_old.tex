@@ -1,0 +1,2008 @@
+% Test of the caption package
+% (c) 2003-2004 Axel Sommerfeldt
+
+\documentclass[a4paper]{article}
+\setlength\parindent{0pt}
+\setlength\parskip{\medskipamount}
+
+\errorcontextlines9
+\def\StartTracing{\typeout{StartTracing}\tracingmacros=1\tracingcommands=1\relax}
+\def\StopTracing{\tracingmacros=0\tracingcommands=0\relax\typeout{StopTracing}}
+
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\\string#1}}
+%\providecommand\star{\ttfamily*}
+%\providecommand\marg[1]{{\ttfamily\char`\{#1\char`\}}}
+%\providecommand\oarg[1]{{\ttfamily[#1]}}
+%\providecommand\parg[1]{{\ttfamily(#1)}}
+\def\ifundefined#1{\expandafter\ifx\csname#1\endcsname\relax}
+
+\usepackage{shortvrb}\MakeShortVerb{\|}
+%\usepackage{pkgindoc}
+\makeatletter
+\let\@onlypreamble\@gobble
+\let\Orig@makecaption\@makecaption
+\makeatother
+
+\usepackage[bf,sl,Large,hang,justification=raggedright]{caption}[2003/12/14]
+\DeclareCaptionOption{debug}{}
+\DeclareCaptionFormat{normal}{#1#2#3\par}
+%\captionsetup{margin=\leftmargini}
+%
+%\usepackage{subfig}
+%
+\usepackage{float}%row}
+\usepackage{listings}[2004/02/11]
+\usepackage{longtable}\makeatletter\let\Orig@LT@makecaption\LT@makecaption\makeatother
+\usepackage{rotating}
+\usepackage{sidecap}
+\usepackage{supertabular}\makeatletter\let\Orig@ST@caption\ST@caption\makeatother
+
+\ifundefined{floatstyle}
+\else
+  \floatstyle{ruled}
+  \newfloat{Program}{tbp}{lop}[section]
+  \floatstyle{plain}
+  \newfloat{Example}{t}{lox}[section]
+\fi
+
+\long\def\cap#1{%
+  \shortcap{#1}\longcap{#1}}
+\long\def\shortcap#1{%
+  \bgroup
+  #1%
+  \captionof{figure}[]{\shorttext}%
+  \egroup}
+\long\def\longcap#1{%
+  \bgroup
+  #1%
+  \captionof{figure}[]{\longtext}%
+  \egroup}
+\def\shorttext{Short caption}
+\def\longtext{Long long long long long long long long
+  long long long long long long long long long long long long
+  long long long long long long long long long long long caption}
+
+\newif\iftesterrors
+%\testerrorstrue
+
+\let\oldsection\section
+\def\section#1{\typeout{#1}\oldsection{#1}}
+
+\begin{document}
+
+\title{Test of the caption package}
+\author{Axel Sommerfeldt}
+\maketitle
+
+
+%************************************%
+%*                                  *%
+%* Options                          *%
+%*                                  *%
+%************************************%
+
+\section{Options}
+|\usepackage[bf,sl,Large,hang,justification=raggedright]{caption}|
+
+\noindent Normal Text
+\cap{}
+\captionsetup{style=default}
+
+
+%************************************%
+%*                                  *%
+%* Obsolete stuff                   *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Obsolete stuff}
+
+|\renewcommand\captionsize{\small\itshape}|
+\cap{\renewcommand\captionsize{\small\itshape}}
+
+|\renewcommand\captionfont{\small\itshape}|
+\cap{\renewcommand\captionfont{\small\itshape}}
+
+|\renewcommand\captionlabelfont{\bfseries}|
+\cap{\renewcommand\captionlabelfont{\bfseries}}
+
+|\renewcommand\captiontextfont{\itshape}|
+\cap{\renewcommand\captiontextfont{\itshape}}
+
+|\setlength\captionmargin{1in}|
+\cap{\setlength\captionmargin{1in}}
+
+
+%************************************%
+%*                                  *%
+%* Vertical spacing and positioning *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Vertical spacing and positioning}
+
+|\captionsetup[figure]{position=b}|\\
+|\captionsetup[table]{position=t}|
+\captionsetup[figure]{position=b}
+\captionsetup[table]{position=t}
+
+\vbox{\hrule
+\captionof{figure}[]{Short caption}%
+\hrule
+\captionof{table}[]{Short caption}%
+\hrule}
+
+|\captionsetup{aboveskip=20pt,belowskip=10pt}|
+\captionsetup{aboveskip=20pt,belowskip=10pt}
+
+\vbox{\hrule
+\captionof{figure}[]{Short caption}%
+\hrule
+\captionof{table}[]{Short caption}%
+\hrule}
+
+|\captionsetup{aboveskip=10pt,belowskip=0pt,position=auto,debug=3}|\\
+|\showcaptionsetup{table}|\\
+|\clearcaptionsetup{table}|\\
+\captionsetup{aboveskip=10pt,belowskip=0pt,position=auto,debug=3}
+\showcaptionsetup{table}
+
+\clearcaptionsetup{figure}
+\clearcaptionsetup{table}
+
+\begin{figure}[!ht]
+\centering Text
+\caption{This is a figure}
+\end{figure}
+
+%\begin{figure}[!ht]
+%\centering Text\par
+%\caption{This is a figure}
+%\end{figure}
+
+\begin{table}[!ht]
+\caption{This is a table}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\captionsetup{style=default,position=default,aboveskip=10pt,belowskip=0pt,debug=1}
+
+
+%************************************%
+%*                                  *%
+%* Styles                           *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Styles}
+
+|\DeclareCaptionStyle{italic}%|\\
+|  {labelfont={sf,bf},textfont={rm,it},indention=18pt,%|\\
+|   labelsep=period,justification=raggedright}|\\
+|\captionsetup{style=italic}|
+
+\DeclareCaptionStyle{italic}%
+  {labelfont={sf,bf},textfont={rm,it},indention=18pt,%
+   labelsep=period,justification=raggedright}
+\cap{\captionsetup{style=italic}}
+
+|\DeclareCaptionStyle{italix}[justification=raggedleft]%|\\
+|  {labelfont={sf,bf},textfont={rm,it},indention=18pt,%|\\
+|   labelsep=period,justification=raggedright}|\\
+|\captionsetup{style=italix}|
+
+\DeclareCaptionStyle{italix}[justification=raggedleft]%
+  {labelfont={sf,bf},textfont={rm,it},indention=18pt,%
+   labelsep=period,justification=raggedright}
+\cap{\captionsetup{style=italix}}
+
+|\DeclareCaptionStyle{nooneline}{}|\\
+|\captionsetup{style=nooneline}|
+
+\DeclareCaptionStyle{nooneline}{}
+\cap{\captionsetup{style=nooneline}}
+
+|\captionsetup{style=default}|
+
+\cap{\captionsetup{style=default}}
+
+
+%************************************%
+%*                                  *%
+%* Formats                          *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Formats}
+
+|\captionsetup{format=default}|
+\cap{\captionsetup{format=default}}
+
+|\captionsetup{format=default,indention=\leftmargini}|
+\cap{\captionsetup{format=default,indention=\leftmargini}}
+
+|\captionsetup{format=hang}|
+\cap{\captionsetup{format=hang}}
+
+|\captionsetup{format=hang,indention=10pt}|
+\cap{\captionsetup{format=hang,indention=10pt}}
+
+|\captionsetup{format=hang,indention=-10pt}|
+\cap{\captionsetup{format=hang,indention=-10pt}}
+
+|\DeclareCaptionFormat{hfill}{#1\hskip 10pt plus 1fill\relax#3}|\\
+|\captionsetup{format=hfill}|
+\DeclareCaptionFormat{hfill}{#1\hskip 10pt plus 1fill\relax#3}
+\cap{\captionsetup{format=hfill}}
+
+
+%************************************%
+%*                                  *%
+%* Label formats                    *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Label formats}
+
+|\captionsetup{labelformat=empty}|
+\cap{\captionsetup{labelformat=empty}}
+
+|\captionsetup{labelformat=simple}|
+\cap{\captionsetup{labelformat=simple}}
+
+|\captionsetup{labelformat=parens}|
+\cap{\captionsetup{labelformat=parens}}
+
+|\DeclareCaptionLabelFormat{mylabelformat}{#1\textvisiblespace#2}|\\
+|\captionsetup{labelformat=mylabelformat}|
+
+\DeclareCaptionLabelFormat{mylabelformat}{#1\textvisiblespace#2}
+\cap{\captionsetup{labelformat=mylabelformat}}
+
+|\def\figurename{}|
+
+\cap{\def\figurename{}\captionsetup{labelformat=mylabelformat}}
+
+|\DeclareCaptionLabelFormat{mylabelformat}{\bothIfFirst{#1}{\textvisiblespace}#2}|\\
+|\captionsetup{labelformat=mylabelformat}|
+
+\DeclareCaptionLabelFormat{mylabelformat}{\bothIfFirst{#1}{\textvisiblespace}#2}
+\cap{\captionsetup{labelformat=mylabelformat}}
+
+|\def\figurename{}|
+
+\cap{\def\figurename{}\captionsetup{labelformat=mylabelformat}}
+
+
+%************************************%
+%*                                  *%
+%* Label separators                 *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Label separators}
+
+|\captionsetup{labelsep=none}|
+\cap{\captionsetup{labelsep=none}}
+
+%|\captionsetup{labelsep=default}|
+%\cap{\captionsetup{labelsep=default}}
+
+|\captionsetup{labelsep=colon}|
+\cap{\captionsetup{labelsep=colon}}
+
+|\captionsetup{labelsep=period}|
+\cap{\captionsetup{labelsep=period}}
+
+|\captionsetup{labelseparator=newline}|
+\cap{\captionsetup{labelseparator=newline}}
+
+%|\DeclareCaptionLabelSeparator{linebreak}{\\}|\\
+%|\captionsetup{labelseparator=linebreak}|
+%\DeclareCaptionLabelSeparator{linebreak}{\\}
+%\cap{\captionsetup{labelseparator=linebreak}}
+
+|\DeclareCaptionLabelSeparator{visiblespace}{\textvisiblespace}|\\
+|\captionsetup{labelseparator=visiblespace}|
+\DeclareCaptionLabelSeparator{visiblespace}{\textvisiblespace}
+\cap{\captionsetup{labelseparator=visiblespace}}
+
+|\DeclareCaptionLabelSeparator{en-dash}{\textrm{ -- }}|\\
+|\captionsetup{labelseparator=en-dash}|
+\DeclareCaptionLabelSeparator{en-dash}{\textrm{ -- }}
+\cap{\captionsetup{labelseparator=en-dash}}
+
+
+%************************************%
+%*                                  *%
+%* Justifications                   *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Justifications}
+\captionsetup{singlelinecheck=0}
+
+|\captionsetup{format=default,justification=justified}|
+\cap{\captionsetup{format=default,justification=justified}}
+
+|\captionsetup{format=default,justification=centering}|
+\cap{\captionsetup{format=default,justification=centering}}
+
+|\captionsetup{format=default,justification=centerfirst}|
+\cap{\captionsetup{format=default,justification=centerfirst}}
+
+|\captionsetup{format=default,justification=centerlast}|
+\cap{\captionsetup{format=default,justification=centerlast}}
+
+|\captionsetup{format=default,justification=raggedleft}|
+\cap{\captionsetup{format=default,justification=raggedleft}}
+
+|\captionsetup{format=default,justification=raggedright}|
+\cap{\captionsetup{format=default,justification=raggedright}}
+
+|\captionsetup{format=default,justification=Centering}|
+\cap{\captionsetup{format=default,justification=Centering}}
+
+|\captionsetup{format=default,justification=RaggedLeft}|
+\cap{\captionsetup{format=default,justification=RaggedLeft}}
+
+|\captionsetup{format=default,justification=RaggedRight}|
+\cap{\captionsetup{format=default,justification=RaggedRight}}
+
+|\captionsetup{format=hang,justification=justified}|
+\cap{\captionsetup{format=hang,justification=justified}}
+
+|\captionsetup{format=hang,justification=centering}|
+\cap{\captionsetup{format=hang,justification=centering}}
+
+|\captionsetup{format=hang,justification=centerfirst}|
+\cap{\captionsetup{format=hang,justification=centerfirst}}
+
+|\captionsetup{format=hang,justification=centerlast}|
+\cap{\captionsetup{format=hang,justification=centerlast}}
+
+|\captionsetup{format=hang,justification=raggedleft}|
+\cap{\captionsetup{format=hang,justification=raggedleft}}
+
+|\captionsetup{format=hang,justification=raggedright}|
+\cap{\captionsetup{format=hang,justification=raggedright}}
+
+|\captionsetup{format=hang,justification=Centering}|
+\cap{\captionsetup{format=hang,justification=Centering}}
+
+|\captionsetup{format=hang,justification=RaggedLeft}|
+\cap{\captionsetup{format=hang,justification=RaggedLeft}}
+
+|\captionsetup{format=hang,justification=RaggedRight}|
+\cap{\captionsetup{format=hang,justification=RaggedRight}}
+
+|\DeclareCaptionJustification{verbatim}{\@verbatim}|\\
+|\captionsetup{justification=verbatim,singlelinecheck=0}|
+\makeatletter
+\DeclareCaptionJustification{verbatim}{\@verbatim}
+\makeatother
+\cap{\captionsetup{justification=verbatim,singlelinecheck=0}}
+
+\captionsetup{singlelinecheck=1}
+
+
+%************************************%
+%*                                  *%
+%* Fonts                            *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Fonts}
+
+|\captionsetup{font=scriptsize}|
+\cap{\captionsetup{font=scriptsize}}
+
+|\captionsetup{font=footnotesize}|
+\cap{\captionsetup{font=footnotesize}}
+
+|\captionsetup{font=small}|
+\cap{\captionsetup{font=small}}
+
+|\captionsetup{font=normalsize}|
+\cap{\captionsetup{font=normalsize}}
+
+|\captionsetup{font=large}|
+\cap{\captionsetup{font=large}}
+
+|\captionsetup{font=Large}|
+\cap{\captionsetup{font=Large}}
+
+|\DeclareCaptionFont{LARGE}{\LARGE}|\\
+|\captionsetup{size=LARGE}|
+\DeclareCaptionFont{LARGE}{\LARGE}
+\cap{\captionsetup{size=LARGE}}
+
+|\captionsetup{textfont=up}|
+\cap{\captionsetup{textfont=up}}
+
+|\captionsetup{textfont=it}|
+\cap{\captionsetup{textfont=it}}
+
+|\captionsetup{textfont=sl}|
+\cap{\captionsetup{textfont=sl}}
+
+|\captionsetup{labelfont=sc}|
+\cap{\captionsetup{labelfont=sc}}
+
+|\captionsetup{labelfont=md}|
+\cap{\captionsetup{labelfont=md}}
+
+|\captionsetup{labelfont=bf}|
+\cap{\captionsetup{labelfont=bf}}
+
+|\captionsetup{font=rm}|
+\cap{\captionsetup{font=rm}}
+
+|\captionsetup{font=sf}|
+\cap{\captionsetup{font=sf}}
+
+|\captionsetup{font=tt}|
+\cap{\captionsetup{font=tt}}
+
+% Doppeltes Leerzeichen ist kein Bug, sondern wird
+% nach ':' etc. automatisch so gemacht:
+% {\ttfamily Figure 131: Short caption}
+
+|\captionsetup{textfont=it,labelfont=bf,font=sf}|
+\cap{\captionsetup{textfont=it,labelfont=bf,font=sf}}
+
+|\captionsetup{labelfont={large,bf,sl}}|
+\cap{\captionsetup{labelfont={large,bf,sl}}}
+
+
+%************************************%
+%*                                  *%
+%* Margins                          *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Margins}
+
+\hrule
+
+|\captionsetup{margin=\leftmargini}|
+\cap{\captionsetup{margin=\leftmargini}}
+
+\hrule
+
+|\captionsetup{margin={10pt,20pt}}|
+\cap{\captionsetup{margin={10pt,20pt}}}
+
+\hrule
+
+|\captionsetup{margin={20pt,10pt}}|
+\cap{\captionsetup{margin={20pt,10pt}}}
+
+\hrule
+
+|\captionsetup{width=4in}|
+\cap{\captionsetup{width=4in}}
+
+\hrule
+
+|\captionsetup{margin={.5cm,2cm},width=3in}|
+\cap{\captionsetup{margin={.5cm,2cm},width=3in}}
+
+\hrule
+
+%************************************%
+%*                                  *%
+%* Local settings                   *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Local settings}
+
+%|\captionsetup[figure]{style=italic,name=FIGURE}|\\
+|\captionsetup[figure]{style=italic}|\\
+|\captionsetup[table]{position=top}|
+
+%\captionsetup[figure]{style=italic,name=FIGURE}
+\captionsetup[figure]{style=italic}
+\captionsetup[table]{position=top}
+
+\begin{figure}[!ht]
+\centering Text
+\caption{This is a figure}
+\end{figure}
+
+\begin{table}[!ht]
+\caption{This is a table}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+|\clearcaptionsetup{figure}|\\
+|\clearcaptionsetup{table}|
+
+\clearcaptionsetup{figure}
+\clearcaptionsetup{table}
+
+\begin{figure}[!ht]
+\centering Text
+\caption{This is a figure}
+\end{figure}
+
+\begin{table}[!ht]
+\caption{This is a table}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+
+%************************************%
+%*                                  *%
+%* Hooks                            *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Hooks}
+
+|\AtBeginCaption{$<$}|
+|\AtEndCaption{$>$}|
+
+\cap{\AtBeginCaption{$<$}\AtEndCaption{$>$}}
+
+
+%************************************%
+%*                                  *%
+%* Multiparagraph captions          *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Multiparagraph captions}
+\begingroup
+
+\captionsetup{justification=centerfirst}
+\captionof{figure}[]{A caption that runs over more than one line
+    to show the effect of the centerfirst keyword.
+
+   It even has a second paragraph, which is kind of
+   problematical with this type of layout.}
+
+\captionsetup{justification=centerlast}
+\captionof{figure}[]{A caption that runs over more than one line
+    to show the effect of the centerlast keyword.
+
+   It even has a second paragraph, which is kind of
+   problematical with this type of layout.}
+
+\captionsetup{justification=justified}
+
+\newcommand*\mptest[1]{%
+\noindent{\ttfamily#1}\par
+\captionsetup{#1}
+\captionof{figure}[]{Short caption}
+\captionof{figure}[]{%
+  This is some text. This is some text. This is some text.
+  This is some text. This is some text. This is some text.
+  This is some text. This is some text. This is some text.\\
+  This is some text after a hard line break.}
+\captionof{figure}[]{%
+  Long long long long long long long long
+  long long long long long long long long long long long long
+  long long long long long long long long long long long caption
+
+  Long long long long long long long long%\\
+  long long long long long long long long long long long long
+  long long long long long long long long long long long caption
+
+  Long long long long long long long long
+  long long long long long long long long long long long long
+  long long long long long long long long long long long caption}
+}
+
+\mptest{format=normal,indention=0cm}
+
+\mptest{format=normal,indention=.5cm}
+
+\mptest{format=normal,indention=-.5cm}
+
+\mptest{format=hang,indention=0cm}
+
+\mptest{format=hang,indention=.5cm}
+
+\mptest{format=hang,indention=-.5cm}
+
+\mptest{format=normal,indention=0cm,hangindent=.5cm}
+% = format=default-from-steven,indention=.5cm
+
+\mptest{format=hang,indention=0cm,hangindent=-.5cm}
+% = format=hang-from-steven,indention=-.5cm
+
+\mptest{format=hang,indention=0cm,hangindent=.5cm}
+% = format=hang-from-steven,indention=.5cm
+
+\endgroup
+
+
+%********************************************%
+%*                                          *%
+%* The \caption and \ContinuedFloat command *%
+%*                                          *%
+%********************************************%
+
+\clearpage
+\section{The \cs{caption} and \cs{ContinuedFloat} command}
+\captionsetup{position=auto,labelseparator=visiblespace}
+
+\begin{table}[!ht]
+\caption{This is a table typeset with \cs{caption}}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\caption*{This is a table typeset with \cs{caption*}}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\caption[]{This is a table typeset with \cs{caption[]}}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\iffalse
+\begin{table}[!ht]
+\caption*[Huba!]{This is a table typeset with \cs{caption*[Huba!]}}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+\fi
+
+\begin{table}[!ht]
+\caption{} % BUG! PRODUCES NO LOT!
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\caption*{}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\caption{This is a table}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+\ContinuedFloat
+\caption{This is a table (cont.)}
+\centering\begin{tabular}{ll}
+A & B \\
+C & D \\
+\end{tabular}
+\end{table}
+
+\begingroup
+  \let\section\oldsection
+  \listoftables
+\endgroup
+
+\captionsetup{style=default,position=default,aboveskip=10pt,belowskip=0pt}
+
+
+%************************************%
+%*                                  *%
+%* Test of minipage flag            *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Test of minipage flag}
+
+\begin{minipage}\linewidth
+\makeatletter
+\if@minipage
+\typeout{@minipage is set}
+\else
+\error{minipage}
+\fi
+\makeatother
+\captionof{figure}{A minipage}
+\makeatletter
+\if@minipage
+\error{minipage}
+\else
+\typeout{@minipage is not set}
+\fi
+\makeatother
+
+A minipage
+\end{minipage}
+
+
+%************************************%
+%*                                  *%
+%* Packages                         *%
+%*                                  *%
+%************************************%
+
+\captionsetup{font=sl,labelfont=bf,labelsep=period}
+\DeleteShortVerb{\|}
+
+
+%************************************%
+%*                                  *%
+%* The subfig package               *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The subfig package}
+
+\ifundefined{subfloat}
+---\par
+(Please use \verb|testsub.tex| to test the subfig package.)
+\else
+
+\begingroup
+
+\newcommand\LCap{A longer caption with more text}
+\newcommand\FIG{\fbox{\parbox{.4\textwidth}{\strut}}}
+
+\begin{figure}[ht]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Default subfigures}
+\end{figure}
+
+\captionsetup[subfloat]{format=hang,textfont=it,labelfont={rm,bf},labelformat=simple,labelsep=period,margin=5pt,justification=raggedright}
+
+\begin{figure}[ht]  \centering
+  \subfloat[Short caption]{\FIG}
+  \subfloat[\LCap]{\FIG}
+  \caption{Customized subfigures}
+\end{figure}
+
+\endgroup
+
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The float package                *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The float package}
+
+\makeatletter
+
+\newcommand\thecaptionposition{%
+  \caption@iftop{top}{bottom}}
+
+\newcommand\thefloatstyle{%
+  \ifx\caption@fixfloat@c\undefined
+    \caption@fst
+  \else
+    \begingroup
+      \let\caption@fixfloat@c\@gobble
+      \let\caption@setstyle\@gobble
+      \let\caption@setfloatposition\relax
+      \let\caption@settype\@gobble
+      \caption@setfloattype{\@captype}%
+      \caption@fst
+    \endgroup
+  \fi}
+
+\makeatother
+
+\ifundefined{floatstyle}
+---
+\else
+\begingroup
+
+\ifundefined{floatrow}
+  \newcommand\floatinfo{%
+    (float style: `\thefloatstyle', caption position: \thecaptionposition)}
+\else
+  \newcommand\floatinfo{%
+    (caption position: \thecaptionposition)}
+\fi
+
+\begin{Program}[!ht]
+\begin{verbatim}
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+       int i;
+       for (i = 0; i < argc; ++i)
+               printf("argv[%d] = %s\n", i, argv[i]);
+       return 0;
+}
+\end{verbatim}
+\caption{The first program. This hasn't got anything to do with the package
+   but is included as an example. Note the \texttt{ruled} float style.%
+   \label{prog1.1}}
+%\floatinfo
+\end{Program}
+
+\captionsetup[ruled]{margin=10pt} % new feature v3.0f
+
+\begin{Program}[!ht]
+\begin{verbatim}
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+       int i;
+       for (i = 0; i < argc; ++i)
+               printf("argv[%d] = %s\n", i, argv[i]);
+       return 0;
+}
+\end{verbatim}
+\caption{The first program. This hasn't got anything to do with the package
+   but is included as an example. Note the extra margin of \texttt{10pt}.}
+%\floatinfo
+\end{Program}
+
+\clearcaptionsetup{ruled}
+
+\begin{Program}[!ht]
+\begin{verbatim}
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+       int i;
+       for (i = 0; i < argc; ++i)
+               printf("argv[%d] = %s\n", i, argv[i]);
+       return 0;
+}
+\end{verbatim}
+\captionsetup{textfont=sf} % new feature v3.0f
+\caption{The first program. This hasn't got anything to do with the package
+   but is included as an example. Note the serif text font.}
+%\floatinfo
+\end{Program}
+
+%\clearpage
+
+\MakeShortVerb{\|}
+
+\begin{Example}[H]
+\begin{verse}
+|\floatstyle{ruled}|\\
+|\newfloat{Program}{tbp}{lop}[section]|\\
+\dots\ loads o' stuff \dots\\
+|\begin{Program}|\\
+|\begin{verbatim}|\\
+\dots\ program text \dots\\
+|\end{verbatim}|\\
+|\caption{|\dots\ caption \dots|}|\\
+|\end{Program}|
+\end{verse}
+\caption{This is another silly floating Example. Except that this one
+  doesn't actually float because it uses the {\tt[H]} optional parameter
+  to appear \textbf{Here}. (Gotcha.)}
+%\floatinfo
+\end{Example}
+
+\DeleteShortVerb{\|}
+
+%\clearpage
+
+\floatstyle{boxed}
+\restylefloat{table}
+
+\begin{table}[!ht] \def\B#1{$\displaystyle{n\choose#1}$}
+\begin{center} \begin{tabular}{c|cccccccc}
+$n$&\B0&\B1&\B2&\B3&\B4&\B5&\B6&\B7\\ \hline
+ 0 & 1\\
+ 1 & 1&1\\
+ 2 & 1&2&1\\
+ 3 & 1&3&3&1\\
+ 4 & 1&4&6&4&1\\
+ 5 & 1&5&10&10&5&1\\
+ 6 & 1&6&15&20&15&6&1\\
+ 7 & 1&7&21&35&35&21&7&1
+\end{tabular} \end{center}
+\caption{Pascal's triangle. This is a re-styled \LaTeX\ \texttt{table}.%
+  \label{table1}}
+%\floatinfo
+\end{table}
+
+\captionsetup[boxed]{skip=10pt}
+
+\begin{table}[!ht] \def\B#1{$\displaystyle{n\choose#1}$}
+\begin{center} \begin{tabular}{c|cccccccc}
+$n$&\B0&\B1&\B2&\B3&\B4&\B5&\B6&\B7\\ \hline
+ 0 & 1\\
+ 1 & 1&1\\
+ 2 & 1&2&1\\
+ 3 & 1&3&3&1\\
+ 4 & 1&4&6&4&1\\
+ 5 & 1&5&10&10&5&1\\
+ 6 & 1&6&15&20&15&6&1\\
+ 7 & 1&7&21&35&35&21&7&1
+\end{tabular} \end{center}
+\caption{Pascal's triangle. This is a re-styled \LaTeX\ \texttt{table} with \texttt{skip=10pt}.}
+%\floatinfo
+\end{table}
+
+\clearpage
+
+\floatstyle{plaintop}
+\restylefloat{table}
+
+\begin{table}[!ht]
+\begin{center}
+\hrule
+Plaintop float
+\hrule
+\end{center}
+\caption{This is a re-styled \LaTeX\ \texttt{table}.%
+  \label{table2}}
+%\floatinfo
+\end{table}
+
+%\clearpage
+
+\begingroup
+\hrule
+\captionof{Program}{Caption of Programm}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{Example}{Caption of Example}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{figure}{Caption of figure}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{table}{Caption of table}
+\hrule
+\endgroup
+
+\endgroup
+
+\clearpage
+Same with \verb|\restylefloat*|\ \ldots
+
+\begingroup
+
+\floatstyle{ruled}
+\restylefloat*{Program}
+\floatstyle{plain}
+\restylefloat*{Example}
+
+\begin{Program}[!ht]
+\begin{verbatim}
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+       int i;
+       for (i = 0; i < argc; ++i)
+               printf("argv[%d] = %s\n", i, argv[i]);
+       return 0;
+}
+\end{verbatim}
+\caption{The first program. This hasn't got anything to do with the package
+   but is included as an example. Note the \texttt{ruled} float style.}
+(The position of the caption is \thecaptionposition)
+\end{Program}
+
+%\clearpage
+
+\MakeShortVerb{\|}
+
+\begin{Example}[H]
+\begin{verse}
+|\floatstyle{ruled}|\\
+|\newfloat{Program}{tbp}{lop}[section]|\\
+\dots\ loads o' stuff \dots\\
+|\begin{Program}|\\
+|\begin{verbatim}|\\
+\dots\ program text \dots\\
+|\end{verbatim}|\\
+|\caption{|\dots\ caption \dots|}|\\
+|\end{Program}|
+\end{verse}
+%\StartTracing
+\caption{This is another silly floating Example. Except that this one
+  doesn't actually float because it uses the {\tt[H]} optional parameter
+  to appear \textbf{Here}. (Gotcha.)}
+%\StopTracing
+(The position of the caption is \thecaptionposition)
+\end{Example}
+
+\DeleteShortVerb{\|}
+
+%\clearpage
+
+\floatstyle{boxed}
+\restylefloat*{table}
+
+\begin{table}[!ht] \def\B#1{$\displaystyle{n\choose#1}$}
+\begin{center} \begin{tabular}{c|cccccccc}
+$n$&\B0&\B1&\B2&\B3&\B4&\B5&\B6&\B7\\ \hline
+ 0 & 1\\
+ 1 & 1&1\\
+ 2 & 1&2&1\\
+ 3 & 1&3&3&1\\
+ 4 & 1&4&6&4&1\\
+ 5 & 1&5&10&10&5&1\\
+ 6 & 1&6&15&20&15&6&1\\
+ 7 & 1&7&21&35&35&21&7&1
+\end{tabular} \end{center}
+\caption{Pascal's triangle. This is a re-styled \LaTeX\ \texttt{table}.}
+(The position of the caption is \thecaptionposition)
+\end{table}
+
+\iffalse
+\floatstyle{plaintop}
+\restylefloat*{table}
+
+\begin{table}[!ht]
+\begin{center}
+Plaintop float
+\end{center}
+\caption{This is a re-styled \LaTeX\ \texttt{table}.%
+  \label{table4}}
+(The position of the caption is \thecaptionposition)
+\end{table}
+\fi
+
+\clearpage
+
+\begingroup
+\hrule
+\captionof{Program}{Caption of Programm}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{Example}{Caption of Example}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{figure}{Caption of figure}
+\hrule
+\endgroup
+
+\begingroup
+\hrule
+\captionof{table}{Caption of table}
+\hrule
+\endgroup
+
+\endgroup
+
+\verb|\caption*{Caption}|
+\begingroup
+%\ifundefined{subfloat}
+  \captionof*{Example}{Caption}
+%\else\par
+%  ******* BUG: \verb|\captionof*| does not work with \textsf{subfig}!
+%  (\verb|\ContinuedFloat| does not work inside environments defined using
+%   the \textsf{float} package) *******
+%\fi
+\endgroup
+\begingroup
+\captionof*{figure}{Caption}
+\endgroup
+
+\verb|\caption{}|
+\begingroup
+\captionof{Example}{}
+\endgroup
+\begingroup
+\captionof{figure}{}
+\endgroup
+
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The listings package             *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The listings package}
+
+\ifundefined{lstlisting}
+---
+\else
+\begingroup
+
+   \begin{lstlisting}[caption={Useless code},label=useless]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+   \begin{lstlisting}[title={`Caption' without label}]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+
+%   \begin{lstlisting}[caption={ },label=useless]
+%   for i:=maxint to 0 do
+%   begin
+%       { do nothing }
+%   end;
+%   \end{lstlisting}
+
+\MakeShortVerb{\|}
+|\captionsetup{labelformat=parens,labelsep=space}|\\
+|\captionsetup[lstlisting]{textfont={up,md,rm}}|
+\captionsetup{labelformat=parens,labelsep=space}
+\captionsetup[lstlisting]{textfont={up,md,rm}}
+\DeleteShortVerb{\|}
+
+   \begin{lstlisting}[caption={Useless code},label=useless2]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+   \begin{lstlisting}[title={`Caption' without label}]
+   for i:=maxint to 0 do
+   begin
+       { do nothing }
+   end;
+   \end{lstlisting}
+
+%   \begin{lstlisting}[caption={},label=useless]
+%   for i:=maxint to 0 do
+%   begin
+%       { do nothing }
+%   end;
+%   \end{lstlisting}
+
+\endgroup
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The longtable package            *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The longtable package}
+
+\ifundefined{longtable}
+---
+\else
+\begingroup
+
+\makeatletter
+\let\LT@makecaption\Orig@LT@makecaption
+\makeatother
+
+\begin{longtable}{lll}
+\caption{The ISOGRK3 entity set (longtable code)}\\
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+\endfirsthead
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\emph{Continued on next page}}
+\endfoot
+\hline
+\endlastfoot
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{longtable}
+
+\endgroup\begingroup
+
+\captionsetup{position=default}
+
+\begin{longtable}{lll}
+\caption{The ISOGRK3 entity set (caption code)}\\
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+\endfirsthead
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\emph{Continued on next page}}
+\endfoot
+\hline
+\endlastfoot
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{longtable}
+
+\restylefloat{table} % This should not affect the longtable!
+\captionsetup[longtable]{labelsep=colon}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\longtext}\\
+C & D \\
+\end{longtable}
+
+\captionsetup[table]{margin=0pt} % should be overwritten by \LTcapwidth
+
+Setting \texttt{LTcapwidth=3in}\ldots
+\LTcapwidth=3in
+
+\begin{longtable}{ll}
+\caption{\longtext}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+Setting \texttt{LTcapwidth=3.999in}\ldots
+\LTcapwidth=3.999in
+
+\begin{longtable}{ll}
+\caption{\longtext}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+Setting \texttt{LTcapwidth=3.999in} and \verb|\captionsetup[longtable]{width=3in}|\ldots
+\LTcapwidth=3.999in
+\captionsetup[longtable]{width=3in}
+
+\begin{longtable}{ll}
+\caption{\longtext}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+Setting \texttt{LTcapwidth=4in} again\ldots
+\LTcapwidth=4in
+\clearcaptionsetup{longtable}
+
+\begin{longtable}{ll}
+\caption{\longtext}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+\clearpage
+
+Caption position is now \texttt{default}:
+\captionsetup{position=default,debug=0}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+Caption position is now \texttt{top}:
+\captionsetup{position=top}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+Caption position is now \texttt{bottom}:
+\captionsetup{position=bottom}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+Caption position is now \texttt{auto}:
+\captionsetup{position=auto}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+\iffalse
+\clearpage
+
+Longtable column position is now \texttt{l}:
+\def\longtablecolumnpos{l}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+\begin{longtable}[l]{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+\begingroup
+\def\makelongtablecaption#1{\hbox to 0pt{\parbox[t]\linewidth{#1}\hss}}%
+\begin{longtable}[l]{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+\captionsetup{singlelinecheck=0}
+\begin{longtable}[l]{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+\endgroup
+
+Longtable column position is now \texttt{c}:
+\def\longtablecolumnpos{c}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+Longtable column position is now \texttt{r}:
+\def\longtablecolumnpos{r}
+
+\begin{longtable}{ll}
+A & B \\
+\caption{\shorttext}\\
+C & D \\
+\end{longtable}
+
+\def\longtablecolumnpos{c}
+
+\fi
+
+\verb|\caption*{Caption}|
+\begin{longtable}{ll}
+\caption*{\shorttext}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+\verb|\caption{}|
+\begin{longtable}{ll}
+\caption{}\\
+A & B \\
+C & D \\
+\end{longtable}
+
+\endgroup
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The rotating package             *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The rotating package}
+
+\ifundefined{sidewaystable}
+---
+\else
+
+\begin{sidewaystable}
+\centering
+\caption{This is a narrow  table, which should be centred vertically
+on the final page.\label{rotfloat1}}
+  \begin{tabular}{|ll|}
+\hline
+    a & b \\
+    c & d \\
+    e & f \\
+    g & h \\
+    i & j \\
+\hline
+  \end{tabular}
+\end{sidewaystable}
+
+\begin{sidewaystable}
+\centering
+\begin{tabular}{|llllllllp{1in}lp{1in}|}
+\hline
+Context   &Length   &Breadth/   &Depth   &Profile   &Pottery   &Flint   &Animal   &Stone   &Other    &C14 Dates \\
+  &         &Diameter   &        &          &          &        & 
+Bones&&&\\
+\hline
+&&&&&&&&&&\\
+\multicolumn{10}{|l}{\bf Grooved Ware}&\\
+784       &---        &0.9m       &0.18m   &Sloping U &P1       &$\times$46  &  $\times$8      &&       $\times$2 bone&  2150$\pm$ 100 BC\\
+785       &---        &1.00m      &0.12    &Sloping U &P2--4    &$\times$23  &  $\times$21     & Hammerstone &---&---\\
+962       &---        &1.37m      &0.20m   &Sloping U &P5--6    &$\times$48  &  $\times$57*    & ---&     ---&1990 $\pm$ 80 BC (Layer 4) 1870 $\pm$90 BC (Layer 1)\\
+983       &0.83m      &0.73m      &0.25m   &Stepped U &---      &$\times$18  &  $\times$8      & ---& Fired clay&---\\
+&&&&&&&&&&\\
+\multicolumn{10}{|l}{\bf Beaker}&\\
+552       &---        &0.68m      &0.12m   &Saucer    &P7--14   &---           & ---       & ---       &---        &---\\
+790       &---        &0.60m      &0.25m   &U         &P15      &$\times$12    & ---       & Quartzite-lump&---    &---\\
+794       &2.89m      &0.75m      &0.25m   &Irreg.    &P16      &$\times$3     & ---       & ---       &---        &---\\
+\hline
+\end{tabular}
+ 
+\caption[Grooved Ware and Beaker Features, their Finds and
+Radiocarbon Dates]{Grooved Ware and Beaker Features, their
+Finds and Radiocarbon Dates; For a breakdown of the Pottery
+Assemblages see Tables I and III; for
+the Flints see Tables II and IV; for the
+Animal Bones see Table V.}\label{rotfloat2}
+\end{sidewaystable}
+
+\begin{table}
+\centering
+\hbox{
+\rotcaption{Minimum number of individuals; effect of rotating table
+and caption separately}\label{rotfloat3}%
+\begin{sideways}
+\begin{tabular}[t]{cccccccccp{1cm}}
+\hline
+Phase&Total&Cattle&Sheep&Pig&Red Deer&Horse&Dog&Goat&Other\\
+\hline
+&1121&54&12&32&1&1&1&1&1 polecat\\
+3&8255&58&6&35&1&1&1&1&1 roe deer, 1 hare, 1 cat, 1 otter\\
+4&543&45&6&45&4&1&1&---&---\\
+\hline
+&9919&157&24&112&6&3&3&2&5\\
+\hline
+\end{tabular}
+\end{sideways}
+}
+\end{table}
+
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The sidecap package              *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The sidecap package}
+
+\ifundefined{SCfigure}
+---
+\else
+\begingroup
+
+\captionsetup[SCtable]{labelsep=colon}
+
+\newcommand{\FIG}[2][]{%
+  \begingroup
+    \def\xxx{#1}%
+    \ifx\xxx\empty
+      \setlength{\unitlength}{\linewidth}%
+      \addtolength{\unitlength}{-2\fboxrule}%
+      \setlength{\unitlength}{.1\unitlength}%
+    \else  
+      \setlength{\unitlength}{#1}%
+    \fi% 
+    \setlength{\fboxsep}{0pt}%
+    \ifcase#2\relax
+    \or%
+      \fbox{%
+	\begin{picture}(4,6)%
+	  \put(1,5){\circle{1}}%
+	  \put(3,5){\circle{1}}%
+	  \put(2,3){\circle{1}}%
+	  \put(1,1){\circle{1}}%
+	  \put(3,1){\circle{1}}%     
+	\end{picture}}%
+    \or%	
+      \fbox{%
+	\begin{picture}(10,4)%
+	  \put(1,3){\circle{1}}%
+	  \put(9,3){\circle{1}}%
+	  \put(5,2){\circle{1}}%
+	  \put(1,1){\circle{1}}%
+	  \put(9,1){\circle{1}}%     
+	\end{picture}}%
+    \or% (doesn't make a difference to use [b] or [t] or [c] here !!!)
+      \begin{minipage}{5\unitlength}%
+        text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text.
+      \end{minipage}%	
+    \or% (doesn't make a difference to use [b] or [t] or [c] here !!!)
+      \begin{minipage}{5\unitlength}%
+        \strut
+        text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text
+	text text text text text text text text.
+	\unskip\strut
+      \end{minipage}%	
+    \fi	
+  \endgroup  
+}
+
+\newcommand{\TABi}{%
+  \begin{tabular}{@{} | c | c c c c c | @{}} \hline
+    \multicolumn{1}{| c} {1} 
+       &  2 &  3 &  4 &  5 &  6 \\ \cline{2-6}
+     2 &  4 &  6 &  8 & 10 & 12 \\
+     3 &  6 &  9 & 12 & 15 & 18 \\     
+     4 &  8 & 12 & 16 & 20 & 24 \\
+     5 & 10 & 15 & 20 & 25 & 30 \\
+     6 & 12 & 18 & 24 & 30 & 36 \\
+     7 & 14 & 21 & 28 & 35 & 42 \\
+     8 & 16 & 24 & 32 & 40 & 48 \\
+     9 & 18 & 27 & 36 & 45 & 54 \\
+    10 & 20 & 30 & 40 & 50 & 60 \\
+    11 & 22 & 33 & 44 & 55 & 66 \\
+    12 & 24 & 36 & 48 & 60 & 72 \\
+    13 & 26 & 39 & 52 & 65 & 78 \\
+    14 & 28 & 42 & 56 & 70 & 84 \\
+    \hline
+  \end{tabular}%
+}
+
+\newcommand{\CAPi}{%
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+}
+  
+\newcommand{\CAPii}{%
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+  The dazed brown fox quickly gave 12345--67890 jumps!
+}
+  
+\newcommand{\SHORTCAPi}{%
+  The dazed brown fox etc.}  
+  
+\newcommand*{\MARKER}
+  {\noindent\strut\vrule\hrulefill~text area 
+   (\ifthenelse{\isodd{\thepage}}{odd}{even} page)~\hrulefill\vrule%
+    \marginpar{\strut\vrule\hrulefill~margin area~\hrulefill\vrule}}  
+
+%\section*{The \texttt{sidecap} package}
+
+First, a standard \LaTeX\ \texttt{figure} environment
+(fig.~\ref{fig:standard}).
+Since width of the body of the figure is considerably less than
+the document's \verb|\textwidth|, there is much space wasted.
+
+\begin{figure}[h]
+  \centering
+  \FIG[1cm]{1}%
+  \caption[\SHORTCAPi]{\CAPi}
+  \label{fig:standard}
+\end{figure}
+
+For such cases, the \textsf{sidecap} package provides the
+\verb|SCfigure| and \verb|SCtable| environments to put the
+caption beside the body of the floating environment.
+
+In this document, we used the defaults of the \textsf{sidecap} package:
+%
+\begin{verbatim}
+  \usepackage{sidecap}
+\end{verbatim}
+%
+In the text, we used the optional arguments for the following figures
+(fig.~\ref{fig:sc1}, \ref{fig:sc2}, and \ref{fig:sc3}).
+%
+\begin{verbatim}
+  \begin{SCfigure} ...
+  \begin{SCfigure}[1.2][bhp] ...
+  \begin{SCfigure}[][bhp] ...
+\end{verbatim}
+%
+In the first case, no optional arguments were given, so the defaults
+(\verb|[1.0][tbp]|) are used. I.e., the caption will be as wide as
+the body of the float; and the `float placement specifier' is the same
+as for \LaTeX's standard floats (fig.~\ref{fig:sc1}).
+In the second case, both optional arguments are given to change the
+caption width as well as the placement options (fig.~\ref{fig:sc2}).
+To change only the placement, just leave the first optional argument
+empty (fig.~\ref{fig:sc3}).
+
+\begin{SCfigure}
+  \FIG[1cm]{1}%
+%%%\captionsetup{font=large}
+  \caption[\SHORTCAPi]{\CAPi}
+  \label{fig:sc1}
+\end{SCfigure}
+
+\begin{SCfigure}[1.2][bhp]
+  \FIG[1cm]{1}%
+  \caption[\SHORTCAPi]{\CAPi}
+  \label{fig:sc2}
+\end{SCfigure}
+
+\begin{SCfigure}[][bhp]
+  \FIG[1cm]{1}%
+  \caption[\SHORTCAPi]{\CAPi}
+  \label{fig:sc3}
+\end{SCfigure}
+
+\clearpage
+
+Now, a standard \LaTeX\ \texttt{table} environment
+(tab.~\ref{tab:standard}).
+
+\begin{table}[h]
+  \centering
+  \caption[\SHORTCAPi]{\CAPi}
+  \TABi%
+  \label{tab:standard}
+\end{table}
+
+The only difference between the \verb|SCfigure| and the
+\verb|SCtable| environments is the vertical position of the
+caption with respect to the body of the float:
+The former places the caption bottom-aligned, the latter top-aligned
+(compare fig.~\ref{fig:sc1} to tab.~\ref{tab:sc1}).
+
+Also, like standard \LaTeX, the \textsf{sidecap} package doesn't care
+about the contents of the float (cf.\ tabs.~\ref{tab:standard} and
+\ref{tab:sc1}).
+
+\begin{SCtable}
+  \caption[\SHORTCAPi]{\CAPi}  
+  \FIG[1cm]{1}%
+  \label{tab:sc1}
+\end{SCtable}
+
+If you want to use all the remaining space for the caption, just
+specify a sufficiently large factor in the first optional argument.
+E.g., for tab.~\ref{tab:sc2} we used the following:
+%
+\begin{verbatim}
+  \begin{SCtable}[50] ...
+\end{verbatim}
+%
+Note, however, that \TeX\ may complain
+%
+\begin{verbatim}
+  ! Dimension too large.
+\end{verbatim}
+%
+if the factor times the width of the body is huge enough to exceed
+the range \TeX\ is able to represent in a length register.
+%
+(Max.\ \verb|\maxdimen|%
+${}={}$\the\maxdimen
+${}\approx 5.76$\,{meters}).
+
+% VOODOO:
+%\setlength
+%\mylength=\maxdimen
+%\mylength=-\mylength
+%\the\mylength
+
+\begin{SCtable}[50]
+%  \caption[\SHORTCAPi]{\CAPi}
+\captionsetup{font=,labelfont=sf}
+\captionsetup{margin=10pt}
+  \caption[]{\CAPi}
+  \label{tab:sc2}
+%  \TABi%
+  \FIG[1cm]{1}%
+\end{SCtable}
+
+\verb|\caption*{Caption}|
+\begin{SCfigure}[][bhp]
+  \FIG[1cm]{1}%
+  \caption*{\CAPi}
+\end{SCfigure}
+
+\verb|\caption{}|
+\begin{SCfigure}[][bhp]
+  \FIG[1cm]{1}%
+  \caption{}
+\end{SCfigure}
+
+\captionsetup[figure]{margin=5cm}
+
+\begin{SCfigure}[50][bhp]%
+  \fbox{\parbox{.4\textwidth}{%
+  Setting a figure margin
+  should have no effect
+  on sidecaps\ldots}}%
+  \caption{\CAPi}
+\end{SCfigure}
+
+\captionsetup[SCfigure]{margin=2cm}
+
+\begin{SCfigure}[50][bhp]%
+  \fbox{\parbox{.4\textwidth}{%
+  \ldots unless we set a SCfigure
+  margin!}}%
+  \caption{\CAPi}
+\end{SCfigure}
+
+\endgroup
+\fi
+
+
+%************************************%
+%*                                  *%
+%* The supertabular package         *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{The supertabular package}
+
+\ifundefined{supertabular}
+---
+\else
+
+\setlength\parskip{0pt}  % \tablecaption reagiert allergisch auf andere \parskips...
+\captionsetup{debug=2}
+
+\begingroup
+\makeatletter
+\let\ST@caption\Orig@ST@caption
+\let\@makecaption\Orig@makecaption
+\makeatother
+
+\begin{center}
+\tablecaption{The ISOGRK3 entity set (supertabular code)}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+
+\begin{center}
+\bottomcaption{The ISOGRK3 entity set (supertabular code)}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+\endgroup
+
+\begingroup
+\begin{center}
+\tablecaption{The ISOGRK3 entity set (caption code)}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+
+\captionsetup[supertabular]{labelsep=colon}
+
+\begin{center}
+\bottomcaption{The ISOGRK3 entity set (caption code)}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+\endgroup
+
+\captionsetup{debug=1}
+
+\verb|\caption*{Caption}|
+\begin{center}
+\tablecaption*{The ISOGRK3 entity set}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+
+\verb|\caption{}|
+\begin{center}
+\tablecaption{}
+\begin{supertabular}{lll}
+\bfseries Entity&\bfseries  Unicode Name&\bfseries  Unicode\\
+\hline
+alpha              & GREEK SMALL LETTER ALPHA            & 03B1\\
+beta               & GREEK SMALL LETTER BETA             & 03B2\\
+chi                & GREEK SMALL LETTER CHI              & 03C7\\
+\end{supertabular}
+\end{center}
+
+\fi
+
+
+%************************************%
+%*                                  *%
+%* End of Packages                  *%
+%*                                  *%
+%************************************%
+
+\MakeShortVerb{\|}
+\captionsetup{style=default,position=default,aboveskip=10pt,belowskip=0pt}
+
+
+%************************************%
+%*                                  *%
+%* Reported bugs                    *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Reported bugs}
+
+%-----------------------------------------------------------------------------%
+
+\captionsetup{format=hang}
+
+\begin{figure}[!htb]
+This figure is labeled correctly.
+\caption{``A sobering thought, Eileen: What if, right at this very moment I
+*am* living up to my full potential?'' -- Jane Wagner\label{xxx}}
+\end{figure}
+
+% =>
+% \@writefile{toc}{\contentsline {section}{\numberline {21}Reported bugs}{39}}
+% \newlabel{xxx}{{174}{39}}
+% \@writefile{lof}{\contentsline {figure}{\numberline {174}{\ignorespaces ``A sobering thought, Eileen: What if, right at this very moment I *am* living up to my full potential?'' -- Jane Wagner}}{39}}
+% \newlabel{xxx}{{174}{39}}
+
+\begin{figure}[!htb]
+This figure is not -- the difference is the \verb+\label+ command
+\caption{\label{yyy}``A sobering thought, Eileen: What if, right at this very
+moment I *am* living up to my full potential?'' -- Jane Wagner}
+\end{figure}
+
+\captionsetup[table]   {position=top,aboveskip=5pt} % did not work in caption 3.0
+
+\DeclareCaptionFormat{normal}  {#1#2#3\par}
+\captionsetup{format=normal}
+
+%-----------------------------------------------------------------------------%
+
+\ifundefined{SCfigure}
+---
+\else
+
+% Minimalbeispiel fuer folgendes Problem:
+% Sobald die Option 'flushleft' statt 'normal' in caption2
+% gewaehlt wird, wird nicht mehr die Unterkante der Legende
+% mit dem Bild auf eine Linie gesetzt.
+% Markus Wellen - markus.wellen@tu-clausthal.de
+%
+%\captionsetup{style=default,position=default,aboveskip=10pt,belowskip=0pt}% alles in Ordnung
+\captionsetup{justification=raggedright,margin=10pt}% gewuenscht, geht aber schief
+%\usepackage[rightcaption]{sidecap}
+\setlength\unitlength{1cm}
+\newcommand{\FIGi}{%
+   \fbox{%
+     \begin{picture}(4,4)
+       \put(2,3){\circle{1}}
+       \put(1,1){\circle{1}}
+       \put(3,1){\circle{1}}
+     \end{picture}}
+}
+\subsection*{Minimalbeispiel f\"ur ein Problem mit sidecap/caption2}
+\begin{SCfigure}[][!htb]
+  \FIGi
+% \onelinecaptionsfalse
+  \caption*{Hier kommt die Legende zum Bild. Wenn sie etwas lang ist und
+zudem sehrlangeW\"orter auftauchen, w\"are es besser, Flattersatz gebrauchen
+zu k\"onnen.}
+\end{SCfigure}
+\begin{figure}[!htb]
+  \FIGi \FIGi
+  \caption{Ein sehr breites Bild. Hier macht es keinen Sinn, mit sidecap
+zu arbeiten. %
+    Alles, was zur Legende geh\"ort, steht unter dem Bild.
+UmdasFlushleftzeigenzuk\"onnen, kommt hier ein ganz langes Wort.}
+\end{figure}
+
+\fi
+
+%-----------------------------------------------------------------------------%
+
+\captionsetup{style=default,position=default,aboveskip=10pt,belowskip=0pt}
+
+
+%************************************%
+%*                                  *%
+%* Known bugs                       *%
+%*                                  *%
+%************************************%
+
+\clearpage
+\section{Known bugs}
+
+This should produce a entry in the List Of Tables:\\
+|\captionof{table}{}|
+
+\begingroup
+\captionof{table}{} % BUG! PRODUCES NO LOT!
+\endgroup
+
+%\captionof{figure}{} % BUG! PRODUCES NO LOT!
+
+\end{document}
+\endinput

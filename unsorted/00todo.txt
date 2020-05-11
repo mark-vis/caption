@@ -1,0 +1,709 @@
+caption v3.4
+============
+
+- \@ifnextchar => \kernel@ifnextchar (siehe: http://tex.stackexchange.com/questions/145473/ifnextchars-twin-in-the-kernel)
+
+- \@subfloatboxreset einführen, wird innerhalb \subcaptionbox und subfigure/table ausgeführt (analog zu \@floatboxreset)
+
+- http://tex.stackexchange.com/questions/134728/how-to-have-center-title-in-listings-when-you-have-subcaption-workaournd-confli
+
+- http://tex.stackexchange.com/questions/127914/custom-counter-steps-twice-when-invoked-from-caption-using-caption-package:
+
+  Ein Kommando \PrepareCounterForCaption{example} definieren, welches automatisch den angegebenen Zähler nur lokal innerhalb des single-line-checks inkrementiert.
+  Dazu wird \refstepcounter und \stepcounter innerhalb von \caption@prepareslc umdefiniert, der neue Code testet ab, ob es sich um einen Zähler aus der Liste handelt.
+  => Testversion davon in trunk/
+
+- Option, um die Anzeige der caption ein/auszuschalten. (Bisher: box=empty,skip=0pt, neu "visible=false")
+
+  => caption3.sty v1.7
+
+- skips=aboveonly,aboveandbelow,aboveorbelow,auto (default=auto, d.h. aboveonly wenn \belowcaptionskip=0pt, sonst aboveorbelow)
+
+- Ticket 13
+
+- http://tex.stackexchange.com/questions/129663/how-to-suppress-page-number-for-subfigures-in-lof:
+  Dieser tocloft-Support sollte ins subcaption-Paket eingebaut werden
+  Nein, besser: http://tex.stackexchange.com/questions/132012/pdflatex-and-subcaption-remove-page-number-from-lof
+  => Schalter "tocloft", der die passenden "depth"-Zähler definiert und jedes neue sub-environment tocloft bekannt macht
+
+- Bug http://tex.stackexchange.com/questions/115519/koma-script-and-subcaption-wrong-counting
+  (die Zählung sollte auch dann "falsch" sein, wenn "captions=tableheading" angegeben ist)
+
+- http://www.golatex.de/bildunterschrift-anordnung-neben-und-ueber-dem-bild-t10977.html
+  => Neues Kommando \SingleFloat und Paketoption "singlefloats" für globale Aktivierung
+
+- Bug 11-08-07: In dem \@makecaption von KOMA-Script muß explizit etwas drinstehen, was das korrigiert, denn
+  mit einem trivialen \@makecaption tritt der Fehler auch auf.
+
+- http://www.latex-community.org/forum/viewtopic.php?f=45&t=23028&start=10#p78226
+
+- Bug: http://tex.stackexchange.com/questions/102251/figures-in-subfigure-not-aligned (Problem mit \label)
+
+- Neues Argument #2 bei \DeclareCaptionTextFormat: Das Optionale Argument von \caption
+
+- Bug 12-09-21 + Option, daß die fltpage-caption nicht unten sondern oben erscheint, also mit [!t] statt [!b] und Trennstrich unter der caption
+  = Bug: http://tex.stackexchange.com/questions/73456/combining-the-caption-and-fltpage-package-when-using-twopage-setting-in-book-cla
+
+- subcaption7.tex: Die Hyperlinks auf die Teilabbildungen springen zu den captions, nicht zur Hauptabbildung!
+  Das Problem: Bei "hypcap=false" (default) müssen die sub-caption-refs zu einem Label springen, welches es aber zum Zeitpunkt
+  von \subcaptionbox noch gar nicht gibt. (Workaround: hypcap=true setzen!)
+
+- Bug: 12-12-09
+
+- \preparecaption[1]: Führt einfach #1 aus. In \caption@freeze wird es so umdefiniert, daß es die ursprüngliche Definition aufruft und den Kram an \caption@frozen@content anhängt.
+
+- Bug 12-02-01: Beispiel aus http://tex.stackexchange.com/questions/43010/how-to-build-and-combine-sophisticated-layouts-in-figures
+  funktioniert nicht mit \centering nach \begin{figure}, warum?
+
+- Bug 12-01-25: http://tex.stackexchange.com/questions/42231/an-error-produced-when-using-the-caption-package
+
+- Anpassung an varioref, d.h. was diesbezüglich nach \caption@prepareslc? (http://tex.stackexchange.com/questions/40330/centered-captions-containing-vref-may-not-always-appear-as-expected)
+
+- http://tex.stackexchange.com/questions/42960/problem-when-using-pdfcomment-in-figure-captions-and-then-referencing
+  (Kann ich da als caption-Paket was machen?)
+
+- Bug: \phantomsubcaption\label{fig:1a} produziert ein Leerzeichen (beide einzeln sind ok, die Kombination aber nicht!)
+  siehe auch: http://tex.stackexchange.com/questions/43010/how-to-build-and-combine-sophisticated-layouts-in-figures
+
+
+subcaption v1.x
+===============
+
+- \floatsetup[subfigure]{...} (floatrow) sollte funktionieren
+
+
+newfloat v1.1
+=============
+
+- Doku: "For \LaTeX{} package authors"
+- \NagDeclareFloat automatisch aufrufen, wenn definiert
+
+
+caption v3.4
+============
+
+- caption Option "figurename=" etc. => \SetupFloatingEnvironment
+
+- caption3:
+%    \begin{macrocode}
+\newcommand\caption@if@empty[1]{%
+  \def\caption@tempa{#1}%
+  \ifx\caption@tempa\@empty
+    \let\caption@ifempty\@secondoftwo
+  \else
+    \expandafter\def\expandafter\caption@tempa\expandafter{%
+      \caption@car#1\caption@if@empty\caption@nil}%
+    \def\caption@tempb{\caption@if@empty}%
+    \ifx\caption@tempa\caption@tempb
+      \let\caption@ifempty\@secondoftwo
+    \else
+      \def\caption@tempb{\ignorespaces}%
+      \ifx\caption@tempa\caption@tempb
+        \expandafter\caption@if@empty\expandafter{\@gobble#1}%
+      \else
+        \def\caption@tempb{\label}%
+        \ifx\caption@tempa\caption@tempb
+          \expandafter\caption@if@@empty\@gobble#1\@nil
+        \else
+          \def\caption@tempb{\index}%
+          \ifx\caption@tempa\caption@tempb
+            \expandafter\caption@if@@empty\@gobble#1\@nil
+          \else
+            \def\caption@tempb{\glossary}%
+            \ifx\caption@tempa\caption@tempb
+              \expandafter\caption@if@@empty\@gobble#1\@nil
+            \else
+              \let\caption@ifempty\@gobbletwo
+            \fi
+          \fi
+        \fi
+      \fi
+    \fi
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@if@@empty#1#2\@nil{%
+  \TODO: * => Tonne, [...] => Tonne + Argument => Tonne
+  (siehe \bicaption@getlabel)
+}
+%    \end{macrocode}
+
+- Option zum Unterdrücken des Zeilenendes am Ende des Textes, ggf. einfach ein eigenes "textformat=" mit \@gobble am Ende?
+
+- Anpassungen an das "showkeys"-Paket
+
+- Bug 11-08-26
+
+- Bug 11-03-12
+
+- Auf Heikos Pakete umstellen: kvoptions, kvsetkeys, kvdefinekeys, ltxcmds, hopatch, infwarerr
+
+- Vorschlag von Herbert umsetzen: \captionsetup{font=xxx} klappt auch ohne \DeclareCaptionFont{xxx}, wenn
+  \xxx existiert (benötigt kvsetkeys!)
+
+- Optionen "lofdepth=x" und "lotdepth=x" in caption.dtx
+  Setzt den Counter "lofdepth", wenn definiert. Wenn nicht: \caption@AtBeginDocument{definiere + setze}
+
+- Anpassung an xetex/bidi (!?):
+  http://www.latex-community.org/forum/viewtopic.php?f=5&t=8683&start=0
+  http://mirror.informatik.uni-mannheim.de/pub/mirrors/tex-archive/macros/latex/contrib/bidi/tex/caption-xetex-bidi.def
+  => caption-problem!?
+
+- Anpassung an titletoc-Paket, d.h.
+  \contentsuse{subfigure}{lof}
+  + passende \contentsuse bei \DeclareFloatingEnvironment
+
+- Doc: Beispiel zu titletoc:
+  \titlecontents{subfigure}[1.5cm]
+    {\small}
+    {\thecontentslabel~}
+    {}
+    {}
+
+- \subcaptionbox{xxx}{\includegraphics[width=0.5\linewidth]{...}} macht das Bild wie breit?
+  \subcaptionbox{xxx}[5cm]{\includegraphics[width=0.5\linewidth]{...}} macht das Bild wie breit?
+  MUSS/SOLL einheitlich sein! \textwidth innerhalb einer \subcaptionbox restaurieren!?
+
+- Anpassungen an KOMA3: Bei \DeclareCaptionType:
+  \addtotoclist[float]{dateiendung}
+  \setuptoc{endung}{...}
+  (KOMA-Script-Guide, Kapitel 12)
+
+- \DeclareCaptionType an Beamer anpassen
+
+
+caption v3.5
+============
+
+- Anpassung an SMF-Klassen neu:
+  "minmargin=" und "maxmargin=" geradeziehen, so daß der Kram lediglich in \caption@calcmargin landet.
+
+- test/amsart.tex und test/smfart.tex geben Fehlermeldungen aus, warum?
+
+- Mehr Debug-Ausgaben ins Log! Z.B. bei Erkennung einer bestimmten Dokumentenklasse etc.
+
+- An das endfloat-Paket anpassen
+
+- Testen: Bugfix 06-03-08: \newcommand*\caption@rule{\hrule\@height\z@} zwischen Bild und \caption
+  ("position" berücksichtigen!), diese mittels Schalter ("align(ment)") abschaltbar machen!
+  (wenn default = "true" ok ist, dann subcaption.sty diesbezüglich ändern)
+
+- Bug http://www.mrunix.de/forums/showthread.php?t=59182  08-06-06-mrunix
+  => Listoftables longtable caption Seitenzahlproblem
+
+- Bug: Wenn man in book "figurewithin=none" setzt, sollte auch der Abstand im LOF zwischen
+  den Kapiteln verschwinden.
+
+-------------------------------------------------------------------------------
+
+Bug 2010-08-??: \captionlistentry und \ContinuedFloat (selber gefunden)
+
+Abhilfe: Siehe Bug 2010-09-02
+
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+
+http://newsgroups.derkeiler.com/Archive/Comp/comp.text.tex/2006-06/msg00002.html
+
+-------------------------------------------------------------------------------
+
+caption v3.6
+============
+
+- \LTXtable* innerhalb ltcaption anbieten!?
+
+- \ContinuedFloat neu implementieren.
+  \ContinuedFloat erniedrigt nun keinen Zähler mehr, sondern setzt lediglich ein lokales Flag.
+  \caption erhöht den Zähler nicht, wenn dieses Flag gesetzt ist (und löscht das Flag dabei).
+  \subcaptionbox bzw. \subcaption erhöhen nur dann den Zähler lokal(!), wenn das Flag nicht gesetzt ist, und es noch keine \caption gab.
+  Hierbei (also nur in dem "nur dann"-Fall!) wird ein anderes Flag gesetzt, das anzeigt, daß diese Abbildung eine \caption bekommen sollte.
+  Ist am Ende der Abbildung das "sollte eine caption haben"-Flag nicht gesetzt, wird der Abbildungszähler erhöht, um das Fehlen der \caption zu kompensieren.
+  Vorteil der neuen Lösung: \ContinuedFloat funktioniert auch dann, wenn es in Abbildungen ohne \caption vorkommt.
+  Andere Idee:
+  Drei Flags: 1. \ContinuedFloat, 2. \caption, 3. \subcaption: Default: aus, an, an
+  \ContinuedFloat setzt Flag #1
+  \caption erhöht nur dann den Zähler, wenn !#1 und #2 (bei "#1 und #2" wird #1 zurückgesetzt)
+  \caption invertiert immer #3
+  ... TODO!
+  ACHTUNG:
+  Ist das subfig-Paket geladen, muß entweder subfig dementsprechend gepatcht werden (was vermutlich nicht trivial geht),
+  oder aber \ContinuedFloat muß sich wie früher verhalten, wenn das subfig-Paket geladen ist.
+
+- http://www.mrunix.de/forums/showthread.php?t=64025
+
+- "Bug" in \caption@@removefromsetup: Funktioniert nicht, wenn Option mit Leerzeichen vor dem =
+  angegeben worden sind, z.B. \captionsetup[table]{ labelsep = colon }.
+
+- Bug: 08-11-11-lc.tex
+
+- Idee (v3.2?):
+\newcommand\setcaptionwidthlike/to/as[1]{%
+  \sbox\@tempboxa{\caption@@@make{\caption@fnum\@captype}{#1}}%
+  \captionsetup{singlelinecheck=off,width=\wd\@tempboxa}%
+  \ignorespaces
+}
+(Kann man quasi als "Zentrierhilfe" benutzen)
+
+- Idee zur Behebung der beiden Fehler 08-04-10:
+  \captionsetup{type=xxx} und \captionsetup{type*=...}:
+  Der Teil vor dem "type=" wird normal behandelt
+  Dann wird "umgeschaltet", d.h. auch die normale Definition
+  von \caption, \captionsetup etc. wieder hergestellt
+  Dann wird der Rest dahinter behandelt
+
+ Nach der Umdefinition von \caption:
+    \let\Caption\caption
+    \def\CaptionOf{...}
+    \let\CaptionSetup\captionsetup
+  für den Gebrauch innerhalb longtable, SCfigure, ...
+
+ Bessere Idee:
+ \RestoreCaptionCommands
+ \setcaptiontype(*) = \RestoreCaptionCommands + \captionsetup{type(*)}
+ \captionof = \setcaptiontype + \caption
+
+ => \captionsetup{type=...} in der Doku durch \setcaptiontype ersetzen
+
+Siehe auch http://www.mrunix.de/forums/showthread.php?t=57859
+
+- Ask Peter Wilson about
+    \setbox\@tempboxa=\vbox{\PWST@thecaption}
+    \PWSTcapht=\ht\@tempboxa\advance\PWSTcapht\dp\@tempboxa
+  in xtab, maybe should be a separate macro!?
+
+- Idee: Das \captionsetup{type*=#1} aus \captionof stattdessen in \caption@begin, gleich
+  nach \begingroup verschieben? Etwa so:
+  \def\captionof{\def\@captype{#1}\def\caption@beginhook{\captionsetup{type*=#1}}\caption}
+  ...
+  \begingroup
+    \caption@beginhook
+    \global\let\caption@beginhook\relax
+    ...
+  (Dann könnte man auch wieder \captionof ohne Gruppe zulassen.)
+
+- Idee: "skip*=" verwendet \vspace* anstatt \vspace !?
+
+- Bug 06-03-08 (test81.tex)
+
+- Revtex:
+auguide, "9. Figures and artwork"
+"Note that is unnecessary (and undesirable) to use explicit centering commands inside the float environments."
++
+"tableposition=top" or \captionsetup[table]{position=top} is wrong!
+
+- Bei der Umsetzung von Stephens LOF-Kram beachten:
+  http://www.tex.ac.uk/cgi-bin/texfaq2html?label=tocloft
+
+- Neues \l@addto@macro:
+
+ \newcommand{\l@addto@macro}[2]{%
+  \begingroup
+    \toks@\expandafter{#1#2}%
+  \expandafter\endgroup
+  \expandafter\edef\expandafter#1\expandafter{\the\toks@}%
+}
+
+(From: Heiko Oberdiek
+
+Newsgroups: de.comp.text.tex
+Subject: Re: Makros/String konkatenieren
+Date: Thu, 09 Mar 2006 11:42:34 +0100
+Message-ID: <dup0qq$mln$1@news.BelWue.DE>)
+
+******* KLAPPT NICHT MIT TEST.TEX (aus dem Ordner Test), Warum? *******
+
+- revtex4 support(?):
+  \usepackage{caption}[2004/11/28] % mind. v3.0d
+  \DeclareCaptionJustification{flushing}{\flushing}
+  \captionsetup{size=small,justification=flushing}
+(revtex4 hängt ein "\centering" an \@parboxrestore an!!!)
+UND: "tableposition=t" bewirkt in Verbindung mit revtex4 das Gegenteil! (Warum?)
+
+caption v3.7
+============
+
+- Neu: "width=fit"
+- Neu: "placement=t,b,l,r bzw. {t,b}...
+
+- Idee: \captionsetup{margin=x,width=y} erlauben, wenn sie innerhalb einer einzigen
+  \captionsetup-Anweisung stehen. Für das Anhängen (d.h. \captionsetup[xx]{...}) heißt
+  das, daß ich eine extra Option mit einbauen muß, die einen Trenner darstellt, z.B. "@",
+  so daß \captionsetup[table]{margin=x} + \captionsetup[table]{width=y} intern zu
+  \captionsetup[table]{margin=x,@,width=y} wird.
+  Implementation: \setcaptionmargin macht \caption@resetwidth und \setcaptionwidth
+  macht \caption@resetmargin. Implementation:
+  \def\caption@resetwidth{\setlength\captionwidth{1sp}\let\caption@resetwidth\relax}
+  \def\caption@resetmargin{\setlength\captionmargin{1sp}\setlength\captionmarginx\@z\let\caption@resetmargin\relax}
+  Die Option "@" setzt dann beide Definitionen zurück, dies muß ebenso am Anfang jedes
+  \captionsetup geschehen.
+  \caption@calcmargin muß dann abchecken, was gesetzt ist und was nicht. Ein Wert von "1sp"
+  heißt: Nicht gesetzt.
+  (Siehe: margin+width.tex)
+
+- Andere Idee: width={width,margin} und width={width,left-margin,right-margin} erlauben?
+  Oder: dimen={left,width,right} ?
+
+- Irgendwas anbieten, so daß man automatisiert was vor/hinter die caption setzen kann.
+(Vor/hinter die Parbox, aber nach \abovecaptionskip)
+
+- Idee: \caption(...)[...]{...}, z.B.
+  \caption*(name=Bild,aboveskip=0pt){german caption}
+  bzw.
+  \caption*(lang=german,aboveskip=0pt){german caption}
+
+- "legends" in ccaption: Was ist das, macht das Sinn, wollen wir das auch?
+
+- Improvement in \caption@startslc: Use \@elt instead of re-defining \stepcounter
+  (Funktioniert nicht mit test/captcont.tex!)
+
+\newcommand\caption@startslc{%
+  \begingroup
+  \let\label\@gobble\let\@footnotetext\@gobble
+  \def\stepcounter##1{\advance\csname c@##1\endcsname\@ne\relax}%
+%%% (taken from tabularx package / David Carlisle)
+%%  \def\@elt##1{\global\value{##1}\the\value{##1}\relax}%
+%%  \edef\caption@ckpt{\cl@@ckpt}%
+%%  \let\@elt\relax
+  \let\caption@hj\relax}
+\newcommand\caption@endslc{%
+%%  \caption@ckpt
+  \endgroup}
+
+- mcaption.sty ansehen, sowas auch in caption.sty einbauen!?
+
+- "height=", macht \vbox to xxx statt \vbox
+(\parbox macht das so:
+    \ifx\relax#2\else
+      \setlength\@tempdimb{#2}%
+      \def\@parboxto{to\@tempdimb}%
+    \fi
+    \if#1b\vbox
+    \else\if #1t\vtop
+    \else\ifmmode\vcenter
+    \else\@pboxswtrue $\vcenter
+    \fi\fi\fi
+    \@parboxto{\let\hss\vss\let\unhbox\unvbox
+       \csname bm@#3\endcsname}%
+)
+
+- Funktioniert notoccite.sty mit caption.sty?
+
+- figcaps.sty?
+
+- "label=on/off": Das gleiche wie \caption* in grün.
+  Vorteil: "labelformat=empty,labelsep=none" ist echt ätzend...
+  (Aber seit v3.0h sollte "labelformat=empty" reichen?)
+
+- multicap support(?)
+- smallcap support(?)
+
+
+Doku
+====
+
+- \DeclareCaptionType wieder dokumentieren, einfach kurzen Verweis auf newfloat/DeclareFloatingEnvironment
+
+- Abhängigkeit von "position=" und dem Abbildungs-/Tabellenzähler in der subcaption-Dokumentation dokumentieren.
+  (Siehe auch: http://tex.stackexchange.com/questions/115519/koma-script-and-subcaption-wrong-counting )
+
+- \preparecaption dokumentieren
+
+- Dokumentation: \rotcaption wird mit box=none gesetzt, wenn natürliche Breite <= 0.8\vsize und keine Breite explizit mittels width=xxx gesetzt ist
+
+- Option "options=..." und Beispiel mit Verwendung in einer eigens definierten Umgebung via \newenvironment
+
+- |listfigurename|  & sets the `List of Figure' name & \ref{names} \\
+|figurename|\preambleoption & sets the figure name & \ref{names} \\
+|figurewithin|\preambleoption & sets the figure ``within'' counter & \ref{numbering} \\
+\DescribeMacro{figurename=}
+\DescribeMacro{tablename=}\NEWfeature{v3.0l}
+You can change the name of the figures and tables with the options
+\begin{quote}\begin{tabular}{@{}r@{}l@{\quad}l@{}}
+  |figurename=| & \meta{name} & and\\
+  |tablename=|  & \meta{name} & .\\
+\end{tabular}\end{quote}
+The document class usually sets them to ``Figure'' and ``Table'', but for
+example with
+\begin{quote}
+  |figurename=Fig.|
+\end{quote}
+you can change the figure name to ``Fig''.
+
+\smallskip\INFO
+If you use the \package{babel} package, please load \thispackage\ \emph{after}
+the \package{babel} package.
+
+\medskip
+
+\pagebreak[3]
+\DescribeMacro{listfigurename=}
+\DescribeMacro{listtablename=}\NEWfeature{v3.1g}
+Analogous to the options |figure|\-|name| and |table|\-|name| you can change
+the title of the lists here. So for example
+\begin{quote}
+  |listfigurename=List of images|
+\end{quote}
+changes the title ``List of Figures'' to ``List of images''.
+
+\bigskip
+
+\pagebreak[3]
+\DescribeMacro{figurewithin=}
+\DescribeMacro{tablewithin=}\NEWfeature{v3.1f}
+If a document class providing |\chapter| is used (e.g.~\class{report} or
+\class{book}), usually the |figure| and |table| caption counters
+are dependent on the |chapter| counter. Otherwise usually the |figure| and
+|table| counters are continuous throughout the document.
+
+This can be changed with the options
+\begin{quote}\begin{tabular}{rl}
+  |figurewithin=| & \texttt{chapter} \emph{or} \texttt{section} \emph{or} \texttt{none}\quad and\\
+  |tablewithin=|  & \texttt{chapter} \emph{or} \texttt{section} \emph{or} \texttt{none}\quad .\\
+\end{tabular}\end{quote}
+If ``|none|'' is given as value, the numbering of figures resp. tables will
+be continuous throughout the document.
+Otherwise the numbering will be dependent on the given counter,
+e.g.~|figure|\-|within=|\x|section| gives figures a section-dependent
+numbering scheme.
+
+\bigskip
+
+\begin{Expert*}
+The name and numbering is internally done by the commands
+|\|\meta{type}|name| \& |\the|\meta{type}, e.g.~|\figure|\-|name| \&
+|\the|\-|figure| for figures.
+While usually using the above options are sufficient, sometimes a direct
+re-definition of these two macros is necessary. For example:
+\begin{quote}
+  |\captionsetup{figurewithin=section}|\\
+  |\renewcommand\thefigure{\arabic{section}\alph{figure}}|
+\end{quote}
+gives you a section-dependent numbering scheme \meta{section}\meta{figure}
+with a numerical section counter and a alphanumerical figure counter,
+e.g.~``|Figure 2b|''.
+\end{Expert*}
+
+- Doc: Bei "fragile" etc. Link mit angeben: http://tex.stackexchange.com/questions/4736/ + http://texblog.net/help/latex/fragile.html
+
+- Bei \DeclareCaptionType erwähnen, daß \listof...s bei Namen mit Zahlen als
+  \csname listof...s\endcsname geschrieben werden muß.
+
+- Neu: "listtype="
+
+- Neu: \setcaptiontype
+
+- Neu: \captionbox (analog zu \subcaptionbox)
+
+- Obsolete: subtype=, \captionof
+
+- subcaption: Since \subcaptionbox is a \parbox you can arrange them as you like, e.g.: ...
+              Since the \subcaption will be placed where you have typeset it,
+              you can place it where you want, e.g.: ...
+
+- Unter Beamer erläutern, wie man mittels Beamer definierte Schriftgrößen etc. ins caption-Paket einbindet:
+
+  \usepackage{caption}
+  \setbeamerfont{klein}{size*={6.25}{8.50}}
+  \DeclareCaptionFont{klein}{\usebeamerfont{klein}}
+  \captionsetup{font=klein,labelfont=klein}
+
+- \documentclass{article}
+  \usepackage{caption,sansmath}
+  \DeclareCaptionFont{sansmath}{\sansmath}
+  \captionsetup{textfont={sf,sansmath}}
+
+  \begin{document}
+  \begin{figure}
+    \caption{Some text and a formular: $E = mc^2$}
+  \end{figure}
+  \end{document}
+
+- Dokumentieren: calcmargin(*)=, calcwidth=
+
+- Dokumentieren: Bei keinem Text kein Text-Format
+
+- \phantomcaption bei \ContinuedFloat dokumentieren
+
+- Doc: within/without nicht mehr nur in Preamble
+
+- Doc \DeclareFloatingEnvironment dokumentieren
+
+- "Package caption Warning: Option `figureposition=t' has no effect
+  (caption)                when used with a KOMA script document class."
+  in die alphabetische Liste der Warnungen ausgeben.
+
+- Frensh FAQ: http://www.faqs.org/ftp/usenet/news.answers/fr/faq-latex-francaise/
+
+- Doku: Hinweis bei "skip=", daß bei Verwendung des floatrow-Paketes die Einstellung ggf. nicht
+  greift und dort via "captionskip=" vorgenommen wird
+
+- Option "parboxrestore=default/partial/full" dokumentieren
+
+- Bei Bemerkung bzgl. Breite der \caption an Tabelle anpassen:
+  Bisher steht da nur floatrow, um hvfloat und threeparttable ergänzen + hvfloat in die Literaturliste aufnehmen
+
+- caption Doku: float-Paket muß vor \DeclareCaptionType eingebunden werden.
+  Außerdem passende Fehlermeldung "command \c@float@type already defined" in die Liste der Fehler aufnehmen.
+  http://www.latex-community.org/forum/viewtopic.php?f=45&t=5590&start=0
+
+- Doc:
+\captionlistentry is not performing the task of \endfirstfoot, but you
+would not need \captionlistentry if \endfirstfoot would exist. Maybe my
+text in the documentation is a little bit misleading here. So here is a
+new try:
+
+What you usually want, if you place the captions below the table: You
+want only one entry in the List of Tables, and its page number should be
+the first page of the longtable. If \endfirstfoot would exist, you could
+simply use \caption{...} in the first foot, and \caption[]{...} within
+the foots of the other pages. (\caption[]{...} will not produce an entry
+to the List of Tables.) But since \endfirstfoot does not exist, you need
+to get around this problem in a different way. If you say
+\caption[]{...} in every foot you will not get an entry to the list of
+tables at all. But combined with \captionlistentry (with makes a list
+entry and nothing else), this is a solution to the initial problem,
+getting only one list entry, and getting it with the right page number.
+
+- subcaption doc: Beispiel mit \subcaption bzw. \captionsetup{subtype} wo die Beschriftung neben dem Bild steht:
+
+\documentclass{article}
+
+\usepackage[demo]{graphicx}
+\usepackage{subcaption}
+
+\begin{document}
+yada yada, check out my cool figure.
+
+\begin{figure}[!ht]
+\centering
+\begin{subfigure}[b]{\textwidth}
+\parbox[b]{0.45\textwidth}{\includegraphics[width=\linewidth]{Fig135}}%
+\hspace{0.10\textwidth}%
+\parbox[b]{0.45\textwidth}{\captionsetup{slc=off}\caption{}\label{Fig135}}%
+\end{subfigure}
+\\[1ex]
+\begin{subfigure}[b]{\textwidth}
+\parbox[b]{0.45\textwidth}{\includegraphics[width=\linewidth]{Fig135}}%
+\hspace{0.10\textwidth}%
+\parbox[b]{0.45\textwidth}{\captionsetup{slc=off}\caption{}\label{Fig135}}%
+\end{subfigure}
+\caption{Cool figures}\label{Fig135--Fig136}
+\end{figure}
+
+That's all for now...
+
+\end{document}
+
+
+- Doc: Bei \ContinuedFloat und "! Package caption Error: Continued `figure' after `??'." aufnehmen,
+daß \ContinuedFloat nur dann notwendig ist und funktioniert, wenn die vorgehende Abbildung
+eine \caption hat!
+
+- Doc: "within=" aufnehmen
+
+- Doc: "slc" als Abkürzung für "singlelinecheck"
+
+- Doku Beispiel: \DeclareCaptionFormat{mycenter}{\centerline{#1}\\\centerlast#3}
+- Dieses Beispiel ausbauen: Andere Formatierung bei einzeiligen Beschriftungen mit
+  \captionsetup[singleline]{format=plain} bzw. \DeclareCaptionStyle{...}[...]{...}
+  (und unterschiedlichem Rand bei mehrzeilig = 2cm, bei einzeilig = 1cm)
+- Doc: In \captions immer \\ und nicht \newline nehmen.
+
+- Doku: Bug mit \captionlistentry in longtables dokumentieren
+
+- Doc: Jeweils bei den Paketbeschreibungen aufnehmen, ob "skip=" & "position=" verwendet werden
+
+- Doc: \captionsetup-Howto, siehe erste Seite von Olgas
+  floatrow Dokumentation
+
+- Doc: Section for document class authors
+- Doc: Section for package authors
+
+- Doc: Kapitel über Neuerungen 3.1:
+  * Andere interne Strategie, komplett eigener \caption Code anstatt Patch
+    Vorteil: Bessere Zusammenarbeit mit bekannten Paketen, Beseitigung
+    von diversen Nebeneffekten, z.B. \caption[] mit hyperref, \restylefloat* mit hyperref
+    Nachteil: Schlechtere Zusammenarbeit mit unbekannten Paketen => Bitte melden!
+  * \captionbox
+  * Bugfix: \captionsetup{} überschreibt jetzt immer \captionsetup[]{}
+  * Bugfix: \caption klappt jetzt in Umgebungen wie "narrow" und "addmargin" (KOMA) richtig
+  * Geändert: "default" variiert je nach verwendeter Dokumentenklasse bzw. Sprachpaket (z.B. french)
+
+  * Neu: Anpassungen an diverse Dokumentenklassen
+  * Neu: linker/rechter Rand
+
+- Doc: \AtBeginCaption + Beispiele
+
+- Doc: "Introduction", wo ich auch kurz beschreibe, was in welchem Kapitel auf den Benutzer zukommt.
+  (siehe Dokumentation von xkeyval)
+
+- Doc: Bilangual captions => bicaption.sty
+
+- Example with \baselinestretch in the doc.
+
+- Example with \MakeUppercase for captions:
+
+\documentclass{article} 
+\usepackage{caption}
+
+\DeclareCaptionLabelFormat{uc}{\MakeUppercase{#1 #2}}
+\DeclareCaptionTextFormat{uc}{\MakeUppercase{#1}}
+\captionsetup{labelformat=uc,textformat=uc}
+
+\begin{document}
+
+\begin{figure}
+  \centering
+  \rule{3cm}{4cm}% to simulate an actual figure
+  \caption{test figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure}
+  \label{fig:test}
+\end{figure}
+
+\end{document}
+
+- Example with \uline for captions:
+  http://www.latex-community.org/forum/viewtopic.php?f=45&t=10100&start=0
+
+\documentclass{article}
+\usepackage{ulem}
+\usepackage{caption}
+
+\DeclareCaptionLabelFormat{underlcap}{\uline{#1 #2}}
+\DeclareCaptionLabelSeparator{underlcap}{\uline{:~}}
+\DeclareCaptionTextFormat{underlcap}{\expandafter\uline\expandafter{\expandafter#1}}
+\captionsetup{labelformat=underlcap,labelseparator=underlcap,textformat=underlcap}
+
+\begin{document}
+
+\begin{figure}
+  \centering
+  \rule{3cm}{4cm}% to simulate an actual figure
+  \caption{test figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure figure}
+  \label{fig:test}
+\end{figure}
+
+\end{document}
+
+- Doku newfloat: Erwähnen, daß auch eine *-Variante definiert wird.
+
+- subcaption Dokumentation: Bei "list=on" erwähnen, daß bei der Verwendung von tocloft noch \setcounter{lofdepth}{2} + \setcounter{lotdepth}{2} notwendig ist.
+
+
+Totalcount
+==========
+
+- totalcount: Befehle \StopTotalCount{<counter>} und \StopAllTotalCounters.
+  (Letzterer wird auch bei \end{document} angewandt)
+
+
+Vermischtes
+===========
+
+- foiltex bug-report: \@xfloat wird umdefiniert, aber \end@float nicht. Viele Pakete (float,sidecap,floatrow,...)
+  setzen jedoch auf den Mechanismus \@float => \@xfloat - \end@float auf, diese Pakete funktionieren hiermit dann
+  nicht mehr korrekt. Abhilfe: \let\end@float\end@nonfloat (oder aber \end@float statt \end@nonfloat umdefinieren)
+
+
+
+=================================================

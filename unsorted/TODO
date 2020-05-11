@@ -1,0 +1,40 @@
+\def\caption@documentclass{xxx} legt die Dokumentenklasse fest
+
+\usepackage[documentclass=xxx]{caption3} macht nichts anderes, als \caption@documentclass via \newcommand* zu definieren
+
+=> Beides führt dazu, daß caption-xxx.sty eingelesen wird
+
+Sowas wie
+
+\newcommand*\caption@setdefaultlistformat[1]{%
+  \ifx\caption@lstfmt\caption@lstfmt@default
+    \caption@set@default@listformat{#1}%
+    \caption@setlistformat{default}%
+  \else
+    \caption@set@default@listformat{#1}%
+  \fi}
+\newcommand*\caption@set@default@listformat[1]{%
+  \def\caption@lstfmt@default{\@nameuse{caption@lstfmt@#1}}}
+
+ist voll Mümpelkotze. Stattdessen
+
+\def\caption@default@lstfmt{subsimple}
+\def\caption@lstfmt@default{\@nameuse{caption@lstfmt@\caption@default@lstfmt}}
+
+\newcommand*\caption@setdefault[1]{%
+  \expandafter\renewcommand\csname caption@default@#1\endcsname}}
+=> \caption@setdefault{lstfmt}{subsimple}
+
+
+
+
+
+In \caption@@@settype gibt es die Zeile
+  \edef\caption@tempa{#3}%
+Stattdessen \edef\caption@captype (oder \caption@type?) nehmen, so daß wir eine Definition haben, wo wir nachschlagen können, wo wir im Moment stehen,
+so daß man in eigenen Definitionen z.B. \@nameuse{\caption@captype name} anwenden kann.
+
+
+\simplecaption anbieten, welches eine \caption ohne skips, margins, boxes, rules usw. setzt, also einfach \caption@@@make statt \caption@@make verwendet.
+Das könnte man dann zum Beispiel in https://tex.stackexchange.com/questions/290735/automatically-put-subcaptions-inside-picture verwenden
+

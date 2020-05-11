@@ -1,0 +1,58 @@
+% http://tex.stackexchange.com/questions/25518/error-using-russian-letters-for-appendix-counter-with-hyperref-and-subfig
+
+\documentclass[a4paper]{book}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage[T2A]{fontenc}
+\usepackage[demo]{graphicx}
+\usepackage[font=small,labelsep=period]{caption}
+\usepackage[subrefformat=parens]{subcaption}
+\usepackage[unicode]{hyperref}
+
+%use russian alphabet for subfigure counter 
+\makeatletter
+%%%\show\thesubfigure
+  \def\thesubfigure{\textit{\asbuk{subfigure}}}
+  \providecommand\thefigsubsep{,~}
+  \def\p@subfigure{\@nameuse{thefigure}\thefigsubsep}
+\makeatother
+
+% redefine \subref so parenthesis will be added to \subref but not to \ref
+% (we use \caption@withoptargs here so \subref* will still work)
+\iffalse
+\makeatletter
+\let\subref@ORI\subref
+\renewcommand\subref{\caption@withoptargs\@mysubref}
+\newcommand\@mysubref[2]{(\subref@ORI#1{#2})}
+\makeatother
+\else
+%\captionsetup{subrefformat=parens}
+\fi
+
+\begin{document}
+
+\chapter{Sample Chapter}
+
+\appendix
+%use russian alphabet for appendix counter
+\makeatletter
+  \gdef\thechapter{\@Asbuk\c@chapter}
+\makeatother
+
+\chapter{Sample Appendix}
+
+Reference \ref{fig_images}, also \ref{fig_image1} and \ref{fig_image2}.
+
+\begin{figure}
+  \centering
+  \subcaptionbox{\label{fig_image1}}{\includegraphics[width=0.15\linewidth]{image1}}
+  \hspace{0.15\linewidth}
+  \subcaptionbox{\label{fig_image2}}{\includegraphics[width=0.15\linewidth]{image2}}
+  \caption[]{\label{fig_images}
+    Images:
+    \subref{fig_image1}~---~first;
+    \subref*{fig_image2}~---~second;
+  }
+\end{figure}
+
+\end{document}

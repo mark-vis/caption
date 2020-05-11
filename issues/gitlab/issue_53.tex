@@ -1,0 +1,56 @@
+% Issue: 53
+% Title: SX: Table mislabeled as figure
+% Date:  Apr 8, 2019 7:38pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/53
+
+% https://tex.stackexchange.com/questions/483087/table-mislabeled-as-figure
+
+% I have an image and a table and they need to appear in the same page. The way I'm doing that right now is by wrapping them both in a figure. The problem I'm having is I'm trying to reference the table and LaTex keeps on labeling it as a figure.
+
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks]{hyperref}
+\usepackage[singlelinecheck=false]{caption}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage[demo]{graphicx}
+\graphicspath{ {./images/} }
+
+\begin{document}
+
+stuff stuff \autoref{table:nmr_nitro} blah blah.
+
+\begin{figure}% does \captionsetup{type=figure} internally
+\includegraphics[scale=0.4]{3-nitrobenzonitrile.png}
+\caption{3-Nitrobenzonitrile with hydrogens assignments}
+\label{figure:nmr_fig_nitro}
+
+\setcaptiontype{table}% <==== This line added to fix the problem
+\begin{threeparttable}
+\addtocounter{footnote}{1}
+\caption{NMR of 3-nitrobenzonitrile}
+\label{table:nmr_nitro}
+\begin{tabular}{ c c }
+\toprule
+\textbf{Some Data} & \textbf{Assignment} \\
+\midrule
+8.542; 2.0 (2H); m;        & A, B \\
+7.960; 2.1 (2H); m;        & C, D \\
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+
+\end{figure}
+
+\end{document}
+
+I found two solutions-ish to this problem. The first is to use manual instead of autoref and just manually label all my links. The other is to put \captionsetup{type=table} above my table caption but this seems like a hack. Is there any builtin, smooth way to do this?
+
+---
+
+Since \autoref uses the name of the hyper anchor name to determine the type (like "section", "figure", "table", or ...), and since the example document has only one hyper anchor at the start of the figure, this cannot be fixed. This is just the way \autoref (offered by the hyperref package) works.
+
+Instead \setcaptiontype{table} has to be used here to create an extra hyper anchor for the table.
+
+For a longer explanation (and example documents showing the problem, even when not-using the caption package) see https://tex.stackexchange.com/a/522663/2574
+
