@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/05/10 v3.4j Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/05/30 v3.4k Customizing captions (AR)]
 \RequirePackage{caption3}[2020/05/10] % needs v1.10 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -910,6 +910,28 @@
   }{}%
   \caption@undefbool{needfreeze}}
 \let\caption@warmup\relax
+\caption@IfPackageLoaded{changepage}[2008/07/23 memoir-v3.7k]{%
+  \newdimen\caption@adjustwidth@hsize
+  \newdimen\caption@adjustwidth@linewidth
+  \providecommand*\caption@set@adjustwidth{%
+    \caption@adjustwidth@hsize\hsize
+    \caption@adjustwidth@linewidth\linewidth}%
+  \providecommand*\caption@patch@changepage[1]{%
+    \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\renewcommand\csname #1\endcsname[2]{%
+      \@nameuse{caption@#1}{##1}{##2}%
+      \caption@set@adjustwidth}}%
+  \caption@patch@changepage{adjustwidth}%
+  \caption@patch@changepage{adjustwidth*}%
+  \let\caption@patch@changepage\relax
+  \providecommand\caption@test@adjustwidth{%
+    \ifdim\hsize=\caption@adjustwidth@hsize
+      \ifdim\linewidth=\caption@adjustwidth@linewidth
+        \hsize=\linewidth
+      \fi
+    \fi}%
+\AtBeginCaption{\caption@test@adjustwidth}
+  }{}%
 \caption@IfPackageLoaded{chkfloat}[2012/08/19 v0.1]{%
   \caption@ifdefined\chkfloat@addcontentsline{%
     \renewcommand\caption@chkfloat{\chkfloat@addcontentsline}%
