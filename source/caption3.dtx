@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3576}
+% \CheckSum{3585}
 %
 % \iffalse
 %<*driver>
@@ -191,7 +191,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/05/30 v1.12 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/19 v1.12a caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Workaround for bug in package \package{arabtex}}
@@ -3638,15 +3638,10 @@
 %  |\caption@prepareslc|\par
 %  Re-define anything which would disturb the single-line-check.
 %    \begin{macrocode}
-\@ifundefined{caption@prepareslc}\def\g@addto@macro\caption@prepareslc{%
+\providecommand*\caption@prepareslc{}
+\g@addto@macro\caption@prepareslc{%
   \let\label\caption@gobble
   \let\hypertarget\@gobbletwo
-%    \end{macrocode}
-%    \begin{macrocode}
-  \let\caption@footnotemark@ORI\footnotemark
-  \def\footnote{\caption@withoptargs\caption@footnote}%
-  \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
-  \let\@footnotetext\caption@gobble
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@endnotemark@ORI\endnotemark
@@ -3675,6 +3670,21 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 }
+%    \end{macrocode}
+%
+% The following patch of \cs{footnote} assumes that the optional arguments of
+% \cs{footnote} and \cs{footnotemark} match. Since this is not the case in
+% \class{beamer} based documents, and since \class{beamer} extents the
+% syntax of \cs{footnote} in a way we don't support, we don't apply the patch there.
+%    \begin{macrocode}
+\caption@ifclassloaded{beamer}{}{%
+  \g@addto@macro\caption@prepareslc{%
+    \let\caption@footnote@ORI\footnote
+    \def\footnote{\caption@withoptargs\caption@footnote}%
+    \let\caption@footnotemark@ORI\footnotemark
+    \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
+    \let\caption@footnotetext@ORI\@footnotetext
+    \let\@footnotetext\caption@gobble}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@footnote[2]{%
