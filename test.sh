@@ -13,7 +13,7 @@ then
   printf "where <sub-directory> is either:\n"
   printf "  all   - compiles all test files (default)\n"
   printf "  clean - remove intermediate files only\n"
-  printf "or one of:\n "
+  printf "or one of:\n"
   help=true # print list of sub-directories without processing them
 fi
 
@@ -34,26 +34,31 @@ cleanup()
 
 compile_all()
 {
-  [[ -d $1 ]] || return # Process directories only
+  [[ -d $2 ]] || return # Process directories only
 
+  # shellcheck disable=SC2053
   if $help
   then
     # In help mode only print the sub-directory name
-    printf " $1"
-  # shellcheck disable=SC2053
-  elif [[ $1 == $dironly ]]
+    if [[ $1 == "." ]]
+    then
+      printf "  %s\n" "$2"
+    else
+      printf "  %s/%s\n" "$1" "$2"
+    fi
+  elif [[ "$1/$2" == $dironly || "$2" == $dironly ]]
   then
     dirfound=true # matching directory found
 
     # Compile all files in the given directory
-    cd "$1"
+    cd "$2"
     cp -a "$basedir"/tex/*.sty .
 
     shopt -s nullglob
     files=(*.dtx *.ltx *.tex)
     for file in "${files[@]}"
     do
-      compile "$1" "$file"
+      compile "$1" "$2" "$file"
     done
 
     cd ..
@@ -64,36 +69,36 @@ compile()
 {
   # Skip example documents which purpose is to produce an error
   # (or cannot be compiled for a different reason)
-  [[ $1 == "newfloat"    && $2 == "figurewithin-3.tex" ]] && return  # Inteded to fail w/ error
-  [[ $1 == "ragged2e"    && $2 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
-  [[ $1 == "ragged2e"    && $2 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error
-  [[ $1 == "email"       && $2 == "2009-09-29.tex"     ]] && return  # Related to floatrow, should produce error
-  [[ $1 == "other"       && $2 == "2007-09-13.tex"     ]] && return  # labelsep=newline + \setcaphanging, should produce error
-  [[ $1 == "other"       && $2 == "2012-09-21.tex"     ]] && return  # Bug in fltpage
-  [[ $1 == "other"       && $2 == "2013-01-09.tex"     ]] && return  # Bug in fltpage
-  [[ $1 == "sourceforge" && $2 == "ticket_2.tex"       ]] && return  # Bug in fltpage
-  [[ $1 == "sourceforge" && $2 == "ticket_4.tex"       ]] && return  # TODO: Adaption to hvfloat
-  [[ $1 == "sourceforge" && $2 == "ticket_12.tex"      ]] && return  # Can't compile tufte-book
-  [[ $1 == "sourceforge" && $2 == "ticket_26.tex"      ]] && return  # Bug in refcheck
-  [[ $1 == "sourceforge" && $2 == "ticket_37.tex"      ]] && return  # TODO: \iflistof
-  [[ $1 == "sourceforge" && $2 == "ticket_40.tex"      ]] && return  # Bug in catoptions
-  [[ $1 == "sourceforge" && $2 == "ticket_43.tex"      ]] && return  # subcaption + subfig, should produce error
-  [[ $1 == "sourceforge" && $2 == "ticket_44.tex"      ]] && return  # \captionof{subfigure}, should produce error
-  [[ $1 == "sourceforge" && $2 == "ticket_47.tex"      ]] && return  # TODO: \DeclareCaptionListHook
-  [[ $1 == "gitlab"      && $2 == "issue_29.tex"       ]] && return  # Needs Culmus fonts to compile
-  [[ $1 == "gitlab"      && $2 == "issue_35.tex"       ]] && return  # Needs <whatever> to compile (greek & farsi)
+  [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Inteded to fail w/ error
+  [[ $2 == "ragged2e"    && $3 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
+  [[ $2 == "ragged2e"    && $3 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error
+  [[ $2 == "email"       && $3 == "2009-09-29.tex"     ]] && return  # Related to floatrow, should produce error
+  [[ $2 == "other"       && $3 == "2007-09-13.tex"     ]] && return  # labelsep=newline + \setcaphanging, should produce error
+  [[ $2 == "other"       && $3 == "2012-09-21.tex"     ]] && return  # Bug in fltpage
+  [[ $2 == "other"       && $3 == "2013-01-09.tex"     ]] && return  # Bug in fltpage
+  [[ $2 == "sourceforge" && $3 == "ticket_2.tex"       ]] && return  # Bug in fltpage
+  [[ $2 == "sourceforge" && $3 == "ticket_4.tex"       ]] && return  # TODO: Adaption to hvfloat
+  [[ $2 == "sourceforge" && $3 == "ticket_12.tex"      ]] && return  # Can't compile tufte-book
+  [[ $2 == "sourceforge" && $3 == "ticket_26.tex"      ]] && return  # Bug in refcheck
+  [[ $2 == "sourceforge" && $3 == "ticket_37.tex"      ]] && return  # TODO: \iflistof
+  [[ $2 == "sourceforge" && $3 == "ticket_40.tex"      ]] && return  # Bug in catoptions
+  [[ $2 == "sourceforge" && $3 == "ticket_43.tex"      ]] && return  # subcaption + subfig, should produce error
+  [[ $2 == "sourceforge" && $3 == "ticket_44.tex"      ]] && return  # \captionof{subfigure}, should produce error
+  [[ $2 == "sourceforge" && $3 == "ticket_47.tex"      ]] && return  # TODO: \DeclareCaptionListHook
+  [[ $2 == "gitlab"      && $3 == "issue_29.tex"       ]] && return  # Needs Culmus fonts to compile
+  [[ $2 == "gitlab"      && $3 == "issue_35.tex"       ]] && return  # Needs <whatever> to compile (greek & farsi)
 
   # Compile document three times (so interim files will be used)
-  pdflatex "$2" || failed "$1" "$2"
-  pdflatex "$2" || failed "$1" "$2"
-  pdflatex "$2" || failed "$1" "$2"
-  printf "Compiling %s/%s passed.\n" "$1" "$2" | tee -a "$logfile"
+  pdflatex "$3" || failed "$1" "$2" "$3"
+  pdflatex "$3" || failed "$1" "$2" "$3"
+  pdflatex "$3" || failed "$1" "$2" "$3"
+  printf "Compiling %s/%s/%s passed.\n" "$1" "$2" "$3" | tee -a "$logfile"
 }
 
 failed()
 {
   # Print error message and exit
-  printf "\n*** Compiling %s/%s failed.\n" "$1" "$2" | tee -a "$logfile"
+  printf "\n*** Compiling %s/%s/%s failed.\n" "$1" "$2" "$3" | tee -a "$logfile"
   exit 1
 }
 
@@ -106,14 +111,14 @@ then
 fi
 
 # Compile all package documentations
-compile_all "source"
+compile_all "." "source"
 
 # Compile all test documents
 cd test
 dirs=(*)
 for dir in "${dirs[@]}"
 do
-  compile_all "$dir"
+  compile_all "test" "$dir"
 done
 cd ..
 
@@ -122,14 +127,14 @@ cd issues
 dirs=(*)
 for dir in "${dirs[@]}"
 do
-  compile_all "$dir"
+  compile_all "issues" "$dir"
 done
 cd ..
 
 # Print test result
 if $help
 then
-  printf "\n"
+  :
 elif $dirfound
 then
   printf "\nThat's all, folks!\n"

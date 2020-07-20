@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/19 v1.12a caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/20 v1.12b caption3 kernel (AR)]
 \providecommand\caption@FixArabTeX{%
   \def\caption@tempa##1{}%
   \ifx\caption@tempa\@gobble
@@ -243,10 +243,11 @@
   \caption@teststar@\@captionsetup\@gobble\@firstofone}
 \newcommand*\@captionsetup[1]{%
   \captionsetup@startrue#1\captionsetup@starfalse
-  \@ifnextchar[\caption@setup@options\caption@setup}
+  \@ifnextchar[%]
+    \caption@setup@options\caption@setup}
 \newcommand*\caption@setup{\caption@setkeys{caption}}
 \def\caption@setup@options[#1]{%
-  \@ifnextchar[%
+  \@ifnextchar[%]
     {\caption@stepthecounter
      \caption@withoptargs{\@expandtwoargs
        \caption@setup@options@i{#1}{@\caption@thecounter}}}%
@@ -1478,39 +1479,48 @@
 \g@addto@macro\caption@prepareslc{%
   \let\label\caption@gobble
   \let\hypertarget\@gobbletwo
-  \let\caption@endnotemark@ORI\endnotemark
+  \let\caption@footnote@ORI\footnote
+  \def\footnote{\caption@withoptargs\caption@footnote}%
+  \let\caption@footnotemark@ORI\footnotemark
+  \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
+  \let\caption@footnotetext@ORI\@footnotetext
+  \let\@footnotetext\caption@gobble
+  \let\caption@endnote@ORI\endnote
   \def\endnote{\caption@withoptargs\caption@endnote}%
+  \let\caption@endnotemark@ORI\endnotemark
   \def\endnotemark{\caption@withoptargs\caption@endnotemark}%
+  \let\caption@endnotetext@ORI\@endnotetext
   \let\@endnotetext\caption@gobble
   \let\pagenote\caption@gobble
   \let\acused\@gobble
   \let\AC@placelabel\@gobble
   \let\glsunset\@gobble
 }
-\caption@ifclassloaded{beamer}{}{%
-  \g@addto@macro\caption@prepareslc{%
-    \let\caption@footnote@ORI\footnote
-    \def\footnote{\caption@withoptargs\caption@footnote}%
-    \let\caption@footnotemark@ORI\footnotemark
-    \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
-    \let\caption@footnotetext@ORI\@footnotetext
-    \let\@footnotetext\caption@gobble}}
 \newcommand\caption@footnote[2]{%
   \caption@footnotemark{#1}}
 \newcommand\caption@footnotemark[1]{%
   \begingroup
     \let\stepcounter\caption@l@stepcounter
-    \caption@footnotemark@ORI#1%
+    \caption@footnotemark@ORI#1\relax
   \endgroup}
 \newcommand\caption@endnote[2]{%
   \caption@endnotemark{#1}}
 \newcommand\caption@endnotemark[1]{%
   \begingroup
     \let\stepcounter\caption@l@stepcounter
-    \caption@endnotemark@ORI#1
+    \caption@endnotemark@ORI#1\relax
   \endgroup}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
+\caption@ifclassloaded{beamer}{%
+  \g@addto@macro\caption@prepareslc{%
+    \def\footnote{%
+      \begingroup
+      \let\stepcounter\caption@l@stepcounter
+      \renewcommand<>\beamer@framefootnotetext[1]{%
+        \endgroup}%
+      \let\@footnotetext\beamer@framefootnotetext
+      \caption@footnote@ORI}}}{}
 \newcommand*\caption@applyfont{%
   \caption@hj\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
@@ -1705,7 +1715,8 @@
     \noexpand\l@addto@macro\noexpand\caption@restore@counters
       {\noexpand\setcounter{#1}{\number\value{#1}}}}%
   \caption@tempa}
-\newcommand*\caption@For{\caption@withoptargs\caption@@For}
+\newcommand*\caption@For{%
+  \caption@withoptargs\caption@@For}
 \newcommand\caption@@For[3]{%
   \caption@AtBeginDocument#1{%
     \def\@elt##1{#3}%
