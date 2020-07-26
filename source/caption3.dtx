@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3573}
+% \CheckSum{3606}
 %
 % \iffalse
 %<*driver>
@@ -57,7 +57,7 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage{caption3}[2019/09/14]
+\usepackage{caption3}[2020/05/30]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -186,7 +186,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/05/10 v2.0-development caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/20 v2.0-development caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -705,14 +705,15 @@
 %    \begin{macrocode}
 \newcommand*\@captionsetup[1]{%
   \captionsetup@startrue#1\captionsetup@starfalse
-  \@ifnextchar[\caption@setup@options\caption@setup}
+  \@ifnextchar[%]
+    \caption@setup@options\caption@setup}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setup{\caption@setkeys{caption}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@setup@options[#1]{%
-  \@ifnextchar[%
+  \@ifnextchar[%]
     {\caption@stepthecounter
      \caption@withoptargs{\@expandtwoargs
        \caption@setup@options@i{#1}{@\caption@thecounter}}}%
@@ -1789,9 +1790,18 @@
 \DeclareCaptionLabelSeparator{period}{. }
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
-\DeclareCaptionLabelSeparator*{newline}{\\}
+\DeclareCaptionLabelSeparator*{newline}{\captionnewline}
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 %    \end{macrocode}
+%
+% \begin{macro}{\captionnewline}
+% \changes{v1.12}{2020/05/30}{This macro added}
+% Will be used in the caption label separator |new|\-|line|,
+% and re-defined for |long|\-|table| environments.
+%    \begin{macrocode}
+\newcommand*\captionnewline{\\}
+%    \end{macrocode}
+% \end{macro}
 %
 % `default' usually maps to `colon'.
 %    \begin{macrocode}
@@ -3435,29 +3445,41 @@
 % \changes{v1.8}{2018/05/16}{Redefinition of \cs{acused} added}
 % \changes{v1.8}{2018/05/26}{Definition method changed so it can be pre-defined by other packages}
 % \changes{v1.8}{2018/05/27}{Redefinition of \cs{hypertarget} added}
+% \changes{v1.12b}{2020/07/20}{Special adaption to \class{beamer} added}
 %  |\caption@prepareslc|\par
 %  Re-define anything which would disturb the single-line-check.
 %    \begin{macrocode}
-\@ifundefined{caption@prepareslc}\def\g@addto@macro\caption@prepareslc{%
+\providecommand*\caption@prepareslc{}
+\g@addto@macro\caption@prepareslc{%
   \let\label\caption@gobble
   \let\hypertarget\@gobbletwo
 %    \end{macrocode}
+% We re-define \cs{footnote} so
+% \begin{enumerate}
+% \item The footnote counter will not be increased twice (but still the correct footnote mark will be used within the single-line-check)
+% \item The footnote text will not be evaluated twice
+% \end{enumerate}
 %    \begin{macrocode}
-  \let\caption@footnotemark@ORI\footnotemark
+  \let\caption@footnote@ORI\footnote
   \def\footnote{\caption@withoptargs\caption@footnote}%
+  \let\caption@footnotemark@ORI\footnotemark
   \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
+  \let\caption@footnotetext@ORI\@footnotetext
   \let\@footnotetext\caption@gobble
 %    \end{macrocode}
+% Same for \cs{endnote}
 %    \begin{macrocode}
-  \let\caption@endnotemark@ORI\endnotemark
+  \let\caption@endnote@ORI\endnote
   \def\endnote{\caption@withoptargs\caption@endnote}%
+  \let\caption@endnotemark@ORI\endnotemark
   \def\endnotemark{\caption@withoptargs\caption@endnotemark}%
+  \let\caption@endnotetext@ORI\@endnotetext
   \let\@endnotetext\caption@gobble
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\pagenote\caption@gobble
 %    \end{macrocode}
-% Adaption to the \package{acronym} package.\par
+% Adaption to the \package{acronym} package\par
 % See also \url{https://tex.stackexchange.com/questions/428788}
 %    \begin{macrocode}
   \let\acused\@gobble
@@ -3479,24 +3501,46 @@
 %    \begin{macrocode}
 \newcommand\caption@footnote[2]{%
   \caption@footnotemark{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
 \newcommand\caption@footnotemark[1]{%
   \begingroup
     \let\stepcounter\caption@l@stepcounter
-    \caption@footnotemark@ORI#1%
+    \caption@footnotemark@ORI#1\relax
   \endgroup}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@endnote[2]{%
   \caption@endnotemark{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
 \newcommand\caption@endnotemark[1]{%
   \begingroup
     \let\stepcounter\caption@l@stepcounter
-    \caption@endnotemark@ORI#1
+    \caption@endnotemark@ORI#1\relax
   \endgroup}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
+%    \end{macrocode}
+% The patch above assumes that the optional arguments of \cs{footnote} and
+% \cs{footnotemark} match. Since this is not the case in \class{beamer} based documents,
+% and since \class{beamer} extents the syntax of \cs{footnote} in a special way,
+% we need a special patch here.\par
+% \emph{Note:} For this patch we assume that \cs{footnote} will always end with the usage of
+% \cs{beamer@footnotetext}. (Unfortunately \cs{footnote} is defined too monolithic
+% in \class{beamer} to offer a less dirty patch.)
+%    \begin{macrocode}
+\caption@ifclassloaded{beamer}{%
+  \g@addto@macro\caption@prepareslc{%
+    \def\footnote{%
+      \begingroup
+      \let\stepcounter\caption@l@stepcounter
+      \renewcommand<>\beamer@framefootnotetext[1]{%
+        \endgroup}%
+      \let\@footnotetext\beamer@framefootnotetext
+      \caption@footnote@ORI}}}{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3903,7 +3947,8 @@
 %  |\caption@For|\marg{elt-list}\marg{code with \#1}\\
 %  |\caption@For*|\marg{elt-list}\marg{code with \#1}
 %    \begin{macrocode}
-\newcommand*\caption@For{\caption@withoptargs\caption@@For}
+\newcommand*\caption@For{%
+  \caption@withoptargs\caption@@For}
 %\@onlypreamble\caption@For
 %    \end{macrocode}
 %    \begin{macrocode}
