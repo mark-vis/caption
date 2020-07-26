@@ -72,12 +72,12 @@
 %
 % \GetFileInfo{caption-beamer.sto}
 %
-% \title{The Implementation of
-%        \texorpdfstring{\thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
-%        {the caption package}}
+% \title{\texorpdfstring
+%   {The adaption of the \package{caption} package to the \class{beamer} document class\thanks{%^^A
+%    This package has version number \fileversion, last revised \filedate.}}%^^A
+%   {The adaption of the caption package to the beamer document class}}
 % \author{Axel Sommerfeldt\\
-%         \url{https://github.com/axelsommerfeldt/caption}}
+%         \url{https://gitlab.com/axelsommerfeldt/caption}}
 % \date{\docdate}
 % \maketitle
 %
@@ -178,7 +178,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-beamer.sto}[2018/05/15 v1.0-develop Adaption of the caption package to the beamer document classes (AR)]
+\ProvidesFile{caption-beamer.sto}[2020/07/26 v1.0-development Adaption of the caption package to the beamer document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Helper macros}
@@ -341,6 +341,28 @@
 %    \begin{macrocode}
 }
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@prepareslc}
+% \changes{v1.0}{2020/07/20}{Special adaption to \class{beamer} added}
+% The patch of \cs{footnote} provided by the \package{caption3} package assumes
+% that the optional arguments of \cs{footnote} and \cs{footnotemark} match.
+% Since this is not the case in \class{beamer} based documents,
+% and since \class{beamer} extents the syntax of \cs{footnote} in a special way,
+% we need a special patch here.\par
+% \emph{Note:} For this patch we assume that \cs{footnote} will always end with the usage of
+% \cs{beamer@footnotetext}. (Unfortunately \cs{footnote} is defined too monolithic
+% in \class{beamer} to offer a less dirty patch.)
+%    \begin{macrocode}
+\g@addto@macro\caption@prepareslc{%
+  \def\footnote{%
+    \begingroup
+    \let\stepcounter\caption@l@stepcounter
+    \renewcommand<>\beamer@framefootnotetext[1]{%
+      \endgroup}%
+    \let\@footnotetext\beamer@framefootnotetext
+    \caption@footnote@ORI}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \iffalse
 %</package>
