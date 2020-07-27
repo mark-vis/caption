@@ -1,0 +1,205 @@
+\documentclass{article}
+\usepackage{caption3}
+
+\makeatletter
+
+\newcommand*\passed[1]{%
+  \typeout{Test `#1' passed.}}
+\newcommand*\failed[1]{%
+  \PackageError{caption3}{Test `#1' failed}{}}
+
+\newcommand*\test@defined[2]{%
+  \@ifundefined{#2}\failed\passed{#1}}
+\newcommand*\test@undefined[2]{%
+  \@ifundefined{#2}\passed\failed{#1}}
+\newcommand*\test@equal[3]{%
+  \begingroup
+    \def\test@temp{#3}%
+    \ifx#2\test@temp\expandafter\passed\else\expandafter\failed\fi{#1}%
+  \endgroup}
+\newcommand*\test@ident[3]{%
+  \ifx#2#3\expandafter\passed\else\expandafter\failed\fi{#1}}
+
+\def\whatever{...}
+\@nameundef{whatever}
+\test@undefined{nameundef 1}{whatever}
+
+\def\whatever{...}
+\begingroup
+  \l@addto@macro\whatever{...}
+  \test@equal{l@addto@macro 1}\whatever{......}
+\endgroup
+\test@equal{l@addto@macro 2}\whatever{...}
+
+\let\temp\@undefined
+\bothIfFirst{}{\def\temp{bothIfFirst 1}}
+\test@undefined{bothIfFirst 1}{temp}
+\bothIfFirst{\relax}{\def\temp{bothIfFirst 2}}
+\test@equal{bothIfFirst 2}\temp{bothIfFirst 2}
+
+\let\temp\@undefined
+\bothIfSecond{\def\temp{bothIfSecond 1}}{}
+\test@undefined{bothIfSecond 1}{temp}
+\bothIfSecond{\def\temp{bothIfSecond 2}}{\relax}
+\test@equal{bothIfSecond 2}\temp{bothIfSecond 2}
+
+\let\temp\@undefined
+\caption@ifundefined\temp\passed\failed{ifundefined 1}
+\csname temp\endcsname
+\caption@ifundefined\temp\passed\failed{ifundefined 2}
+\let\temp\@empty
+\caption@ifundefined\temp\failed\passed{ifundefined 3}
+
+\let\temp\@undefined
+\caption@ifdefined\temp\failed\passed{ifdefined 1}
+\csname temp\endcsname
+\caption@ifdefined\temp\failed\passed{ifdefined 2}
+\let\temp\@empty
+\caption@ifdefined\temp\passed\failed{ifdefined 3}
+
+\caption@ifinlist{frank}{}\failed\passed{ifinlist 1}
+\caption@ifinlist{frank}{axel,frank,olga,steven}\passed\failed{ifinlist 2}
+\caption@ifinlist{katja}{axel,frank,olga,steven}\failed\passed{ifinlist 3}
+
+\def\temp{}
+\caption@ifin@list\temp{frank}\failed\passed{ifin@list 1}
+\def\temp{axel,frank,olga,steven}
+\caption@ifin@list\temp{frank}\passed\failed{ifin@list 2}
+\caption@ifin@list\temp{katja}\failed\passed{ifin@list 3}
+\let\temp\@undefined
+\caption@ifin@list\temp{frank}\failed\passed{ifin@list 4}
+
+\let\temp\@undefined
+\begingroup
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\caption@ifin@list\temp{axel}\passed\failed{g@addto@list 1}
+\caption@ifin@list\temp{frank}\passed\failed{g@addto@list 2}
+\endgroup
+\caption@ifin@list\temp{axel}\passed\failed{g@addto@list 3}
+\caption@ifin@list\temp{frank}\passed\failed{g@addto@list 4}
+
+\let\temp\@undefined
+\begingroup
+\caption@l@addto@list\temp{axel}
+\caption@l@addto@list\temp{frank}
+\caption@ifin@list\temp{axel}\passed\failed{l@addto@list 1}
+\caption@ifin@list\temp{frank}\passed\failed{l@addto@list 2}
+\endgroup
+\caption@ifin@list\temp{axel}\failed\passed{l@addto@list 3}
+\caption@ifin@list\temp{frank}\failed\passed{l@addto@list 4}
+
+\let\temp\@undefined
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\begingroup
+\caption@g@removefrom@list\temp{axel}
+\caption@g@removefrom@list\temp{katja}
+\caption@ifin@list\temp{axel}\failed\passed{g@removefrom@list 1}
+\endgroup
+\caption@ifin@list\temp{axel}\failed\passed{g@removefrom@list 2}
+
+\let\temp\@undefined
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\begingroup
+\caption@l@removefrom@list\temp{axel}
+\caption@l@removefrom@list\temp{katja}
+\caption@ifin@list\temp{axel}\failed\passed{l@removefrom@list 1}
+\endgroup
+\caption@ifin@list\temp{axel}\passed\failed{l@removefrom@list 2}
+
+\caption@for@list\temp{\caption@l@addto@list\tempa{#1}}
+\test@equal{for@list 1}\tempa{axel,frank}
+
+\let\temp\@undefined
+\caption@ifempty@list\temp\passed\failed{ifempty@list 1}
+\csname temp\endcsname
+\caption@ifempty@list\temp\passed\failed{ifempty@list 2}
+\let\temp\@empty
+\caption@ifempty@list\temp\passed\failed{ifempty@list 3}
+\caption@g@addto@list\temp{axel}
+\caption@ifempty@list\temp\failed\passed{ifempty@list 4}
+
+\caption@setbool{temp}{1}
+\caption@ifbool{temp}\passed\failed{setbool 1}
+\caption@setbool{temp}{true}
+\caption@ifbool{temp}\passed\failed{setbool 2}
+\caption@setbool{temp}{yes}
+\caption@ifbool{temp}\passed\failed{setbool 3}
+\caption@setbool{temp}{on}
+\caption@ifbool{temp}\passed\failed{setbool 4}
+\caption@setbool{temp}{0}
+\caption@ifbool{temp}\failed\passed{setbool 5}
+\caption@setbool{temp}{false}
+\caption@ifbool{temp}\failed\passed{setbool 6}
+\caption@setbool{temp}{no}
+\caption@ifbool{temp}\failed\passed{setbool 7}
+\caption@setbool{temp}{off}
+\caption@ifbool{temp}\failed\passed{setbool 8}
+\begingroup
+\renewcommand\caption@Error[1]{\def\temp{#1}}
+\caption@setbool{temp}{whatever}
+\test@equal{setbool 9}\temp{Undefined boolean value `whatever'}
+\endgroup
+
+\test@defined{undefbool 1}{caption@iftemp}
+\caption@undefbool{temp}
+\test@undefined{undefbool 2}{caption@iftemp}
+
+\caption@ifatletter\passed\failed{ifatletter 1}
+\let\temp\caption@ifatletter
+\makeatother
+\temp\failed\passed{ifatletter 2}
+\makeatletter
+
+\def\temp{\caption@withoptargs\tempa}
+\def\tempa#1#2{\def\tempb{#1}}
+\temp{whatever}
+\test@equal{withoptargs 1}\tempb{}
+\temp*{whatever}
+\test@equal{withoptargs 2}\tempb{*}
+\temp[1]{whatever}
+\test@equal{withoptargs 3}\tempb{[{1}]}
+\temp*[1]{whatever}
+\test@equal{withoptargs 4}\tempb{*[{1}]}
+\temp*[{1}]{whatever}
+\test@equal{withoptargs 5}\tempb{*[{1}]}
+\temp*[1][2][3][4]{whatever}
+\test@equal{withoptargs 4}\tempb{*[{1}][{2}][{3}][{4}]}
+
+\caption@gobble*[1][2][3][4]{whatever}
+
+\test@ident{box@empty}\caption@box@empty\@gobbletwo
+\def\temp{\caption@box@none}
+\test@ident{box@default}\caption@box@default\temp
+\def\temp{\caption@box@parbox}
+%\test@ident{parbox@default}\caption@parbox@default\temp
+\test@ident{parbox@default}\caption@parbox@default\@undefined
+
+\def\temp{\caption@font@none}
+\test@ident{font@default}\caption@font@default\temp
+\test@ident{labelfont@default}\caption@labelfont@default\temp
+\test@ident{textfont@default}\caption@textfont@default\temp
+
+\captionsetup{font={normalsize,color=red,bf},labelfont={normalsize,color=red,bf},textfont={normalsize,color=red,bf}}
+\test@equal{font 1}\captionfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\test@equal{labelfont 1}\captionlabelfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\test@equal{textfont 1}\captiontextfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\captionsetup{font=default,labelfont=default,textfont=default}
+\test@equal{font 2}\captionfont{\caption@font@default{}}
+\test@equal{labelfont 2}\captionlabelfont{\caption@labelfont@default{}}
+\test@equal{textfont 2}\captiontextfont{\caption@textfont@default{}}
+\captionsetup{font+=none,labelfont+=none,textfont+=none}
+\test@equal{font 3}\captionfont{\caption@font@default{}\caption@font@none{}}
+\test@equal{labelfont 3}\captionlabelfont{\caption@labelfont@default{}\caption@font@none{}}
+\test@equal{textfont 3}\captiontextfont{\caption@textfont@default{}\caption@font@none{}}
+
+% ...
+
+\makeatother
+
+\begin{document}
+caption3 unit tests
+\end{document}
+

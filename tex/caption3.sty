@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/26 v2.0-development caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/27 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -440,7 +440,7 @@
 \newcommand*\caption@load@package[2]{%
   \expandafter\let\expandafter\caption@tempa\csname caption@#1@#2@package\endcsname
   \caption@ifdefined\caption@tempa
-    {\caption@requirepackage\caption@tempa{#1}{#2}}%
+    {\caption@requirepackage\caption@tempa{#1=#2}}%
     {}}
 \newdimen\captionmargin
 \newdimen\captionmargin@
@@ -600,7 +600,6 @@
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
 \SetCaptionDefault{box}{none}
-\SetCaptionDefault[box]{parbox}{parbox}
 \newcommand*\DeclareCaptionFormat{%
   \caption@teststar\caption@declareformat\@gobble\@firstofone}
 \@onlypreamble\DeclareCaptionFormat
@@ -730,12 +729,14 @@
   \caption@add@to@font{font}{#1}}
 \newcommand*\caption@add@to@font[3]{%
   \expandafter\g@addto@macro\expandafter\caption@fnt\expandafter{\csname caption@#1@#2\endcsname{#3}}}
+\newcommand*\SetCaptionDefaultFont{\SetCaptionDefault[font]}
+\@onlypreamble\SetCaptionDefaultFont
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
-\DeclareCaptionOption{textfont}{\caption@setfont{@textfont}{#1}}
-\DeclareCaptionOption{textfont+}{\caption@addtofont{@textfont}{#1}}
+\DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
+\DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
 \newcommand*\caption@setfont[1]{%
   \expandafter\let\csname caption#1\endcsname\@empty
   \caption@addtofont{#1}}
@@ -776,9 +777,9 @@
   \caption@font@normalfont\@unused
   \caption@font@normalsize\@unused
   \caption@font@singlespacing\@unused}
-\SetCaptionDefault[font]{font}{none}
-\SetCaptionDefault[font]{labelfont}{none}
-\SetCaptionDefault[font]{textfont}{none}
+\SetCaptionDefaultFont{font}{none}
+\SetCaptionDefaultFont{labelfont}{none}
+\SetCaptionDefaultFont{textfont}{none}
 \newcommand\caption@smaller{%
   \ifx\@currsize\tiny
     \relax
@@ -832,7 +833,7 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\SetCaptionDefault[font]{size}{none}
+\SetCaptionDefaultFont{size}{none}
 \newcommand*\DeclareCaptionJustification{%
   \caption@decl@package{justification}{\caption@decl{justification}}}
 \@onlypreamble\DeclareCaptionJustification
@@ -1060,37 +1061,37 @@
   \let\@pkgextension\caption@pkgextension@ORI
   \caption@ifpackageloaded@ORI}
 \newcommand*\caption@pkg@list{}
-\newcommand*\caption@requirepackage[3]{%
-  \caption@ifpackageloaded{#1}{}{\caption@@requirepackage{#1}{#2}{#3}}}
-\newcommand*\caption@@requirepackage[3]{%
-  \@cons\caption@packagelist{{#1}{#2}{#3}}}% load package later on
+\newcommand*\caption@requirepackage[2]{%
+  \caption@ifpackageloaded{#1}{}{\caption@@requirepackage{#1}{#2}}}
+\newcommand*\caption@@requirepackage[2]{%
+  \@cons\caption@packagelist{{#1}{#2}}} % load package later on
 \caption@AtBeginDocument{%
-  \renewcommand*\caption@@requirepackage[3]{%
-    \caption@Error{Option `#2=#3' requires the `#1' package}}}
+  \renewcommand*\caption@@requirepackage[2]{%
+    \caption@Error{Option `#2' requires the `#1' package}}}
 \newcommand*\caption@packagelist{}
 \@onlypreamble\caption@packagelist
 \caption@AtBeginDocument{%
   \def\caption@tempa{\endgroup}%
   \begingroup
-  \def\@elt#1#2#3{%
+  \def\@elt#1#2{%
     \g@addto@macro\caption@tempa{%
-      \caption@loadpackage{#1}{#2}{#3}}}%
+      \caption@loadpackage{#1}{#2}}}%
   \caption@packagelist
   \caption@tempa}
-\newcommand*\caption@loadpackage[3]{%
-  \caption@ifpackageloaded{#1}{}{\caption@@loadpackage{#1}{#2}{#3}}}
-\newcommand*\caption@@loadpackage[3]{%
-  \caption@Info{Option `#2=#3' requires the `#1' package}%
+\newcommand*\caption@loadpackage[2]{%
+  \caption@ifpackageloaded{#1}{}{\caption@@loadpackage{#1}{#2}}}
+\newcommand*\caption@@loadpackage[2]{%
+  \caption@Info{Option `#2' requires the `#1' package}%
   \RequirePackage{#1}\relax}
 \caption@AtBeginDocument{%
   \let\caption@@loadpackage\caption@@requirepackage}
-\newcommand*\caption@newfloat[3]{%
+\newcommand*\caption@newfloat[2]{%
   \IfCaptionOptionCheck
-    {\caption@requirepackage{newfloat}{#1}{#2}}%
+    {\caption@requirepackage{newfloat}{#1}}%
     {\let\KV@prefix@ORI\KV@prefix
      \let\@tempc@ORI\@tempc
-     \caption@loadpackage{newfloat}{#1}{#2}%
-     #3%
+     \caption@loadpackage{newfloat}{#1}%
+     #2%
      \let\@tempc\@tempc@ORI
      \let\KV@prefix\KV@prefix@ORI}}
 \DeclareCaptionOption{figurename}{\caption@SetName{figure}{#1}}
@@ -1102,7 +1103,7 @@
 \DeclareCaptionOption{listtablename}{\caption@SetName{listtable}{#1}}
 \@onlypreamble@key{caption}{listtablename}
 \newcommand*\caption@SetName[2]{%
-  \caption@newfloat{#1name}{...}{\newfloat@setname{#1}{#2}}}
+  \caption@newfloat{#1name}{\newfloat@setname{#1}{#2}}}
 \@onlypreamble\caption@SetName
 \DeclareCaptionOption{name}{%
   \IfCaptionOptionCheck{}{\caption@setname\@captype{#1}}}
@@ -1113,11 +1114,11 @@
 \DeclareCaptionOption{tablewithin}{\caption@within{table}{#1}}
 \DeclareCaptionOptionNoValue{tablewithout}{\caption@within{table}{none}}
 \newcommand*\caption@within[2]{%
-  \caption@newfloat{#1within}{#2}{\newfloat@setwithin{#1}{#2}}}
+  \caption@newfloat{#1within=#2}{\newfloat@setwithin{#1}{#2}}}
 \DeclareCaptionOption{within}{%
-  \caption@newfloat{within}{#1}{\newfloatsetup{within=#1}}}
+  \caption@newfloat{within=#1}{\newfloatsetup{within=#1}}}
 \DeclareCaptionOptionNoValue{without}{%
-  \caption@newfloat{without}{...}{\newfloatsetup{without}}}
+  \caption@newfloat{without}{\newfloatsetup{without}}}
 \DeclareCaptionJustification[ragged2e]{Justified}{\justifying}
 \DeclareCaptionJustification[ragged2e]{Centering}{\Centering}
 \DeclareCaptionJustification[ragged2e]{RaggedLeft}{\RaggedLeft}
@@ -1420,7 +1421,7 @@
 \newcommand*\caption@@par{%
   \parindent\caption@parindent\hangindent\caption@hangindent}%
 \newcommand*\DeclareCaptionType{%
-  \RequirePackage{newfloat}\relax
+  \caption@loadpackage{newfloat}{declare type}%
   \DeclareFloatingEnvironment}
 \@onlypreamble\DeclareCaptionType
 \newcommand\caption@ForEachType[1]{%

@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3233}
+% \CheckSum{3242}
 %
 % \iffalse
 %<*driver>
@@ -186,7 +186,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/26 v2.0-development caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/27 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -275,13 +275,14 @@
 %
 % \begin{macro}{\caption@ifinlist}
 % \changes{v1.1}{2007/07/29}{Rewritten}
-% |\caption@ifinlist|\marg{list name}\marg{list entry}\marg{yes-code}\marg{no-code}\par
+% |\caption@ifinlist|\marg{list entry}\marg{list}\marg{yes-code}\marg{no-code}\par
 %  This helper macro checks if the first argument is in the comma separated
 %  list which is offered as second argument. So for example
 %  \begin{quote}
 %    |\caption@ifinlist{frank}{axel,frank,olga,steven}{yes}{no}|
 %  \end{quote}
 %  would expand to |yes|.
+% (Note: Since this command is used by the \package{floatrow} package its syntax should not change.)
 %    \begin{macrocode}
 \newcommand*\caption@ifinlist{%
   \@expandtwoargs\caption@@ifinlist}
@@ -1179,7 +1180,7 @@
 \newcommand*\caption@load@package[2]{%
   \expandafter\let\expandafter\caption@tempa\csname caption@#1@#2@package\endcsname
   \caption@ifdefined\caption@tempa
-    {\caption@requirepackage\caption@tempa{#1}{#2}}%
+    {\caption@requirepackage\caption@tempa{#1=#2}}%
     {}}
 %    \end{macrocode}
 % \end{macro}
@@ -1644,7 +1645,7 @@
 % `default' usually maps to `none' resp.~`parbox'.
 %    \begin{macrocode}
 \SetCaptionDefault{box}{none}
-\SetCaptionDefault[box]{parbox}{parbox}
+%\SetCaptionDefault[box]{parbox}{parbox}
 %    \end{macrocode}
 %
 % \section{Formats}
@@ -1963,6 +1964,17 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\DeclareCaptionDefaultFont}
+% \changes{v1.1}{2006/05/14}{This macro added}
+% \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionFont} to \cs{DeclareCaptionDefaultFont}}
+% \changes{v2.0}{2020/07/27}{Revised; 2nd argument changed from \meta{code} to \meta{value}}
+%  |\DeclareCaptionDefaultFont|\marg{name}\marg{value}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultFont{\SetCaptionDefault[font]}
+\@onlypreamble\SetCaptionDefaultFont
+%    \end{macrocode}
+% \end{macro}
+%
 %    \begin{macrocode}
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
@@ -1972,8 +1984,8 @@
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareCaptionOption{textfont}{\caption@setfont{@textfont}{#1}}
-\DeclareCaptionOption{textfont+}{\caption@addtofont{@textfont}{#1}}
+\DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
+\DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setfont}
@@ -2058,9 +2070,9 @@
 %
 % `default' usually maps to `none'.
 %    \begin{macrocode}
-\SetCaptionDefault[font]{font}{none}
-\SetCaptionDefault[font]{labelfont}{none}
-\SetCaptionDefault[font]{textfont}{none}
+\SetCaptionDefaultFont{font}{none}
+\SetCaptionDefaultFont{labelfont}{none}
+\SetCaptionDefaultFont{textfont}{none}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@smaller}
@@ -2137,7 +2149,7 @@
 %
 % `default' usually maps to `none'.
 %    \begin{macrocode}
-\SetCaptionDefault[font]{size}{none}
+\SetCaptionDefaultFont{size}{none}
 %    \end{macrocode}
 %
 % \section{Justifications}
@@ -2720,21 +2732,21 @@
 %
 % \begin{macro}{\caption@requirepackage}
 % \changes{v1.10}{2020/05/10}{This macro added}
-% \changes{v2.0}{2020/07/26}{This macro revised}
+% \changes{v2.0}{2020/07/27}{This macro revised}
 % |\caption@requirepackage|\marg{package}\marg{option}\marg{value}
 % indicates that the given package option needs a package.
 %    \begin{macrocode}
-\newcommand*\caption@requirepackage[3]{%
-  \caption@ifpackageloaded{#1}{}{\caption@@requirepackage{#1}{#2}{#3}}}
+\newcommand*\caption@requirepackage[2]{%
+  \caption@ifpackageloaded{#1}{}{\caption@@requirepackage{#1}{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@requirepackage[3]{%
-  \@cons\caption@packagelist{{#1}{#2}{#3}}}% load package later on
+\newcommand*\caption@@requirepackage[2]{%
+  \@cons\caption@packagelist{{#1}{#2}}} % load package later on
 %    \end{macrocode}
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \renewcommand*\caption@@requirepackage[3]{%
-    \caption@Error{Option `#2=#3' requires the `#1' package}}}
+  \renewcommand*\caption@@requirepackage[2]{%
+    \caption@Error{Option `#2' requires the `#1' package}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2749,9 +2761,9 @@
 \caption@AtBeginDocument{%
   \def\caption@tempa{\endgroup}%
   \begingroup
-  \def\@elt#1#2#3{%
+  \def\@elt#1#2{%
     \g@addto@macro\caption@tempa{%
-      \caption@loadpackage{#1}{#2}{#3}}}%
+      \caption@loadpackage{#1}{#2}}}%
   \caption@packagelist
   \caption@tempa}
 %    \end{macrocode}
@@ -2763,12 +2775,12 @@
 % |\caption@loadpackage|\marg{package}\marg{option}\marg{value}
 % loads the given package immediately.
 %    \begin{macrocode}
-\newcommand*\caption@loadpackage[3]{%
-  \caption@ifpackageloaded{#1}{}{\caption@@loadpackage{#1}{#2}{#3}}}
+\newcommand*\caption@loadpackage[2]{%
+  \caption@ifpackageloaded{#1}{}{\caption@@loadpackage{#1}{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@loadpackage[3]{%
-  \caption@Info{Option `#2=#3' requires the `#1' package}%
+\newcommand*\caption@@loadpackage[2]{%
+  \caption@Info{Option `#2' requires the `#1' package}%
   \RequirePackage{#1}\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -2782,20 +2794,20 @@
 % \changes{v1.4b}{2012/01/12}{This macro added}
 % \changes{v1.8h}{2020/01/03}{Usage of \cs{caption@ifpackageloaded} replaced by \cs{RequirePackage}}
 % \changes{v1.11}{2020/05/10}{Usage of \cs{RequirePackage} replaced by \cs{caption@usepackage}}
-% \changes{v2.0}{2020/07/26}{This macro revised}
+% \changes{v2.0}{2020/07/27}{This macro revised}
 % |\caption@newfloat|\marg{option}\marg{value}\marg{code}
 % loads the \package{newfloat} package and executes the given code afterwards.
 % (Note: Since the package might use the crappy \package{keyval}
 %  package, too, we need to save \& restore some macros here, otherwise this
 %  recursion won't work properly.)
 %    \begin{macrocode}
-\newcommand*\caption@newfloat[3]{%
+\newcommand*\caption@newfloat[2]{%
   \IfCaptionOptionCheck
-    {\caption@requirepackage{newfloat}{#1}{#2}}%
+    {\caption@requirepackage{newfloat}{#1}}%
     {\let\KV@prefix@ORI\KV@prefix
      \let\@tempc@ORI\@tempc
-     \caption@loadpackage{newfloat}{#1}{#2}%
-     #3%
+     \caption@loadpackage{newfloat}{#1}%
+     #2%
      \let\@tempc\@tempc@ORI
      \let\KV@prefix\KV@prefix@ORI}}
 % \end{macro}
@@ -2830,7 +2842,7 @@
 %  |\caption@SetName|\marg{float}\marg{name}
 %    \begin{macrocode}
 \newcommand*\caption@SetName[2]{%
-  \caption@newfloat{#1name}{...}{\newfloat@setname{#1}{#2}}}
+  \caption@newfloat{#1name}{\newfloat@setname{#1}{#2}}}
 \@onlypreamble\caption@SetName
 %    \end{macrocode}
 % \end{macro}
@@ -2865,7 +2877,7 @@
 % |\caption@within|\marg{float}\marg{value}
 %    \begin{macrocode}
 \newcommand*\caption@within[2]{%
-  \caption@newfloat{#1within}{#2}{\newfloat@setwithin{#1}{#2}}}
+  \caption@newfloat{#1within=#2}{\newfloat@setwithin{#1}{#2}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2874,9 +2886,9 @@
 %
 %    \begin{macrocode}
 \DeclareCaptionOption{within}{%
-  \caption@newfloat{within}{#1}{\newfloatsetup{within=#1}}}
+  \caption@newfloat{within=#1}{\newfloatsetup{within=#1}}}
 \DeclareCaptionOptionNoValue{without}{%
-  \caption@newfloat{without}{...}{\newfloatsetup{without}}}
+  \caption@newfloat{without}{\newfloatsetup{without}}}
 %    \end{macrocode}
 %
 % \subsection{The ragged2e package}
@@ -3572,7 +3584,7 @@
 %  |\DeclareCaptionType|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionType{%
-  \RequirePackage{newfloat}\relax
+  \caption@loadpackage{newfloat}{declare type}%
   \DeclareFloatingEnvironment}
 \@onlypreamble\DeclareCaptionType
 %    \end{macrocode}
