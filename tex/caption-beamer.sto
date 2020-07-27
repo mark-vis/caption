@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-beamer.sto}[2020/07/26 v1.0-development Adaption of the caption package to the beamer document classes (AR)]
+\ProvidesFile{caption-beamer.sto}[2020/07/27 v1.0 Adaption of the caption package to the beamer document classes (AR)]
 \newcommand*\caption@ifbeamertemplate[1]{%
   \begingroup
     \let\beamer@@tmpl@caption@ORI\beamer@@tmpl@caption
@@ -48,50 +48,51 @@
     \else
       \endgroup\expandafter\@secondoftwo
     \fi}
-\DeclareCaptionDefaultSinglelinecheck{%
-  \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
-\SetCaptionDefaultBox{none}
-\SetCaptionDefaultFormat{plain}
+\DeclareCaptionSinglelinecheck{default}{%
+  \caption@ifbeamertemplate{caption name own line}%
+    \@secondoftwo % \@secondoftwo -> singlelinecheck=off
+    \@firstoftwo} % \@firstoftwo  -> singlelinecheck=on
 \DeclareCaptionLabelFormat{default}{%
   \caption@ifbeamertemplate{numbered}%
-    \caption@lfmt@simple
-    \caption@lfmt@unnumbered
+    \caption@labelformat@simple
+    \caption@labelformat@unnumbered
   {#1}{#2}}
 \DeclareCaptionLabelFormat{simpleMagyar}{%
   \caption@ifbeamertemplate{numbered}%
     {#2.\bothIfSecond{\nobreakspace}{#1}}%
-    {\caption@lfmt@unnumbered{#1}{#2}}}
+    {\caption@labelformat@unnumbered{#1}{#2}}}
 \let\@@magyar@captionfix\relax
 \AtBeginDocument{\let\@@magyar@captionfix\relax}
 \DeclareCaptionLabelSeparator**{default}%
   {\caption@ifbeamertemplate{caption name own line}}%
-  {\caption@ifbeamertemplate{caption name own line}{\\}%
+  {\caption@ifbeamertemplate{caption name own line}%
+     {\\}%
      {\usebeamertemplate{caption label separator}}}
-\SetCaptionDefaultTextFormat{simple}
-\DeclareCaptionDefaultFont{font}{%
+\DeclareCaptionFont{beamerfont}{%
   \usebeamerfont*{caption}%
   \usebeamercolor[fg]{caption}}
-\DeclareCaptionDefaultFont{labelfont}{%
+\SetCaptionDefaultFont{font}{beamerfont}
+\DeclareCaptionFont{beamerlabelfont}{%
   \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
   \usebeamercolor[fg]{caption name}%
   \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
   \usebeamerfont{caption name}}
-\DeclareCaptionDefaultFont{textfont}{}
-\DeclareCaptionDefaultSize{}
-\DeclareCaptionDefaultJustification{\raggedright}
-\SetCaptionDefaultListFormat{subsimple}
+\SetCaptionDefaultFont{labelfont}{beamerlabelfont}
+\DeclareCaptionFont{beamertextfont}{}
+\SetCaptionDefaultFont{textfont}{beamertextfont}
+\SetCaptionDefault{justification}{raggedright}
 \captionsetup{list=off}
 \AtPackageCaption{%
   \expandafter\let\expandafter\caption@beamer@figure
     \csname\string\figure\endcsname
   \@namedef{\string\figure}[#1]{%
-    \caption@beamer@figure[#1]%
-    \caption@settype{figure}}
+    \caption@beamer@figure[#1]% use original beamer code first
+    \caption@settype{figure}} % set "type=figure" afterwards
   \expandafter\let\expandafter\caption@beamer@table
     \csname\string\table\endcsname
   \@namedef{\string\table}[#1]{%
-    \caption@beamer@table[#1]%
-    \caption@settype{table}}
+    \caption@beamer@table[#1]% use original beamer code first
+    \caption@settype{table}} % set "type=table" afterwards
 }
 \g@addto@macro\caption@prepareslc{%
   \def\footnote{%

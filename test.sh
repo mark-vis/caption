@@ -52,7 +52,7 @@ compile_all()
 
     # Compile all files in the given directory
     cd "$2"
-    cp -a "$basedir"/tex/*.sty .
+    cp -a "$basedir"/tex/*.sty "$basedir"/tex/*.sto .
 
     shopt -s nullglob
     files=(*.dtx *.ltx *.tex)

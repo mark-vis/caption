@@ -2,7 +2,7 @@
 % 
 % This is file `caption-beamer.dtx'.
 % 
-% Copyright (C) 2007-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2007-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -25,7 +25,7 @@
 % and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
 % 
 % \fi
-% \CheckSum{90}
+% \CheckSum{104}
 %
 % \iffalse
 %<*driver>
@@ -54,6 +54,11 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
 %
+\usepackage{caption3}[2020/07/27]
+\makeatletter
+\InputIfFileExists{caption-beamer.sto}{}{\@missingfileerror{caption-beamer}{sto}}
+\makeatother
+%
 \begin{document}
   \DocInput{caption-beamer.dtx}
 \end{document}
@@ -70,11 +75,14 @@
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
 % \newcommand*\version[2][]{\textit{v#2}}
 %
+% \GetFileInfo{caption-beamer.drv}
+% \let\docdate\filedate
+% \let\docversion\fileversion
 % \GetFileInfo{caption-beamer.sto}
 %
 % \title{\texorpdfstring
 %   {The adaption of the \package{caption} package to the \class{beamer} document class\thanks{%^^A
-%    This package has version number \fileversion, last revised \filedate.}}%^^A
+%    This adaption has version number \fileversion, last revised \filedate.}}%^^A
 %   {The adaption of the caption package to the beamer document class}}
 % \author{Axel Sommerfeldt\\
 %         \url{https://gitlab.com/axelsommerfeldt/caption}}
@@ -178,7 +186,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-beamer.sto}[2020/07/26 v1.0-development Adaption of the caption package to the beamer document classes (AR)]
+\ProvidesFile{caption-beamer.sto}[2020/07/27 v1.0 Adaption of the caption package to the beamer document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Helper macros}
@@ -203,26 +211,18 @@
 %
 % The `default' single-line-check maps to the beamer template setting `caption name own line'.
 %    \begin{macrocode}
-\DeclareCaptionDefaultSinglelinecheck{%
-  \caption@ifbeamertemplate{caption name own line}\@secondoftwo\@firstoftwo}
-%    \end{macrocode}
-%
-% The `default' caption box maps to `none'.
-%    \begin{macrocode}
-\SetCaptionDefaultBox{none}
-%    \end{macrocode}
-%
-% The `default' caption format maps to `plain'.
-%    \begin{macrocode}
-\SetCaptionDefaultFormat{plain}
+\DeclareCaptionSinglelinecheck{default}{%
+  \caption@ifbeamertemplate{caption name own line}%
+    \@secondoftwo % \@secondoftwo -> singlelinecheck=off
+    \@firstoftwo} % \@firstoftwo  -> singlelinecheck=on
 %    \end{macrocode}
 %
 % The `default' caption label format maps to either `simple' (if the `numbered' beamer template is set) or `unnumbered' (otherwise).
 %    \begin{macrocode}
 \DeclareCaptionLabelFormat{default}{%
   \caption@ifbeamertemplate{numbered}%
-    \caption@lfmt@simple
-    \caption@lfmt@unnumbered
+    \caption@labelformat@simple
+    \caption@labelformat@unnumbered
   {#1}{#2}}
 %    \end{macrocode}
 %
@@ -237,7 +237,7 @@
 \DeclareCaptionLabelFormat{simpleMagyar}{%
   \caption@ifbeamertemplate{numbered}%
     {#2.\bothIfSecond{\nobreakspace}{#1}}%
-    {\caption@lfmt@unnumbered{#1}{#2}}}
+    {\caption@labelformat@unnumbered{#1}{#2}}}
 %    \end{macrocode}
 % \begin{macro}{\@@magyar@captionfix}
 % Prevent \package{magyar} from defining this caption label format on its own.
@@ -262,45 +262,34 @@
 %    \begin{macrocode}
 \DeclareCaptionLabelSeparator**{default}%
   {\caption@ifbeamertemplate{caption name own line}}%
-  {\caption@ifbeamertemplate{caption name own line}{\\}%
+  {\caption@ifbeamertemplate{caption name own line}%
+     {\\}%
      {\usebeamertemplate{caption label separator}}}
-%    \end{macrocode}
-%
-% The `default' caption text format maps to `simple'.
-%    \begin{macrocode}
-\SetCaptionDefaultTextFormat{simple}
 %    \end{macrocode}
 %
 % The `default' caption font maps to the beamer settings for `caption' resp. `caption name'.
 %    \begin{macrocode}
-\DeclareCaptionDefaultFont{font}{%
+\DeclareCaptionFont{beamerfont}{%
   \usebeamerfont*{caption}%
   \usebeamercolor[fg]{caption}}
+\SetCaptionDefaultFont{font}{beamerfont}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareCaptionDefaultFont{labelfont}{%
+\DeclareCaptionFont{beamerlabelfont}{%
   \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
   \usebeamercolor[fg]{caption name}%
   \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
   \usebeamerfont{caption name}}
+\SetCaptionDefaultFont{labelfont}{beamerlabelfont}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareCaptionDefaultFont{textfont}{}
-%    \end{macrocode}
-%
-% There is no `default' caption size, leaving the current selected size intact.
-%    \begin{macrocode}
-\DeclareCaptionDefaultSize{}
+\DeclareCaptionFont{beamertextfont}{}
+\SetCaptionDefaultFont{textfont}{beamertextfont}
 %    \end{macrocode}
 %
-% The `default' caption justification is |\raggedright|.
+% The `default' caption justification is `raggedright'.
 %    \begin{macrocode}
-\DeclareCaptionDefaultJustification{\raggedright}
-%    \end{macrocode}
-%
-% The `default' caption list format maps to `subsimple'.
-%    \begin{macrocode}
-\SetCaptionDefaultListFormat{subsimple}
+\SetCaptionDefault{justification}{raggedright}
 %    \end{macrocode}
 %
 % \section{Switch lists off}
@@ -325,15 +314,15 @@
   \expandafter\let\expandafter\caption@beamer@figure
     \csname\string\figure\endcsname
   \@namedef{\string\figure}[#1]{%
-    \caption@beamer@figure[#1]%
-    \caption@settype{figure}}
+    \caption@beamer@figure[#1]% use original beamer code first
+    \caption@settype{figure}} % set "type=figure" afterwards
 %    \end{macrocode}
 %    \begin{macrocode}
   \expandafter\let\expandafter\caption@beamer@table
     \csname\string\table\endcsname
   \@namedef{\string\table}[#1]{%
-    \caption@beamer@table[#1]%
-    \caption@settype{table}}
+    \caption@beamer@table[#1]% use original beamer code first
+    \caption@settype{table}} % set "type=table" afterwards
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
