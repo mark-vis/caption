@@ -38,8 +38,8 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/05/30 v4.0-development Customizing captions (AR)]
-\RequirePackage{caption3}[2020/05/10] % needs v2.0 or newer
+\ProvidesPackage{caption}[2020/07/27 v4.0 Customizing captions (AR)]
+\RequirePackage{caption3}[2020/07/27] % needs v2.0 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -480,7 +480,6 @@
   \@ifundefined{c@#1}%
     {\caption@Error{No float type '#1' defined}}%
     {\caption@ref@stepcounter{#1}%
-     \caption@fixposition
      \caption@iftop\caption@setflag\caption@clrflag2% caption
      \caption@clrflag4% subcaption
      \@nameuse{donemaincaptiontrue}}}
@@ -537,9 +536,8 @@
 \newcommand*\caption@end{%
   \endgroup}
 \newcommand*\caption@setfnum[1]{%
-  \@ifundefined{fnum@#1}{\iftrue}{\caption@iflfmt@default}%
-    \@namedef{fnum@#1}{\caption@fnum{#1}}%
-  \fi}
+  \@ifundefined{fnum@#1}{\@secondoftwo}{\caption@ifset{labelformat}{default}}%
+    {}{\@namedef{fnum@#1}{\caption@fnum{#1}}}}
 \newcommand*\caption@boxrestore{%
   \caption@parboxrestore{\@parboxrestore}{%
     \let\if@nobreak\iffalse
@@ -558,7 +556,7 @@
   \parindent\z@ \parskip\z@skip
   \sloppy}
 \newcommand*\caption@normalsize{%
-  \caption@font*{\KV@caption@fnt@normal\@unused}}
+  \caption@font@normal\@unused}
 \let\caption@setfloatcapt\@firstofone
 \newcommand*\caption@makecurrent[1]{\caption@gettitle}
 \let\caption@makeanchor\@firstofone
@@ -597,7 +595,7 @@
     \c@continuedfloat=0\relax
     \let\caption@setfloatcapt\@firstofone
     \let\caption@chkfloat\@gobbletwo
-    \caption@setbox{none}%
+    \caption@set{box}{none}%
     \caption@clearmargin
     \caption@iflist{}{\let\caption@setlist\@gobble}%
     \caption@setoptions{sub}%
@@ -1333,8 +1331,7 @@
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@settype*{#1}%
     \caption@setoptions{supertabular}%
-    \def\caption@fixposition{%
-      \caption@setposition{\if@topcaption t\else b\fi}}%
+    \caption@setposition{\if@topcaption t\else b\fi}%
     \caption@beginex{#1}{#2}{#3}%
       \caption@boxrestore
       \caption@normalsize
@@ -1353,8 +1350,7 @@
   \long\def\ST@caption#1[#2]#3{\par%
     \caption@settype*{#1}%
     \caption@setoptions{xtabular}%
-    \def\caption@fixposition{%
-      \caption@setposition{\if@topcaption t\else b\fi}}%
+    \caption@set{position}{\if@topcaption t\else b\fi}%
     \@initisotab
     \caption@beginex{#1}{#2}{#3}%
       \caption@boxrestore
@@ -1368,14 +1364,14 @@
   \let\caption@ORI@threeparttable\threeparttable
   \renewcommand*\threeparttable{%
     \caption@settype{\@ifundefined{@captype}{table}{\@captype}}%
-%%% \caption@setposition a% ?
+%%% \caption@setposition{auto}% ?
     \caption@clearmargin
     \caption@setoptions{threeparttable}%
     \caption@ORI@threeparttable}%
   \let\caption@ORI@measuredfigure\measuredfigure
   \renewcommand*\measuredfigure{%
     \caption@settype{\@ifundefined{@captype}{figure}{\@captype}}%
-%%% \caption@setposition a% ?
+%%% \caption@setposition{auto}% ?
     \caption@clearmargin
     \caption@setoptions{measuredfigure}%
     \caption@ORI@measuredfigure}%

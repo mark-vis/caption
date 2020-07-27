@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3022}
+% \CheckSum{2786}
 %
 % \iffalse
 %<*driver>
@@ -210,13 +210,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/05/30 v4.0-development Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/27 v4.0 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/05/10] % needs v2.0 or newer
+\RequirePackage{caption3}[2020/07/27] % needs v2.0 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1371,7 +1371,7 @@
 % (If |\caption@if|\-|top| is not set, |\caption| is at the bottom of this part,
 % therefore ending this part, so we set the flag to |false| in this case.)
 %    \begin{macrocode}
-     \caption@fixposition
+%    \caption@fixposition % TODO: Make this independant on the "position" setting
      \caption@iftop\caption@setflag\caption@clrflag2% caption
 %    \end{macrocode}
 % This part does not contain content (like sub-figures) yet,
@@ -1513,23 +1513,20 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \changes{v3.0a}{2004/01/23}{%
-%       Internal hooks \cs{caption@@begin} \& \cs{caption@@end} added}
-% \changes{v3.0h}{2005/10/06}{%
-%       Internal hooks \cs{caption@@begin} \& \cs{caption@@end} removed}
+% \changes{v3.0a}{2004/01/23}{Internal hooks \cs{caption@@begin} \& \cs{caption@@end} added}
+% \changes{v3.0h}{2005/10/06}{Internal hooks \cs{caption@@begin} \& \cs{caption@@end} removed}
 %
 % \begin{macro}{\caption@setfnum}
 % \changes{v3.1}{2007/03/10}{This macro added}
-% \changes{v4.0}{2018/05/24}{Usage of \cs{caption@iflfmt@default} added}
+% \changes{v4.0}{2020/07/27}{Adapted to \package{caption3} v2.0}
 %  |\caption@setfnum|\marg{type}\\
 %  redefines |\fnum@|\meta{type} according the caption label format
 %  set with |labelformat=|. But if |labelformat=default| is set,
 %  |\fnum@|\meta{type} will not be overwritten by us.
 %    \begin{macrocode}
 \newcommand*\caption@setfnum[1]{%
-  \@ifundefined{fnum@#1}{\iftrue}{\caption@iflfmt@default}%
-    \@namedef{fnum@#1}{\caption@fnum{#1}}%
-  \fi}
+  \@ifundefined{fnum@#1}{\@secondoftwo}{\caption@ifset{labelformat}{default}}%
+    {}{\@namedef{fnum@#1}{\caption@fnum{#1}}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1591,16 +1588,11 @@
 %
 % \begin{macro}{\caption@normalsize}
 % \changes{v3.1}{2007/05/05}{This macro and its usage added}
-%  This one will be used by |\@caption| instead of |\normalsize|.\par
-%  Its code is equivalent to
-%  \begin{quote}
-%    |\caption@font{normal}%|
-%  \end{quote}
-%  but executes faster (since the starred form of |\caption@font|
-%  does not use |\setkeys| internally).
+% \changes{v4.0}{2020/07/27}{Adapted to \package{caption3} v2.0}
+%  This one will be used by |\@caption| instead of |\normalsize|.
 %    \begin{macrocode}
 \newcommand*\caption@normalsize{%
-  \caption@font*{\KV@caption@fnt@normal\@unused}}
+  \caption@font@normal\@unused}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1691,6 +1683,7 @@
 % \changes{v3.3}{2013/06/17}{Missing redefinition of \cs{captionlistentry} added}
 % \changes{v3.3}{2018/09/06}{Adapted to the \package{chkfloat} package}
 % \changes{v3.4f}{2020/01/03}{Redefinition of \cs{@caption} added since it was redefined by the \env{threeparttable} environment}
+% \changes{v4.0}{2020/07/27}{Adapted to \package{caption3} v2.0}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -1721,7 +1714,7 @@
     \let\caption@chkfloat\@gobbletwo
 %    \end{macrocode}
 %    \begin{macrocode}
-    \caption@setbox{none}%
+    \caption@set{box}{none}%
     \caption@clearmargin
     \caption@iflist{}{\let\caption@setlist\@gobble}%
     \caption@setoptions{sub}%
@@ -3355,7 +3348,7 @@
       \caption@prepare@stepcounter\LTcaptype{LT}%
 %    \end{macrocode}
 %
-% \changes{v3.1}{2007/05/05}{\cs{caption@normalsize} added}
+% \changes{v3.1}{2007/05/05}{\cs{caption@font@normal} added}
 %    \begin{macrocode}
       \caption@begin\LTcaptype
         \caption@normalsize
@@ -3943,8 +3936,7 @@
 %  \package{supertabular} package: If |\topcaption| was used,
 %  the position will be |top| automatically, |bottom| otherwise.
 %    \begin{macrocode}
-    \def\caption@fixposition{%
-      \caption@setposition{\if@topcaption t\else b\fi}}%
+    \caption@setposition{\if@topcaption t\else b\fi}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \caption@beginex{#1}{#2}{#3}%
@@ -4010,8 +4002,7 @@
     \caption@setoptions{xtabular}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \def\caption@fixposition{%
-      \caption@setposition{\if@topcaption t\else b\fi}}%
+    \caption@set{position}{\if@topcaption t\else b\fi}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \@initisotab
@@ -4044,7 +4035,7 @@
   \let\caption@ORI@threeparttable\threeparttable
   \renewcommand*\threeparttable{%
     \caption@settype{\@ifundefined{@captype}{table}{\@captype}}%
-%%% \caption@setposition a% ?
+%%% \caption@setposition{auto}% ?
     \caption@clearmargin
     \caption@setoptions{threeparttable}%
     \caption@ORI@threeparttable}%
@@ -4057,7 +4048,7 @@
   \let\caption@ORI@measuredfigure\measuredfigure
   \renewcommand*\measuredfigure{%
     \caption@settype{\@ifundefined{@captype}{figure}{\@captype}}%
-%%% \caption@setposition a% ?
+%%% \caption@setposition{auto}% ?
     \caption@clearmargin
     \caption@setoptions{measuredfigure}%
     \caption@ORI@measuredfigure}%

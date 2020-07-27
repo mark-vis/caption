@@ -420,6 +420,15 @@
 \def\caption@@set[#1]#2#3{%
   \caption@checkdecl{#1}{#3}{%
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
+\newcommand*\caption@ifset{%
+  \@dblarg\caption@@ifset}
+\def\caption@@ifset[#1]#2#3{%
+  \caption@set[#1]{tempa}{#3}%
+  \expandafter\ifx\csname caption@#2\endcsname\caption@tempa
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
 \newcommand*\SetCaptionDefault{%
   \@dblarg\caption@@setdefault}
 \def\caption@@setdefault[#1]#2{%
@@ -555,8 +564,14 @@
   #1{style}{#2}%
     {\caption@set{style}{#2}%
      \caption@style % defines \caption@sty & \caption@sls
-     \caption@resetstyle
-     \caption@xsetup\caption@sty}%
+     \ifx\caption@setstyle@flag\@undefined
+       \let\caption@setstyle@flag\relax % prevent \caption@resetstyle if called recursively
+       \caption@resetstyle
+       \caption@xsetup\caption@sty
+       \let\caption@setstyle@flag\@undefined
+     \else
+       \caption@xsetup\caption@sty
+     \fi}%
     {}}
 \newcommand*\caption@resetstyle{%
   \caption@setup{%
@@ -615,7 +630,7 @@
 \DeclareCaptionOption{format}{\caption@set{format}{#1}\caption@format}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
-  \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name
     {\caption@Error{%
        The option `labelsep=\caption@lsepname' does not work\MessageBreak
        with `format=hang'}}%
@@ -637,12 +652,12 @@
 \SetCaptionDefault{labelformat}{simple}
 \newcommand\DeclareCaptionLabelSeparator{%
   \@ifstar
-    {\DeclareCaptionLabelSeparator@}%
+    \DeclareCaptionLabelSeparator@
     {\caption@declarelabelseparator\@firstofone}}
 \@onlypreamble\DeclareCaptionLabelSeparator
 \newcommand\DeclareCaptionLabelSeparator@{%
   \@ifstar
-    {\DeclareCaptionLabelSeparator@@}%
+    \DeclareCaptionLabelSeparator@@
     {\caption@declarelabelseparator\@gobble}}
 \@onlypreamble\DeclareCaptionLabelSeparator@
 \newcommand*\DeclareCaptionLabelSeparator@@[2]{%
@@ -652,15 +667,13 @@
 \@onlypreamble\DeclareCaptionLabelSeparator@@
 \newcommand\caption@declarelabelseparator[3]{%
   \caption@decl{labelseparator}{#2}%
-    {\def\caption@iflf{#1}%
-     \def\caption@lsep{#3}}%
-  \caption@@declarelabelseparator{#2}#3\\\@nil}
+    {\def\caption@iflabelfont{#1}%
+     \def\caption@labelsep@name{#2}%
+     \def\caption@labelsep{#3}}}
 \@onlypreamble\caption@declarelabelseparator
-\long\def\caption@@declarelabelseparator#1#2\\#3\@nil{%
-  \def\@tempa{#3}\ifx\@tempa\@empty \else
-    \caption@g@addto@list\caption@lsepcrlist{#1}%
-  \fi}
-\@onlypreamble\caption@@declarelabelseparator
+\newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
+  \caption@g@addto@list\caption@labelsep@crlist{#1}}
+\@onlypreamble\CaptionLabelSeparatorContainsNewline
 \DeclareCaptionOption{labelsep}{\caption@set{labelseparator}{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 \DeclareCaptionLabelSeparator{none}{}
@@ -669,6 +682,7 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
+\CaptionLabelSeparatorContainsNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 \newcommand*\captionnewline{\\}
 \SetCaptionDefault{labelseparator}{colon}
@@ -876,42 +890,37 @@
 \newcommand*\caption@declare@position[2]{%
   \caption@decl{position}{#1}{#2}}
 \@onlypreamble\caption@declare@position
-\DeclareCaptionOption{position}{\caption@set{position}{#1}}
+\DeclareCaptionOption{position}{\caption@setposition{#1}}
 \DeclareCaptionOption{figureposition}{\captionsetup*[figure]{position=#1}}
 \@onlypreamble@key{caption}{figureposition}
 \DeclareCaptionOption{tableposition}{\captionsetup*[table]{position=#1}}
 \@onlypreamble@key{caption}{tableposition}
+\newcommand*\caption@setposition{\caption@set{position}}
 \caption@declare@position{t}{\@firstoftwo}
 \caption@declare@position{top}{\@firstoftwo}
 \caption@declare@position{above}{\@firstoftwo}
 \caption@declare@position{b}{\@secondoftwo}
 \caption@declare@position{bottom}{\@secondoftwo}
 \caption@declare@position{below}{\@secondoftwo}
-\caption@declare@position{a}{\@undefined}
-\caption@declare@position{auto}{\@undefined}
+\caption@declare@position{auto}{\caption@autoposition}
 \SetCaptionDefault{position}{auto}
-\newcommand*\caption@iftop{%
-  \ifx\caption@position\@undefined
-    \let\caption@position\@secondoftwo % position=below
-  \fi
-  \caption@position}
+\let\caption@autoposition\@secondoftwo
+\newcommand*\caption@iftop{\caption@position}
 \newcommand*\caption@fixposition{%
-  \ifx\caption@position\@undefined
-    \caption@autoposition
-  \fi}
-\newcommand*\caption@autoposition{%
   \ifvmode
     \edef\caption@tempa{\the\prevdepth}%
     \caption@Debug{\protect\prevdepth=\caption@tempa}%
     \ifdim\prevdepth>-\p@
-      \let\caption@position\@secondoftwo % position=below
+      \let\caption@autoposition\@secondoftwo % position=below
     \else
-      \let\caption@position\@firstoftwo  % position=above
+      \let\caption@autoposition\@firstoftwo  % position=above
     \fi
   \else
     \caption@Debug{no \protect\prevdepth}%
-    \let\caption@position\@secondoftwo   % position=below
+    \let\caption@autoposition\@secondoftwo   % position=below
   \fi}
+\newcommand*\caption@setautoposition[1]{%
+  \def\caption@fixposition{\caption@set[position]{autoposition}{#1}}}
 \newcommand*\caption@beginhook{}
 \newcommand*\caption@endhook{}
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
@@ -1197,7 +1206,7 @@
       \caption@add@contentsline
         {\csname ext@#1\endcsname}%
         {#1}%
-        {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+        {\caption@listformat{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
         {\ignorespaces #2}%
       \caption@chkfloat{#1}{#2}}}}
 \newcommand*\caption@add@contentsline{%
@@ -1216,8 +1225,8 @@
   \fi}
 \newcommand*\caption@addsubcontentslines[1]{}
 \newif\ifcaption@star
-\newcommand*\caption@fnum[1]{\caption@lfmt{\@nameuse{#1name}}{\@nameuse{the#1}}}
-\newcommand\caption@make[2]{\caption@@make{\caption@lfmt{#1}{#2}}}
+\newcommand*\caption@fnum[1]{\caption@labelformat{\@nameuse{#1name}}{\@nameuse{the#1}}}
+\newcommand\caption@make[2]{\caption@@make{\caption@labelformat{#1}{#2}}}
 \newcommand\caption@@make[2]{%
   \begingroup
     \caption@@make@{#1}{#2}%
@@ -1227,7 +1236,7 @@
   \caption@stepthecounter
   \caption@beginhook
   \caption@box\hsize{%
-    \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
+    \caption@singlelinecheck{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
     \caption@calcmargin
     \caption@tempdima\captionmargin
     \ifdim\captionmargin@=\z@ \else
@@ -1287,7 +1296,7 @@
   \singlelinecaptiontrue
   \begingroup
   \caption@singleline
-  \let\caption@hj\@empty
+  \let\caption@justification\@empty
   \caption@calcmargin % calculate \captionwidth
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
@@ -1342,18 +1351,19 @@
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
 \newcommand*\caption@applyfont{%
-  \caption@hj\captionfont\captionsize}
+  \caption@justification\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
   \sbox\@tempboxa{#1}%
   \ifdim\wd\@tempboxa=\z@
-    \let\caption@lsep\relax
+    \caption@set{labelseparator}{none}%
   \fi
   \caption@ifempty{#2}{%
-    \let\caption@lsep\@empty
-    \let\caption@tfmt\@firstofone
+    \caption@set{labelseparator}{none}%
+    \caption@set{textformat}{simple}%
   }%
   \@setpar{\@@par\caption@@par}\caption@@par
   \caption@applyfont
+  \caption@labelseparator % defines \caption@iflabelfont, \caption@labelsep and \caption@labelsep@name (the latter is needed by \caption@fmt)
   \caption@fmt
     {\ifcaption@star\else
        \begingroup
@@ -1363,8 +1373,8 @@
      \fi}%
     {\ifcaption@star\else
        \begingroup
-         \caption@iflf\captionlabelfont
-         \relax\caption@lsep
+         \caption@iflabelfont\captionlabelfont
+         \relax\caption@labelsep
        \endgroup
      \fi}%
     {{\captiontextfont
@@ -1373,7 +1383,7 @@
         {\vrule\@height\ht\strutbox\@width\z@}%
         {}%
       \nobreak\hskip\z@skip % enable hyphenation
-      \caption@tfmt{#2}%
+      \caption@textformat{#2}%
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
         {}%

@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3242}
+% \CheckSum{3255}
 %
 % \iffalse
 %<*driver>
@@ -1132,7 +1132,26 @@
 %    \begin{macrocode}
 \def\caption@@set[#1]#2#3{%
   \caption@checkdecl{#1}{#3}{%
+%   \expandafter\edef\csname caption@@#2\endcsname{#3}%
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifset}
+% \changes{v2.0}{2020/07/27}{This macro added}
+%  |\caption@ifset|\oarg{source option}\marg{option}\marg{name}\marg{yes-code}\marg{no-code}
+%    \begin{macrocode}
+\newcommand*\caption@ifset{%
+  \@dblarg\caption@@ifset}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@ifset[#1]#2#3{%
+  \caption@set[#1]{tempa}{#3}%
+  \expandafter\ifx\csname caption@#2\endcsname\caption@tempa
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1326,8 +1345,7 @@
 % \changes{v1.0n}{2007/04/03}{This counter added}
 % \changes{v1.1e}{2007/10/28}{Renamed to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/04/09}{\cs{caption@stepcounter} renamed to \cs{caption@stepthecounter}}
-% Internal counter. At the moment it will be used inside
-% |\caption@ifoddpage| only.
+% Internal counter. At the moment it will be used inside |\caption@ifoddpage| only.
 %    \begin{macrocode}
 \newcommand*\caption@thecounter{0}
 %    \end{macrocode}
@@ -1512,8 +1530,14 @@
   #1{style}{#2}%
     {\caption@set{style}{#2}%
      \caption@style % defines \caption@sty & \caption@sls
-     \caption@resetstyle
-     \caption@xsetup\caption@sty}%
+     \ifx\caption@setstyle@flag\@undefined
+       \let\caption@setstyle@flag\relax % prevent \caption@resetstyle if called recursively
+       \caption@resetstyle
+       \caption@xsetup\caption@sty
+       \let\caption@setstyle@flag\@undefined
+     \else
+       \caption@xsetup\caption@sty
+     \fi}%
     {}}
 %    \end{macrocode}
 % \end{macro}
@@ -1684,21 +1708,17 @@
 \DeclareCaptionOption{format}{\caption@set{format}{#1}\caption@format}
 %    \end{macrocode}
 %
-% \changes{v1.0a}{2004/01/23}{%
-%         Caption format \opt{default} renamed to \opt{normal}}
-% \changes{v1.0e}{2005/05/12}{%
-%         Caption format \opt{normal} renamed to \opt{@normal}}
-% \changes{v1.0f}{2005/08/25}{%
-%         Caption format \opt{@normal} renamed to \opt{plain} and documented}
-% \changes{v1.1c}{2007/10/14}{%
-%         Single-line variant of caption format \opt{hang} added}
+% \changes{v1.0a}{2004/01/23}{Caption format \opt{default} renamed to \opt{normal}}
+% \changes{v1.0e}{2005/05/12}{Caption format \opt{normal} renamed to \opt{@normal}}
+% \changes{v1.0f}{2005/08/25}{Caption format \opt{@normal} renamed to \opt{plain} and documented}
+% \changes{v1.1c}{2007/10/14}{Single-line variant of caption format \opt{hang} added}
 % There are two pre-defined formats, called `plain' and `hang'.
 %    \begin{macrocode}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
-  \caption@ifin@list\caption@lsepcrlist\caption@lsepname
+  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name
     {\caption@Error{%
        The option `labelsep=\caption@lsepname' does not work\MessageBreak
        with `format=hang'}}%
@@ -1754,8 +1774,7 @@
 % \section{Label separators}
 %
 % \begin{macro}{\DeclareCaptionLabelSeparator}
-% \changes{v1.0a}{2004/01/17}{Pass through argument \#2 so extra spaces
-%         between arguments do make any harm}
+% \changes{v1.0a}{2004/01/17}{Pass through argument \#2 so extra spaces between arguments do make any harm}
 % \changes{v1.0f}{2005/08/25}{Starred variant added}
 % \changes{v1.1}{2007/07/13}{Test for CR added}
 % \changes{v1.3}{2011/08/06}{Test for CR revised}
@@ -1770,14 +1789,14 @@
 %    \begin{macrocode}
 \newcommand\DeclareCaptionLabelSeparator{%
   \@ifstar
-    {\DeclareCaptionLabelSeparator@}%
+    \DeclareCaptionLabelSeparator@
     {\caption@declarelabelseparator\@firstofone}}
 \@onlypreamble\DeclareCaptionLabelSeparator
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\DeclareCaptionLabelSeparator@{%
   \@ifstar
-    {\DeclareCaptionLabelSeparator@@}%
+    \DeclareCaptionLabelSeparator@@
     {\caption@declarelabelseparator\@gobble}}
 \@onlypreamble\DeclareCaptionLabelSeparator@
 %    \end{macrocode}
@@ -1791,17 +1810,19 @@
 %    \begin{macrocode}
 \newcommand\caption@declarelabelseparator[3]{%
   \caption@decl{labelseparator}{#2}%
-    {\def\caption@iflf{#1}%
-     \def\caption@lsep{#3}}%
-  \caption@@declarelabelseparator{#2}#3\\\@nil}
+    {\def\caption@iflabelfont{#1}%
+     \def\caption@labelsep@name{#2}%
+     \def\caption@labelsep{#3}}}
 \@onlypreamble\caption@declarelabelseparator
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionLabelSeparator}
+% \changes{v2.0}{2020/07/27}{This macro added}
 %    \begin{macrocode}
-\long\def\caption@@declarelabelseparator#1#2\\#3\@nil{%
-  \def\@tempa{#3}\ifx\@tempa\@empty \else
-    \caption@g@addto@list\caption@lsepcrlist{#1}%
-  \fi}
-\@onlypreamble\caption@@declarelabelseparator
+\newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
+  \caption@g@addto@list\caption@labelsep@crlist{#1}}
+\@onlypreamble\CaptionLabelSeparatorContainsNewline
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1822,6 +1843,7 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
+\CaptionLabelSeparatorContainsNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 %    \end{macrocode}
 %
@@ -2281,7 +2303,7 @@
 % \end{macro}
 %
 %    \begin{macrocode}
-\DeclareCaptionOption{position}{\caption@set{position}{#1}}
+\DeclareCaptionOption{position}{\caption@setposition{#1}}
 %    \end{macrocode}
 % \changes{v1.0a}{2004/01/09}{Options \opt{figureposition} and \opt{tableposition} added}
 %    \begin{macrocode}
@@ -2293,6 +2315,20 @@
 \@onlypreamble@key{caption}{tableposition}
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@setposition}
+% \changes{v1.0a}{2004/01/22}{Now the positions \opt{t}, \opt{above}, \opt{b}, \opt{below}, and \opt{a} are allowed, too}
+% \changes{v1.0c}{2004/08/10}{Usage of \cs{caption@defaultpos} added}
+% \changes{v2.0}{2020/07/27}{Uses \cs{caption@set} now; undocumented position \opt{a} removed}
+%  |\caption@setposition|\marg{position}\par
+%  Selecting the caption position means that we put |\caption@position| to
+%  the right value. \emph{Please do \textbf{not} use the internal macro
+%  \cs{caption@position} in your own package or document, but use the wrapper
+%  macro \cs{caption@iftop} instead.}
+%    \begin{macrocode}
+\newcommand*\caption@setposition{\caption@set{position}}
+%    \end{macrocode}
+% \end{macro}
+%
 % These are the pre-defined position code snippets.
 %    \begin{macrocode}
 \caption@declare@position{t}{\@firstoftwo}
@@ -2301,8 +2337,7 @@
 \caption@declare@position{b}{\@secondoftwo}
 \caption@declare@position{bottom}{\@secondoftwo}
 \caption@declare@position{below}{\@secondoftwo}
-\caption@declare@position{a}{\@undefined}
-\caption@declare@position{auto}{\@undefined}
+\caption@declare@position{auto}{\caption@autoposition}
 %    \end{macrocode}
 %
 % \changes{v1.1}{2007/05/08}{Default position changed from `bottom' to `auto'}
@@ -2311,62 +2346,62 @@
 \SetCaptionDefault{position}{auto}
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@autoposition}
+% \changes{v2.0}{2020/07/27}{This macro added}
+% If in doubt, `position=auto' maps to `position=below'.
+%    \begin{macrocode}
+\let\caption@autoposition\@secondoftwo
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@iftop}
 % \changes{v1.0a}{2004/01/23}{Split into \cs{caption@iftop} \& \cs{caption@fixposition}}
 % \changes{v1.0c}{2005/02/12}{Adapted to \cs{caption@defaultpos}}
 % \changes{v1.1}{2007/05/08}{Position will be fixed to `bottom' if `auto'}
-%  |\caption@iftop|\marg{true-code}\marg{false-code}\par
-%  (If the |position=| is set to |auto| we assume a |bottom| position here.)
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+%  |\caption@iftop|\marg{true-code}\marg{false-code}
 %    \begin{macrocode}
-\newcommand*\caption@iftop{%
-  \ifx\caption@position\@undefined
-    \let\caption@position\@secondoftwo % position=below
-  \fi
-  \caption@position}
+\newcommand*\caption@iftop{\caption@position}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@fixposition}
-% \changes{v1.0b}{2004/05/16}{%
-%        Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
-%  |\caption@fixposition|\par
-%  This macro checks if the `position' is set to `auto'.
-%  If yes, |\caption@autoposition| will be called to
-%  set |\caption@position| to a proper value we can actually use.
-%    \begin{macrocode}
-\newcommand*\caption@fixposition{%
-  \ifx\caption@position\@undefined
-    \caption@autoposition
-  \fi}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@autoposition}
 % \changes{v1.0a}{2004/01/23}{\cs{ifvmode} added}
-%  |\caption@autoposition|\par
+% \changes{v1.0b}{2004/05/16}{Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+%  |\caption@fixposition|\par
 %  We guess the current position of the caption by checking |\prevdepth|.\par
 %  A different solution would be setting the |\spacefactor| to something
 %  not much less than 1000 (for example 994) in |\caption@start| and
 %  checking this value here by |\ifnum\spacefactor=994|.
-%  (It's implemented in the \package{threeparttable}
-%   package\cite{threeparttable} this way.)\par
+%  (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)\par
 %  Another idea would be checking |\@ifminipage|, but since some packages
-%  typeset the caption within a simple |\vbox| this does not seem to be a
-%  good one.
+%  typeset the caption within a simple |\vbox| this does not seem to be a good one.
 %    \begin{macrocode}
-\newcommand*\caption@autoposition{%
+\newcommand*\caption@fixposition{%
   \ifvmode
     \edef\caption@tempa{\the\prevdepth}%
     \caption@Debug{\protect\prevdepth=\caption@tempa}%
     \ifdim\prevdepth>-\p@
-      \let\caption@position\@secondoftwo % position=below
+      \let\caption@autoposition\@secondoftwo % position=below
     \else
-      \let\caption@position\@firstoftwo  % position=above
+      \let\caption@autoposition\@firstoftwo  % position=above
     \fi
   \else
     \caption@Debug{no \protect\prevdepth}%
-    \let\caption@position\@secondoftwo   % position=below
+    \let\caption@autoposition\@secondoftwo   % position=below
   \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setautoposition}
+% \changes{v1.1}{2007/06/10}{This macro added}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+%  |\caption@setautoposition|\marg{position}\par
+%  replaces the above algorithm by a different one (or a fixed position setting).
+%    \begin{macrocode}
+\newcommand*\caption@setautoposition[1]{%
+  \def\caption@fixposition{\caption@set[position]{autoposition}{#1}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3047,7 +3082,7 @@
       \caption@add@contentsline
         {\csname ext@#1\endcsname}%
         {#1}%
-        {\caption@lstfmt{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+        {\caption@listformat{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
         {\ignorespaces #2}%
       \caption@chkfloat{#1}{#2}}}}
 %    \end{macrocode}
@@ -3095,7 +3130,7 @@
 %  |\caption@fnum|\marg{float type}\par
 %  Typesets the caption label; as replacement for |\fnum@|\meta{float type}.
 %    \begin{macrocode}
-\newcommand*\caption@fnum[1]{\caption@lfmt{\@nameuse{#1name}}{\@nameuse{the#1}}}
+\newcommand*\caption@fnum[1]{\caption@labelformat{\@nameuse{#1name}}{\@nameuse{the#1}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3103,26 +3138,22 @@
 %  |\caption@make|\marg{float name}\marg{ref.\ number}\marg{text}\par
 %  Typesets the caption.
 %    \begin{macrocode}
-\newcommand\caption@make[2]{\caption@@make{\caption@lfmt{#1}{#2}}}
+\newcommand\caption@make[2]{\caption@@make{\caption@labelformat{#1}{#2}}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@@make}
 % \changes{v1.0b}{2004/05/16}{Bugfix 04-05-05: \cs{ifdim}\cs{captionindent=}\cs{z@} added}
-% \changes{v1.0c}{2005/02/12}{Bugfix 04-10-26: Use \cs{@tempdima} instead of
-%        \cs{captionmargin} resp. \cs{captionwidth}; check for \cs{z@} added}
-% \changes{v1.0c}{2005/02/12}{Bugfix: \cs{hskip}\cs{captionmargin} to the end
-%        of caption added}
+% \changes{v1.0c}{2005/02/12}{Bugfix 04-10-26: Use \cs{@tempdima} instead of \cs{captionmargin} resp. \cs{captionwidth}; check for \cs{z@} added}
+% \changes{v1.0c}{2005/02/12}{Bugfix: \cs{hskip}\cs{captionmargin} to the end of caption added}
 % \changes{v1.0c}{2005/02/12}{Bugfix: \cs{strut} moved from here to \cs{caption@@@make}}
 % \changes{v1.0c}{2005/02/12}{Single-line-check moved up so it can affect margins now}
 % \changes{v1.0c}{2005/02/09}{Improvement: \cs{caption@ifh} added}
 % \changes{v1.0c}{2005/02/09}{Bugfix: \cs{leavevmode} added}
 % \changes{v1.0f}{2005/08/24}{Uses \cs{sbox} instead of \cs{setbox} in single-line-check}
 % \changes{v1.0g}{2005/12/04}{Uses \cs{caption@slc} now}
-% \changes{v1.0g}{2006/01/11}{Bugfix: \cs{caption@calcmargin} inside
-%        single-line-check replaced by \cs{relax}}
-% \changes{v1.0g}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be
-%        typeset in horizontal mode}
+% \changes{v1.0g}{2006/01/11}{Bugfix: \cs{caption@calcmargin} inside single-line-check replaced by \cs{relax}}
+% \changes{v1.0g}{2006/01/11}{Bugfix: \cs{caption@startbox} will always be typeset in horizontal mode}
 % \changes{v1.0i}{2006/05/13}{Uses \cs{caption@parbox} instead of \cs{caption@start/endbox}}
 % \changes{v1.0j}{2007/01/04}{Oops, bugfix 04-05-05 got lost in v1.0h, re-added}
 % \changes{v1.0n}{2007/04/03}{Usage of \cs{caption@ifoddpage} added}
@@ -3146,17 +3177,14 @@
   \caption@stepthecounter
   \caption@beginhook
 %    \end{macrocode}
-%
 % Typeset the outer box |\caption@box|
 %    \begin{macrocode}
   \caption@box\hsize{%
 %    \end{macrocode}
-%
 % Special single-line treatment (option |singlelinecheck=|)
 %    \begin{macrocode}
-    \caption@ifslc{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
+    \caption@singlelinecheck{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
 %    \end{macrocode}
-%
 % Typeset the left margin (option |margin=|)
 %    \begin{macrocode}
     \caption@calcmargin
@@ -3167,7 +3195,6 @@
     \caption@ifh{\advance\caption@tempdima\caption@indent}%
     \hspace\caption@tempdima
 %    \end{macrocode}
-%
 % We actually use a |\vbox| of width |\captionwidth - \caption@indent|
 % to typeset the caption.
 % \Note{\cs{captionindent} is \emph{not} supported if the caption format
@@ -3177,7 +3204,6 @@
     \caption@ifh{\advance\caption@tempdima-\caption@indent}%
     \caption@parbox\caption@tempdima{%
 %    \end{macrocode}
-%
 % Typeset the indention (option |indention=|)\\
 % {\small Bugfix 04-05-05:
 %  |\hskip-\caption@indent| replaced by |\ifdim\caption@indent=\z@|\ldots}
@@ -3189,12 +3215,10 @@
           \hskip-\caption@indent
         \fi}%
 %    \end{macrocode}
-%
 % Typeset the caption itself and close the |\caption@parbox|
 %    \begin{macrocode}
       \caption@@@make{#1}{#2}}%
 %    \end{macrocode}
-%
 % Typeset the right margin (option |margin=|)
 %    \begin{macrocode}
     \caption@tempdima\captionmargin
@@ -3203,12 +3227,10 @@
     \fi
     \hspace\caption@tempdima
 %    \end{macrocode}
-%
 % Close the outer box |\caption@box|
 %    \begin{macrocode}
   }%
 %    \end{macrocode}
-%
 %    \begin{macrocode}
   \caption@endhook}
 %    \end{macrocode}
@@ -3269,7 +3291,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@slc}
-% \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@hj}\cs{relax} added}
+% \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} added}
 % \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{caption@sls} added after \cs{begingroup}}
 % \changes{v1.1}{2007/07/29}{\cs{caption@calcmargin} added}
 % \changes{v1.1c}{2007/10/14}{Support of \cs{caption@slfmt} added}
@@ -3285,7 +3307,7 @@
   \singlelinecaptiontrue
   \begingroup
   \caption@singleline
-  \let\caption@hj\@empty
+  \let\caption@justification\@empty
   \caption@calcmargin % calculate \captionwidth
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
@@ -3312,9 +3334,9 @@
 % \begin{macro}{\caption@prepareslc}
 % \changes{v1.0b}{2004/05/16}{Bugfix: Redefinition of \cs{label} \& \cs{@footnotetext} added}
 % \changes{v1.0b}{2004/05/16}{Redefine \cs{stepcounter} instead of \cs{footnote(mark)}}
-% \changes{v1.0c}{2005/02/12}{\cs{let}\cs{caption@hj}\cs{relax} added}
+% \changes{v1.0c}{2005/02/12}{\cs{let}\cs{caption@justification}\cs{relax} added}
 % \changes{v1.0f}{2005/07/09}{Support of \package{endnotes} package added}
-% \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@hj}\cs{relax} moved to \cs{caption@slc}}
+% \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} moved to \cs{caption@slc}}
 % \changes{v1.1}{2007/06/13}{Redefinition of \cs{(H@)refstepcounter} added}
 % \changes{v1.1}{2007/08/12}{Redefinition of \cs{label} improved}
 % \changes{v1.1c}{2007/10/06}{Definition of \cs{caption@l@stepcounter} added}
@@ -3413,7 +3435,7 @@
 %  the options set by |justification=|, |font=|, and |size=|.
 %    \begin{macrocode}
 \newcommand*\caption@applyfont{%
-  \caption@hj\captionfont\captionsize}
+  \caption@justification\captionfont\captionsize}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3427,7 +3449,7 @@
 % \changes{v1.0d}{2005/05/05}{Bugfix: Handling of \cs{ifcaption@star} changed}
 % \changes{v1.0f}{2005/08/24}{Check for empty label added}
 % \changes{v1.0f}{2005/08/25}{\cs{caption@iflf} added}
-% \changes{v1.0j}{2007/02/18}{Usage of \cs{caption@tfmt} added}
+% \changes{v1.0j}{2007/02/18}{Usage of \cs{caption@textformat} added}
 % \changes{v1.1}{2007/05/07}{Bugfix: \cs{ifhmode} added to \cs{@finalstrut}}
 % \changes{v1.2}{2007/11/17}{Made option \opt{size=} stronger than \opt{font=}}
 % \changes{v1.3}{2010/09/04}{Uses \cs{caption@applyfont} now}
@@ -3445,7 +3467,7 @@
 %    \begin{macrocode}
   \sbox\@tempboxa{#1}%
   \ifdim\wd\@tempboxa=\z@
-    \let\caption@lsep\relax
+    \caption@set{labelseparator}{none}%
 %   \@capbreakfalse
   \fi
 %    \end{macrocode}
@@ -3454,8 +3476,8 @@
 % (And no text format either.)
 %    \begin{macrocode}
   \caption@ifempty{#2}{%
-    \let\caption@lsep\@empty
-    \let\caption@tfmt\@firstofone
+    \caption@set{labelseparator}{none}%
+    \caption@set{textformat}{simple}%
 %   \@capbreakfalse
 %   \let\caption@ifstrut\@secondoftwo
   }%
@@ -3470,6 +3492,7 @@
 % Finally typeset the caption.
 %    \begin{macrocode}
   \caption@applyfont
+  \caption@labelseparator % defines \caption@iflabelfont, \caption@labelsep and \caption@labelsep@name (the latter is needed by \caption@fmt)
   \caption@fmt
     {\ifcaption@star\else
        \begingroup
@@ -3479,8 +3502,8 @@
      \fi}%
     {\ifcaption@star\else
        \begingroup
-         \caption@iflf\captionlabelfont
-         \relax\caption@lsep
+         \caption@iflabelfont\captionlabelfont
+         \relax\caption@labelsep
        \endgroup
      \fi}%
     {{\captiontextfont
@@ -3489,7 +3512,7 @@
         {\vrule\@height\ht\strutbox\@width\z@}%
         {}%
       \nobreak\hskip\z@skip % enable hyphenation
-      \caption@tfmt{#2}%
+      \caption@textformat{#2}%
 %     \caption@ifstrut{\vrule\@height\z@\@depth\dp\strutbox\@width\z@}{}%
       \caption@ifstrut
         {\ifhmode\@finalstrut\strutbox\fi}%
@@ -3767,7 +3790,7 @@
 % Unfortunately the \class{memoir} document class resets the
 % \texttt{subfigure} resp.~\texttt{subtable} counter at the begin
 % of floating environments, i.e.~at |\@float|.
-% As a side-effect |\Continued|\-|Float| does not work correctly.
+% As a side-effect |\continued|\-|float| does not work correctly.
 % For that reason we need to introduce macros to save and restore
 % all sub-caption counters here.
 %
