@@ -213,13 +213,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/07/27 v4.0 Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/28 v4.0 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/07/27] % needs v2.0 or newer
+\RequirePackage{caption3}[2020/07/28] % needs v2.0 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1162,6 +1162,7 @@
 % \changes{v3.3}{2012/04/09}{Adapted to revised version of \cs{caption@withoptargs}}
 % \changes{v3.3}{2017/03/19}{When used with fixed witdh the content will not be hboxed anymore}
 % \changes{v3.3c}{2019/09/01}{Adapted so it could be used by \cs{subfloat} offered by \package{subcaption}}
+% \changes{v4.0}{2020/07/28}{Adapted to \package{caption3} v2.0}
 % A |\parbox| with contents and caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
 \newcommand*\captionbox{%
@@ -1197,14 +1198,14 @@
       \caption@setposition t%
       #2{\caption#4{#5}}%
       \captionbox@hrule
-      \csname caption@hj@#7\endcsname
+      \csname caption@justification@#7\endcsname
       #8}%
   }{%
     \endgroup
     \parbox[b]{#6}{%
       #1\relax
       \caption@setposition b%
-      \csname caption@hj@#7\endcsname
+      \csname caption@justification@#7\endcsname
       #8%
       \captionbox@hrule
       #3{\caption#4{#5}}}%
@@ -1215,10 +1216,10 @@
 \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
-\providecommand*\caption@hj@c{\centering}
-\providecommand*\caption@hj@l{\raggedright}
-\providecommand*\caption@hj@r{\raggedleft}
-\providecommand*\caption@hj@s{}
+\providecommand*\caption@justification@c{\centering}
+\providecommand*\caption@justification@l{\raggedright}
+\providecommand*\caption@justification@r{\raggedleft}
+\providecommand*\caption@justification@s{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3197,12 +3198,10 @@
 % \changes{v3.3}{2016/01/31}{Support for \cs{bicaption} added}
 % \changes{v3.3}{2018/10/05}{Definition of \cs{captionlistentry} fixed}
 % \changes{v4.0}{2018/04/15}{Usage of \cs{caption@AtBeginLongtable} added}
-% We redefine |\LT@array| here to get |\captionsetup|\marg{options}
-% working inside |longtable|s.
+% We redefine |\LT@array| here to get |\captionsetup|\marg{options} working inside |longtable|s.
 % \Note{Since the \package{hyperref} package patches \cs{LT@array} as well
 %  and since this only works with the original definition of \cs{LT@array},
-%  we have to do this after the \package{hyperref} package,
-%  i.e.~\cs{AtBeginDocument}.}
+%  we have to do this after the \package{hyperref} package, i.e.~\cs{AtBeginDocument}.}
 %    \begin{macrocode}
   \caption@AtBeginDocument{%
     \let\caption@ORI@LT@array\LT@array
@@ -3218,8 +3217,8 @@
     \def\captionsetup{%
       \noalign\bgroup
       \@ifstar\@captionsetup\@captionsetup}% gobble *
-    \def\@captionsetup##1{\LT@captionsetup{##1}\egroup}%
-    \def\LT@captionsetup##1{%
+    \def\@captionsetup#1{\LT@captionsetup{#1}\egroup}%
+    \def\LT@captionsetup#1{%
       \captionsetup@startrue\caption@setup@options[@longtable]{##1}%
       \global\let\caption@opt@@longtable\caption@opt@@longtable}%
 %    \end{macrocode}
@@ -3248,9 +3247,9 @@
 %     \def\continuedfloat{\noalign{%
 %       \gdef\caption@setContinuedFloat{%
 %         \let\caption@reset@continuedfloat\@gobble}%
-%       \def\caption@setoptions####1{%
+%       \def\caption@setoptions##1{%
 %         \g@addto@macro\caption@setContinuedFloat{%
-%           \caption@setoptions{####1}}}%
+%           \caption@setoptions{##1}}}%
 %       \let\@captype\LTcaptype
 %       \caption@ORI@ContinuedFloat}}%
 %   }{%
@@ -3291,10 +3290,8 @@
 % \end{macro}
 %
 % \begin{macro}{\LT@makecaption}
-% \changes{v3.0d}{2004/08/10}{%
-%       Bugfix 04-08-04: \cs{abovecaptionskip} \& \cs{belowcaptionskip} will be used now}
-% \changes{v3.0e}{2005/05/05}{%
-%       Bugfix: \cs{captionsetup[longtable]} overrides \cs{LTcapwidth} now}
+% \changes{v3.0d}{2004/08/10}{Bugfix 04-08-04: \cs{abovecaptionskip} \& \cs{belowcaptionskip} will be used now}
+% \changes{v3.0e}{2005/05/05}{Bugfix: \cs{captionsetup[longtable]} overrides \cs{LTcapwidth} now}
 % \changes{v3.0h}{2005/10/07}{\cs{caption@LT@make} introduced}
 % \changes{v3.3}{2016/02/01}{Support for \cs{bicaption} via \cs{caption@LT@setup} added}
 % \changes{v3.3a}{2019/04/02}{Work-around for problem with \package{floatrow} added}
@@ -3321,19 +3318,16 @@
     \caption@LT@make{%
       \caption@LT@settype\LTcaptype
 %    \end{macrocode}
-%
 % |\caption@LT@setup| is re-defined inside the \package{bicaption} package
 % and contains the preparation of typesetting of the bilingual caption.
 %    \begin{macrocode}
       \caption@LT@setup
 %    \end{macrocode}
-%
 % \iffalse
 %  The default |position=| setting for longtables is |top|.
 %  (This emulates the standard behavior of the \package{longtable} package
 %   which has no skip above the caption but a skip below it.)
 % \fi
-%
 %  |position=auto| is a bad idea for longtables, but we do our very best.
 %  This works quite well for captions inside the longtable contents, but
 %  not for captions inside the longtable (end)foot.
@@ -3341,22 +3335,18 @@
 %    \begin{macrocode}
       \caption@setautoposition{\ifcase\LT@rows t\else b\fi}%
 %    \end{macrocode}
-%
 %  We set |\ifcaption@star| according the 1st argument.
 %    \begin{macrocode}
       \caption@startrue#1\caption@starfalse
 %    \end{macrocode}
-%
 %    \begin{macrocode}
       \caption@prepare@stepcounter\LTcaptype{LT}%
 %    \end{macrocode}
-%
 % \changes{v3.1}{2007/05/05}{\cs{caption@font@normal} added}
 %    \begin{macrocode}
       \caption@begin\LTcaptype
         \caption@normalsize
 %    \end{macrocode}
-%
 %  The following skip has the purpose to correct the height of the
 %  |\parbox[t]|. Usually it's the height of the very first line, but
 %  because of our extra skips (|\abovecaptionskip| and |\belowcaptionskip|)
@@ -3369,16 +3359,14 @@
 %    \begin{macrocode}
         \vskip-\ht\strutbox
 %    \end{macrocode}
-%
-% Work-around for problem with \package{floatrow}:
-% The |\belowcaptionskip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
-% so we supress this skip if the \package{floatrow} package is loaded.
-% (This fixes \issue{50})
+%  Work-around for problem with \package{floatrow}:
+%  The |\belowcaptionskip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
+%  so we supress this skip if the \package{floatrow} package is loaded.
+%  (This fixes \issue{50})
 %    \begin{macrocode}
         \caption@ifdefined\FBifcaptop{%
           \let\caption@belowskip\@empty}{}%
 %    \end{macrocode}
-%
 %  The following code should look familiar. We do our skips and use
 %  |\caption@@make| to typeset the caption itself.
 %    \begin{macrocode}
@@ -3816,7 +3804,7 @@
     \def\caption@setSC@justify{%
       \caption@clearmargin
         \ifx\SC@justify\@empty \else
-          \let\caption@hj\SC@justify
+          \let\caption@justification\SC@justify
           \let\SC@justify\@empty
         \fi}%
 %    \end{macrocode}

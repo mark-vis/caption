@@ -140,7 +140,7 @@
 \caption@setbool{temp}{off}
 \caption@ifbool{temp}\failed\passed{setbool 8}
 \begingroup
-\renewcommand\caption@Error[1]{\def\temp{#1}}
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
 \caption@setbool{temp}{whatever}
 \test@equal{setbool 9}\temp{Undefined boolean value `whatever'}
 \endgroup
@@ -186,7 +186,7 @@
 \caption@ifdecl{font}{NormalSize}\passed\failed{ifdecl 3}
 
 \begingroup
-\renewcommand\caption@Error[1]{\def\temp{#1}}
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
 \let\temp\@undefined
 \caption@checkdecl{font}{normalsize}{}
 \test@undefined{checkdecl 1}{temp}
@@ -203,7 +203,13 @@
 \caption@ifset{labelformat}{simple}\passed\failed{ifset 3}
 \caption@ifset{labelformat}{default}\failed\passed{ifset 4}
 
-% TODO: \SetCaptionDefault
+\SetCaptionDefault{labelformat}{unnumbered}
+\test@equal{SetDefault 1}\caption@labelformat@default{\caption@labelformat@unnumbered}
+\begingroup
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
+\SetCaptionDefault{labelformat}{default}
+\test@equal{SetDefault 2}\temp{Invalid argument for \string\SetCaptionDefault: `default'}
+\endgroup
 
 % TODO: \caption@decl@package
 
@@ -345,6 +351,17 @@
 caption3 unit tests
 
 \makeatletter
+
+% \section{Formats}
+\begingroup
+\captionsetup{format=hang,labelsep=newline,slc=off}
+\renewcommand\caption@Error[1]{\gdef\temp{#1}\global\edef\tempa{\caption@labelsep@name}}
+\caption@make{figure}{1}{Text}
+\test@equal{format-2 1}\temp{The option `labelsep=\caption@labelsep@name' does not work\MessageBreak with `format=hang'}
+\test@equal{format-2 2}\tempa{newline}
+\endgroup
+
+% \section{Positioning}
 
 \caption@position@auto\failed\passed{position@auto 1}
 

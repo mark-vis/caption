@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3260}
+% \CheckSum{3307}
 %
 % \iffalse
 %<*driver>
@@ -172,8 +172,7 @@
 % \newcommand*\Note[2][Note]{\par{\small\emph{#1:} #2}\par}
 %
 % \changes{v1.0}{2003/12/20}{Rewritten; many new commands and features}
-% \changes{v1.0c}{2004/11/28}{Split into two packages:
-%                             \package{caption} \& \package{caption3}}
+% \changes{v1.0c}{2004/11/28}{Split into two packages: \package{caption} \& \package{caption3}}
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
@@ -189,7 +188,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/27 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/28 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -284,8 +283,8 @@
 %  \begin{quote}
 %    |\caption@ifinlist{frank}{axel,frank,olga,steven}{yes}{no}|
 %  \end{quote}
-%  would expand to |yes|.
-% (Note: Since this command is used by the \package{floatrow} package its syntax should not change.)
+%  would expand to |yes|.\par
+% (Note: Since this command is used by the \package{floatrow} package as well its syntax should not change.)
 %    \begin{macrocode}
 \newcommand*\caption@ifinlist{%
   \@expandtwoargs\caption@@ifinlist}
@@ -1135,7 +1134,7 @@
 %    \begin{macrocode}
 \def\caption@@set[#1]#2#3{%
   \caption@checkdecl{#1}{#3}{%
-%   \expandafter\edef\csname caption@@#2\endcsname{#3}%
+%   \expandafter\edef\csname caption@@#2\endcsname{#3}% could be used in \caption@ifset and for debugging
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
 %    \end{macrocode}
 % \end{macro}
@@ -1160,14 +1159,17 @@
 %
 % \begin{macro}{\SetCaptionDefault}
 % \changes{v2.0}{2019/09/10}{This macro added}
+% \changes{v2.0}{2020/07/28}{Check for `default' added to prevent infinite loop}
 %  |\SetCaptionDefault|\oarg{source option}\marg{option}\marg{name}
 %    \begin{macrocode}
 \newcommand*\SetCaptionDefault{%
   \@dblarg\caption@@setdefault}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@setdefault[#1]#2{%
-  \caption@@set[#1]{#2@default}}
+\def\caption@@setdefault[#1]#2#3{%
+  \caption@ifinlist{#3}{default}%
+    {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
+    {\caption@@set[#1]{#2@default}{#3}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1465,12 +1467,9 @@
 % \end{macro}
 % \end{macro}
 %
-% \changes{v1.0b}{2004/05/16}{Defaults added for options \opt{parindent=}
-%        and \opt{hangindent=}}
-% \changes{v1.0f}{2005/08/22}{Option \opt{parskip=}: \cs{AtBeginCaption}
-%        replaced by \cs{caption@@par}}
-% \changes{v1.0f}{2005/08/22}{Undocumented defaults for \opt{parindent=},
-%        \opt{hangindent=}, and \opt{parskip=} removed}
+% \changes{v1.0b}{2004/05/16}{Defaults added for options \opt{parindent=} and \opt{hangindent=}}
+% \changes{v1.0f}{2005/08/22}{Option \opt{parskip=}: \cs{AtBeginCaption} replaced by \cs{caption@@par}}
+% \changes{v1.0f}{2005/08/22}{Undocumented defaults for \opt{parindent=}, \opt{hangindent=}, and \opt{parskip=} removed}
 %    \begin{macrocode}
 \DeclareCaptionOption{indent}[\leftmargini]{% obsolete
   \setlength\caption@indent{#1}}
@@ -1487,8 +1486,9 @@
 % \section{Styles}
 %
 % \begin{macro}{\DeclareCaptionStyle}
-% \changes{v1.0a}{2004/01/17}{Pass through argument \#3 so extra spaces
-%        between arguments do make any harm}
+% \changes{v1.0a}{2004/01/17}{Pass through argument \#3 so extra spaces between arguments do make any harm}
+% \changes{v2.0}{2019/09/10}{Uses \cs{caption@decl} now}
+% \changes{v2.0}{2020/07/27}{\cs{caption@sls} renamed to \cs{caption@slsty}}
 %  |\DeclareCaptionStyle|\marg{name}\oarg{single-line-list-of-KV}\marg{list-of-KV}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionStyle[1]{%
@@ -1498,7 +1498,7 @@
 %    \begin{macrocode}
 \def\caption@declarestyle#1[#2]#3{%
   \caption@decl{style}{#1}%
-    {\def\caption@sls{#2}%
+    {\def\caption@slsty{#2}%
      \def\caption@sty{#3}}}
 \@onlypreamble\caption@declarestyle
 %    \end{macrocode}
@@ -1515,10 +1515,11 @@
 % \changes{v1.1}{2007/07/29}{Recursive style definitions should work now}
 % \changes{v1.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
 % \changes{v1.2}{2007/12/03}{Definition of \cs{caption@iftypewarning} removed}
+% \changes{v2.0}{2019/09/10}{Uses \cs{caption@ifdecl} and \cs{caption@checkdecl} now}
 %  |\caption@setstyle|\marg{name}\\
 %  |\caption@setstyle*|\marg{name}\par
 %  Selecting a caption style means saving the additional
-%  \meta{single-line-list-of-KV} (this will be done by |\caption@sls|),
+%  \meta{single-line-list-of-KV} (this will be done by |\caption@slsty|),
 %  resetting the caption options to the base ones (this will be done using
 %  |\caption@resetstyle|) and executing the \meta{list-of-KV} options
 %  (this will be done using |\caption@setup|).\par
@@ -1532,7 +1533,7 @@
 \newcommand*\caption@@setstyle[2]{%
   #1{style}{#2}%
     {\caption@set{style}{#2}%
-     \caption@style % defines \caption@sty & \caption@sls
+     \caption@style % defines \caption@sty & \caption@slsty
      \ifx\caption@setstyle@flag\@undefined
        \let\caption@setstyle@flag\relax % prevent \caption@resetstyle if called recursively
        \caption@resetstyle
@@ -1646,10 +1647,8 @@
 %
 % There are four pre-defined boxes, called `empty', `none',
 % `parbox', and `colorbox'.
-% \changes{v1.0i}{2006/05/13}{We define \cs{captionbox} instead of
-%        \cs{caption@start/endbox}}
-% \changes{v1.0l}{2006/03/09}{Bugfix 07-03-09: \cs{captionbox} changed from
-%        \cs{parbox-t} to \cs{parbox-b}}
+% \changes{v1.0i}{2006/05/13}{We define \cs{captionbox} instead of \cs{caption@start/endbox}}
+% \changes{v1.0l}{2006/03/09}{Bugfix 07-03-09: \cs{captionbox} changed from \cs{parbox-t} to \cs{parbox-b}}
 % \changes{v1.2}{2007/11/11}{\cs{captionbox} renamed to \cs{caption@parbox}}
 % \changes{v1.5}{2012/03/15}{\cs{caption@parbox} adapted to \cs{DeclareCaptionBox}}
 % \changes{v1.6}{2013/05/02}{Option \opt{boxsep=} added}
@@ -1678,11 +1677,11 @@
 % \section{Formats}
 %
 % \begin{macro}{\DeclareCaptionFormat}
-% \changes{v1.0a}{2004/01/17}{Pass through argument \#3 so extra spaces
-%        between arguments do make any harm}
+% \changes{v1.0a}{2004/01/17}{Pass through argument \#3 so extra spaces between arguments do make any harm}
 % \changes{v1.0c}{2005/02/09}{Starred variant added}
 % \changes{v1.1c}{2007/10/15}{Optional argument added}
 % \changes{v2.0}{2019/09/10}{Uses \cs{caption@decl} now}
+% \changes{v2.0}{2020/07/27}{\cs{caption@ifh} renamed to \cs{caption@ifhmode}}
 %  |\DeclareCaptionFormat|\marg{name}\marg{code with \#1, \#2, and \#3}\\
 %  |\DeclareCaptionFormat*|\marg{name}\marg{code with \#1, \#2, and \#3}\par
 %  The starred form causes the code being typeset in vertical (instead of
@@ -1700,7 +1699,7 @@
 %    \begin{macrocode}
 \long\def\caption@@declareformat#1#2[#3]#4{%
   \caption@decl[\edef]{format}{#2}{%
-    \unexpanded{\let\caption@ifh#1}%
+    \unexpanded{\let\caption@ifhmode#1}%
     \unexpanded{\long\def\caption@slfmt}####1####2####3\unexpanded{{#3}}%
     \unexpanded{\long\def\caption@fmt}####1####2####3\unexpanded{{#4}}}}
 \@onlypreamble\caption@@declareformat
@@ -1708,7 +1707,7 @@
 % \end{macro}
 %
 %    \begin{macrocode}
-\DeclareCaptionOption{format}{\caption@set{format}{#1}\caption@format}
+\DeclareCaptionOption{format}{\caption@set{format}{#1}}
 %    \end{macrocode}
 %
 % \changes{v1.0a}{2004/01/23}{Caption format \opt{default} renamed to \opt{normal}}
@@ -1723,7 +1722,7 @@
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
   \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name
     {\caption@Error{%
-       The option `labelsep=\caption@lsepname' does not work\MessageBreak
+       The option `labelsep=\caption@labelsep@name' does not work\MessageBreak
        with `format=hang'}}%
     {\@hangfrom{#1#2}%
      \advance\caption@parindent\hangindent
@@ -1739,8 +1738,7 @@
 % \section{Label formats}
 %
 % \begin{macro}{\DeclareCaptionLabelFormat}
-% \changes{v1.0a}{2004/01/17}{%
-%         Pass through argument \#2 so extra spaces between arguments do make any harm}
+% \changes{v1.0a}{2004/01/17}{Pass through argument \#2 so extra spaces between arguments do make any harm}
 % \changes{v2.0}{2019/09/10}{Uses \cs{caption@decl} now}
 %  |\DeclareCaptionLabelFormat|\marg{name}\marg{code with \#1 and \#2}
 %    \begin{macrocode}
@@ -1783,6 +1781,9 @@
 % \changes{v1.3}{2011/08/06}{Test for CR revised}
 % \changes{v2.0}{2018/05/15}{Variant with two stars added}
 % \changes{v2.0}{2019/09/10}{Uses \cs{caption@decl} now}
+% \changes{v2.0}{2020/07/27}{\cs{caption@iflf} renamed to \cs{caption@iflabelfont}}
+% \changes{v2.0}{2020/07/27}{\cs{caption@lsep} renamed to \cs{caption@labelsep}}
+% \changes{v2.0}{2020/07/27}{Definition of \cs{caption@labelsep@name} added}
 %  |\DeclareCaptionLabelSeparator|\marg{name}\marg{code}\\
 %  |\DeclareCaptionLabelSeparator*|\marg{name}\marg{code}\\
 %  |\DeclareCaptionLabelSeparator**|\marg{name}\marg{condition}\marg{code}\par
@@ -1820,7 +1821,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\DeclareCaptionLabelSeparator}
+% \begin{macro}{\CaptionLabelSeparatorContainsNewline}
 % \changes{v2.0}{2020/07/27}{This macro added}
 %    \begin{macrocode}
 \newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
@@ -1834,8 +1835,7 @@
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
 %
-% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator
-%         \opt{newline} implementation changed from \cs{newline} to \cs{\textbackslash}}
+% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{\textbackslash}}
 % \changes{v1.0f}{2005/08/24}{Caption label separator \opt{endash} added}
 % There are seven pre-defined label separators, called `none', `colon', `period', `space',
 % `quad', `newline', and `endash'.
@@ -2180,8 +2180,7 @@
 % \section{Justifications}
 %
 % \begin{macro}{\DeclareCaptionJustification}
-% \changes{v1.0a}{2004/01/17}{Pass through argument \#2 so extra spaces
-%                             between arguments do make any harm}
+% \changes{v1.0a}{2004/01/17}{Pass through argument \#2 so extra spaces between arguments do make any harm}
 % \changes{v1.1}{2007/07/03}{Mapped to \cs{DeclareCaptionFont}}
 % \changes{v2.0}{2020/07/26}{Uses \cs{caption@decl} now}
 %  |\DeclareCaptionJustification|\oarg{package}\marg{name}\marg{code}
@@ -2326,7 +2325,8 @@
 %  Selecting the caption position means that we put |\caption@position| to
 %  the right value. \emph{Please do \textbf{not} use the internal macro
 %  \cs{caption@position} in your own package or document, but use the wrapper
-%  macro \cs{caption@iftop} instead.}
+%  macro \cs{caption@iftop} instead.}\par
+% (Note: Since this command is used by the \package{floatrow} package as well its syntax should not change.)
 %    \begin{macrocode}
 \newcommand*\caption@setposition{\caption@set{position}}
 %    \end{macrocode}
@@ -2506,6 +2506,15 @@
 \SetCaptionDefault{listformat}{subsimple}
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@lstfmt}
+% \changes{v2.0}{This macro added}
+%   To provide backward compatibility we still offer \cs{caption@lstfmt}.
+%   (\cs{caption@lstfmt} is used in the \package{dgruyter} package.)
+%    \begin{macrocode}
+\newcommand*\caption@lstfmt{\caption@listformat}
+%    \end{macrocode}
+% \end{macro}
+%
 % \section{Debug option}
 % \changes{v1.0k}{2007/03/04}{Debug option added}
 %
@@ -2599,8 +2608,10 @@
         \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
       \fi
       \vskip\belowcaptionskip}}
-    \ifx\caption@tempa\@makecaption
+    \ifx\@makecaption\caption@tempa
       \caption@InfoNoLine{Standard document class detected}%
+    \else\ifx\@makecaption\@undefined
+      \caption@InfoNoLine{Document class w/o caption stuff detected}%
     \else
 %    \end{macrocode}
 % Otherwise we are clueless and use standard default settings for the captions anyway.
@@ -2611,8 +2622,8 @@
         standard defaults will be used}%
       \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
       \caption@setbool{documentclass}{0}%
-    \fi
-    \def\caption@documentclass{}%
+    \fi\fi
+    \def\caption@documentclass{}% don't load adaption code later on
   }}}}}}%
 }{}
 %    \end{macrocode}
@@ -2652,13 +2663,13 @@
 % \end{macro}
 %
 %    \begin{macrocode}
-  \def\fnum@figure{\figurename\nobreakspace\thefigure}%
-  \def\fnum@table{\tablename\nobreakspace\thetable}%
+  \def\fnum@figure{\figurename\nobreakspace\thefigure}
+  \def\fnum@table{\tablename\nobreakspace\thetable}
 %    \end{macrocode}
 %    \begin{macrocode}
   \DeclareCaptionLabelSeparator{arabi}{ : }
   \DeclareCaptionLabelSeparator{default}{%
-    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+\TODO    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 }{%
@@ -2828,7 +2839,61 @@
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
   \let\caption@@loadpackage\caption@@requirepackage}
+%    \end{macrocode}
 % \end{macro}
+%
+% \subsection{The floatrow package}
+% \changes{v2.0}{2020/07/28}{Adaptions to the \package{floatrow} package added}
+%
+% Since the \package{floatrow} package is not maintained anymore,
+% we have to make adaptions to \thispackage~\version{2.0} here.
+% Please note that we only support the version $0.3b$ of the \package{floatrow} package,
+% so older versions do not work with this version of \thispackage, and newer
+% versions are expected to be adapted.
+%
+%    \begin{macrocode}
+\caption@AtBeginDocument{%
+  \def\@tempa{2008/08/02 v0.3b floatrow: float package extension}%
+  \expandafter\ifx\csname ver@floatrow.sty\endcsname\@tempa
+    \caption@InfoNoLine{floatrow package v0.3b is loaded}%
+%    \end{macrocode}
+%
+% \begin{macro}{\flrow@setstyle}
+%    \begin{macrocode}
+    \renewcommand*\flrow@setstyle[1]{% l.986
+      \@ifundefined{flrow@sty@#1}%
+        {\flrow@error{Undefined float style `#1'}}%
+        {\FBstyle@reset
+         \def\flrow@capsetup{%
+            \caption@ifdecl{style}{#1}{\caption@setstyle*{#1}}{}%
+            \caption@setoptions{#1}}%
+         \flrow@esetup{\csname flrow@sty@#1\endcsname}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\flrow@FBoAlign}
+%    \begin{macrocode}
+    \renewcommand*\flrow@FBoAlign[1]{% l.1168
+      \caption@ifdecl{justification}{#1}%
+        {\expandafter\let\expandafter\floatobjectset
+           \csname caption@justification@#1\endcsname}%
+        {\flrow@error{Undefined object setting `#1'}}}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\flrow@setFRsep}
+%    \begin{macrocode}
+    \renewcommand*\flrow@setFRsep[2]{% l.1187
+      \caption@ifdecl{labelseparator}{#2}%
+        {\@nameuse{caption@labelseparator@#2}% defines \caption@labelsep
+         \let#1\caption@labelsep}%
+        {\flrow@error{Undefined float separator `#2'}}}%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+  \fi}
+%    \end{macrocode}
 %
 % \subsection{The newfloat package}
 %
@@ -2970,14 +3035,15 @@
 %    \end{macrocode}
 %
 % \subsection{The subfig package}
-% \changes{v1.1}{2007/07/07}{Several adaptions to the \package{subfig} package added}
+% \changes{v1.1}{2007/07/07}{Adaptions to the \package{subfig} package added}
 % \changes{v1.4a}{2011/11/01}{Test for the \package{subfig} package revised}
 %
 % Since the \package{subfig} package is not maintained anymore,
-% we have to make several adaptions to \thispackage~\version{1.1} here.
-% Please note that we only support the version $1.3$ of the \package{subfig} package here.
-% So older versions do not work with this version of \thispackage, and newer
+% we have to make adaptions to \thispackage~\version{1.1} here.
+% Please note that we only support the version $1.3$ of the \package{subfig} package,
+% so older versions do not work with this version of \thispackage, and newer
 % versions are expected to be adapted.
+%
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
   \def\@tempa{2005/06/28 ver: 1.3 subfig package}%
@@ -3155,7 +3221,7 @@
 % \changes{v1.0c}{2005/02/12}{Bugfix: \cs{hskip}\cs{captionmargin} to the end of caption added}
 % \changes{v1.0c}{2005/02/12}{Bugfix: \cs{strut} moved from here to \cs{caption@@@make}}
 % \changes{v1.0c}{2005/02/12}{Single-line-check moved up so it can affect margins now}
-% \changes{v1.0c}{2005/02/09}{Improvement: \cs{caption@ifh} added}
+% \changes{v1.0c}{2005/02/09}{Improvement: \cs{caption@ifhmode} added}
 % \changes{v1.0c}{2005/02/09}{Bugfix: \cs{leavevmode} added}
 % \changes{v1.0f}{2005/08/24}{Uses \cs{sbox} instead of \cs{setbox} in single-line-check}
 % \changes{v1.0g}{2005/12/04}{Uses \cs{caption@slc} now}
@@ -3190,7 +3256,7 @@
 %    \end{macrocode}
 % Special single-line treatment (option |singlelinecheck=|)
 %    \begin{macrocode}
-    \caption@singlelinecheck{\caption@slc{#1}{#2}\caption@singleline\relax}{}%
+    \caption@singlelinecheck{\caption@slc{#1}{#2}\caption@singleline\caption@multiline}{\caption@multiline}%
 %    \end{macrocode}
 % Typeset the left margin (option |margin=|)
 %    \begin{macrocode}
@@ -3199,7 +3265,7 @@
     \ifdim\captionmargin@=\z@ \else
       \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@}%
     \fi
-    \caption@ifh{\advance\caption@tempdima\caption@indent}%
+    \caption@ifhmode{\advance\caption@tempdima\caption@indent}%
     \hspace\caption@tempdima
 %    \end{macrocode}
 % We actually use a |\vbox| of width |\captionwidth - \caption@indent|
@@ -3208,14 +3274,14 @@
 % was defined with \cs{DeclareCaptionFormat*}.}
 %    \begin{macrocode}
     \caption@tempdima\captionwidth
-    \caption@ifh{\advance\caption@tempdima-\caption@indent}%
+    \caption@ifhmode{\advance\caption@tempdima-\caption@indent}%
     \caption@parbox\caption@tempdima{%
 %    \end{macrocode}
 % Typeset the indention (option |indention=|)\\
 % {\small Bugfix 04-05-05:
 %  |\hskip-\caption@indent| replaced by |\ifdim\caption@indent=\z@|\ldots}
 %    \begin{macrocode}
-      \caption@ifh{%
+      \caption@ifhmode{%
         \ifdim\caption@indent=\z@
           \leavevmode
         \else
@@ -3299,13 +3365,12 @@
 %
 % \begin{macro}{\caption@slc}
 % \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} added}
-% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{caption@sls} added after \cs{begingroup}}
+% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{\caption@sls} added after \cs{begingroup}}
 % \changes{v1.1}{2007/07/29}{\cs{caption@calcmargin} added}
-% \changes{v1.1c}{2007/10/14}{Support of \cs{caption@slfmt} added}
-% \changes{v1.1d}{2007/10/23}{`SingleLine' renamed to `singleline' for consistency}
+% \changes{v1.1c}{2007/10/14}{\cs{caption@setup}\cs{\caption@opt@SingleLine} outsourced to \cs{caption@SingleLine}}
 % \changes{v1.3}{2010/09/04}{Split into \cs{caption@slc} and \cs{caption@@slc}}
 % \changes{v1.5}{2012/12/26}{Merged into a single macro again}
-% \changes{v1.5}{2013/04/14}{Definition and usage of \cs{ifsinglelinecaption} added}
+% \changes{v1.5}{2013/04/14}{Usage of \cs{ifsinglelinecaption} added}
 %  |\caption@slc|\marg{label}\marg{text}\marg{single-line-code}\marg{multi-line-code}\par
 %  This one does the single-line-check.
 %    \begin{macrocode}
@@ -3314,7 +3379,7 @@
   \singlelinecaptiontrue
   \begingroup
   \caption@singleline
-  \let\caption@justification\@empty
+  \let\caption@justification\relax
   \caption@calcmargin % calculate \captionwidth
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
@@ -3328,13 +3393,32 @@
   \fi
   \caption@Debug{End SLC}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ifsinglelinecaption}
+% \changes{v1.5}{2013/04/14}{This definition added}
 %    \begin{macrocode}
 \newif\ifsinglelinecaption
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@singleline}
+% \changes{v1.1c}{2007/10/14}{This macro extracted from \cs{caption@slc}}
+% \changes{v1.1c}{2007/10/14}{Support of \cs{caption@slfmt} added}
+% \changes{v1.1d}{2007/10/23}{This macro renamed from \cs{caption@SingleLine} to \cs{caption@singleline} for consistency}
 %    \begin{macrocode}
 \newcommand*\caption@singleline{%
-  \caption@xsetup\caption@sls
+  \caption@xsetup\caption@slsty % Note: This could change \caption@format
+  \caption@format               % defines \caption@ifhmode, \caption@slfmt, and \caption@fmt
   \let\caption@fmt\caption@slfmt}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@multiline}
+% \changes{v2.0}{2020/07/28}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@multiline{%
+  \caption@format}              % defines \caption@ifhmode, \caption@slfmt, and \caption@fmt
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3469,7 +3553,6 @@
 %    \begin{macrocode}
 \newcommand\caption@@@make[2]{%
 %    \end{macrocode}
-%
 % If the label is empty, we use no caption label separator.
 %    \begin{macrocode}
   \sbox\@tempboxa{#1}%
@@ -3478,7 +3561,6 @@
 %   \@capbreakfalse
   \fi
 %    \end{macrocode}
-%
 % If the text is empty, we use no caption label separator, too.
 % (And no text format either.)
 %    \begin{macrocode}
@@ -3489,17 +3571,17 @@
 %   \let\caption@ifstrut\@secondoftwo
   }%
 %    \end{macrocode}
-%
+%    \begin{macrocode}
+  \caption@labelseparator % defines \caption@iflabelfont, \caption@labelsep and \caption@labelsep@name (the latter is needed by \caption@fmt)
+%    \end{macrocode}
 % Take care that |\caption@parindent| and |\caption@hangindent| will be used
 % to typeset the paragraph.
 %    \begin{macrocode}
   \@setpar{\@@par\caption@@par}\caption@@par
 %    \end{macrocode}
-%
 % Finally typeset the caption.
 %    \begin{macrocode}
   \caption@applyfont
-  \caption@labelseparator % defines \caption@iflabelfont, \caption@labelsep and \caption@labelsep@name (the latter is needed by \caption@fmt)
   \caption@fmt
     {\ifcaption@star\else
        \begingroup
