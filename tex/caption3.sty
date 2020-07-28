@@ -556,7 +556,8 @@
 \def\caption@declarestyle#1[#2]#3{%
   \caption@decl{style}{#1}%
     {\def\caption@slsty{#2}%
-     \def\caption@sty{#3}}}
+     \def\caption@sty{#3}}%
+  \@namedef{caption@sty@#1}{\@unused}}
 \@onlypreamble\caption@declarestyle
 \DeclareCaptionOption{style}{\caption@setstyle{#1}}
 \DeclareCaptionOption{style*}{\caption@setstyle*{#1}}
@@ -671,7 +672,8 @@
   \caption@decl{labelseparator}{#2}%
     {\def\caption@iflabelfont{#1}%
      \def\caption@labelsep@name{#2}%
-     \def\caption@labelsep{#3}}}
+     \def\caption@labelsep{#3}}%
+  \@namedef{caption@lsep@#2}{#3}}
 \@onlypreamble\caption@declarelabelseparator
 \newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
   \caption@g@addto@list\caption@labelsep@crlist{#1}}
@@ -851,7 +853,10 @@
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 \SetCaptionDefaultFont{size}{none}
 \newcommand*\DeclareCaptionJustification{%
-  \caption@decl@package{justification}{\caption@decl{justification}}}
+  \caption@withoptargs\caption@declare@justification}
+\newcommand*\caption@declare@justification[3]{%
+  \caption@decl@package{justification}{\caption@decl{justification}}#1{#2}{#3}%
+  \expandafter\let\csname caption@hj@#2\expandafter\endcsname\csname caption@justification@#2\endcsname}
 \@onlypreamble\DeclareCaptionJustification
 \DeclareCaptionOption{justification}{%
   \caption@load@package{justification}{#1}%
@@ -904,6 +909,7 @@
 \caption@declare@position{b}{\@secondoftwo}
 \caption@declare@position{bottom}{\@secondoftwo}
 \caption@declare@position{below}{\@secondoftwo}
+\caption@declare@position{a}{\caption@autoposition}% needed by floatrow package, \flrow@cappos
 \caption@declare@position{auto}{\caption@autoposition}
 \SetCaptionDefault{position}{auto}
 \let\caption@autoposition\@secondoftwo
@@ -1007,9 +1013,9 @@
         Unknown document class (or package),\MessageBreak
         standard defaults will be used}%
       \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-      \caption@setbool{documentclass}{0}%
+      \caption@setbool{documentclass}{0}% unknown document class
     \fi\fi
-    \def\caption@documentclass{}% don't load adaption code later on
+    \let\caption@documentclass\@empty % don't load adaption code later on
   }}}}}}%
 }{}
 \newcommand*\AtPackageCaption{%
@@ -1105,24 +1111,13 @@
   \def\@tempa{2008/08/02 v0.3b floatrow: float package extension}%
   \expandafter\ifx\csname ver@floatrow.sty\endcsname\@tempa
     \caption@InfoNoLine{floatrow package v0.3b is loaded}%
-    \renewcommand*\flrow@setstyle[1]{% l.986
-      \@ifundefined{flrow@sty@#1}%
-        {\flrow@error{Undefined float style `#1'}}%
-        {\FBstyle@reset
-         \def\flrow@capsetup{%
-            \caption@ifdecl{style}{#1}{\caption@setstyle*{#1}}{}%
-            \caption@setoptions{#1}}%
-         \flrow@esetup{\csname flrow@sty@#1\endcsname}}}
-    \renewcommand*\flrow@FBoAlign[1]{% l.1168
-      \caption@ifdecl{justification}{#1}%
-        {\expandafter\let\expandafter\floatobjectset
-           \csname caption@justification@#1\endcsname}%
-        {\flrow@error{Undefined object setting `#1'}}}%
-    \renewcommand*\flrow@setFRsep[2]{% l.1187
-      \caption@ifdecl{labelseparator}{#2}%
-        {\@nameuse{caption@labelseparator@#2}% defines \caption@labelsep
-         \let#1\caption@labelsep}%
-        {\flrow@error{Undefined float separator `#2'}}}%
+    \renewcommand\captionlabel[1]{{% l.559
+      \def\FR@tmp{\@captype}%
+      \ifnum\floatbox@depth>\@ne
+        \def\FR@tmp{sub\@captype}\caption@setsubtype*{\FR@tmp}\stepcounter{\FR@tmp}%
+      \fi
+      \caption@format % <= This line added
+      \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
   \fi}
 \newcommand*\caption@newfloat[2]{%
   \IfCaptionOptionCheck
@@ -1498,7 +1493,7 @@
       \@addtoreset{sub#3}{#3}%
       \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
       \caption@declaresublistentry{#3}%
-      \@cons\caption@subtypelist{{#3}}}%
+      \caption@l@addto@list\caption@subtypelist{sub#3}}%
      \caption@ifdefined\contentsuse{%
        \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}{}%
      \@namedef{sub#3name}{}%
@@ -1555,29 +1550,20 @@
 \@onlypreamble\caption@@@@@@declaresublistentry
 \newcommand*\caption@subtypelist{}
 \newcommand*\caption@ifsubtype[1]{%
-  \begingroup
-    \let\next\@secondoftwo
-    \edef\@tempa{#1}%
-    \def\@elt##1{%
-      \def\@tempb{sub##1}%
-      \ifx\@tempa\@tempb
-        \let\next\@firstoftwo
-     \fi}%
-    \caption@subtypelist
-  \expandafter\endgroup\next}
-\newcommand*\caption@restorecounters{%
-  \caption@restore@counters
-  \global\let\caption@restore@counters\@empty}
-\newcommand*\caption@restore@counters{}
+  \caption@ifin@list\caption@subtypelist{#1}%
+    \@firstoftwo
+    {\caption@ifin@list\sf@counterlist{#1}\@firstoftwo\@secondoftwo}}
 \newcommand*\caption@savesubcounters{%
-  \def\@elt##1{\caption@savecounter{sub##1}}%
-  \caption@subtypelist
-  \let\@elt\relax}%
+  \caption@for@list\caption@subtypelist{\caption@savecounter{##1}}}
 \newcommand*\caption@savecounter[1]{%
   \edef\caption@tempa{%
     \noexpand\l@addto@macro\noexpand\caption@restore@counters
       {\noexpand\setcounter{#1}{\number\value{#1}}}}%
   \caption@tempa}
+\newcommand*\caption@restorecounters{%
+  \caption@restore@counters
+  \global\let\caption@restore@counters\@empty}
+\newcommand*\caption@restore@counters{}
 \newcommand*\caption@For{%
   \caption@withoptargs\caption@@For}
 \newcommand\caption@@For[3]{%

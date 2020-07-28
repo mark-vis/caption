@@ -15,10 +15,27 @@
 \newcommand*\test@equal[3]{%
   \begingroup
     \def\test@temp{#3}%
-    \ifx#2\test@temp\expandafter\passed\else\expandafter\failed\fi{#1}%
+    \ifx#2\test@temp
+      \expandafter\passed
+    \else
+      \expandafter\failed
+    \fi
+    {#1}%
   \endgroup}
 \newcommand*\test@ident[3]{%
-  \ifx#2#3\expandafter\passed\else\expandafter\failed\fi{#1}}
+  \ifx#2#3%
+    \expandafter\passed
+  \else
+    \expandafter\failed
+  \fi
+  {#1}}
+\newcommand*\test@counter[3]{%
+  \expandafter\ifnum\csname c@#2\endcsname=#3\relax
+    \expandafter\passed
+  \else
+    \expandafter\failed
+  \fi
+  {#1}}
 
 % \section{Generic helpers}
 
@@ -342,7 +359,31 @@
 
 % \section{Types \& sub-types}
 
-% TODO
+% TODO: ...
+
+\caption@savesubcounters
+\test@equal{savesubcounters 1}\caption@restore@counters{}
+\caption@restorecounters
+\test@equal{savesubcounters 2}\caption@restore@counters{}
+\DeclareCaptionSubType{figure}
+\DeclareCaptionSubType{table}
+\caption@savesubcounters
+\test@equal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{0}\setcounter{subtable}{0}}
+\caption@restorecounters
+\test@equal{savesubcounters 4}\caption@restore@counters{}
+\stepcounter{subfigure}
+\stepcounter{subfigure}
+\stepcounter{subtable}
+\caption@savesubcounters
+\test@equal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{2}\setcounter{subtable}{1}}
+\stepcounter{subfigure}
+\stepcounter{subtable}
+\caption@restorecounters
+\test@equal{savesubcounters 4}\caption@restore@counters{}
+\test@counter{savesubcounters 5}{subfigure}{2}
+\test@counter{savesubcounters 6}{subtable}{1}
+
+% TODO: ...
 
 \makeatother
 

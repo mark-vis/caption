@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3307}
+% \CheckSum{3329}
 %
 % \iffalse
 %<*driver>
@@ -1499,7 +1499,14 @@
 \def\caption@declarestyle#1[#2]#3{%
   \caption@decl{style}{#1}%
     {\def\caption@slsty{#2}%
-     \def\caption@sty{#3}}}
+     \def\caption@sty{#3}}%
+%    \end{macrocode}
+% The \package{floatrow} package uses |\@ifundefined{caption@sty@#1}| to
+% determine in |\flrow@set|\-|style| if a caption style is defined or not.
+% Since the \package{floatrow} package is unmaintained we fake the definition
+% so the test will still work.
+%    \begin{macrocode}
+  \@namedef{caption@sty@#1}{\@unused}}
 \@onlypreamble\caption@declarestyle
 %    \end{macrocode}
 % \end{macro}
@@ -1816,7 +1823,15 @@
   \caption@decl{labelseparator}{#2}%
     {\def\caption@iflabelfont{#1}%
      \def\caption@labelsep@name{#2}%
-     \def\caption@labelsep{#3}}}
+     \def\caption@labelsep{#3}}%
+%    \end{macrocode}
+% Unfortunately |\Declare|\-|Float|\-|Separators| of the \package{floatrow}
+% package mis-uses |\Declare|\-|Caption|\-|Label|\-|Separator| instead of
+% storing the definition on its own. Since the \package{floatrow} package is
+% unmaintained we have to store the separator definition inside
+% |\caption@lsep@|\meta{name} for \package{floatrow}, too. (Sigh!)
+%    \begin{macrocode}
+  \@namedef{caption@lsep@#2}{#3}}
 \@onlypreamble\caption@declarelabelseparator
 %    \end{macrocode}
 % \end{macro}
@@ -2186,7 +2201,20 @@
 %  |\DeclareCaptionJustification|\oarg{package}\marg{name}\marg{code}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionJustification{%
-  \caption@decl@package{justification}{\caption@decl{justification}}}
+% \caption@decl@package{justification}{\caption@decl{justification}}} % Because of floatrow it isn't so easy...
+%    \end{macrocode}
+% Unfortunately the (unmaintained) \package{floatrow} uses the old storage scheme
+% of the \package{caption} package and therefore expects the justification code
+% in |\caption@hj@|\meta{name} instead of |\caption@justification@|\meta{name}.
+% For this reason we have to store the code for the \package{floatrow} package
+% additionally, so |\flrow@FBoAlign| will still work fine.
+%    \begin{macrocode}
+  \caption@withoptargs\caption@declare@justification}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@declare@justification[3]{%
+  \caption@decl@package{justification}{\caption@decl{justification}}#1{#2}{#3}%
+  \expandafter\let\csname caption@hj@#2\expandafter\endcsname\csname caption@justification@#2\endcsname}
 \@onlypreamble\DeclareCaptionJustification
 %    \end{macrocode}
 % \end{macro}
@@ -2340,6 +2368,7 @@
 \caption@declare@position{b}{\@secondoftwo}
 \caption@declare@position{bottom}{\@secondoftwo}
 \caption@declare@position{below}{\@secondoftwo}
+\caption@declare@position{a}{\caption@autoposition}% needed by floatrow package, \flrow@cappos
 \caption@declare@position{auto}{\caption@autoposition}
 %    \end{macrocode}
 %
@@ -2621,9 +2650,9 @@
         Unknown document class (or package),\MessageBreak
         standard defaults will be used}%
       \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-      \caption@setbool{documentclass}{0}%
+      \caption@setbool{documentclass}{0}% unknown document class
     \fi\fi
-    \def\caption@documentclass{}% don't load adaption code later on
+    \let\caption@documentclass\@empty % don't load adaption code later on
   }}}}}}%
 }{}
 %    \end{macrocode}
@@ -2858,36 +2887,55 @@
     \caption@InfoNoLine{floatrow package v0.3b is loaded}%
 %    \end{macrocode}
 %
-% \begin{macro}{\flrow@setstyle}
+% \begin{macro}{\captionlabel}
+% |\caption@format| needs to be expanded prior the use of |\caption@@@make|.
 %    \begin{macrocode}
-    \renewcommand*\flrow@setstyle[1]{% l.986
-      \@ifundefined{flrow@sty@#1}%
-        {\flrow@error{Undefined float style `#1'}}%
-        {\FBstyle@reset
-         \def\flrow@capsetup{%
-            \caption@ifdecl{style}{#1}{\caption@setstyle*{#1}}{}%
-            \caption@setoptions{#1}}%
-         \flrow@esetup{\csname flrow@sty@#1\endcsname}}}
+    \renewcommand\captionlabel[1]{{% l.559
+      \def\FR@tmp{\@captype}%
+      \ifnum\floatbox@depth>\@ne
+        \def\FR@tmp{sub\@captype}\caption@setsubtype*{\FR@tmp}\stepcounter{\FR@tmp}%
+      \fi
+      \caption@format % <= This line added
+      \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\flrow@setstyle}
+% This patch isn't working since |\flrow@setstyle| will be used by \package{floatrow} right after loading \package{caption3}.
+% For this reason we still define |\caption@sty@|\meta{name} in |\Declare|\-|Caption|\-|Style| instead.
+%    \begin{macrocode}
+%   \renewcommand*\flrow@setstyle[1]{% l.986
+%     \@ifundefined{flrow@sty@#1}%
+%       {\flrow@error{Undefined float style `#1'}}%
+%       {\FBstyle@reset
+%        \def\flrow@capsetup{%
+%           \caption@ifdecl{style}{#1}{\caption@setstyle*{#1}}{}%
+%           \caption@setoptions{#1}}%
+%        \flrow@esetup{\csname flrow@sty@#1\endcsname}}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\flrow@FBoAlign}
+% This patch isn't working since |\flrow@FBoAlign| will be used by \package{floatrow} right after loading \package{caption3}.
+% For this reason we still define |\caption@hj@|\meta{name} in |\Declare|\-|Caption|\-|Justification| instead.
 %    \begin{macrocode}
-    \renewcommand*\flrow@FBoAlign[1]{% l.1168
-      \caption@ifdecl{justification}{#1}%
-        {\expandafter\let\expandafter\floatobjectset
-           \csname caption@justification@#1\endcsname}%
-        {\flrow@error{Undefined object setting `#1'}}}%
+%   \renewcommand*\flrow@FBoAlign[1]{% l.1168
+%     \caption@ifdecl{justification}{#1}%
+%       {\expandafter\let\expandafter\floatobjectset
+%          \csname caption@justification@#1\endcsname}%
+%       {\flrow@error{Undefined object setting `#1'}}}%
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\flrow@setFRsep}
+% This patch isn't working since |\flrow@setFRsep| will be used by \package{floatrow} right after loading \package{caption3}.
+% For this reason we still define |\caption@lsep@|\meta{name} in |\Declare|\-|Caption|\-|Label|\-|Separator| instead.
 %    \begin{macrocode}
-    \renewcommand*\flrow@setFRsep[2]{% l.1187
-      \caption@ifdecl{labelseparator}{#2}%
-        {\@nameuse{caption@labelseparator@#2}% defines \caption@labelsep
-         \let#1\caption@labelsep}%
-        {\flrow@error{Undefined float separator `#2'}}}%
+%   \renewcommand*\flrow@setFRsep[2]{% l.1187
+%     \caption@ifdecl{labelseparator}{#2}%
+%       {\@nameuse{caption@labelseparator@#2}% defines \caption@labelsep
+%        \let#1\caption@labelsep}%
+%       {\flrow@error{Undefined float separator `#2'}}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3769,7 +3817,7 @@
       \@addtoreset{sub#3}{#3}%
       \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
       \caption@declaresublistentry{#3}%
-      \@cons\caption@subtypelist{{#3}}}%
+      \caption@l@addto@list\caption@subtypelist{sub#3}}%
 %    \end{macrocode}
 % Support of \package{titletoc} package
 %    \begin{macrocode}
@@ -3850,8 +3898,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@subtypelist}
-% An \cs{@elt}-list containing the subtypes defined
-% with |\Declare|\-|Caption|\-|Sub|\-|Type|.
+% A list containing the subtypes defined with |\Declare|\-|Caption|\-|Sub|\-|Type|.
 %    \begin{macrocode}
 \newcommand*\caption@subtypelist{}
 %    \end{macrocode}
@@ -3859,20 +3906,15 @@
 %
 % \begin{macro}{\caption@ifsubtype}
 % \changes{v1.8g}{2020/01/02}{This macro added}
+% \changes{v2.0}{2020/07/28}{Check of \cs{sf@counterlist} from \package{subfig} package added}
 % This macro checks if the given subtype was defined
-% with |\Declare|\-|Caption|\-|Sub|\-|Type| or not.
+% with |\Declare|\-|Caption|\-|Sub|\-|Type| (offered by us)
+% or |\new|\-|sub|\-|float| (offered by the \package{subfig} package).
 %    \begin{macrocode}
 \newcommand*\caption@ifsubtype[1]{%
-  \begingroup
-    \let\next\@secondoftwo
-    \edef\@tempa{#1}%
-    \def\@elt##1{%
-      \def\@tempb{sub##1}%
-      \ifx\@tempa\@tempb
-        \let\next\@firstoftwo
-     \fi}%
-    \caption@subtypelist
-  \expandafter\endgroup\next}
+  \caption@ifin@list\caption@subtypelist{#1}%
+    \@firstoftwo
+    {\caption@ifin@list\sf@counterlist{#1}\@firstoftwo\@secondoftwo}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3882,6 +3924,24 @@
 % As a side-effect |\continued|\-|float| does not work correctly.
 % For that reason we need to introduce macros to save and restore
 % all sub-caption counters here.
+%
+% \begin{macro}{\caption@savesubcounters}
+% \changes{v1.5}{2013/05/01}{This macro added}
+% \changes{v2.0}{2020/07/28}{Uses \cs{caption@for@list} now for iterating the list}
+% |\caption@save|\-|sub|\-|counters| saves all sub-caption counters,
+% so they can be restored with |\caption@restore|\-|counters| later on.
+%    \begin{macrocode}
+\newcommand*\caption@savesubcounters{%
+  \caption@for@list\caption@subtypelist{\caption@savecounter{##1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@savecounter[1]{%
+  \edef\caption@tempa{%
+    \noexpand\l@addto@macro\noexpand\caption@restore@counters
+      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
+  \caption@tempa}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\caption@restorecounters}
 % \changes{v1.5}{2013/05/01}{This macro added}
@@ -3894,24 +3954,6 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@restore@counters{}
-%    \end{macrocode}
-% \end{macro}
-% \begin{macro}{\caption@savesubcounters}
-% \changes{v1.5}{2013/05/01}{This macro added}
-% |\caption@save|\-|sub|\-|counters| saves all sub-caption counters,
-% so they can be restored with |\caption@restore|\-|counters| later on.
-%    \begin{macrocode}
-\newcommand*\caption@savesubcounters{%
-  \def\@elt##1{\caption@savecounter{sub##1}}%
-  \caption@subtypelist
-  \let\@elt\relax}%
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@savecounter[1]{%
-  \edef\caption@tempa{%
-    \noexpand\l@addto@macro\noexpand\caption@restore@counters
-      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
-  \caption@tempa}
 %    \end{macrocode}
 % \end{macro}
 %
