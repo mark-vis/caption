@@ -69,6 +69,15 @@ compile()
 {
   # Skip example documents which purpose is to produce an error
   # (or cannot be compiled for a different reason)
+  [[ $2 == "floatrow"    && $3 == "floatrow.dtx"       ]] && return  # ! Arithmetic overflow.
+  [[ $2 == "floatrow"    && $3 == "floatrow-rus.tex"   ]] && return  # ! Arithmetic overflow.
+  [[ $2 == "floatrow"    && $3 == "frsample04.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "frsample10.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "frsample11.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "fr-sample.tex"      ]] && return  # No need to test this (sample body)
+  [[ $2 == "floatrow"    && $3 == "pictures.tex"       ]] && return  # No need to test this
+  [[ $2 == "floatrow"    && $3 == "r-longtable.tex"    ]] && return  # No need to test this
+  [[ $2 == "floatrow"    && $3 == "s-longtable.tex"    ]] && return  # No need to test this
   [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error
@@ -85,16 +94,10 @@ compile()
   [[ $2 == "sourceforge" && $3 == "ticket_43.tex"      ]] && return  # Intended to fail w/ error: subcaption + subfig
   [[ $2 == "sourceforge" && $3 == "ticket_44.tex"      ]] && return  # Intended to fail w/ error: \captionof{subfigure}
   [[ $2 == "sourceforge" && $3 == "ticket_47.tex"      ]] && return  # TODO: \DeclareCaptionListHook
-  [[ $2 == "floatrow"    && $3 == "floatrow.dtx"       ]] && return  # ! Arithmetic overflow.
-  [[ $2 == "floatrow"    && $3 == "floatrow-rus.tex"   ]] && return  # ! Arithmetic overflow.
-  [[ $2 == "floatrow"    && $3 == "frsample04.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "frsample10.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "frsample11.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "fr-sample.tex"      ]] && return  # No need to test this (sample body)
-  [[ $2 == "floatrow"    && $3 == "pictures.tex"       ]] && return  # No need to test this
-  [[ $2 == "floatrow"    && $3 == "r-longtable.tex"    ]] && return  # No need to test this
+  [[ $2 == "gitlab"      && $3 == "issue_25.tex"       ]] && return  # Doomed to fail: \newsubfloat + subcaption package
   [[ $2 == "gitlab"      && $3 == "issue_29.tex"       ]] && return  # Needs Culmus fonts to compile
   [[ $2 == "gitlab"      && $3 == "issue_35.tex"       ]] && return  # Needs <whatever> to compile (greek & farsi)
+  [[ $2 == "gitlab"      && $3 == "issue_65.tex"       ]] && return  # Doomed to fail: frontiers document class + subcaption package
 
   # Compile document three times (so interim files will be used)
   pdflatex "$3" || failed "$1" "$2" "$3"

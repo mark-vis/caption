@@ -38,8 +38,8 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/07/28 v4.0 Customizing captions (AR)]
-\RequirePackage{caption3}[2020/07/28] % needs v2.0 or newer
+\ProvidesPackage{caption}[2020/07/29 v4.0 Customizing captions (AR)]
+\RequirePackage{caption3}[2020/07/29] % needs v2.0 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -337,15 +337,22 @@
        \caption@start}}}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
 \newcommand*\caption@checktype[1]{%
-  \caption@ifsubtype{#1}%
-     {\caption@Error{Should not be used with subtype `#1'}%
-      \@gobble}%
-     \@firstofone}
+  \caption@ifsubtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
+    {\caption@Error{Should not be used with subtype `#1'}%
+     \@gobble}%
+    \@firstofone}
 \newcommand*\caption@checksubtype[1]{%
   \caption@ifsubtype{#1}%
-     \@firstofone
-     {\caption@Error{Undefined subtype `#1'}%
-      \@gobble}}
+    \@firstofone
+    {\caption@ifin@list\sf@counterlist{#1}%
+       {\caption@Warning{%
+          \noexpand\setcaptionsubtype without \string\DeclareCaptionSubType.\MessageBreak
+          This is not designed to work; you could try replacing\MessageBreak
+          the `subfig' package with `subcaption' to resolve\MessageBreak
+          this problem which occurred}%
+        \@firstofone}%
+       {\caption@Error{Undefined subtype `#1'}%
+        \@gobble}}}
 \newcommand*\caption@checkgrouplevel[2]{%
   \@ifundefined{#1caption@grouplevel}{%
      \caption@ifundefined\caption@grouplevel{\let\caption@grouplevel\z@}{}%
@@ -396,10 +403,10 @@
     {\caption@iibox{#1}{#2}{#3}}%
     {\caption@iibox@{#1}{#2}{#3}}}
 \long\def\caption@iibox#1#2#3[#4]{%
-  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@hj@default}
+  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
 \long\def\caption@iibox@#1#2#3#4{%
   \setbox\@tempboxa\hbox{#4}%
-  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@hj@default]{\unhbox\@tempboxa}}
+  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
 \long\def\caption@iiibox#1{%
   \caption@iiiibox{#1}\vbox\vtop}
 \long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
@@ -424,7 +431,7 @@
       \captionbox@hrule
       #3{\caption#4{#5}}}%
   }}
-\newcommand*\captionbox@hj@default{c}
+\newcommand*\captionbox@innerpos@default{c}
 \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
 \providecommand*\caption@justification@c{\centering}
 \providecommand*\caption@justification@l{\raggedright}
@@ -568,15 +575,6 @@
   \caption@ifdefined\NR@gettitle
     {\NR@gettitle{#1}}%
     {\def\@currentlabelname{#1}}}
-\def\caption@DeclareSubType sub#1\@nil{%
-  \caption@Debug{Initializing subtype for `#1'\@gobble}%
-  \@namedef{caption@beginsub#1}{\caption@beginsubfloat{#1}}}
-\@onlypreamble\caption@DeclareSubType
-\caption@For*{subtypelist}{\caption@DeclareSubType sub#1\@nil}
-\caption@AtBeginDocument*{%
-  \caption@ifdefined\sf@counterlist{%
-    \@for\sf@temp:=\sf@counterlist\do{%
-      \expandafter\caption@DeclareSubType\sf@temp\@nil}}{}}
 \newcommand*\caption@subtypehook{%
   \ifx\caption\caption@subcaption \else
     \caption@warmup

@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3329}
+% \CheckSum{3348}
 %
 % \iffalse
 %<*driver>
@@ -89,7 +89,7 @@
 %
 % \title{The Implementation of
 %        \texorpdfstring{\thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \docversion.}}%^^A
 %        {the caption kernel}}
 % \author{Axel Sommerfeldt\\
 %         \url{https://gitlab.com/axelsommerfeldt/caption}}
@@ -188,7 +188,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/28 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/29 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3740,7 +3740,7 @@
 % \changes{v1.2b}{2008/08/02}{Support of \cs{float@exts} and \cs{float@addtolists} added}
 % \changes{v1.2e}{2010/01/09}{Usage of \cs{caption@DeclareWithinOption} added}
 % \changes{v1.3}{2011/08/06}{Definition of \cs{listofXXXes} added}
-% \changes{v1.4a}{2011/10/29}{Outsourced as \package{newfloat} package}
+% \changes{v1.4a}{2011/10/29}{Outsourced to \package{newfloat} package}
 %  |\DeclareCaptionType|\oarg{options}\marg{environment}\oarg{name}\oarg{list name}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionType{%
@@ -3750,26 +3750,48 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@ForEachType}
+% \begin{macro}{\ForEachCaptionType}
 % \changes{v1.4a}{2011/10/29}{This macro added}
-% |\caption@ForEachType|\marg{code}
-% will execute the given code for all (known) floating environments.
+% \changes{v1.13}{2020/07/29}{Renamed from \cs{caption@ForEachType} to \cs{ForEachCaptionType} and starred variant added}
+% |\ForEachCaptionType|\marg{code with \#1}\\
+% |\ForEachCaptionType*|\marg{code with \#1}\par
+% will execute the given code for each (known) floating environment.
+% The starred variant will only work for already existing environments,
+% i.e.~no hook will be placed inside |\Declare|\-|Floating|\-|Environment|
+% (offered by the \package{newfloat} package).
 %    \begin{macrocode}
-\newcommand\caption@ForEachType[1]{%
+\newcommand*\ForEachCaptionType{%
+  \@ifstar
+    {\caption@foreach@type\@gobble}%
+    {\caption@foreach@type\@iden}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@foreach@type[2]{%
   \caption@ifdefined\ForEachFloatingEnvironment
-    {\ForEachFloatingEnvironment{#1}}%
-    {\def\@elt##1{#1}%
+    {\ForEachFloatingEnvironment*{#2}}%
+    {\def\@elt##1{#2}%
      \caption@ifdefined\c@figure\@elt\@gobble{figure}%
      \caption@ifdefined\c@table\@elt\@gobble{table}%
-     \let\@elt\relax
-     \newfloat@addtohook{#1}}}
+     \let\@elt\relax}%
+  #1{\newfloat@addtohook{#2}}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\newfloat@addtohook}
+% |\newfloat@addtohook|\marg{code with \#1}\par
+% adds code to the hook called in |\Declare|\-|Floating|\-|Environment|.\par
+% Note: We use |\provide|\-|command| instead of |\new|\-|command| here since the
+% exact same code is defined in the \package{newfloat} package.
 %    \begin{macrocode}
 \providecommand\newfloat@addtohook[1]{%
   \toks@=\expandafter{\newfloat@hook{##1}#1}%
   \edef\@tempa{\def\noexpand\newfloat@hook####1{\the\toks@}}%
   \@tempa}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\newfloat@hook}
+% Hook used in |\Declare|\-|Floating|\-|Environment|.
 %    \begin{macrocode}
 \providecommand*\newfloat@hook[1]{}
 %    \end{macrocode}
@@ -3785,6 +3807,9 @@
 % \changes{v1.5}{2013/01/10}{Bugfix: Definition of autoref string corrected}
 % \changes{v1.6}{2013/06/17}{Bugfix: \cs{c@tocdepth} will be set (locally) now}
 % \changes{v1.8g}{2020/01/02}{Check revised if the sub-type is already defined or not}
+% \changes{v1.13}{2020/07/28}{Uses \cs{caption@l@addto@list} instead of \cs{@cons} now}
+% \changes{v1.13}{2020/07/29}{Usage of \cs{caption@subtype@hook} added}
+% \changes{v1.13}{2020/07/29}{We don't re-use existing counters anymore (This was a bad idea anyway)}
 %  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\par
 %  The starred variant provides the numbering format
@@ -3804,39 +3829,42 @@
 \def\caption@@declaresubtype#1[#2]#3{%
   \@ifundefined{c@#3}%
     {\caption@Error{No float type '#3' defined}}%
+    {\caption@@@declaresubtype{#1}{#2}{#3}{sub#3}}}
+\@onlypreamble\caption@@declaresubtype
 %    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@@declaresubtype[4]{%
+%    \end{macrocode}
+%    \begin{macrocode}
 % Check if the sub-type was already defined by |\Declare|\-|Sub|\-|Type|.
 % If not, define the counter and list entry.
 %    \begin{macrocode}
-    {\caption@ifsubtype{sub#3}%
-     {\caption@Debug{Modify subtype `sub#3'}}%
-     {\caption@Debug{New subtype `sub#3'}%
-      \@ifundefined{c@sub#3}%
-        {\newcounter{sub#3}\relax}%
-        {\caption@Warning{Using already defined counter `sub#3'}}%
-      \@addtoreset{sub#3}{#3}%
-      \@namedef{ext@sub#3}{\csname ext@#3\endcsname}%
-      \caption@declaresublistentry{#3}%
-      \caption@l@addto@list\caption@subtypelist{sub#3}}%
+  \caption@ifin@list\caption@subtypelist{#4}%
+    {\caption@Debug{Modify subtype `#4'}}%
+    {\caption@Debug{New subtype `#4'}%
+     \newcounter{#4}[#3]%
+     \@namedef{ext@#4}{\csname ext@#3\endcsname}%
+     \caption@declaresublistentry{#3}%
+     \caption@l@addto@list\caption@subtypelist{#4}%
+     \caption@subtype@hook{#4}}%
 %    \end{macrocode}
 % Support of \package{titletoc} package
 %    \begin{macrocode}
-     \caption@ifdefined\contentsuse{%
-       \contentsuse{sub#3}{\csname ext@sub#3\endcsname}}{}%
+    \caption@ifdefined\contentsuse{%
+      \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
-     \@namedef{sub#3name}{}%
-     \@namedef{sub#3autorefname}{\csname #3autorefname\endcsname}%
-     #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
-     {\@namedef{p@sub#3}{}%
-      \@namedef{thesub#3}{\csname the#3\endcsname.\@nameuse{#2}{sub#3}}}%
-     {\@namedef{p@sub#3}{\csname the#3\endcsname}%
-      \@namedef{thesub#3}{\@nameuse{#2}{sub#3}}}%
-     \@namedef{theHsub#3}{\csname theH#3\endcsname.\arabic{sub#3}}%
-    }}
+    \@namedef{#4name}{}%
+    \@namedef{#4autorefname}{\csname #3autorefname\endcsname}%
+    #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
+    {\@namedef{p@#4}{}%
+     \@namedef{the#4}{\csname the#3\endcsname.\@nameuse{#2}{#4}}}%
+    {\@namedef{p@#4}{\csname the#3\endcsname}%
+     \@namedef{the#4}{\@nameuse{#2}{#4}}}%
+    \@namedef{theH#4}{\csname theH#3\endcsname.\arabic{#4}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\@onlypreamble\caption@@declaresubtype
+\@onlypreamble\caption@@@declaresubtype
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@declaresublistentry{%
@@ -3898,7 +3926,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@subtypelist}
-% A list containing the subtypes defined with |\Declare|\-|Caption|\-|Sub|\-|Type|.
+% A list containing the sub-types defined with |\Declare|\-|Caption|\-|Sub|\-|Type|.
 %    \begin{macrocode}
 \newcommand*\caption@subtypelist{}
 %    \end{macrocode}
@@ -3906,15 +3934,42 @@
 %
 % \begin{macro}{\caption@ifsubtype}
 % \changes{v1.8g}{2020/01/02}{This macro added}
-% \changes{v2.0}{2020/07/28}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% \changes{v1.13}{2020/07/28}{Uses \cs{caption@ifin@list} now}
 % This macro checks if the given subtype was defined
 % with |\Declare|\-|Caption|\-|Sub|\-|Type| (offered by us)
 % or |\new|\-|sub|\-|float| (offered by the \package{subfig} package).
 %    \begin{macrocode}
-\newcommand*\caption@ifsubtype[1]{%
-  \caption@ifin@list\caption@subtypelist{#1}%
-    \@firstoftwo
-    {\caption@ifin@list\sf@counterlist{#1}\@firstoftwo\@secondoftwo}}
+\newcommand*\caption@ifsubtype{%
+  \caption@ifin@list\caption@subtypelist}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\ForEachCaptionSubType}
+% \changes{v1.13}{2020/07/29}{This macro added as replacement for \cs{caption@For}}
+%  |\ForEachCaptionSubType|\marg{code with \#1}\\
+%  |\ForEachCaptionSubType*|\marg{code with \#1}\par
+% will execute the given code for each (known) sub-type.
+% The starred variant will only work for already existing sub-types,
+% i.e.~no hook will be placed inside |\Declare|\-|Caption|\-|Sub|\-|Type|.
+%    \begin{macrocode}
+\newcommand*\ForEachCaptionSubType{%
+  \@ifstar
+    {\caption@foreach@subtype\@gobble}%
+    {\caption@foreach@subtype\@iden}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@foreach@subtype[2]{%
+  \caption@for@list\caption@subtypelist{#2}%
+  #1{\caption@addto@subtype@hook{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand\caption@addto@subtype@hook[1]{%
+  \toks@=\expandafter{\caption@subtype@hook{##1}#1}%
+  \edef\@tempa{\def\noexpand\caption@subtype@hook####1{\the\toks@}}%
+  \@tempa}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@subtype@hook[1]{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3927,13 +3982,19 @@
 %
 % \begin{macro}{\caption@savesubcounters}
 % \changes{v1.5}{2013/05/01}{This macro added}
-% \changes{v2.0}{2020/07/28}{Uses \cs{caption@for@list} now for iterating the list}
+% \changes{v1.13}{2020/07/28}{Uses \cs{caption@for@list} now for iterating the list}
 % |\caption@save|\-|sub|\-|counters| saves all sub-caption counters,
 % so they can be restored with |\caption@restore|\-|counters| later on.
 %    \begin{macrocode}
 \newcommand*\caption@savesubcounters{%
   \caption@for@list\caption@subtypelist{\caption@savecounter{##1}}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@savecounter}
+% \changes{v1.5}{2013/05/01}{This macro added}
+% |\caption@save|\-|counter|\marg{counter} saves the given counter,
+% so it can be restored with |\caption@restore|\-|counters| later on.
 %    \begin{macrocode}
 \newcommand*\caption@savecounter[1]{%
   \edef\caption@tempa{%
@@ -3954,26 +4015,6 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@restore@counters{}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@For}
-% \changes{v1.1a}{2007/09/07}{This macro added}
-% \changes{v1.2}{2007/11/16}{Renamed from \cs{ForFloatingEnvironments} to \cs{caption@For}}
-%  |\caption@For|\marg{elt-list}\marg{code with \#1}\\
-%  |\caption@For*|\marg{elt-list}\marg{code with \#1}
-%    \begin{macrocode}
-\newcommand*\caption@For{%
-  \caption@withoptargs\caption@@For}
-%\@onlypreamble\caption@For
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand\caption@@For[3]{%
-  \caption@AtBeginDocument#1{%
-    \def\@elt##1{#3}%
-    \@nameuse{caption@#2}%
-    \let\@elt\relax}}%
-%\@onlypreamble\caption@@For
 %    \end{macrocode}
 % \end{macro}
 %

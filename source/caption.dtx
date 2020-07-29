@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2786}
+% \CheckSum{2777}
 %
 % \iffalse
 %<*driver>
@@ -91,7 +91,7 @@
 %
 % \title{The Implementation of
 %        \texorpdfstring{\thispackage\thanks{%^^A
-%          This package has version number \fileversion, last revised \filedate.}}%^^A
+%          This package has version number \docversion.}}%^^A
 %        {the caption package}}
 % \author{Axel Sommerfeldt\\
 %         \url{https://gitlab.com/axelsommerfeldt/caption}}
@@ -213,13 +213,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/07/28 v4.0 Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/29 v4.0 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/07/28] % needs v2.0 or newer
+\RequirePackage{caption3}[2020/07/29] % needs v2.0 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1014,21 +1014,43 @@
 %
 % \begin{macro}{\caption@checktype}
 % \changes{v3.4g}{2020/01/02}{This macro and its usage added}
-% |\setcaptiontype| should not be used with a subtype,
-% and |\setcaptionsubtype| should not be used with an undefined subtype.
+% \changes{v3.4m}{2020/07/29}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% |\caption@checktype|\marg{type}\marg{code}\par
+% is used by |\caption@settype| and should either expand the code or issue an error
+% if the given type is not a proper type, i.e. it is a sub-type instead (either defined by
+% |\DeclareCaptionSubType| or |\newsubfloat|\cite{subfig}).
 %    \begin{macrocode}
 \newcommand*\caption@checktype[1]{%
-  \caption@ifsubtype{#1}%
-     {\caption@Error{Should not be used with subtype `#1'}%
-      \@gobble}%
-     \@firstofone}
+  \caption@ifsubtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
+    {\caption@Error{Should not be used with subtype `#1'}%
+     \@gobble}%
+    \@firstofone}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checksubtype}
+% \changes{v3.4g}{2020/01/02}{This macro and its usage added}
+% \changes{v3.4m}{2020/07/29}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% |\caption@checksubtype|\marg{type}\marg{code}\par
+% is used by |\caption@settype| and should either expand the code or issue an error
+% if the given type is not a proper sub-type, i.e. not defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
+% Since the |sub|\-|float|\-|row| environment offered by the \package{floatrow} package\cite{floatrow}
+% is using |\caption|\-|setup{sub|\-|type}| even if the sub-type was defined by |\new|\-|sub|\-|float|
+% offered by \package{subfig}\cite{subfig}, we take a more relaxed view of things here and allow
+% those sub-types as well (but not without warning since we do not support this).
 %    \begin{macrocode}
 \newcommand*\caption@checksubtype[1]{%
   \caption@ifsubtype{#1}%
-     \@firstofone
-     {\caption@Error{Undefined subtype `#1'}%
-      \@gobble}}
+    \@firstofone
+    {\caption@ifin@list\sf@counterlist{#1}%
+       {\caption@Warning{%
+          \noexpand\setcaptionsubtype without \string\DeclareCaptionSubType.\MessageBreak
+          This is not designed to work; you could try replacing\MessageBreak
+          the `subfig' package with `subcaption' to resolve\MessageBreak
+          this problem which occurred}%
+        \@firstofone}%
+       {\caption@Error{Undefined subtype `#1'}%
+        \@gobble}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1176,12 +1198,12 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iibox#1#2#3[#4]{%
-  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@hj@default}
+  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iibox@#1#2#3#4{%
   \setbox\@tempboxa\hbox{#4}%
-  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@hj@default]{\unhbox\@tempboxa}}
+  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iiibox#1{%
@@ -1212,7 +1234,7 @@
   }}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\captionbox@hj@default{c}
+\newcommand*\captionbox@innerpos@default{c}
 \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1649,30 +1671,6 @@
 %
 % \section{Support for sub-captions}
 % \changes{v3.1f}{2007/11/16}{Support for sub-captions added}
-%
-% \begin{macro}{\caption@DeclareSubType}
-% |\caption@DeclareSub| initializes the usage of \cs{caption}
-% in sub-floats.
-%    \begin{macrocode}
-\def\caption@DeclareSubType sub#1\@nil{%
-  \caption@Debug{Initializing subtype for `#1'\@gobble}%
-  \@namedef{caption@beginsub#1}{\caption@beginsubfloat{#1}}}
-\@onlypreamble\caption@DeclareSubType
-%    \end{macrocode}
-% \end{macro}
-%
-% Initialize the sub-captions defined with \cs{DeclareCaptionSubType}\ldots
-%    \begin{macrocode}
-\caption@For*{subtypelist}{\caption@DeclareSubType sub#1\@nil}
-%    \end{macrocode}
-%
-% Initialize the sub-captions defined with \cs{newsubfloat}\cite{subfig}\ldots
-%    \begin{macrocode}
-\caption@AtBeginDocument*{%
-  \caption@ifdefined\sf@counterlist{%
-    \@for\sf@temp:=\sf@counterlist\do{%
-      \expandafter\caption@DeclareSubType\sf@temp\@nil}}{}}
-%    \end{macrocode}
 %
 % \begin{macro}{\caption@subtypehook}
 % \changes{v3.1g}{2008/03/20}{Redefinition of \cs{caption@setlist} added}
@@ -3360,7 +3358,7 @@
         \vskip-\ht\strutbox
 %    \end{macrocode}
 %  Work-around for problem with \package{floatrow}:
-%  The |\belowcaptionskip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
+%  The |\below|\-|caption|\-|skip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
 %  so we supress this skip if the \package{floatrow} package is loaded.
 %  (This fixes \issue{50})
 %    \begin{macrocode}
