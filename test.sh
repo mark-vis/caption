@@ -69,11 +69,11 @@ compile()
 {
   # Skip example documents which purpose is to produce an error
   # (or cannot be compiled for a different reason)
-  [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Inteded to fail w/ error
+  [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error
-  [[ $2 == "email"       && $3 == "2009-09-29.tex"     ]] && return  # Related to floatrow, should produce error
-  [[ $2 == "other"       && $3 == "2007-09-13.tex"     ]] && return  # labelsep=newline + \setcaphanging, should produce error
+  [[ $2 == "email"       && $3 == "2009-09-29.tex"     ]] && return  # Intended to fail w/ error (related to floatrow)
+  [[ $2 == "other"       && $3 == "2007-09-13.tex"     ]] && return  # Intended to fail w/ error: labelsep=newline + \setcaphanging
   [[ $2 == "other"       && $3 == "2012-09-21.tex"     ]] && return  # Bug in fltpage
   [[ $2 == "other"       && $3 == "2013-01-09.tex"     ]] && return  # Bug in fltpage
   [[ $2 == "sourceforge" && $3 == "ticket_2.tex"       ]] && return  # Bug in fltpage
@@ -82,11 +82,13 @@ compile()
   [[ $2 == "sourceforge" && $3 == "ticket_26.tex"      ]] && return  # Bug in refcheck
   [[ $2 == "sourceforge" && $3 == "ticket_37.tex"      ]] && return  # TODO: \iflistof
   [[ $2 == "sourceforge" && $3 == "ticket_40.tex"      ]] && return  # Bug in catoptions
-  [[ $2 == "sourceforge" && $3 == "ticket_43.tex"      ]] && return  # subcaption + subfig, should produce error
-  [[ $2 == "sourceforge" && $3 == "ticket_44.tex"      ]] && return  # \captionof{subfigure}, should produce error
+  [[ $2 == "sourceforge" && $3 == "ticket_43.tex"      ]] && return  # Intended to fail w/ error: subcaption + subfig
+  [[ $2 == "sourceforge" && $3 == "ticket_44.tex"      ]] && return  # Intended to fail w/ error: \captionof{subfigure}
   [[ $2 == "sourceforge" && $3 == "ticket_47.tex"      ]] && return  # TODO: \DeclareCaptionListHook
+  [[ $2 == "gitlab"      && $3 == "issue_25.tex"       ]] && return  # Doomed to fail: \newsubfloat + subcaption package
   [[ $2 == "gitlab"      && $3 == "issue_29.tex"       ]] && return  # Needs Culmus fonts to compile
   [[ $2 == "gitlab"      && $3 == "issue_35.tex"       ]] && return  # Needs <whatever> to compile (greek & farsi)
+  [[ $2 == "gitlab"      && $3 == "issue_65.tex"       ]] && return  # Doomed to fail: frontiers document class + subcaption package
 
   # Compile document three times (so interim files will be used)
   pdflatex "$3" || failed "$1" "$2" "$3"

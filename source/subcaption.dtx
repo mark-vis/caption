@@ -33,7 +33,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2019/09/10 v1.3 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2020/07/29 v1.3 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -116,7 +116,7 @@
 % \GetFileInfo{subcaption.sty}
 %
 % \title{\texorpdfstring{\Thispackage\thanks{%^^A
-%          This package has version number \docversion.}}%^^A
+%          This package has version number \fileversion, last revised \filedate.}}%^^A
 %        {The subcaption package}}
 % \author{Axel Sommerfeldt\\
 %         \url{https://gitlab.com/axelsommerfeldt/caption}}
@@ -176,7 +176,7 @@
 %
 % The default settings for |sub|captions are:
 % \begin{quote}
-%   |margin=0pt,size=smaller,labelformat=parens,labelsep=space,|\\
+%   |margin=0pt,font+=smaller,labelformat=parens,labelsep=space,|\\
 %   |skip=6pt,list=false,hypcap=false|~\footnote{%^^A
 %     This means that sub-captions are not listed in the List of Figures
 %     or Tables by default, but you can enable that by
@@ -197,7 +197,7 @@
 % \item Local settings
 %  {\small(|\captionsetup{|\ldots|}| inside |figure| or |table| environment)}
 % \item Default `sub' settings
-%  {\small(|margin=0pt,size=smaller,|\ldots, see above)}
+%  {\small(|margin=0pt,font+=smaller,|\ldots, see above)}
 % \item Custom `sub' settings
 %  {\small(|\usepackage[|\ldots|]{subcaption}| and |\captionsetup[sub]{|\ldots|}|)}
 % \item Environmental `sub' settings
@@ -349,7 +349,16 @@
 % \begin{background}
 % The |\sub|\-|caption|\-|box| is a |\par|\-|box| with
 % |\set|\-|caption|\-|sub|\-|type| as first contents line.
-% \iffalse See implementation for details.\fi
+% \iffalse
+% Prepared with |\Declare|\-|Caption|\-|Sub|\-|Type| (offered by the
+% \package{caption} package), the caption package command |\set|\-|caption|\-|sub|\-|type|
+% becames available.
+% Analogous to the |\set|\-|caption|\-|type| command of the \package{caption} package,
+% the |\set|\-|caption|\-|sub|\-|type| command sets the sub-type of the box or environment
+% (so |\caption| will typeset a sub-caption instead of an ordinary one),
+% places a proper hyperlink anchor (non-starred variant only),
+% executes options associated with the sub-type etc.
+% \fi
 % \end{background}
 %
 % \PageBreak
@@ -416,7 +425,7 @@
 % The |subfigure| \& |subtable| environments are just simple |minipage|
 % environments with |\set|\-|caption|\-|sub|\-|type| as first contents line.
 % These environments are defined with the help of
-% |\caption@For{subtypelist}|, which executes code for every sub-type
+% |\For|\-|Each|\-|Caption|\-|Sub|\-|Type|, which executes code for every sub-type
 % declared with |\Declare|\-|Caption|\-|Sub|\-|Type|.
 % \end{background}
 %
@@ -466,14 +475,6 @@
 % \bigskip
 %
 % \begin{background}
-% Prepared with |\Declare|\-|Caption|\-|Sub|\-|Type| (offered by the
-% \package{caption} package), the caption package command |\set|\-|caption|\-|sub|\-|type|
-% becames available.
-% Analogous to the |\set|\-|caption|\-|type| command of the \package{caption} package,
-% the |\set|\-|caption|\-|sub|\-|type| command sets the sub-type of the box or environment
-% (so |\caption| will typeset a sub-caption instead of an ordinary one),
-% places a proper hyperlink anchor (non-starred variant only),
-% executes options associated with the sub-type etc.\par
 % The |\subcaption| command is just a simple combination of
 % |\set|\-|caption|\-|sub|\-|type*| and |\caption|.
 % \end{background}
@@ -484,9 +485,6 @@
 % \DescribeMacro\DeclareCaptionSubType
 % For using the sub-caption feature of the \package{caption} package some
 % commands and counters must be prepared. This is done with
-% \iffalse\footnote{%^^A
-% \cs{newsubfloat} offered by the \package{subfig} package\cite{subfig}
-% could be used for this purpose as well.}\fi
 % \begin{quote}
 %  |\DeclareCaptionSubType|\oarg{numbering scheme}\marg{type}\\
 %  |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}
@@ -536,8 +534,8 @@
 % \end{minipage}
 %
 % \begin{background}
-% |\Declare|\-|Caption|\-|Sub|\-|Type| is an integral part of the \package{caption}
-% package kernel.
+% |\Declare|\-|Caption|\-|Sub|\-|Type| and |\For|\-|Each|\-|Caption|\-|Sub|\-|Type|
+% are integral parts of the \package{caption} package kernel.
 % \end{background}
 %
 % \PageBreak
@@ -924,14 +922,14 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2020/01/22 v1.3d Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/07/29 v1.3e Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
 %
 % Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[2020/01/03] % needs v3.4h or newer
+\RequirePackage{caption}[2020/07/29] % needs v3.4l or newer
 %    \end{macrocode}
 %
 % \begin{macro}{\subcaption@CheckCompatibility}
@@ -990,9 +988,9 @@
 %
 % \changes{v1.1}{2011/10/30}{Adapted to the newfloat package}
 % We call |\Declare|\-|Caption|\-|Sub|\-|Type| for |figure|, |table|,
-% and each caption type declared with |\Declare|\-|Floating|\-|Environment| here.
+% and each floating environment declared with |\Declare|\-|Floating|\-|Environment| here.
 %    \begin{macrocode}
-\caption@ForEachType{\DeclareCaptionSubType{#1}}
+\ForEachCaptionType{\DeclareCaptionSubType{#1}}
 %    \end{macrocode}
 %
 % \begin{macro}{\newsubfloat}
@@ -1055,20 +1053,21 @@
 % \begin{macro}{subtable}
 % \changes{v1.2}{2016/02/21}{Optional argument values `B' and `T' added}
 % \changes{v1.3d}{2020/01/22}{Definition and usage of \cs{@subfloatboxreset} added}
+% \changes{v1.3e}{2020/07/29}{Uses \cs{ForEachCaptionSubType} (instead of \cs{caption@For}) to define the environments now}
 % This is just an ordinary \env{minipage} environment with
 % |\setcaptionsubtype| as first contents line.
-% It will be defined using the helper macro |\caption@For{sub|\-|type|\-|list}|
-% offered by the \package{caption} kernel, so for every caption type
-% declared with |\Declare|\-|Floating|\-|Environment| a corresponding
+% It will be defined using the helper macro |\For|\-|Each|\-|Caption|\-|Sub|\-|Type|
+% offered by the \package{caption} kernel, so for every caption sub-type
+% declared with |\Declare|\-|Caption|\-|Sub|\-|Type| a corresponding
 % `sub' environment will be defined automatically.
 %    \begin{macrocode}
-\caption@For{subtypelist}{%
-  \newenvironment{sub#1}%
+\ForEachCaptionSubType{%
+  \newenvironment{#1}%
     {\@ifnextchar[%]
        \subcaption@iminipage
        {\subcaption@iminipage[c]}}%
     {\subcaption@endminipage
-     \endminipage}}%
+     \endminipage}}
 %    \end{macrocode}
 % We pass all other optional arguments using the generic helper macro
 % |\caption@with|\-|opt|\-|args| offered by the \package{caption} kernel).
@@ -1200,11 +1199,12 @@
 %
 % We use |\caption@ExecuteOptions| and |\caption@ProcessOptions| here to add
 % the options to the `|sub|' option list instead of executing them immediately.
-% \changes{v1.1}{2018/05/01}{Bugfix: Option \texttt{font+=small} changed to \texttt{size=smaller}}
+% \changes{v1.1}{2018/05/01}{Option \texttt{font+=smaller} changed to \texttt{size=smaller}}
+% \changes{v1.3e}{2020/07/27}{Option \texttt{size=smaller} changed back to \texttt{font+=smaller}}
 %    \begin{macrocode}
 \caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
 \caption@ExecuteOptions{subcaption}{%
-  size=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
+  font+=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
 \caption@ProcessOptions*{subcaption}
 %    \end{macrocode}
 %

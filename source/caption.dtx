@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3022}
+% \CheckSum{2999}
 %
 % \iffalse
 %<*driver>
@@ -218,13 +218,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/05/30 v3.4k Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/29 v3.4l Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/05/10] % needs v1.10 or newer
+\RequirePackage{caption3}[2020/05/29] % needs v1.13 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1364,6 +1364,7 @@
 % \changes{v3.3}{2012/04/09}{Adapted to revised version of \cs{caption@withoptargs}}
 % \changes{v3.3}{2017/03/19}{When used with fixed witdh the content will not be hboxed anymore}
 % \changes{v3.3c}{2019/09/01}{Adapted so it could be used by \cs{subfloat} offered by \package{subcaption}}
+% \changes{v3.4l}{2020/07/29}{\cs{captionbox@hj@default} renamed to \cs{captionbox@innerpos@default}}
 % A |\parbox| with contents and caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
 \newcommand*\captionbox{%
@@ -1377,12 +1378,12 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iibox#1#2#3[#4]{%
-  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@hj@default}
+  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iibox@#1#2#3#4{%
   \setbox\@tempboxa\hbox{#4}%
-  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@hj@default]{\unhbox\@tempboxa}}
+  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@iiibox#1{%
@@ -1413,7 +1414,7 @@
   }}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\captionbox@hj@default{c}
+\newcommand*\captionbox@innerpos@default{c}
 \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1857,30 +1858,6 @@
 %
 % \section{Support for sub-captions}
 % \changes{v3.1f}{2007/11/16}{Support for sub-captions added}
-%
-% \begin{macro}{\caption@DeclareSubType}
-% |\caption@DeclareSub| initializes the usage of \cs{caption}
-% in sub-floats.
-%    \begin{macrocode}
-\def\caption@DeclareSubType sub#1\@nil{%
-  \caption@Debug{Initializing subtype for `#1'\@gobble}%
-  \@namedef{caption@beginsub#1}{\caption@beginsubfloat{#1}}}
-\@onlypreamble\caption@DeclareSubType
-%    \end{macrocode}
-% \end{macro}
-%
-% Initialize the sub-captions defined with \cs{DeclareCaptionSubType}\ldots
-%    \begin{macrocode}
-\caption@For*{subtypelist}{\caption@DeclareSubType sub#1\@nil}
-%    \end{macrocode}
-%
-% Initialize the sub-captions defined with \cs{newsubfloat}\cite{subfig}\ldots
-%    \begin{macrocode}
-\caption@AtBeginDocument*{%
-  \caption@ifdefined\sf@counterlist{%
-    \@for\sf@temp:=\sf@counterlist\do{%
-      \expandafter\caption@DeclareSubType\sf@temp\@nil}}{}}
-%    \end{macrocode}
 %
 % \begin{macro}{\caption@subtypehook}
 % \changes{v3.1g}{2008/03/20}{Redefinition of \cs{caption@setlist} added}
@@ -3622,10 +3599,10 @@
         \vskip-\ht\strutbox
 %    \end{macrocode}
 %
-% Work-around for problem with \package{floatrow}:
-% The |\belowcaptionskip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
-% so we supress this skip if the \package{floatrow} package is loaded.
-% (This fixes \issue{50})
+%  Work-around for problem with \package{floatrow}:
+%  The |\below|\-|caption|\-|skip| disturbs the environment in which the caption is actually typeset (by creating extra, unwanted space),
+%  so we supress this skip if the \package{floatrow} package is loaded.
+%  (This fixes \issue{50})
 %    \begin{macrocode}
         \caption@ifdefined\FBifcaptop{%
           \let\caption@belowskip\@empty}{}%
