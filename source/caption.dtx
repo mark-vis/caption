@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2999}
+% \CheckSum{3013}
 %
 % \iffalse
 %<*driver>
@@ -218,7 +218,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/07/29 v3.4l Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/29 v3.4m Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -1213,21 +1213,43 @@
 %
 % \begin{macro}{\caption@checktype}
 % \changes{v3.4g}{2020/01/02}{This macro and its usage added}
-% |\setcaptiontype| should not be used with a subtype,
-% and |\setcaptionsubtype| should not be used with an undefined subtype.
+% \changes{v3.4m}{2020/07/29}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% |\caption@checktype|\marg{type}\marg{code}\par
+% is used by |\caption@settype| and should either expand the code or issue an error
+% if the given type is not a proper type, i.e. it is a sub-type instead (either defined by
+% |\DeclareCaptionSubType| or |\newsubfloat|\cite{subfig}).
 %    \begin{macrocode}
 \newcommand*\caption@checktype[1]{%
-  \caption@ifsubtype{#1}%
-     {\caption@Error{Should not be used with subtype `#1'}%
-      \@gobble}%
-     \@firstofone}
+  \caption@ifsubtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
+    {\caption@Error{Should not be used with subtype `#1'}%
+     \@gobble}%
+    \@firstofone}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checksubtype}
+% \changes{v3.4g}{2020/01/02}{This macro and its usage added}
+% \changes{v3.4m}{2020/07/29}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% |\caption@checksubtype|\marg{type}\marg{code}\par
+% is used by |\caption@settype| and should either expand the code or issue an error
+% if the given type is not a proper sub-type, i.e. not defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
+% Since the |sub|\-|float|\-|row| environment offered by the \package{floatrow} package\cite{floatrow}
+% is using |\caption|\-|setup{sub|\-|type}| even if the sub-type was defined by |\new|\-|sub|\-|float|
+% offered by \package{subfig}\cite{subfig}, we take a more relaxed view of things here and allow
+% those sub-types as well (but not without warning since we do not support this).
 %    \begin{macrocode}
 \newcommand*\caption@checksubtype[1]{%
   \caption@ifsubtype{#1}%
-     \@firstofone
-     {\caption@Error{Undefined subtype `#1'}%
-      \@gobble}}
+    \@firstofone
+    {\caption@ifin@list\sf@counterlist{#1}%
+       {\caption@Warning{%
+          \noexpand\setcaptionsubtype without \string\DeclareCaptionSubType.\MessageBreak
+          This is not designed to work; you could try replacing\MessageBreak
+          the `subfig' package with `subcaption' to resolve\MessageBreak
+          this problem which occurred}%
+        \@firstofone}%
+       {\caption@Error{Undefined subtype `#1'}%
+        \@gobble}}}
 %    \end{macrocode}
 % \end{macro}
 %

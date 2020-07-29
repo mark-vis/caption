@@ -69,6 +69,14 @@ compile()
 {
   # Skip example documents which purpose is to produce an error
   # (or cannot be compiled for a different reason)
+  [[ $2 == "floatrow"    && $3 == "floatrow.dtx"       ]] && return  # ! Arithmetic overflow.
+  [[ $2 == "floatrow"    && $3 == "floatrow-rus.tex"   ]] && return  # ! Arithmetic overflow.
+  [[ $2 == "floatrow"    && $3 == "frsample04.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "frsample10.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "frsample11.tex"     ]] && return  # Does not compile with pdflatex
+  [[ $2 == "floatrow"    && $3 == "fr-sample.tex"      ]] && return  # No need to test this (sample body)
+  [[ $2 == "floatrow"    && $3 == "pictures.tex"       ]] && return  # No need to test this
+  [[ $2 == "floatrow"    && $3 == "r-longtable.tex"    ]] && return  # No need to test this
   [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
   [[ $2 == "ragged2e"    && $3 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error

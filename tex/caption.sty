@@ -34,7 +34,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/07/29 v3.4l Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/07/29 v3.4m Customizing captions (AR)]
 \RequirePackage{caption3}[2020/05/29] % needs v1.13 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -422,15 +422,22 @@
        \caption@start}}}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
 \newcommand*\caption@checktype[1]{%
-  \caption@ifsubtype{#1}%
-     {\caption@Error{Should not be used with subtype `#1'}%
-      \@gobble}%
-     \@firstofone}
+  \caption@ifsubtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
+    {\caption@Error{Should not be used with subtype `#1'}%
+     \@gobble}%
+    \@firstofone}
 \newcommand*\caption@checksubtype[1]{%
   \caption@ifsubtype{#1}%
-     \@firstofone
-     {\caption@Error{Undefined subtype `#1'}%
-      \@gobble}}
+    \@firstofone
+    {\caption@ifin@list\sf@counterlist{#1}%
+       {\caption@Warning{%
+          \noexpand\setcaptionsubtype without \string\DeclareCaptionSubType.\MessageBreak
+          This is not designed to work; you could try replacing\MessageBreak
+          the `subfig' package with `subcaption' to resolve\MessageBreak
+          this problem which occurred}%
+        \@firstofone}%
+       {\caption@Error{Undefined subtype `#1'}%
+        \@gobble}}}
 \caption@ifeTeX{%
   \newcommand*\caption@checkgrouplevel[2]{%
     \@ifundefined{#1caption@grouplevel}{%
