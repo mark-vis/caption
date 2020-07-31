@@ -1,66 +1,32 @@
 \documentclass{article}
-\usepackage{caption3}
+\usepackage{caption3,unittest}
 
 \makeatletter
-
-\newcommand*\passed[1]{%
-  \typeout{Test `#1' passed.}}
-\newcommand*\failed[1]{%
-  \PackageError{caption3}{Test `#1' failed}{}}
-
-\newcommand*\test@defined[2]{%
-  \@ifundefined{#2}\failed\passed{#1}}
-\newcommand*\test@undefined[2]{%
-  \@ifundefined{#2}\passed\failed{#1}}
-\newcommand*\test@equal[3]{%
-  \begingroup
-    \def\test@temp{#3}%
-    \ifx#2\test@temp
-      \expandafter\passed
-    \else
-      \expandafter\failed
-    \fi
-    {#1}%
-  \endgroup}
-\newcommand*\test@ident[3]{%
-  \ifx#2#3%
-    \expandafter\passed
-  \else
-    \expandafter\failed
-  \fi
-  {#1}}
-\newcommand*\test@counter[3]{%
-  \expandafter\ifnum\csname c@#2\endcsname=#3\relax
-    \expandafter\passed
-  \else
-    \expandafter\failed
-  \fi
-  {#1}}
 
 % \section{Generic helpers}
 
 \def\whatever{...}
 \@nameundef{whatever}
-\test@undefined{nameundef 1}{whatever}
+\testundefined{nameundef 1}{whatever}
 
 \def\whatever{...}
 \begingroup
   \l@addto@macro\whatever{...}
-  \test@equal{l@addto@macro 1}\whatever{......}
+  \testequal{l@addto@macro 1}\whatever{......}
 \endgroup
-\test@equal{l@addto@macro 2}\whatever{...}
+\testequal{l@addto@macro 2}\whatever{...}
 
 \let\temp\@undefined
 \bothIfFirst{}{\def\temp{bothIfFirst 1}}
-\test@undefined{bothIfFirst 1}{temp}
+\testundefined{bothIfFirst 1}{temp}
 \bothIfFirst{\relax}{\def\temp{bothIfFirst 2}}
-\test@equal{bothIfFirst 2}\temp{bothIfFirst 2}
+\testequal{bothIfFirst 2}\temp{bothIfFirst 2}
 
 \let\temp\@undefined
 \bothIfSecond{\def\temp{bothIfSecond 1}}{}
-\test@undefined{bothIfSecond 1}{temp}
+\testundefined{bothIfSecond 1}{temp}
 \bothIfSecond{\def\temp{bothIfSecond 2}}{\relax}
-\test@equal{bothIfSecond 2}\temp{bothIfSecond 2}
+\testequal{bothIfSecond 2}\temp{bothIfSecond 2}
 
 \let\temp\@undefined
 \caption@ifundefined\temp\passed\failed{ifundefined 1}
@@ -129,7 +95,7 @@
 \caption@ifin@list\temp{axel}\passed\failed{l@removefrom@list 2}
 
 \caption@for@list\temp{\caption@l@addto@list\tempa{#1}}
-\test@equal{for@list 1}\tempa{axel,frank}
+\testequal{for@list 1}\tempa{axel,frank}
 
 \let\temp\@undefined
 \caption@ifempty@list\temp\passed\failed{ifempty@list 1}
@@ -159,12 +125,12 @@
 \begingroup
 \renewcommand\caption@Error[1]{\gdef\temp{#1}}
 \caption@setbool{temp}{whatever}
-\test@equal{setbool 9}\temp{Undefined boolean value `whatever'}
+\testequal{setbool 9}\temp{Undefined boolean value `whatever'}
 \endgroup
 
-\test@defined{undefbool 1}{caption@iftemp}
+\testdefined{undefbool 1}{caption@iftemp}
 \caption@undefbool{temp}
-\test@undefined{undefbool 2}{caption@iftemp}
+\testundefined{undefbool 2}{caption@iftemp}
 
 \caption@ifatletter\passed\failed{ifatletter 1}
 \let\temp\caption@ifatletter
@@ -175,17 +141,17 @@
 \def\temp{\caption@withoptargs\tempa}
 \def\tempa#1#2{\def\tempb{#1}}
 \temp{whatever}
-\test@equal{withoptargs 1}\tempb{}
+\testequal{withoptargs 1}\tempb{}
 \temp*{whatever}
-\test@equal{withoptargs 2}\tempb{*}
+\testequal{withoptargs 2}\tempb{*}
 \temp[1]{whatever}
-\test@equal{withoptargs 3}\tempb{[{1}]}
+\testequal{withoptargs 3}\tempb{[{1}]}
 \temp*[1]{whatever}
-\test@equal{withoptargs 4}\tempb{*[{1}]}
+\testequal{withoptargs 4}\tempb{*[{1}]}
 \temp*[{1}]{whatever}
-\test@equal{withoptargs 5}\tempb{*[{1}]}
+\testequal{withoptargs 5}\tempb{*[{1}]}
 \temp*[1][2][3][4]{whatever}
-\test@equal{withoptargs 4}\tempb{*[{1}][{2}][{3}][{4}]}
+\testequal{withoptargs 4}\tempb{*[{1}][{2}][{3}][{4}]}
 
 \caption@gobble*[1][2][3][4]{whatever}
 
@@ -206,9 +172,9 @@
 \renewcommand\caption@Error[1]{\gdef\temp{#1}}
 \let\temp\@undefined
 \caption@checkdecl{font}{normalsize}{}
-\test@undefined{checkdecl 1}{temp}
+\testundefined{checkdecl 1}{temp}
 \caption@checkdecl{font}{Normalsize}{\whatever}
-\test@equal{checkdecl 2}\temp{Undefined font `Normalsize'}
+\testequal{checkdecl 2}\temp{Undefined font `Normalsize'}
 \endgroup
 
 % TODO: \caption@set
@@ -221,11 +187,11 @@
 \caption@ifset{labelformat}{default}\failed\passed{ifset 4}
 
 \SetCaptionDefault{labelformat}{unnumbered}
-\test@equal{SetDefault 1}\caption@labelformat@default{\caption@labelformat@unnumbered}
+\testequal{SetDefault 1}\caption@labelformat@default{\caption@labelformat@unnumbered}
 \begingroup
 \renewcommand\caption@Error[1]{\gdef\temp{#1}}
 \SetCaptionDefault{labelformat}{default}
-\test@equal{SetDefault 2}\temp{Invalid argument for \string\SetCaptionDefault: `default'}
+\testequal{SetDefault 2}\temp{Invalid argument for \string\SetCaptionDefault: `default'}
 \endgroup
 
 % TODO: \caption@decl@package
@@ -246,12 +212,12 @@
 
 % \section{Boxes}
 
-\test@ident{box@empty}\caption@box@empty\@gobbletwo
+\testident{box@empty}\caption@box@empty\@gobbletwo
 \def\temp{\caption@box@none}
-\test@ident{box@default}\caption@box@default\temp
+\testident{box@default}\caption@box@default\temp
 \def\temp{\caption@box@parbox}
-%\test@ident{parbox@default}\caption@parbox@default\temp
-\test@ident{parbox@default}\caption@parbox@default\@undefined
+%\testident{parbox@default}\caption@parbox@default\temp
+\testident{parbox@default}\caption@parbox@default\@undefined
 
 % \section{Formats}
 
@@ -272,22 +238,22 @@
 % \section{Fonts}
 
 \def\temp{\caption@font@none}
-\test@ident{font@default}\caption@font@default\temp
-\test@ident{labelfont@default}\caption@labelfont@default\temp
-\test@ident{textfont@default}\caption@textfont@default\temp
+\testident{font@default}\caption@font@default\temp
+\testident{labelfont@default}\caption@labelfont@default\temp
+\testident{textfont@default}\caption@textfont@default\temp
 
 \captionsetup{font={normalsize,color=red,bf},labelfont={normalsize,color=red,bf},textfont={normalsize,color=red,bf}}
-\test@equal{font 1}\captionfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
-\test@equal{labelfont 1}\captionlabelfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
-\test@equal{textfont 1}\captiontextfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\testequal{font 1}\captionfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\testequal{labelfont 1}\captionlabelfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\testequal{textfont 1}\captiontextfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
 \captionsetup{font=default,labelfont=default,textfont=default}
-\test@equal{font 2}\captionfont{\caption@font@default{}}
-\test@equal{labelfont 2}\captionlabelfont{\caption@labelfont@default{}}
-\test@equal{textfont 2}\captiontextfont{\caption@textfont@default{}}
+\testequal{font 2}\captionfont{\caption@font@default{}}
+\testequal{labelfont 2}\captionlabelfont{\caption@labelfont@default{}}
+\testequal{textfont 2}\captiontextfont{\caption@textfont@default{}}
 \captionsetup{font+=none,labelfont+=none,textfont+=none}
-\test@equal{font 3}\captionfont{\caption@font@default{}\caption@font@none{}}
-\test@equal{labelfont 3}\captionlabelfont{\caption@labelfont@default{}\caption@font@none{}}
-\test@equal{textfont 3}\captiontextfont{\caption@textfont@default{}\caption@font@none{}}
+\testequal{font 3}\captionfont{\caption@font@default{}\caption@font@none{}}
+\testequal{labelfont 3}\captionlabelfont{\caption@labelfont@default{}\caption@font@none{}}
+\testequal{textfont 3}\captiontextfont{\caption@textfont@default{}\caption@font@none{}}
 
 % \section{Sizes}
 
@@ -362,26 +328,26 @@
 % TODO: ...
 
 \caption@savesubcounters
-\test@equal{savesubcounters 1}\caption@restore@counters{}
+\testequal{savesubcounters 1}\caption@restore@counters{}
 \caption@restorecounters
-\test@equal{savesubcounters 2}\caption@restore@counters{}
+\testequal{savesubcounters 2}\caption@restore@counters{}
 \DeclareCaptionSubType{figure}
 \DeclareCaptionSubType{table}
 \caption@savesubcounters
-\test@equal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{0}\setcounter{subtable}{0}}
+\testequal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{0}\setcounter{subtable}{0}}
 \caption@restorecounters
-\test@equal{savesubcounters 4}\caption@restore@counters{}
+\testequal{savesubcounters 4}\caption@restore@counters{}
 \stepcounter{subfigure}
 \stepcounter{subfigure}
 \stepcounter{subtable}
 \caption@savesubcounters
-\test@equal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{2}\setcounter{subtable}{1}}
+\testequal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{2}\setcounter{subtable}{1}}
 \stepcounter{subfigure}
 \stepcounter{subtable}
 \caption@restorecounters
-\test@equal{savesubcounters 4}\caption@restore@counters{}
-\test@counter{savesubcounters 5}{subfigure}{2}
-\test@counter{savesubcounters 6}{subtable}{1}
+\testequal{savesubcounters 4}\caption@restore@counters{}
+\testcounter{savesubcounters 5}{subfigure}{2}
+\testcounter{savesubcounters 6}{subtable}{1}
 
 % TODO: ...
 
@@ -398,8 +364,8 @@ caption3 unit tests
 \captionsetup{format=hang,labelsep=newline,slc=off}
 \renewcommand\caption@Error[1]{\gdef\temp{#1}\global\edef\tempa{\caption@labelsep@name}}
 \caption@make{figure}{1}{Text}
-\test@equal{format-2 1}\temp{The option `labelsep=\caption@labelsep@name' does not work\MessageBreak with `format=hang'}
-\test@equal{format-2 2}\tempa{newline}
+\testequal{format-2 1}\temp{The option `labelsep=\caption@labelsep@name' does not work\MessageBreak with `format=hang'}
+\testequal{format-2 2}\tempa{newline}
 \endgroup
 
 % \section{Positioning}
