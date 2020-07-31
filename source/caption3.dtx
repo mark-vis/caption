@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3348}
+% \CheckSum{3363}
 %
 % \iffalse
 %<*driver>
@@ -188,7 +188,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/29 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/31 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1713,6 +1713,18 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@useformat}
+% \changes{v2.0}{2020/07/31}{This macro added}
+% |\caption@useformat|\marg{name}
+%    \begin{macrocode}
+\newcommand*\caption@useformat[1]{% used by caption-koma.sto
+  \caption@checkdecl{format}{#1}{%
+    \begingroup
+      \@nameuse{caption@format@#1}\global\let\caption@tempa\caption@fmt
+    \endgroup\caption@tempa}}
+%    \end{macrocode}
+% \end{macro}
+%
 %    \begin{macrocode}
 \DeclareCaptionOption{format}{\caption@set{format}{#1}}
 %    \end{macrocode}
@@ -1727,7 +1739,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
-  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name
+  \caption@iflabelseparatorwithnewline
     {\caption@Error{%
        The option `labelsep=\caption@labelsep@name' does not work\MessageBreak
        with `format=hang'}}%
@@ -1836,12 +1848,22 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\CaptionLabelSeparatorContainsNewline}
+% \begin{macro}{\caption@LabelSeparatorWithNewline}
+% |\caption@LabelSeparatorWithNewline|\marg{name}
 % \changes{v2.0}{2020/07/27}{This macro added}
 %    \begin{macrocode}
-\newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
+\newcommand*\caption@LabelSeparatorWithNewline[1]{%
   \caption@g@addto@list\caption@labelsep@crlist{#1}}
-\@onlypreamble\CaptionLabelSeparatorContainsNewline
+\@onlypreamble\caption@LabelSeparatorWithNewline
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@iflabelseparatorwithnewline}
+% |\caption@iflabelseparatorwithnewline|\marg{yes-code}\marg{no-code}
+% \changes{v2.0}{2020/07/31}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@iflabelseparatorwithnewline{%
+  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1861,16 +1883,17 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
-\CaptionLabelSeparatorContainsNewline{newline} % does not work with "format=hang"
+\caption@LabelSeparatorWithNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
 %    \end{macrocode}
 %
 % \begin{macro}{\captionnewline}
 % \changes{v1.12}{2020/05/30}{This macro added}
+% \changes{v2.0}{2020/07/31}{\cs{relax} added to definition}
 % Will be used in the caption label separator |new|\-|line|,
 % and re-defined for |long|\-|table| environments (in package \package{ltcaption}).
 %    \begin{macrocode}
-\newcommand*\captionnewline{\\}
+\newcommand*\captionnewline{\\\relax}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2658,15 +2681,15 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\AtPackageCaption}
+% \begin{macro}{\AtCaptionPackage}
 % \changes{v2.0}{2018/05/14}{This macro added}
-%  |\AtPackageCaption|\marg{code}\\
+%  |\AtCaptionPackage|\marg{code}\\
 %  can be used by the document class adaption packages to execute extra code
 %  if the \package{caption} package is loaded (later on).
 %    \begin{macrocode}
-\newcommand*\AtPackageCaption{%
+\newcommand*\AtCaptionPackage{%
   \g@addto@macro\caption@documentclass@code}
-\@onlypreamble\AtPackageCaption
+\@onlypreamble\AtCaptionPackage
 %    \end{macrocode}
 %    \begin{macrocode}
 \providecommand*\caption@documentclass@code{}

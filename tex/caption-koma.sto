@@ -38,11 +38,131 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2020/07/27 v1.0 Adaption of the caption package to the koma-script document classes (AR)]
-\SetCaptionDefault{format}{hang}
+\ProvidesFile{caption-koma.sto}[2020/07/31 v2.0 Adaption of the caption package to the koma-script document classes (AR)]
+\expandafter\let\expandafter\caption@koma@setcapwidth
+                \csname\string\setcapwidth\endcsname
+\@namedef{\string\setcapwidth}[#1]#2{%
+  \caption@koma@setcapwidth[{#1}]{#2}\caption@setcapwidth}
+\newcommand*\caption@setcapwidth{%
+  \captionsetup{width=\cap@width}}
+\def\caption@tempa{\hsize}%
+\ifx\caption@tempa\cap@width \else
+  \caption@setcapwidth
+\fi
+\expandafter\let\expandafter\caption@koma@setcapmargin
+                \csname\string\@setcapmargin\endcsname
+\@namedef{\string\@setcapmargin}[#1]#2{%
+  \caption@koma@setcapmargin[{#1}]{#2}\caption@setcapmargin}
+\expandafter\let\expandafter\caption@koma@@setcapmargin
+                \csname\string\@@setcapmargin\endcsname
+\@namedef{\string\@@setcapmargin}[#1]#2{%
+  \caption@koma@@setcapmargin[{#1}]{#2}\caption@setcapmargin}
+\newcommand*\caption@setcapmargin{%
+  \begingroup
+    \let\onelinecaptionsfalse\relax
+    \def\@twoside{0}%
+    \def\if@twoside{\def\@twoside{1}\iffalse}%
+    \cap@margin
+    \def\@tempa{\endgroup}%
+    \ifx\cap@left\hfill\else\ifx\cap@right\hfill\else
+      \def\hspace##1##{\@firstofone}%
+      \edef\@tempa{\endgroup
+        \noexpand\captionsetup{%
+          twoside=\@twoside,slc=0,%
+          margin={\cap@left,\cap@right}}}%
+    \fi\fi
+    \@tempa}
+\ifx\cap@margin\relax \else
+  \caption@setcapmargin
+\fi
+\let\caption@koma@setcapindent\@setcapindent
+\renewcommand*\@setcapindent[1]{%
+  \caption@koma@setcapindent{#1}\caption@setcapindent}
+\let\caption@koma@@setcapindent\@@setcapindent
+\renewcommand*\@@setcapindent[1]{%
+  \caption@koma@@setcapindent{#1}\caption@setcapindent}
+\newcommand*\caption@setcapindent{%
+  \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
+\caption@ifdefined\cap@indent{\caption@setcapindent}{}
+\let\caption@koma@parindent\KV@caption@parindent
+\DeclareCaptionOption{parindent}[]{%
+  \ifx,#1,%
+    \caption@Debug{Option `parindent' ignored}%
+  \else
+    \caption@koma@parindent{#1}%
+  \fi}%
+\let\caption@koma@parskip\KV@caption@parskip
+\DeclareCaptionOption{parskip}[]{%
+  \ifx,#1,%
+    \caption@Debug{Option `parskip' ignored}%
+  \else
+    \caption@koma@parskip{#1}%
+  \fi}%
+\g@addto@macro\onelinecaptionstrue{\caption@setsinglelinecheck{true}}%
+\g@addto@macro\onelinecaptionsfalse{\caption@setsinglelinecheck{false}}%
+\ifonelinecaptions
+  \onelinecaptionstrue
+\else
+  \onelinecaptionsfalse
+\fi
+\DeclareCaptionFormat{default}[#1#2#3\par]{%
+  \ifdofullc@p
+    \caption@useformat{hang}{#1}{#2}{#3}%
+  \else
+    #1#2%
+    \ifdim\cap@indent<\z@
+      \par
+      \noindent\hspace*{-\cap@indent}%
+    \else\if@capbreak
+      \par
+    \fi\fi
+    #3\par
+  \fi}
 \SetCaptionDefault{labelformat}{autodot}
-\AtPackageCaption{%
-}
+\DeclareCaptionLabelSeparator{default}{\captionformat}
+\DeclareCaptionFont{scr@font}{\scr@fnt@caption}
+\DeclareCaptionFont{scr@labelfont}{\scr@fnt@captionlabel}
+\SetCaptionDefaultFont{font}{scr@font}
+\SetCaptionDefaultFont{labelfont}{scr@labelfont}
+\g@addto@macro\@captionabovetrue{\caption@setposition{t}}%
+\g@addto@macro\@captionabovefalse{\caption@setposition{b}}%
+\if@captionabove
+  \@captionabovetrue
+\else
+  \@captionabovefalse
+\fi
+\AtBeginCaption{\caption@AtBeginLongtable{%
+  \def\@captionabovetrue{\LT@captionsetup{position=t}}%
+  \def\@captionabovefalse{\LT@captionsetup{position=b}}}}
+\g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}%
+\g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}%
+\if@tablecaptionabove
+  \@tablecaptionabovetrue
+\else
+  \@tablecaptionabovefalse
+\fi
+\caption@ifdefined\@figurecaptionabovetrue{%
+  \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}%
+  \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}%
+  \if@figurecaptionabove
+    \@figurecaptionabovetrue
+  \else
+    \@figurecaptionabovefalse
+  \fi}{}
+\AtCaptionPackage{%
+  \let\caption@koma@figureposition\KV@caption@figureposition
+  \DeclareCaptionOption{figureposition}{%
+    \caption@WarningNoLine{%
+      Option `figureposition=#1' has no effect\MessageBreak
+      when used with a KOMA-Script document class}%
+    \caption@koma@figureposition{#1}}
+  \let\caption@koma@tableposition\KV@caption@tableposition
+  \DeclareCaptionOption{tableposition}{%
+    \caption@WarningNoLine{%
+      Option `tableposition=#1' has no effect\MessageBreak
+      when used with a KOMA-Script document class}%
+    \caption@koma@tableposition{#1}}}
+\AtBeginDocument{\let\scr@caption\caption}
 \endinput
 %%
 %% End of file `caption-koma.sto'.

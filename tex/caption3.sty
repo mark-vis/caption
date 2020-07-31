@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/07/29 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/07/31 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -630,10 +630,15 @@
     \unexpanded{\long\def\caption@slfmt}####1####2####3\unexpanded{{#3}}%
     \unexpanded{\long\def\caption@fmt}####1####2####3\unexpanded{{#4}}}}
 \@onlypreamble\caption@@declareformat
+\newcommand*\caption@useformat[1]{% used by caption-koma.sto
+  \caption@checkdecl{format}{#1}{%
+    \begingroup
+      \@nameuse{caption@format@#1}\global\let\caption@tempa\caption@fmt
+    \endgroup\caption@tempa}}
 \DeclareCaptionOption{format}{\caption@set{format}{#1}}
 \DeclareCaptionFormat{plain}{#1#2#3\par}
 \DeclareCaptionFormat{hang}[#1#2#3\par]{%
-  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name
+  \caption@iflabelseparatorwithnewline
     {\caption@Error{%
        The option `labelsep=\caption@labelsep@name' does not work\MessageBreak
        with `format=hang'}}%
@@ -675,9 +680,11 @@
      \def\caption@labelsep{#3}}%
   \@namedef{caption@lsep@#2}{#3}}
 \@onlypreamble\caption@declarelabelseparator
-\newcommand*\CaptionLabelSeparatorContainsNewline[1]{%
+\newcommand*\caption@LabelSeparatorWithNewline[1]{%
   \caption@g@addto@list\caption@labelsep@crlist{#1}}
-\@onlypreamble\CaptionLabelSeparatorContainsNewline
+\@onlypreamble\caption@LabelSeparatorWithNewline
+\newcommand*\caption@iflabelseparatorwithnewline{%
+  \caption@ifin@list\caption@labelsep@crlist\caption@labelsep@name}
 \DeclareCaptionOption{labelsep}{\caption@set{labelseparator}{#1}}
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 \DeclareCaptionLabelSeparator{none}{}
@@ -686,9 +693,9 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
-\CaptionLabelSeparatorContainsNewline{newline} % does not work with "format=hang"
+\caption@LabelSeparatorWithNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
-\newcommand*\captionnewline{\\}
+\newcommand*\captionnewline{\\\relax}
 \SetCaptionDefault{labelseparator}{colon}
 \newcommand*\DeclareCaptionTextFormat[2]{%
   \caption@decl{textformat}{#1}##1{#2}}
@@ -1018,9 +1025,9 @@
     \let\caption@documentclass\@empty % don't load adaption code later on
   }}}}}}%
 }{}
-\newcommand*\AtPackageCaption{%
+\newcommand*\AtCaptionPackage{%
   \g@addto@macro\caption@documentclass@code}
-\@onlypreamble\AtPackageCaption
+\@onlypreamble\AtCaptionPackage
 \providecommand*\caption@documentclass@code{}
 \@onlypreamble\caption@documentclass@code
 \@gobble{%%%% TODO
