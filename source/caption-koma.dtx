@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{247}
+% \CheckSum{273}
 %
 % \iffalse
 %<*driver>
@@ -195,7 +195,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2020/07/31 v2.0 Adaption of the caption package to the KOMA-Script document classes (AR)]
+\ProvidesFile{caption-koma.sto}[2020/08/01 v2.0 Adaption of the caption package to the KOMA-Script document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Margin resp. width}
@@ -203,12 +203,28 @@
 % \begin{macro}{\setcapwidth}
 % \changes{v1.9}{2018/12/26}{Bugfix: Missing curly braces added}
 % Patch |\setcapwidth| so it will set the \package{caption3} width setting, too.
-% \Note{The optional argument of \cs{setcapwidth} if not supported (yet).}
 %    \begin{macrocode}
 \expandafter\let\expandafter\caption@koma@setcapwidth
                 \csname\string\setcapwidth\endcsname
 \@namedef{\string\setcapwidth}[#1]#2{%
-  \caption@koma@setcapwidth[{#1}]{#2}\caption@setcapwidth}
+  \caption@koma@setcapwidth[{#1}]{#2}%
+  \caption@setcapwidth@opt{#1}%
+  \caption@setcapwidth}
+%    \end{macrocode}
+% The optional argument of \cs{setcapwidth} if not supported (yet),
+% so we issue a warning if used.
+% (Since this does not seem to have an negative effect when used
+%  by the \texttt{captionbeside} environment, we suppress the warning here.)
+%    \begin{macrocode}
+\newcommand*\caption@setcapwidth@opt[1]{}
+\AtCaptionPackage{\renewcommand*\caption@setcapwidth@opt[1]{%
+  \ifx\\#1\\\else
+    \caption@ifdefined\cap@margin{%
+      \def\@tempa{captionbeside}%
+      \ifx\@tempa\@currenvir\else\caption@Warning{%
+        Ignoring optional argument [#1] of \string\setcapwidth\MessageBreak}%
+      \fi}{}%
+  \fi}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setcapwidth{%
@@ -230,13 +246,15 @@
 \expandafter\let\expandafter\caption@koma@setcapmargin
                 \csname\string\@setcapmargin\endcsname
 \@namedef{\string\@setcapmargin}[#1]#2{%
-  \caption@koma@setcapmargin[{#1}]{#2}\caption@setcapmargin}
+  \caption@koma@setcapmargin[{#1}]{#2}%
+  \caption@setcapmargin}
 %    \end{macrocode}
 %    \begin{macrocode}
 \expandafter\let\expandafter\caption@koma@@setcapmargin
                 \csname\string\@@setcapmargin\endcsname
 \@namedef{\string\@@setcapmargin}[#1]#2{%
-  \caption@koma@@setcapmargin[{#1}]{#2}\caption@setcapmargin}
+  \caption@koma@@setcapmargin[{#1}]{#2}%
+  \caption@setcapmargin}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setcapmargin{%
@@ -269,12 +287,14 @@
 %    \begin{macrocode}
 \let\caption@koma@setcapindent\@setcapindent
 \renewcommand*\@setcapindent[1]{%
-  \caption@koma@setcapindent{#1}\caption@setcapindent}
+  \caption@koma@setcapindent{#1}%
+  \caption@setcapindent}
 %    \end{macrocode}
 %    \begin{macrocode}
 \let\caption@koma@@setcapindent\@@setcapindent
 \renewcommand*\@@setcapindent[1]{%
-  \caption@koma@@setcapindent{#1}\caption@setcapindent}
+  \caption@koma@@setcapindent{#1}%
+  \caption@setcapindent}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setcapindent{%
