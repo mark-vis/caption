@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2690}
+% \CheckSum{2722}
 %
 % \iffalse
 %<*driver>
@@ -1893,6 +1893,39 @@
 %
 % \section{Babel package support}
 %
+% \subsection{The frenchle/pro package}
+% \changes{v3.0h}{2005/10/03}{\package{frenchle/pro} package support added}
+% \changes{v4.0}{2020/08/01}{\package{frenchle/pro} babel package support updated}
+%
+%    \begin{macrocode}
+\caption@AtFrenchLe{%
+  \caption@InfoNoLine{frenchle/pro package is loaded}%
+%    \end{macrocode}
+%
+% \begin{macro}{\f@ffrench}
+% \begin{macro}{\f@tfrench}
+%  |\f@ffrench| and |\f@tfrench| reflect |\fnum@figure| and |\fnum@table|
+%  when used in French mode. These contain additional code which typesets
+%  the caption separator |\caption|\-|separator| instead of the usual colon.
+%  Because this breaks with our |\@make|\-|caption| code we have to remove
+%  this additional code here.
+%    \begin{macrocode}
+  \def\f@ffrench{\ifx\listoffigures\relax\else\figurename~\thefigure\fi}%
+  \def\f@tfrench{\ifx\listoftables\relax\else\tablename~\thetable\fi}%
+  \def\@eatDP{\caption@Error{Internal error in frenchle/pro package support}}%
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% Since the \package{frenchle} package overwrites |\@make|\-|caption| (within |\GO|\-|french|),
+% we need to save it beforehand and restore it afterwards.
+%    \begin{macrocode}
+  \caption@AtBeginDocument{%
+    \let\@makecaption@frenchle\@makecaption}%
+  \g@addto@macro\GOfrench{%
+    \let\@makecaption\@makecaption@frenchle}}
+%    \end{macrocode}
+%
 % \subsection{The hungarian and magyar Babel option}
 % \changes{v3.2}{2009/03/29}{\package{magyar} package support added}
 % \changes{v3.3}{2018/08/26}{\package{magyar} package support revised}
@@ -1915,14 +1948,11 @@
 %    \end{macrocode}
 %
 % \section{Package support}
-% \changes{v3.1}{2007/04/11}{Package options `float', `longtable' etc.
-%        are not supported anymore, removed}
+% \changes{v3.1}{2007/04/11}{Package options `float', `longtable' etc.~are not supported anymore, removed}
 %
 % \begin{macro}{\caption@IfPackageLoaded}
-% \changes{v3.0f}{2005/05/29}{3rd argument \meta{code} added,
-%        so no extra check is needed}
-% \changes{v3.1}{2007/07/04}{Re-written \& renamed from \cs{caption@ifpackage}
-%        to \cs{caption@IfPackageLoaded}}
+% \changes{v3.0f}{2005/05/29}{3rd argument \meta{code} added, so no extra check is needed}
+% \changes{v3.1}{2007/07/04}{Re-written \& renamed from \cs{caption@ifpackage} to \cs{caption@IfPackageLoaded}}
 % \changes{v3.3}{2018/12/26}{Bugfix: Missing curly braces added}
 %  |\caption@IfPackageLoaded|\marg{package}\oarg{version}\marg{true}\marg{false}\par
 %  Some kind of combination of |\@ifpackageloaded| and |\@ifpackagelater|.

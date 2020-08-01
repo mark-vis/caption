@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3432}
+% \CheckSum{3429}
 %
 % \iffalse
 %<*driver>
@@ -2738,65 +2738,85 @@
 %
 % \section{Babel support}
 %
+% \begin{macro}{\caption@AtBabelPackage}
+% |\caption@AtBabelPackage|\marg{cmd}\marg{code}\par
+% expands the given code if \meta{cmd} is defined.
+%    \begin{macrocode}
+\newcommand*\caption@AtBabelPackage[2]{%
+  \caption@ifdefined#1\@firstofone\caption@AtBeginDocument{%
+    \caption@ifdefined#1{#2}{}}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \subsection{The arabic Babel option}
 % \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
 %
 %    \begin{macrocode}
-\@gobble{%%%% TODO
-\caption@ifdefined\ArabiCoreLoaded{%
+%%%% TODO
+%\caption@ifdefined\ArabiCoreLoaded{%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@rl}
 % \changes{v1.8}{2018/05/20}{This macro added}
 %    \begin{macrocode}
-  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
+%  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-  \def\fnum@figure{\figurename\nobreakspace\thefigure}
-  \def\fnum@table{\tablename\nobreakspace\thetable}
+%  \def\fnum@figure{\figurename\nobreakspace\thefigure}
+%  \def\fnum@table{\tablename\nobreakspace\thetable}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \DeclareCaptionLabelSeparator{arabi}{ : }
-  \DeclareCaptionLabelSeparator{default}{%
-\TODO    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
+%  \DeclareCaptionLabelSeparator{arabi}{ : }
+%  \DeclareCaptionLabelSeparator{default}{%
+%    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
 %    \end{macrocode}
 %    \begin{macrocode}
-}{%
+%}{%
   \let\caption@rl\@firstofone
-}
-}
+%}
 %    \end{macrocode}
 %
-% \subsection{The french Babel option}
+% \subsection{The french babel option}
 % \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
 % \changes{v2.0}{2020/08/01}{\package{french} babel package support updated}
 %
-% \begin{macro}{\caption@babel@french}
-% If the language `french' is selected, we switch to the new label separator `babel@french'
-% which uses |\if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
-% \Note{This patch could be deactiated by |\let\caption@babel@french\@empty|.}
+% We provide a dummy `french' caption label separator (so |labelsep=french| works fine);
+% it will be re-defined dependant on the `french' package used later on.
 %    \begin{macrocode}
-\providecommand\caption@babel@french{%
-  \caption@ifdefined\FB@makecaption
-    {\caption@InfoNoLine{french babel package is loaded}%
-     \DeclareCaptionLabelSeparator{babel@french}{%
-       \ifFBCustomiseFigTabCaptions
-         \CaptionSeparator
-       \else
-         \space : %
-       \fi}%
-     \addto\extrasfrench{%
-       \caption@switchdefault{labelseparator}{\babel@save ##1}{babel@french}}%
-     \let\caption@babel@french\relax}%
-    {}}
+\caption@ifdecl{labelseparator}{french}
+  {\let\caption@french@labelseparator\@undefined}%
+  {\caption@@set[labelseparator]{labelseparator@french}{default}%
+   \let\caption@french@labelseparator\caption@labelseparator@french}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@AtBabelFrench}
 %    \begin{macrocode}
-\caption@babel@french
-\AtBeginDocument{\caption@babel@french\let\caption@babel@french\relax}
+\newcommand*\caption@AtBabelFrench{\caption@AtBabelPackage\FB@makecaption}
 %    \end{macrocode}
 % \end{macro}
+%
+%    \begin{macrocode}
+\caption@AtBabelFrench{%
+  \caption@InfoNoLine{french babel package is loaded}%
+%    \end{macrocode}
+%
+% If the language `french' is selected, we switch to the new label separator `french'
+% which uses |\if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
+%
+%    \begin{macrocode}
+  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
+    \DeclareCaptionLabelSeparator{french}{%
+      \ifFBCustomiseFigTabCaptions
+        \CaptionSeparator
+      \else
+        \space : %
+      \fi}%
+  \fi
+  \addto\extrasfrench{%
+    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}
+%    \end{macrocode}
 %
 % Suppress the warning about load order (since it's not longer valid anymore).
 %    \begin{macrocode}
@@ -2807,60 +2827,44 @@
 % \changes{v1.1}{2006/05/14}{\package{frenchle/pro} package support added}
 % \changes{v2.0}{2020/08/01}{\package{frenchle/pro} babel package support updated}
 %
-% \begin{macro}{\caption@frenchle}
-% If the language `french' is selected, we switch to the new label separator `frenchle'
-% which uses |\caption|\-|separator|, and to the text font `it'.
-% \Note{This patch could be deactiated by |\let\caption@frenchle\@empty|.}
+% \begin{macro}{\caption@AtFrenchLe}
 %    \begin{macrocode}
-\providecommand\caption@frenchle{%
-  \caption@ifdefined\frenchTeXmods
-    {\caption@InfoNoLine{frenchle/pro package is loaded}%
-     \DeclareCaptionLabelSeparator{frenchle}{\captionseparator\space}%
-     \g@addto@macro\extrasfrench{%
-       \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator##1}{frenchle}%
-       \caption@switchdefault[font]{textfont}{\let\caption@frenchle@textfont##1}{it}}%
-     \g@addto@macro\extrasenglish{%
-       \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
-       \caption@restoredefault{textfont}{\caption@frenchle@textfont}}%
-     \let\caption@frenchle\relax}%
-    {}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\caption@frenchle
-\AtBeginDocument{\caption@frenchle}
+\newcommand*\caption@AtFrenchLe{\caption@AtBabelPackage\frenchTeXmods}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@frenchle@save}
+%    \begin{macrocode}
+\caption@AtFrenchLe{%
+  \caption@InfoNoLine{frenchle/pro package is loaded}%
+%    \end{macrocode}
+%
+% If the language `french' is selected, we switch to the new label separator `french'
+% which uses |\caption|\-|separator|, and switch to the font `it'.
+%
+%    \begin{macrocode}
+  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
+    \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
+  \fi
+  \g@addto@macro\extrasfrench{%
+    \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator#1}{french}%
+    \caption@switchdefault[font]{font}{\let\caption@frenchle@font#1}{it}%
+    \caption@switchdefault[font]{labelfont}{\let\caption@frenchle@labelfont#1}{up}}%
+  \g@addto@macro\extrasenglish{%
+    \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
+    \caption@restoredefault{font}{\caption@frenchle@font}%
+    \caption@restoredefault{labelfont}{\caption@frenchle@labelfont}}%
+%    \end{macrocode}
+%
 % Since the \package{frenchle} package overwrites |\caption|\-|font| and |\caption|\-|label|\-|font|
-% (within |\GOfrench|), we need to save them beforehand.
-%    \begin{macrocode}
-\newcommand*\caption@frenchle@save{%
-  \let\captionfont@frenchle\captionfont
-  \let\captionlabelfont@frenchle\captionlabelfont}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@frenchle@restore}
-% Since the \package{frenchle} package overwrites |\caption|\-|font| and |\caption|\-|label|\-|font|,
-% we need to restore them afterwards.
-%    \begin{macrocode}
-\newcommand*\caption@frenchle@restore{%
-  \let\captionfont\captionfont@frenchle
-  \let\captionlabelfont\captionlabelfont@frenchle}
-%    \end{macrocode}
-% \end{macro}
+% (within |\GOfrench|) we need to save them beforehand and restore them afterwards.
 %
 %    \begin{macrocode}
-\AtBeginDocument{%
-  \ifx\caption@frenchle\relax
-    \caption@frenchle@save
-    \g@addto@macro\GOfrench{\caption@frenchle@restore}%
-  \fi}
-%    \end{macrocode}
-%
-%    \begin{macrocode}
-\AtBeginDocument{\let\caption@frenchle\relax}
+  \caption@AtBeginDocument{%
+    \let\captionfont@frenchle\captionfont
+    \let\captionlabelfont@frenchle\captionlabelfont}%
+  \g@addto@macro\GOfrench{%
+    \let\captionfont\captionfont@frenchle
+    \let\captionlabelfont\captionlabelfont@frenchle}}
 %    \end{macrocode}
 %
 % \subsection{The hungarian and magyar Babel option}
@@ -2873,24 +2877,23 @@
 %    \end{macrocode}
 %
 %    \begin{macrocode}
-\@gobble{%%%% TODO
-\def\caption@tempa#1{%
-  \@ifpackagewith{babel}{#1}{%
-    \caption@InfoNoLine{#1 babel option is loaded}%
-    \expandafter\addto\csname extras#1\endcsname{%
-       % change default labelsep and listformat
-       \caption@setdefaultlabelsep{period}%
-       \caption@setdefaultlistformat{subperiod}}%
-    \expandafter\addto\csname noextras#1\endcsname{%
-       % change default labelsep and listformat
-       \caption@setdefaultlabelsep{colon}%
-       \caption@setdefaultlistformat{subsimple}}%
-  }{}}
+%%%% TODO
+%\def\caption@tempa#1{%
+%  \@ifpackagewith{babel}{#1}{%
+%    \caption@InfoNoLine{#1 babel option is loaded}%
+%    \expandafter\addto\csname extras#1\endcsname{%
+%       % change default labelsep and listformat
+%       \caption@setdefaultlabelsep{period}%
+%       \caption@setdefaultlistformat{subperiod}}%
+%    \expandafter\addto\csname noextras#1\endcsname{%
+%       % change default labelsep and listformat
+%       \caption@setdefaultlabelsep{colon}%
+%       \caption@setdefaultlistformat{subsimple}}%
+%  }{}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\caption@tempa{hungarian}
-\caption@tempa{magyar}
-}
+%\caption@tempa{hungarian}
+%\caption@tempa{magyar}
 %    \end{macrocode}
 %
 % TODO: babel-latvian/latvian.ldf
