@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3360}
+% \CheckSum{3372}
 %
 % \iffalse
 %<*driver>
@@ -1154,7 +1154,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@@ifset[#1]#2#3{%
-  \caption@set[#1]{tempa}{#3}%
+  \caption@set[{#1}]{tempa}{#3}%
   \expandafter\ifx\csname caption@#2\endcsname\caption@tempa
     \expandafter\@firstoftwo
   \else
@@ -1170,12 +1170,32 @@
 %    \begin{macrocode}
 \newcommand*\SetCaptionDefault{%
   \@dblarg\caption@@setdefault}
+\@onlypreamble\SetCaptionDefault
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@@setdefault[#1]#2#3{%
   \caption@ifinlist{#3}{default}%
     {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
-    {\caption@@set[#1]{#2@default}{#3}}}
+    {\caption@@set[{#1}]{#2@default}{#3}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@switchdefault}
+% \changes{v2.0}{2020/08/01}{This macro added}
+% |\caption@switchdefault\oarg{source option}\marg{option}|\marg{code with \#1}\marg{name}\par
+% Same as |\Set|\-|Caption|\-|Default| but first expands the given code with the to-be-overwritten command name as argument,
+% so it can be stored (and restored later on).
+% The main purpose of this command is switching default settings in \package{babel} support packages, e.g.:
+% \begin{quote}|\caption@switchdefault{labelseparator}{\babel@save #1}{french}|\end{quote}
+%    \begin{macrocode}
+\newcommand*\caption@switchdefault{%
+  \@dblarg\caption@@switchdefault}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@switchdefault[#1]#2#3{%
+  \def\caption@tempa##1{#3}%
+  \expandafter\caption@tempa\csname caption@#2@default\endcsname
+  \caption@@setdefault[{#1}]{#2}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2736,31 +2756,37 @@
 }
 %    \end{macrocode}
 %
-% \subsection{The frenchb Babel option}
+% \subsection{The french Babel option}
 % \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
+% \changes{v2.0}{2020/08/01}{\package{french} babel package support revised}
 %
+% \begin{macro}{\caption@babel@french}
+% If the language `french' is selected, we switch to the new label separator `babel@french'
+% which uses |if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
+% \Note{This patch could be deactiated by |\let\caption@babel@french\@empty|.}
 %    \begin{macrocode}
-\@gobble{%%%% TODO
-\caption@ifdefined\FB@makecaption{%
+\providecommand\caption@babel@french{%
+  \caption@ifdefined\FB@makecaption
+    {\DeclareCaptionLabelSeparator{babel@french}{%
+       \ifFBCustomiseFigTabCaptions
+         \CaptionSeparator
+       \else
+         \space : %
+       \fi}%
+     \addto\extrasfrench{%
+       \caption@switchdefault{labelseparator}{\babel@save ##1}{babel@french}}%
+     \let\caption@babel@french\relax}%
+    {}}
 %    \end{macrocode}
 %    \begin{macrocode}
-  \ifx\@makecaption\STD@makecaption
-    \DeclareCaptionLabelSeparator{default}{\CaptionSeparator}
-    \def\caption@frenchb{% supress frenchb warning
-      \let\STD@makecaption\@makecaption
-      \let\FB@makecaption\@makecaption}
-  \else
-    \ifx\@makecaption\@undefined\else
-      \caption@InfoNoLine{%
-        The definition of \protect\@makecaption\space
-        has been changed,\MessageBreak
-        frenchb will NOT customize it}%
-    \fi
-  \fi
+\caption@babel@french
+\AtBeginDocument{\caption@babel@french\let\caption@babel@french\relax}
 %    \end{macrocode}
+% \end{macro}
+%
+% Suppress the warning about load order (since it's not longer valid anymore).
 %    \begin{macrocode}
-}{}
-}
+\AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}
 %    \end{macrocode}
 %
 % \subsection{The frenchle/pro package}
@@ -3867,7 +3893,7 @@
   \caption@ifin@list\caption@subtypelist{#4}%
     {\caption@Debug{Modify subtype `#4'}}%
     {\caption@Debug{New subtype `#4'}%
-     \newcounter{#4}[#3]%
+     \newcounter{#4}[{#3}]%
      \@namedef{ext@#4}{\csname ext@#3\endcsname}%
      \caption@declaresublistentry{#3}%
      \caption@l@addto@list\caption@subtypelist{#4}%
