@@ -18,11 +18,20 @@
 % 
 % This Current Maintainer of this work is Axel Sommerfeldt.
 % 
-% This work consists of the files caption.ins, caption.dtx, caption2.dtx,
-% caption3.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx, and newfloat.dtx,
-% the derived files caption.sty, caption2.sty, caption3.sty,
-% bicaption.sty, ltcaption.sty, subcaption.sty, and newfloat.sty,
-% and the user manuals caption-deu.tex, caption-eng.tex, and caption-rus.tex.
+% This work consists of the files
+%   caption.ins, caption.dtx, caption2.dtx, caption3.dtx,
+%   caption-ams-smf.dtx, caption-beamer.dtx, caption-elsarticle.dtx,
+%   caption-koma.dtx, caption-memoir.dtx, caption-ntg.dtx,
+%   caption-thesis.dtx,
+%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
+% the derived files
+%   caption.sty, caption2.sty, caption3.sty,
+%   caption-ams-smf.sto, caption-beamer.sto, caption-elsarticle.sto,
+%   caption-koma.sto, caption-memoir.sto, caption-ntg.sto,
+%   caption-thesis.sto,
+%   bicaption.sty, ltcaption.sty, subcaption.sty,
+% and the user manuals
+%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
 % \CheckSum{104}
@@ -202,7 +211,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \section{Set default values}
+% \section{Single-line-check}
 %
 % The `default' single-line-check maps to the beamer template setting `caption name own line'.
 %    \begin{macrocode}
@@ -211,6 +220,30 @@
     \@secondoftwo % \@secondoftwo -> singlelinecheck=off
     \@firstoftwo} % \@firstoftwo  -> singlelinecheck=on
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@prepareslc}
+% \changes{v1.12b}{2020/07/20}{Special adaption to \class{beamer} added}
+% The patch of \cs{footnote} provided by the \package{caption3} package assumes
+% that the optional arguments of \cs{footnote} and \cs{footnotemark} match.
+% Since this is not the case in \class{beamer} based documents,
+% and since \class{beamer} extents the syntax of \cs{footnote} in a special way,
+% we need a special patch here.\par
+% \emph{Note:} For this patch we assume that \cs{footnote} will always end with the usage of
+% \cs{beamer@footnotetext}. (Unfortunately \cs{footnote} is defined too monolithic
+% in \class{beamer} to offer a less dirty patch.)
+%    \begin{macrocode}
+\g@addto@macro\caption@prepareslc{%
+  \def\footnote{%
+    \begingroup
+    \let\stepcounter\caption@l@stepcounter
+    \renewcommand<>\beamer@framefootnotetext[1]{%
+      \endgroup}%
+    \let\@footnotetext\beamer@framefootnotetext
+    \caption@footnote@ORI}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \section{Label formats}
 %
 % The `default' caption label format maps to either `simple' (if the `numbered' beamer template is set) or `unnumbered' (otherwise).
 %    \begin{macrocode}
@@ -242,6 +275,8 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \section{Label separator}
+%
 % The `default' caption label separator maps to the beamer templates
 % `caption name own line' and `caption label separator'.
 %
@@ -262,32 +297,36 @@
      {\usebeamertemplate{caption label separator}}}
 %    \end{macrocode}
 %
+% \section{Fonts}
+%
 % The `default' caption font maps to the beamer settings for `caption' resp. `caption name'.
 %    \begin{macrocode}
-\DeclareCaptionFont{beamerfont}{%
+\DeclareCaptionFont{beamer@font}{%
   \usebeamerfont*{caption}%
   \usebeamercolor[fg]{caption}}
-\SetCaptionDefaultFont{font}{beamerfont}
+\SetCaptionDefaultFont{font}{beamer@font}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareCaptionFont{beamerlabelfont}{%
+\DeclareCaptionFont{beamer@labelfont}{%
   \setbeamercolor*{caption}{}% avoid setting "caption" color additionally
   \usebeamercolor[fg]{caption name}%
   \setbeamerfont*{caption}{}% avoid setting "caption" font additionally
   \usebeamerfont{caption name}}
-\SetCaptionDefaultFont{labelfont}{beamerlabelfont}
+\SetCaptionDefaultFont{labelfont}{beamer@labelfont}
 %    \end{macrocode}
 %    \begin{macrocode}
-\DeclareCaptionFont{beamertextfont}{}
-\SetCaptionDefaultFont{textfont}{beamertextfont}
+\DeclareCaptionFont{beamer@textfont}{}
+\SetCaptionDefaultFont{textfont}{beamer@textfont}
 %    \end{macrocode}
+%
+% \section{Justification}
 %
 % The `default' caption justification is `raggedright'.
 %    \begin{macrocode}
 \SetCaptionDefault{justification}{raggedright}
 %    \end{macrocode}
 %
-% \section{Switch lists off}
+% \section{Lists}
 %
 % Since the beamer class do not offer a `List of figures' we switch it off.
 %    \begin{macrocode}
@@ -329,28 +368,6 @@
 %    \begin{macrocode}
 }
 %    \end{macrocode}
-%
-% \begin{macro}{\caption@prepareslc}
-% \changes{v1.12b}{2020/07/20}{Special adaption to \class{beamer} added}
-% The patch of \cs{footnote} provided by the \package{caption3} package assumes
-% that the optional arguments of \cs{footnote} and \cs{footnotemark} match.
-% Since this is not the case in \class{beamer} based documents,
-% and since \class{beamer} extents the syntax of \cs{footnote} in a special way,
-% we need a special patch here.\par
-% \emph{Note:} For this patch we assume that \cs{footnote} will always end with the usage of
-% \cs{beamer@footnotetext}. (Unfortunately \cs{footnote} is defined too monolithic
-% in \class{beamer} to offer a less dirty patch.)
-%    \begin{macrocode}
-\g@addto@macro\caption@prepareslc{%
-  \def\footnote{%
-    \begingroup
-    \let\stepcounter\caption@l@stepcounter
-    \renewcommand<>\beamer@framefootnotetext[1]{%
-      \endgroup}%
-    \let\@footnotetext\beamer@framefootnotetext
-    \caption@footnote@ORI}}
-%    \end{macrocode}
-% \end{macro}
 %
 % \iffalse
 %</package>
