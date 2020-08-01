@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3372}
+% \CheckSum{3432}
 %
 % \iffalse
 %<*driver>
@@ -1196,6 +1196,19 @@
   \def\caption@tempa##1{#3}%
   \expandafter\caption@tempa\csname caption@#2@default\endcsname
   \caption@@setdefault[{#1}]{#2}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@restoredefault}
+% \changes{v2.0}{2020/08/01}{This macro added}
+% |\caption@restoredefault\marg{option}|\marg{command}\par
+% restores a default setting which was stored to \meta{command} with |\caption@switch|\-|default|.
+%    \begin{macrocode}
+\newcommand*\caption@restoredefault[2]{%
+  \caption@checkdecl{#1}{default}{%
+    \caption@ifdefined#2{%
+      \expandafter\let\csname caption@#1@default\endcsname#2%
+      \let#2\@undefined}{}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2758,16 +2771,17 @@
 %
 % \subsection{The french Babel option}
 % \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
-% \changes{v2.0}{2020/08/01}{\package{french} babel package support revised}
+% \changes{v2.0}{2020/08/01}{\package{french} babel package support updated}
 %
 % \begin{macro}{\caption@babel@french}
 % If the language `french' is selected, we switch to the new label separator `babel@french'
-% which uses |if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
+% which uses |\if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
 % \Note{This patch could be deactiated by |\let\caption@babel@french\@empty|.}
 %    \begin{macrocode}
 \providecommand\caption@babel@french{%
   \caption@ifdefined\FB@makecaption
-    {\DeclareCaptionLabelSeparator{babel@french}{%
+    {\caption@InfoNoLine{french babel package is loaded}%
+     \DeclareCaptionLabelSeparator{babel@french}{%
        \ifFBCustomiseFigTabCaptions
          \CaptionSeparator
        \else
@@ -2791,18 +2805,62 @@
 %
 % \subsection{The frenchle/pro package}
 % \changes{v1.1}{2006/05/14}{\package{frenchle/pro} package support added}
+% \changes{v2.0}{2020/08/01}{\package{frenchle/pro} babel package support updated}
+%
+% \begin{macro}{\caption@frenchle}
+% If the language `french' is selected, we switch to the new label separator `frenchle'
+% which uses |\caption|\-|separator|, and to the text font `it'.
+% \Note{This patch could be deactiated by |\let\caption@frenchle\@empty|.}
+%    \begin{macrocode}
+\providecommand\caption@frenchle{%
+  \caption@ifdefined\frenchTeXmods
+    {\caption@InfoNoLine{frenchle/pro package is loaded}%
+     \DeclareCaptionLabelSeparator{frenchle}{\captionseparator\space}%
+     \g@addto@macro\extrasfrench{%
+       \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator##1}{frenchle}%
+       \caption@switchdefault[font]{textfont}{\let\caption@frenchle@textfont##1}{it}}%
+     \g@addto@macro\extrasenglish{%
+       \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
+       \caption@restoredefault{textfont}{\caption@frenchle@textfont}}%
+     \let\caption@frenchle\relax}%
+    {}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@frenchle
+\AtBeginDocument{\caption@frenchle}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@frenchle@save}
+% Since the \package{frenchle} package overwrites |\caption|\-|font| and |\caption|\-|label|\-|font|
+% (within |\GOfrench|), we need to save them beforehand.
+%    \begin{macrocode}
+\newcommand*\caption@frenchle@save{%
+  \let\captionfont@frenchle\captionfont
+  \let\captionlabelfont@frenchle\captionlabelfont}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@frenchle@restore}
+% Since the \package{frenchle} package overwrites |\caption|\-|font| and |\caption|\-|label|\-|font|,
+% we need to restore them afterwards.
+%    \begin{macrocode}
+\newcommand*\caption@frenchle@restore{%
+  \let\captionfont\captionfont@frenchle
+  \let\captionlabelfont\captionlabelfont@frenchle}
+%    \end{macrocode}
+% \end{macro}
 %
 %    \begin{macrocode}
-\@gobble{%%%% TODO
-\caption@ifdefined\frenchTeXmods{%
+\AtBeginDocument{%
+  \ifx\caption@frenchle\relax
+    \caption@frenchle@save
+    \g@addto@macro\GOfrench{\caption@frenchle@restore}%
+  \fi}
 %    \end{macrocode}
+%
 %    \begin{macrocode}
-  \DeclareCaptionDefaultFont{textfont}{\itshape}%
-  \DeclareCaptionLabelSeparator{default}{\captionseparator\space}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}{}
-}
+\AtBeginDocument{\let\caption@frenchle\relax}
 %    \end{macrocode}
 %
 % \subsection{The hungarian and magyar Babel option}

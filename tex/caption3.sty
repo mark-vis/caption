@@ -444,6 +444,11 @@
   \def\caption@tempa##1{#3}%
   \expandafter\caption@tempa\csname caption@#2@default\endcsname
   \caption@@setdefault[{#1}]{#2}}
+\newcommand*\caption@restoredefault[2]{%
+  \caption@checkdecl{#1}{default}{%
+    \caption@ifdefined#2{%
+      \expandafter\let\csname caption@#1@default\endcsname#2%
+      \let#2\@undefined}{}}}
 \newcommand*\caption@decl@package[2]{%
   \@ifnextchar[%]
     {\caption@declare@package{#1}{#2}}%
@@ -1053,7 +1058,8 @@
 }
 \providecommand\caption@babel@french{%
   \caption@ifdefined\FB@makecaption
-    {\DeclareCaptionLabelSeparator{babel@french}{%
+    {\caption@InfoNoLine{french babel package is loaded}%
+     \DeclareCaptionLabelSeparator{babel@french}{%
        \ifFBCustomiseFigTabCaptions
          \CaptionSeparator
        \else
@@ -1066,12 +1072,32 @@
 \caption@babel@french
 \AtBeginDocument{\caption@babel@french\let\caption@babel@french\relax}
 \AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}
-\@gobble{%%%% TODO
-\caption@ifdefined\frenchTeXmods{%
-  \DeclareCaptionDefaultFont{textfont}{\itshape}%
-  \DeclareCaptionLabelSeparator{default}{\captionseparator\space}%
-}{}
-}
+\providecommand\caption@frenchle{%
+  \caption@ifdefined\frenchTeXmods
+    {\caption@InfoNoLine{frenchle/pro package is loaded}%
+     \DeclareCaptionLabelSeparator{frenchle}{\captionseparator\space}%
+     \g@addto@macro\extrasfrench{%
+       \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator##1}{frenchle}%
+       \caption@switchdefault[font]{textfont}{\let\caption@frenchle@textfont##1}{it}}%
+     \g@addto@macro\extrasenglish{%
+       \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
+       \caption@restoredefault{textfont}{\caption@frenchle@textfont}}%
+     \let\caption@frenchle\relax}%
+    {}}
+\caption@frenchle
+\AtBeginDocument{\caption@frenchle}
+\newcommand*\caption@frenchle@save{%
+  \let\captionfont@frenchle\captionfont
+  \let\captionlabelfont@frenchle\captionlabelfont}
+\newcommand*\caption@frenchle@restore{%
+  \let\captionfont\captionfont@frenchle
+  \let\captionlabelfont\captionlabelfont@frenchle}
+\AtBeginDocument{%
+  \ifx\caption@frenchle\relax
+    \caption@frenchle@save
+    \g@addto@macro\GOfrench{\caption@frenchle@restore}%
+  \fi}
+\AtBeginDocument{\let\caption@frenchle\relax}
 \DeclareCaptionListFormat{subperiod}{#2.}
 \@gobble{%%%% TODO
 \def\caption@tempa#1{%
