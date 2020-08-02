@@ -696,6 +696,7 @@
      \def\caption@labelsep@name{#2}%
      \def\caption@labelsep{#3}}%
   \@namedef{caption@lsep@#2}{#3}}
+\newcommand*\caption@lsep@default{\caption@labelseparator@default\caption@labelsep}%
 \@onlypreamble\caption@declarelabelseparator
 \newcommand*\caption@LabelSeparatorWithNewline[1]{%
   \caption@g@addto@list\caption@labelsep@crlist{#1}}
@@ -977,9 +978,11 @@
 \DeclareCaptionOption{listformat}{\caption@set{listformat}{#1}}
 \DeclareCaptionListFormat{empty}{}
 \DeclareCaptionListFormat{simple}{#1#2}
-\DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subsimple}{#2}
+\DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subparens}{(#2)}
+\DeclareCaptionListFormat{period}{#1#2.}
+\DeclareCaptionListFormat{subperiod}{#2.}
 \SetCaptionDefault{listformat}{subsimple}
 \newcommand*\caption@lstfmt{\caption@listformat}
 \DeclareCaptionOption{debug}[1]{%
@@ -1081,19 +1084,19 @@
       {\caption@InfoNoLine{#1 babel package is loaded}#3}%
       {#4}}}
 \@onlypreamble\caption@IfBabelPackageLoaded
-\DeclareCaptionLabelSeparator{arabic}{\if@rl\space\fi: }
-\newcommand*\caption@IfBabelArabic{%
-  \caption@IfBabelPackageLoaded{arabic}{\ArabiCoreLoaded}}
-\@onlypreamble\caption@IfBabelArabic
-\providecommand*\caption@ifbabel@arabic{true}
-\caption@IfBabelArabic{%
+\DeclareCaptionLabelSeparator{arabi}{\if@rl\space\fi: }
+\newcommand*\caption@IfBabelArabi{%
+  \caption@IfBabelPackageLoaded{arabi}{\ArabiCoreLoaded}}
+\@onlypreamble\caption@IfBabelArabi
+\providecommand*\caption@ifbabel@arabi{true}
+\caption@IfBabelArabi{%
   \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}%
   \caption@ifdefined\extrasarabic{%
     \addto\extrasarabic{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabi}}}{}%
   \caption@ifdefined\extrasfarsi{%
     \addto\extrasfarsi{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabi}}}{}%
 }{%
   \let\caption@rl\@firstofone
 }
@@ -1114,8 +1117,9 @@
         \space : %
       \fi}%
   \fi
-  \addto\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}%
+  \caption@ifdefined\extrasfrench{%
+    \addto\extrasfrench{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
   \caption@AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}%
 }{}
 \newcommand*\caption@IfFrenchLe{%
@@ -1127,22 +1131,35 @@
     \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
   \fi
   \g@addto@macro\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator#1}{french}%
-    \caption@switchdefault[font]{font}{\let\caption@frenchle@font#1}{it}%
-    \caption@switchdefault[font]{labelfont}{\let\caption@frenchle@labelfont#1}{up}}%
+    \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
+    \caption@switchdefault[font]{font}{\let\caption@original@font#1}{it}%
+    \caption@switchdefault[font]{labelfont}{\let\caption@original@labelfont#1}{up}}%
   \g@addto@macro\extrasenglish{%
-    \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
-    \caption@restoredefault{font}{\caption@frenchle@font}%
-    \caption@restoredefault{labelfont}{\caption@frenchle@labelfont}}%
+    \caption@restoredefault{labelseparator}{\caption@original@labelseparator}%
+    \caption@restoredefault{font}{\caption@original@font}%
+    \caption@restoredefault{labelfont}{\caption@original@labelfont}}%
   \caption@AtBeginDocument{%
-    \let\captionfont@frenchle\captionfont
-    \let\captionlabelfont@frenchle\captionlabelfont}%
+    \let\captionfont@original\captionfont
+    \let\captionlabelfont@original\captionlabelfont}%
   \g@addto@macro\GOfrench{%
-    \let\captionfont\captionfont@frenchle
-    \let\captionlabelfont\captionlabelfont@frenchle}%
+    \let\captionfont\captionfont@original
+    \let\captionlabelfont\captionlabelfont@original}%
 }{}
-\DeclareCaptionListFormat{subperiod}{#2.}
-%%%% TODO
+\DeclareCaptionLabelFormat{magyar}{#2\bothIfSecond{.~}{#1}}
+\newcommand*\caption@IfBabelHungarian{%
+  \caption@IfBabelPackageLoaded{hungarian}{\magyar@opt@defaults}}
+\@onlypreamble\caption@IfBabelHungarian
+\providecommand*\caption@ifbabel@hungarian{true}
+\caption@IfBabelHungarian{%
+  \caption@ifdefined\extrashungarian{%
+    \addto\extrashungarian{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{period}%
+      \caption@switchdefault{listformat}{\babel@save #1}{subperiod}}}{}%
+  \caption@ifdefined\extrasmagyar{%
+    \addto\extrasmagyar{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{period}%
+      \caption@switchdefault{listformat}{\babel@save #1}{subperiod}}}{}%
+}{}
 \newcommand*\caption@ifpackageloaded[1]{%
   \expandafter\ifx\csname ver@#1.\caption@pkgextension\endcsname\relax
     \expandafter\@secondoftwo

@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3517}
+% \CheckSum{3529}
 %
 % \iffalse
 %<*driver>
@@ -1887,6 +1887,16 @@
 % |\caption@lsep@|\meta{name} for \package{floatrow}, too. (Sigh!)
 %    \begin{macrocode}
   \@namedef{caption@lsep@#2}{#3}}
+%    \end{macrocode}
+% Since the `default' caption label separator will usually not be defined
+% with |\Declare|\-|Caption|\-|Label|\-|Separator|, we need to define
+% |\caption@lsep@default| manually.
+% \Note{This definition is used by \package{magyar.ldf} but only needs to be different
+%       than \cs{caption@lsep} (which is usually undefined).}
+%    \begin{macrocode}
+\newcommand*\caption@lsep@default{\caption@labelseparator@default\caption@labelsep}%
+%    \end{macrocode}
+%    \begin{macrocode}
 \@onlypreamble\caption@declarelabelseparator
 %    \end{macrocode}
 % \end{macro}
@@ -2587,13 +2597,15 @@
 \DeclareCaptionOption{listformat}{\caption@set{listformat}{#1}}
 %    \end{macrocode}
 %
-% There are five pre-defined list formats, taken from the \package{subfig} package.
+% There are seven pre-defined list formats. (The first five were taken from the \package{subfig} package.)
 %    \begin{macrocode}
 \DeclareCaptionListFormat{empty}{}
 \DeclareCaptionListFormat{simple}{#1#2}
-\DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subsimple}{#2}
+\DeclareCaptionListFormat{parens}{#1(#2)}
 \DeclareCaptionListFormat{subparens}{(#2)}
+\DeclareCaptionListFormat{period}{#1#2.}
+\DeclareCaptionListFormat{subperiod}{#2.}
 %    \end{macrocode}
 %
 % `default' usually maps to `subsimple'.
@@ -2806,23 +2818,23 @@
 % \changes{v2.0}{2020/08/02}{\package{farsi} babel support added}
 %
 %    \begin{macrocode}
-\DeclareCaptionLabelSeparator{arabic}{\if@rl\space\fi: }
+\DeclareCaptionLabelSeparator{arabi}{\if@rl\space\fi: }
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@IfBabelArabic}
+% \begin{macro}{\caption@IfBabelArabi}
 % |\caption@IfBabelArabic|\marg{yes-code}\marg{no-code}
 %    \begin{macrocode}
-\newcommand*\caption@IfBabelArabic{%
-  \caption@IfBabelPackageLoaded{arabic}{\ArabiCoreLoaded}}
-\@onlypreamble\caption@IfBabelArabic
+\newcommand*\caption@IfBabelArabi{%
+  \caption@IfBabelPackageLoaded{arabi}{\ArabiCoreLoaded}}
+\@onlypreamble\caption@IfBabelArabi
 %    \end{macrocode}
 %    \begin{macrocode}
-\providecommand*\caption@ifbabel@arabic{true}
+\providecommand*\caption@ifbabel@arabi{true}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-\caption@IfBabelArabic{%
+\caption@IfBabelArabi{%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@rl}
@@ -2835,10 +2847,10 @@
 %    \begin{macrocode}
   \caption@ifdefined\extrasarabic{%
     \addto\extrasarabic{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabi}}}{}%
   \caption@ifdefined\extrasfarsi{%
     \addto\extrasfarsi{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabi}}}{}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -2888,8 +2900,9 @@
         \space : %
       \fi}%
   \fi
-  \addto\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}%
+  \caption@ifdefined\extrasfrench{%
+    \addto\extrasfrench{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
 %    \end{macrocode}
 %
 % Suppress the warning about load order (since it's not longer valid anymore).
@@ -2929,13 +2942,13 @@
     \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
   \fi
   \g@addto@macro\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\let\caption@frenchle@labelseparator#1}{french}%
-    \caption@switchdefault[font]{font}{\let\caption@frenchle@font#1}{it}%
-    \caption@switchdefault[font]{labelfont}{\let\caption@frenchle@labelfont#1}{up}}%
+    \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
+    \caption@switchdefault[font]{font}{\let\caption@original@font#1}{it}%
+    \caption@switchdefault[font]{labelfont}{\let\caption@original@labelfont#1}{up}}%
   \g@addto@macro\extrasenglish{%
-    \caption@restoredefault{labelseparator}{\caption@frenchle@labelseparator}%
-    \caption@restoredefault{font}{\caption@frenchle@font}%
-    \caption@restoredefault{labelfont}{\caption@frenchle@labelfont}}%
+    \caption@restoredefault{labelseparator}{\caption@original@labelseparator}%
+    \caption@restoredefault{font}{\caption@original@font}%
+    \caption@restoredefault{labelfont}{\caption@original@labelfont}}%
 %    \end{macrocode}
 %
 % Since the \package{frenchle} package overwrites |\caption|\-|font| and |\caption|\-|label|\-|font|
@@ -2943,11 +2956,11 @@
 %
 %    \begin{macrocode}
   \caption@AtBeginDocument{%
-    \let\captionfont@frenchle\captionfont
-    \let\captionlabelfont@frenchle\captionlabelfont}%
+    \let\captionfont@original\captionfont
+    \let\captionlabelfont@original\captionlabelfont}%
   \g@addto@macro\GOfrench{%
-    \let\captionfont\captionfont@frenchle
-    \let\captionlabelfont\captionlabelfont@frenchle}%
+    \let\captionfont\captionfont@original
+    \let\captionlabelfont\captionlabelfont@original}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -2955,36 +2968,50 @@
 %    \end{macrocode}
 %
 % \subsection{The hungarian \& magyar babel option}
-% \changes{v1.3}{2009/03/29}{\package{magyar} package support added}
-% \changes{v1.3a}{2011/08/12}{\package{magyar} package support revised}
-% \changes{v1.8b}{2018/08/26}{\package{magyar} package support revised}
+% \changes{v1.3}{2009/03/29}{\package{magyar} babel support added}
+% \changes{v1.3a}{2011/08/12}{\package{magyar} babel support revised}
+% \changes{v1.8b}{2018/08/26}{\package{magyar} babel support revised}
+% \changes{v2.0}{2020/08/02}{\package{magyar} babel support updated}
 %
 %    \begin{macrocode}
-\DeclareCaptionListFormat{subperiod}{#2.}
+\DeclareCaptionLabelFormat{magyar}{#2\bothIfSecond{.~}{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@IfBabelHungarian}
+% |\caption@IfBabelHungarian|\marg{yes-code}\marg{no-code}
+%    \begin{macrocode}
+\newcommand*\caption@IfBabelHungarian{%
+  \caption@IfBabelPackageLoaded{hungarian}{\magyar@opt@defaults}}
+\@onlypreamble\caption@IfBabelHungarian
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifbabel@hungarian{true}
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@IfBabelHungarian{%
+%    \end{macrocode}
+%
+% If the language `hungarian' is selected, we switch to the label separator `period'
+% and to the list format `subperiod'.
+%
+%    \begin{macrocode}
+  \caption@ifdefined\extrashungarian{%
+    \addto\extrashungarian{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{period}%
+      \caption@switchdefault{listformat}{\babel@save #1}{subperiod}}}{}%
+  \caption@ifdefined\extrasmagyar{%
+    \addto\extrasmagyar{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{period}%
+      \caption@switchdefault{listformat}{\babel@save #1}{subperiod}}}{}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
-% TODO: \@makecaption was re-defined (global?)
-% TODO: \@caption was redefined (in extrasxxx if \ifnum\magyar@opt@@sectiondot>1)
+}{}
+%    \end{macrocode}
 %
-%%%% TODO
-%\def\caption@tempa#1{%
-%  \@ifpackagewith{babel}{#1}{%
-%    \caption@InfoNoLine{#1 babel option is loaded}%
-%    \expandafter\addto\csname extras#1\endcsname{%
-%       % change default labelsep and listformat
-%       \caption@setdefaultlabelsep{period}%
-%       \caption@setdefaultlistformat{subperiod}}%
-%    \expandafter\addto\csname noextras#1\endcsname{%
-%       % change default labelsep and listformat
-%       \caption@setdefaultlabelsep{colon}%
-%       \caption@setdefaultlistformat{subsimple}}%
-%  }{}}
-%    \end{macrocode}
-%    \begin{macrocode}
-%\caption@tempa{hungarian}
-%\caption@tempa{magyar}
-%    \end{macrocode}
+% \subsection{The latvian babel option}
 %
 % TODO: babel-latvian/latvian.ldf
 %

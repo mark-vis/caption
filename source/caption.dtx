@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2737}
+% \CheckSum{2736}
 %
 % \iffalse
 %<*driver>
@@ -1893,12 +1893,11 @@
 %
 % \section{Babel package support}
 %
-% \subsection{The arabic babel option}
+% \subsection{The arabic \& farsi babel option}
 % \changes{v4.0}{2020/08/02}{\package{arabic} babel support addded}
 %
 %    \begin{macrocode}
-\caption@IfBabelArabic{%
-  \caption@InfoNoLine{arabic babel package is loaded}%
+\caption@IfBabelArabi{%
 %    \end{macrocode}
 %
 % The \package{arabicore} package re-defines |\@make|\-|caption|, |\fnum@figure|, and |\fnum@table|
@@ -1920,7 +1919,6 @@
 %
 %    \begin{macrocode}
 \caption@IfFrenchLe{%
-  \caption@InfoNoLine{frenchle/pro package is loaded}%
 %    \end{macrocode}
 %
 % \begin{macro}{\f@ffrench}
@@ -1942,9 +1940,9 @@
 % we need to save it beforehand and restore it afterwards.
 %    \begin{macrocode}
   \caption@AtBeginDocument{%
-    \let\@makecaption@frenchle\@makecaption}%
+    \let\caption@original@makecaption\@makecaption}%
   \g@addto@macro\GOfrench{%
-    \let\@makecaption\@makecaption@frenchle}%
+    \let\@makecaption\caption@original@makecaption}%
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -1954,22 +1952,30 @@
 % \subsection{The hungarian \& magyar babel option}
 % \changes{v3.2}{2009/03/29}{\package{magyar} babel support added}
 % \changes{v3.3}{2018/08/26}{\package{magyar} babel support revised}
+% \changes{v4.0}{2020/08/02}{\package{magyar} babel support updated}
 %
 %    \begin{macrocode}
-\def\caption@tempa#1{%
-  \@ifpackagewith{babel}{#1}{%
-    \caption@InfoNoLine{#1 babel option is loaded}%
-    \expandafter\addto\csname extras#1\endcsname{%
-       % reverse changes made by magyar.ldf
-       \let\@makecaption\caption@makecaption
-       \babel@save\@makecaption
-       \caption@redefine
-       \babel@save\@caption}%
-  }{}}
+\caption@IfBabelHungarian{%
 %    \end{macrocode}
+%
+% Since the \package{magyar} package tends to overwrite |\@make|\-|caption|
+% we save it beforehand and restore it afterwards.
+% \Note{Currently it will not be overwritten, caused by a side-effect of a
+%       work-around for the \package{floatrow} package within \package{caption3}.}
+%
 %    \begin{macrocode}
-\caption@tempa{hungarian}%
-\caption@tempa{magyar}%
+  \caption@AtBeginDocument{%
+    \let\caption@original@makecaption\@makecaption}%
+  \caption@ifdefined\extrashungarian{%
+    \addto\extrashungarian{%
+      \let\@makecaption\caption@original@makecaption}}{}%
+  \caption@ifdefined\extrasmagyar{%
+    \addto\extrasmagyar{%
+      \let\@makecaption\caption@original@makecaption}}{}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+}{}
 %    \end{macrocode}
 %
 % \section{Package support}

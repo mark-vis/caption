@@ -100,9 +100,15 @@ compile()
   [[ $2 == "gitlab"      && $3 == "issue_65.tex"       ]] && return  # Doomed to fail: frontiers document class + subcaption package
 
   # Compile document three times (so interim files will be used)
-  pdflatex "$3" || failed "$1" "$2" "$3"
-  pdflatex "$3" || failed "$1" "$2" "$3"
-  pdflatex "$3" || failed "$1" "$2" "$3"
+  local logfile="${3%.*}.log"
+  for i in {1..3}
+  do
+    pdflatex "$3" || failed "$1" "$2" "$3"
+    if ! grep -Fq "Rerun to get" "$logfile"
+    then
+      break
+    fi
+  done
   printf "Compiling %s/%s/%s passed.\n" "$1" "$2" "$3" | tee -a "$logfile"
 }
 
