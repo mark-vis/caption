@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3492}
+% \CheckSum{3517}
 %
 % \iffalse
 %<*driver>
@@ -390,9 +390,9 @@
 %
 % \pagebreak[3]
 % \begin{macro}{\caption@setbool}
-% \begin{macro}{\caption@set@bool}
 % \changes{v1.1}{2007/04/05}{\cs{caption@set@bool}\marg{cmd}\marg{value} added}
 % \begin{macro}{\caption@ifbool}
+% \changes{v1.1}{2020/08/02}{\cs{caption@if@bool}\marg{value} added}
 % \begin{macro}{\caption@undefbool}
 %  For setting and testing boolean options we offer these three helper macros:
 %  \begin{quote}
@@ -407,11 +407,16 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@set@bool[2]{%
-  \caption@ifinlist{#2}{1,true,yes,on}%
-    {\let#1\@firstoftwo}%
-    {\caption@ifinlist{#2}{0,false,no,off}%
-       {\let#1\@secondoftwo}%
-       {\caption@Error{Undefined boolean value `#2'}}}}
+  \caption@if@bool{#2}{\let#1\@firstoftwo}{\let#1\@secondoftwo}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@if@bool[1]{%
+  \caption@ifinlist{#1}{1,true,yes,on}%
+    {\@firstoftwo}%
+    {\caption@ifinlist{#1}{0,false,no,off}%
+       {}%
+       {\caption@Error{Undefined boolean value `#1'}}%
+     \@secondoftwo}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@ifbool[1]{\@nameuse{caption@if#1}}
@@ -419,7 +424,6 @@
 %    \begin{macrocode}
 \newcommand*\caption@undefbool[1]{\@nameundef{caption@if#1}}
 %    \end{macrocode}
-% \end{macro}
 % \end{macro}
 % \end{macro}
 % \end{macro}
@@ -2777,14 +2781,22 @@
 %
 % \section{Babel support}
 %
-% \begin{macro}{\caption@IfDefined}
-% |\caption@IfDefined|\marg{cmd}\marg{yes-code}\marg{no-code}\par
-% expands the given code if \meta{cmd} is defined (or not).
+% \begin{macro}{\caption@IfBabelPackageLoaded}
+% |\caption@IfBabelPackageLoaded|\marg{option}\marg{cmd}\marg{yes-code}\marg{no-code}\par
+% expands the given \meta{yes-code} if |\caption@ifbabel@|\meta{option} is set and \meta{cmd} is defined.
+% Otherwise the \meta{no-code} is expanded.\par
+% This way the adaption could be prevented by defining
+% \begin{quote}|\def\caption@ifbabel@|\meta{option}|{false}|\end{quote}
 %    \begin{macrocode}
-\newcommand*\caption@IfDefined[3]{%
-  \caption@ifdefined#1\@firstofone\caption@AtBeginDocument{%
-    \caption@ifdefined#1{#2}{#3}}}
-\@onlypreamble\caption@IfDefined
+\newcommand*\caption@IfBabelPackageLoaded[4]{%
+  \caption@ifdefined#2\@firstofone\caption@AtBeginDocument{%
+    \caption@if@bool{\@nameuse{caption@ifbabel@#1}}%
+      {\def\caption@tempa{\caption@ifdefined#2}}%
+      {\let\caption@tempa\@secondoftwo}%
+    \caption@tempa
+      {\caption@InfoNoLine{#1 babel package is loaded}#3}%
+      {#4}}}
+\@onlypreamble\caption@IfBabelPackageLoaded
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2800,14 +2812,17 @@
 % \begin{macro}{\caption@IfBabelArabic}
 % |\caption@IfBabelArabic|\marg{yes-code}\marg{no-code}
 %    \begin{macrocode}
-\newcommand*\caption@IfBabelArabic{\caption@IfDefined\ArabiCoreLoaded}
+\newcommand*\caption@IfBabelArabic{%
+  \caption@IfBabelPackageLoaded{arabic}{\ArabiCoreLoaded}}
 \@onlypreamble\caption@IfBabelArabic
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifbabel@arabic{true}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
 \caption@IfBabelArabic{%
-  \caption@InfoNoLine{arabic babel package is loaded}%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@rl}
@@ -2848,13 +2863,17 @@
 % \begin{macro}{\caption@IfBabelFrench}
 % |\caption@IfBabelFrench|\marg{yes-code}\marg{no-code}
 %    \begin{macrocode}
-\newcommand*\caption@IfBabelFrench{\caption@IfDefined\FB@makecaption}
+\newcommand*\caption@IfBabelFrench{%
+  \caption@IfBabelPackageLoaded{french}{\FB@makecaption}}
+\@onlypreamble\caption@IfBabelFrench
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifbabel@french{true}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
 \caption@IfBabelFrench{%
-  \caption@InfoNoLine{french babel package is loaded}%
 %    \end{macrocode}
 %
 % If the language `french' is selected, we switch to the new label separator `french'
@@ -2889,13 +2908,17 @@
 % \begin{macro}{\caption@IfFrenchLe}
 % |\caption@IfFrenchLe|\marg{yes-code}\marg{no-code}
 %    \begin{macrocode}
-\newcommand*\caption@IfFrenchLe{\caption@IfDefined\frenchTeXmods}
+\newcommand*\caption@IfFrenchLe{%
+  \caption@IfBabelPackageLoaded{frenchle}{\frenchTeXmods}}
+\@onlypreamble\caption@IfBabelFrenchLe
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifbabel@frenchle{true}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
 \caption@IfFrenchLe{%
-  \caption@InfoNoLine{frenchle/pro package is loaded}%
 %    \end{macrocode}
 %
 % If the language `french' is selected, we switch to the new label separator `french'
@@ -2941,6 +2964,9 @@
 %    \end{macrocode}
 %
 %    \begin{macrocode}
+% TODO: \@makecaption was re-defined (global?)
+% TODO: \@caption was redefined (in extrasxxx if \ifnum\magyar@opt@@sectiondot>1)
+%
 %%%% TODO
 %\def\caption@tempa#1{%
 %  \@ifpackagewith{babel}{#1}{%

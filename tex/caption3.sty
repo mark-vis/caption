@@ -120,11 +120,14 @@
 \newcommand*\caption@setbool[1]{%
   \expandafter\caption@set@bool\csname caption@if#1\endcsname}
 \newcommand*\caption@set@bool[2]{%
-  \caption@ifinlist{#2}{1,true,yes,on}%
-    {\let#1\@firstoftwo}%
-    {\caption@ifinlist{#2}{0,false,no,off}%
-       {\let#1\@secondoftwo}%
-       {\caption@Error{Undefined boolean value `#2'}}}}
+  \caption@if@bool{#2}{\let#1\@firstoftwo}{\let#1\@secondoftwo}}
+\newcommand*\caption@if@bool[1]{%
+  \caption@ifinlist{#1}{1,true,yes,on}%
+    {\@firstoftwo}%
+    {\caption@ifinlist{#1}{0,false,no,off}%
+       {}%
+       {\caption@Error{Undefined boolean value `#1'}}%
+     \@secondoftwo}}
 \newcommand*\caption@ifbool[1]{\@nameuse{caption@if#1}}
 \newcommand*\caption@undefbool[1]{\@nameundef{caption@if#1}}
 \newcommand*\caption@teststar[3]{%
@@ -1069,15 +1072,21 @@
 \@onlypreamble\AtCaptionPackage
 \providecommand*\caption@documentclass@code{}
 \@onlypreamble\caption@documentclass@code
-\newcommand*\caption@IfDefined[3]{%
-  \caption@ifdefined#1\@firstofone\caption@AtBeginDocument{%
-    \caption@ifdefined#1{#2}{#3}}}
-\@onlypreamble\caption@IfDefined
+\newcommand*\caption@IfBabelPackageLoaded[4]{%
+  \caption@ifdefined#2\@firstofone\caption@AtBeginDocument{%
+    \caption@if@bool{\@nameuse{caption@ifbabel@#1}}%
+      {\def\caption@tempa{\caption@ifdefined#2}}%
+      {\let\caption@tempa\@secondoftwo}%
+    \caption@tempa
+      {\caption@InfoNoLine{#1 babel package is loaded}#3}%
+      {#4}}}
+\@onlypreamble\caption@IfBabelPackageLoaded
 \DeclareCaptionLabelSeparator{arabic}{\if@rl\space\fi: }
-\newcommand*\caption@IfBabelArabic{\caption@IfDefined\ArabiCoreLoaded}
+\newcommand*\caption@IfBabelArabic{%
+  \caption@IfBabelPackageLoaded{arabic}{\ArabiCoreLoaded}}
 \@onlypreamble\caption@IfBabelArabic
+\providecommand*\caption@ifbabel@arabic{true}
 \caption@IfBabelArabic{%
-  \caption@InfoNoLine{arabic babel package is loaded}%
   \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}%
   \caption@ifdefined\extrasarabic{%
     \addto\extrasarabic{%
@@ -1092,9 +1101,11 @@
   {\let\caption@french@labelseparator\@undefined}%
   {\caption@@set[labelseparator]{labelseparator@french}{default}%
    \let\caption@french@labelseparator\caption@labelseparator@french}
-\newcommand*\caption@IfBabelFrench{\caption@IfDefined\FB@makecaption}
+\newcommand*\caption@IfBabelFrench{%
+  \caption@IfBabelPackageLoaded{french}{\FB@makecaption}}
+\@onlypreamble\caption@IfBabelFrench
+\providecommand*\caption@ifbabel@french{true}
 \caption@IfBabelFrench{%
-  \caption@InfoNoLine{french babel package is loaded}%
   \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
     \DeclareCaptionLabelSeparator{french}{%
       \ifFBCustomiseFigTabCaptions
@@ -1107,9 +1118,11 @@
     \caption@switchdefault{labelseparator}{\babel@save #1}{french}}%
   \caption@AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}%
 }{}
-\newcommand*\caption@IfFrenchLe{\caption@IfDefined\frenchTeXmods}
+\newcommand*\caption@IfFrenchLe{%
+  \caption@IfBabelPackageLoaded{frenchle}{\frenchTeXmods}}
+\@onlypreamble\caption@IfBabelFrenchLe
+\providecommand*\caption@ifbabel@frenchle{true}
 \caption@IfFrenchLe{%
-  \caption@InfoNoLine{frenchle/pro package is loaded}%
   \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
     \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
   \fi
