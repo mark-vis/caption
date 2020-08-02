@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3429}
+% \CheckSum{3492}
 %
 % \iffalse
 %<*driver>
@@ -194,7 +194,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/01 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/02 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2626,6 +2626,48 @@
 % \section{Document class support}
 % \changes{v2.0}{2018/05/11}{Document class support re-written}
 %
+% \begin{macro}{\caption@makecaption@base}
+%    \begin{macrocode}
+% article|report|book.sty [2005/09/16 v1.4f Standard LaTeX document class]
+\long\def\caption@makecaption@base#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#1: #2}%
+  \ifdim \wd\@tempboxa >\hsize
+    #1: #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+\@onlypreamble\caption@makecaption@base
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@makecaption@arabic}
+%    \begin{macrocode}
+% arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
+\long\def\caption@makecaption@arabic#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#1: #2}%
+  \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+  \if@rl{
+    \ifdim \wd\@Arabitempboxa >\hsize
+    \textRL{#2} : #1\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+  \fi}\else{
+  \ifdim \wd\@tempboxa >\hsize
+    #1: #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi}\fi
+  \vskip\belowcaptionskip}
+\@onlypreamble\caption@makecaption@arabic
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@ifdocumentclass}
 % Boolean switch which is set if the document class could be detected successfully,
 % i.e. |\caption@document|\-|class| is set to a proper value.
@@ -2688,32 +2730,29 @@
 % If the definition of |\@makecaption| matches the one from the standard \LaTeX\ document classes
 % |article|, |report|, or |book|, we assume it's either one of them or is compatible to them.
 %    \begin{macrocode}
-    % article|report|book [2005/09/16 v1.4f Standard LaTeX document class]
-    \long\def\caption@tempa#1#2{%
-      \vskip\abovecaptionskip
-      \sbox\@tempboxa{#1: #2}%
-      \ifdim \wd\@tempboxa >\hsize
-        #1: #2\par
-      \else
-        \global \@minipagefalse
-        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
-      \fi
-      \vskip\belowcaptionskip}%
-    \ifx\@makecaption\caption@tempa
-      \caption@InfoNoLine{Standard document class detected}%
-    \else\ifx\@makecaption\@undefined
+    \ifx\@makecaption\@undefined
       \caption@InfoNoLine{Document class w/o caption stuff detected}%
     \else
+      \ifx\@makecaption\caption@makecaption@base
+        \caption@InfoNoLine{Standard document class detected}%
+      \else
+        \ifx\@makecaption\caption@makecaption@arabic
+          \caption@InfoNoLine{arabic babel option detected}%
+        \else
 %    \end{macrocode}
 % Otherwise we are clueless and use standard default settings for the captions anyway.
 % (And we unset the |document|\-|class| flag to indicate that the content of |\caption@document|\-|class| is not correct.)
 %    \begin{macrocode}
-      \caption@InfoNoLine{%
-        Unknown document class (or package),\MessageBreak
-        standard defaults will be used}%
-      \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-      \caption@setbool{documentclass}{0}% unknown document class
-    \fi\fi
+          \caption@InfoNoLine{%
+            Unknown document class (or package),\MessageBreak
+            standard defaults will be used}%
+          \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
+          \caption@setbool{documentclass}{0}% unknown document class
+        \fi
+      \fi
+    \fi
+%    \end{macrocode}
+%    \begin{macrocode}
     \let\caption@documentclass\@empty % don't load adaption code later on
   }}}}}}}%
 }{}
@@ -2738,49 +2777,64 @@
 %
 % \section{Babel support}
 %
-% \begin{macro}{\caption@AtBabelPackage}
-% |\caption@AtBabelPackage|\marg{cmd}\marg{code}\par
-% expands the given code if \meta{cmd} is defined.
+% \begin{macro}{\caption@IfDefined}
+% |\caption@IfDefined|\marg{cmd}\marg{yes-code}\marg{no-code}\par
+% expands the given code if \meta{cmd} is defined (or not).
 %    \begin{macrocode}
-\newcommand*\caption@AtBabelPackage[2]{%
+\newcommand*\caption@IfDefined[3]{%
   \caption@ifdefined#1\@firstofone\caption@AtBeginDocument{%
-    \caption@ifdefined#1{#2}{}}}
+    \caption@ifdefined#1{#2}{#3}}}
+\@onlypreamble\caption@IfDefined
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{The arabic Babel option}
-% \changes{v1.8}{2018/05/20}{\package{arabic} babel package support added}
+% \subsection{The arabic \& farsi babel option}
+% \changes{v1.8}{2018/05/20}{\package{arabic} babel support added}
+% \changes{v2.0}{2020/08/02}{\package{arabic} babel support updated}
+% \changes{v2.0}{2020/08/02}{\package{farsi} babel support added}
 %
 %    \begin{macrocode}
-%%%% TODO
-%\caption@ifdefined\ArabiCoreLoaded{%
+\DeclareCaptionLabelSeparator{arabic}{\if@rl\space\fi: }
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@IfBabelArabic}
+% |\caption@IfBabelArabic|\marg{yes-code}\marg{no-code}
+%    \begin{macrocode}
+\newcommand*\caption@IfBabelArabic{\caption@IfDefined\ArabiCoreLoaded}
+\@onlypreamble\caption@IfBabelArabic
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@IfBabelArabic{%
+  \caption@InfoNoLine{arabic babel package is loaded}%
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@rl}
 % \changes{v1.8}{2018/05/20}{This macro added}
 %    \begin{macrocode}
-%  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}
+  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}%
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-%  \def\fnum@figure{\figurename\nobreakspace\thefigure}
-%  \def\fnum@table{\tablename\nobreakspace\thetable}
+  \caption@ifdefined\extrasarabic{%
+    \addto\extrasarabic{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+  \caption@ifdefined\extrasfarsi{%
+    \addto\extrasfarsi{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
 %    \end{macrocode}
+%
 %    \begin{macrocode}
-%  \DeclareCaptionLabelSeparator{arabi}{ : }
-%  \DeclareCaptionLabelSeparator{default}{%
-%    \if@rl\caption@lsep@arabi\else\caption@lsep@colon\fi}
-%    \end{macrocode}
-%    \begin{macrocode}
-%}{%
+}{%
   \let\caption@rl\@firstofone
-%}
+}
 %    \end{macrocode}
 %
 % \subsection{The french babel option}
-% \changes{v1.1}{2006/05/14}{\package{frenchb} babel package support added}
-% \changes{v2.0}{2020/08/01}{\package{french} babel package support updated}
+% \changes{v1.1}{2006/05/14}{\package{frenchb} babel support added}
+% \changes{v2.0}{2020/08/01}{\package{french} babel support updated}
 %
 % We provide a dummy `french' caption label separator (so |labelsep=french| works fine);
 % it will be re-defined dependant on the `french' package used later on.
@@ -2791,14 +2845,15 @@
    \let\caption@french@labelseparator\caption@labelseparator@french}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@AtBabelFrench}
+% \begin{macro}{\caption@IfBabelFrench}
+% |\caption@IfBabelFrench|\marg{yes-code}\marg{no-code}
 %    \begin{macrocode}
-\newcommand*\caption@AtBabelFrench{\caption@AtBabelPackage\FB@makecaption}
+\newcommand*\caption@IfBabelFrench{\caption@IfDefined\FB@makecaption}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-\caption@AtBabelFrench{%
+\caption@IfBabelFrench{%
   \caption@InfoNoLine{french babel package is loaded}%
 %    \end{macrocode}
 %
@@ -2815,26 +2870,31 @@
       \fi}%
   \fi
   \addto\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}
+    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}%
 %    \end{macrocode}
 %
 % Suppress the warning about load order (since it's not longer valid anymore).
 %    \begin{macrocode}
-\AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}
+  \caption@AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}%
 %    \end{macrocode}
 %
-% \subsection{The frenchle/pro package}
-% \changes{v1.1}{2006/05/14}{\package{frenchle/pro} package support added}
-% \changes{v2.0}{2020/08/01}{\package{frenchle/pro} babel package support updated}
-%
-% \begin{macro}{\caption@AtFrenchLe}
 %    \begin{macrocode}
-\newcommand*\caption@AtFrenchLe{\caption@AtBabelPackage\frenchTeXmods}
+}{}
+%    \end{macrocode}
+%
+% \subsection{The frenchle \& frenchpro package}
+% \changes{v1.1}{2006/05/14}{\package{frenchle/pro} package support added}
+% \changes{v2.0}{2020/08/01}{\package{frenchle/pro} package support updated}
+%
+% \begin{macro}{\caption@IfFrenchLe}
+% |\caption@IfFrenchLe|\marg{yes-code}\marg{no-code}
+%    \begin{macrocode}
+\newcommand*\caption@IfFrenchLe{\caption@IfDefined\frenchTeXmods}
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
-\caption@AtFrenchLe{%
+\caption@IfFrenchLe{%
   \caption@InfoNoLine{frenchle/pro package is loaded}%
 %    \end{macrocode}
 %
@@ -2864,10 +2924,14 @@
     \let\captionlabelfont@frenchle\captionlabelfont}%
   \g@addto@macro\GOfrench{%
     \let\captionfont\captionfont@frenchle
-    \let\captionlabelfont\captionlabelfont@frenchle}}
+    \let\captionlabelfont\captionlabelfont@frenchle}%
 %    \end{macrocode}
 %
-% \subsection{The hungarian and magyar Babel option}
+%    \begin{macrocode}
+}{}
+%    \end{macrocode}
+%
+% \subsection{The hungarian \& magyar babel option}
 % \changes{v1.3}{2009/03/29}{\package{magyar} package support added}
 % \changes{v1.3a}{2011/08/12}{\package{magyar} package support revised}
 % \changes{v1.8b}{2018/08/26}{\package{magyar} package support revised}
@@ -3692,11 +3756,9 @@
 %
 % \begin{macro}{\caption@@@make}
 % \changes{v1.0b}{2004/05/16}{Bugfix 04-05-06: \cs{allowhyphens} added}
-% \changes{v1.0c}{2005/02/12}{Bugfix 04-12-16: Use some kind of
-%        \cs{@startstrut}\cs{strutbox} instead of \cs{strut}}
+% \changes{v1.0c}{2005/02/12}{Bugfix 04-12-16: Use some kind of \cs{@startstrut}\cs{strutbox} instead of \cs{strut}}
 % \changes{v1.0c}{2005/02/12}{Bugfix 05-01-23: \cs{@finalstrut}\cs{strutbox} added}
-% \changes{v1.0d}{2005/05/05}{Use \cs{caption@ifempty};
-%        \cs{let}\cs{caption@ifstrut}\cs{@secondoftwo} added}
+% \changes{v1.0d}{2005/05/05}{Use \cs{caption@ifempty}; \cs{let}\cs{caption@ifstrut}\cs{@secondoftwo} added}
 % \changes{v1.0d}{2005/05/05}{Bugfix: Handling of \cs{ifcaption@star} changed}
 % \changes{v1.0f}{2005/08/24}{Check for empty label added}
 % \changes{v1.0f}{2005/08/25}{\cs{caption@iflf} added}
@@ -3705,8 +3767,7 @@
 % \changes{v1.2}{2007/11/17}{Made option \opt{size=} stronger than \opt{font=}}
 % \changes{v1.3}{2010/09/04}{Uses \cs{caption@applyfont} now}
 % \changes{v1.3}{2010/11/01}{Bugfix: If the caption text is empty, the text format will be set to \opt{simple} now}
-% \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator
-%        will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
+% \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
 % \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{captiontextend}}
 %  |\caption@@@make|\marg{caption label}\marg{caption text}\par
 %  This one finally typesets the caption paragraph, without margin and indention.

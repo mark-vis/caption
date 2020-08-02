@@ -40,7 +40,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/01 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/02 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -986,6 +986,36 @@
     {\let\caption@Debug\@gobble}}
 \DeclareOption{debug}{\setkeys{caption}{debug}}
 \setkeys{caption}{debug=0}
+\long\def\caption@makecaption@base#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#1: #2}%
+  \ifdim \wd\@tempboxa >\hsize
+    #1: #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi
+  \vskip\belowcaptionskip}
+\@onlypreamble\caption@makecaption@base
+\long\def\caption@makecaption@arabic#1#2{%
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{#1: #2}%
+  \sbox\@Arabitempboxa{\textRL{#2} : #1}%
+  \if@rl{
+    \ifdim \wd\@Arabitempboxa >\hsize
+    \textRL{#2} : #1\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@Arabitempboxa\hfil}%
+  \fi}\else{
+  \ifdim \wd\@tempboxa >\hsize
+    #1: #2\par
+  \else
+    \global \@minipagefalse
+    \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi}\fi
+  \vskip\belowcaptionskip}
+\@onlypreamble\caption@makecaption@arabic
 \caption@setbool{documentclass}{1}
 \caption@ifundefined\caption@documentclass{%
   \@ifclassloaded{beamer}{%
@@ -1014,28 +1044,23 @@
     \caption@InfoNoLine{thesis document class detected}%
     \def\caption@documentclass{thesis}%
   }{%
-    % article|report|book [2005/09/16 v1.4f Standard LaTeX document class]
-    \long\def\caption@tempa#1#2{%
-      \vskip\abovecaptionskip
-      \sbox\@tempboxa{#1: #2}%
-      \ifdim \wd\@tempboxa >\hsize
-        #1: #2\par
-      \else
-        \global \@minipagefalse
-        \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
-      \fi
-      \vskip\belowcaptionskip}%
-    \ifx\@makecaption\caption@tempa
-      \caption@InfoNoLine{Standard document class detected}%
-    \else\ifx\@makecaption\@undefined
+    \ifx\@makecaption\@undefined
       \caption@InfoNoLine{Document class w/o caption stuff detected}%
     \else
-      \caption@InfoNoLine{%
-        Unknown document class (or package),\MessageBreak
-        standard defaults will be used}%
-      \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-      \caption@setbool{documentclass}{0}% unknown document class
-    \fi\fi
+      \ifx\@makecaption\caption@makecaption@base
+        \caption@InfoNoLine{Standard document class detected}%
+      \else
+        \ifx\@makecaption\caption@makecaption@arabic
+          \caption@InfoNoLine{arabic babel option detected}%
+        \else
+          \caption@InfoNoLine{%
+            Unknown document class (or package),\MessageBreak
+            standard defaults will be used}%
+          \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
+          \caption@setbool{documentclass}{0}% unknown document class
+        \fi
+      \fi
+    \fi
     \let\caption@documentclass\@empty % don't load adaption code later on
   }}}}}}}%
 }{}
@@ -1044,17 +1069,31 @@
 \@onlypreamble\AtCaptionPackage
 \providecommand*\caption@documentclass@code{}
 \@onlypreamble\caption@documentclass@code
-\newcommand*\caption@AtBabelPackage[2]{%
+\newcommand*\caption@IfDefined[3]{%
   \caption@ifdefined#1\@firstofone\caption@AtBeginDocument{%
-    \caption@ifdefined#1{#2}{}}}
-%%%% TODO
+    \caption@ifdefined#1{#2}{#3}}}
+\@onlypreamble\caption@IfDefined
+\DeclareCaptionLabelSeparator{arabic}{\if@rl\space\fi: }
+\newcommand*\caption@IfBabelArabic{\caption@IfDefined\ArabiCoreLoaded}
+\@onlypreamble\caption@IfBabelArabic
+\caption@IfBabelArabic{%
+  \caption@InfoNoLine{arabic babel package is loaded}%
+  \newcommand\caption@rl[1]{\if@rl\textRL{#1}\else\textLR{#1}\fi}%
+  \caption@ifdefined\extrasarabic{%
+    \addto\extrasarabic{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+  \caption@ifdefined\extrasfarsi{%
+    \addto\extrasfarsi{%
+      \caption@switchdefault{labelseparator}{\babel@save #1}{arabic}}}{}%
+}{%
   \let\caption@rl\@firstofone
+}
 \caption@ifdecl{labelseparator}{french}
   {\let\caption@french@labelseparator\@undefined}%
   {\caption@@set[labelseparator]{labelseparator@french}{default}%
    \let\caption@french@labelseparator\caption@labelseparator@french}
-\newcommand*\caption@AtBabelFrench{\caption@AtBabelPackage\FB@makecaption}
-\caption@AtBabelFrench{%
+\newcommand*\caption@IfBabelFrench{\caption@IfDefined\FB@makecaption}
+\caption@IfBabelFrench{%
   \caption@InfoNoLine{french babel package is loaded}%
   \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
     \DeclareCaptionLabelSeparator{french}{%
@@ -1065,10 +1104,11 @@
       \fi}%
   \fi
   \addto\extrasfrench{%
-    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}
-\AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}
-\newcommand*\caption@AtFrenchLe{\caption@AtBabelPackage\frenchTeXmods}
-\caption@AtFrenchLe{%
+    \caption@switchdefault{labelseparator}{\babel@save #1}{french}}%
+  \caption@AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}%
+}{}
+\newcommand*\caption@IfFrenchLe{\caption@IfDefined\frenchTeXmods}
+\caption@IfFrenchLe{%
   \caption@InfoNoLine{frenchle/pro package is loaded}%
   \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
     \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
@@ -1086,7 +1126,8 @@
     \let\captionlabelfont@frenchle\captionlabelfont}%
   \g@addto@macro\GOfrench{%
     \let\captionfont\captionfont@frenchle
-    \let\captionlabelfont\captionlabelfont@frenchle}}
+    \let\captionlabelfont\captionlabelfont@frenchle}%
+}{}
 \DeclareCaptionListFormat{subperiod}{#2.}
 %%%% TODO
 \newcommand*\caption@ifpackageloaded[1]{%
