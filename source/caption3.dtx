@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3533}
+% \CheckSum{3579}
 %
 % \iffalse
 %<*driver>
@@ -2642,10 +2642,10 @@
 % \section{Document class support}
 % \changes{v2.0}{2018/05/11}{Document class support re-written}
 %
-% \begin{macro}{\caption@makecaption@base}
+% \begin{macro}{\@makecaption@standard}
 %    \begin{macrocode}
 % article|report|book.sty [2005/09/16 v1.4f Standard LaTeX document class]
-\long\def\caption@makecaption@base#1#2{%
+\newcommand\@makecaption@standard[2]{%
   \vskip\abovecaptionskip
   \sbox\@tempboxa{#1: #2}%
   \ifdim \wd\@tempboxa >\hsize
@@ -2655,14 +2655,14 @@
     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
   \fi
   \vskip\belowcaptionskip}
-\@onlypreamble\caption@makecaption@base
+\@onlypreamble\@makecaption@standard
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@makecaption@arabic}
+% \begin{macro}{\@makecaption@arabic}
 %    \begin{macrocode}
 % arabicore.sty [2006/01/01 v1.0 Arabi Core switching commands (may still change)]
-\long\def\caption@makecaption@arabic#1#2{%
+\newcommand\@makecaption@arabic[2]{%
   \vskip\abovecaptionskip
   \sbox\@tempboxa{#1: #2}%
   \sbox\@Arabitempboxa{\textRL{#2} : #1}%
@@ -2680,7 +2680,21 @@
     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
   \fi}\fi
   \vskip\belowcaptionskip}
-\@onlypreamble\caption@makecaption@arabic
+\@onlypreamble\@makecaption@arabic
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@makecaption@latvian}
+%    \begin{macrocode}
+\newcommand\@makecaption@latvian[2]{%
+  \vskip10\p@
+  \sbox\@tempboxa{#1\if\empty#2\else: #2\fi}%
+  \ifdim\wd\@tempboxa>\hsize
+    #1: #2\par
+  \else
+    \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi}
+\@onlypreamble\@makecaption@latvian
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2749,21 +2763,25 @@
     \ifx\@makecaption\@undefined
       \caption@InfoNoLine{Document class w/o caption stuff detected}%
     \else
-      \ifx\@makecaption\caption@makecaption@base
+      \ifx\@makecaption\@makecaption@standard
         \caption@InfoNoLine{Standard document class detected}%
       \else
-        \ifx\@makecaption\caption@makecaption@arabic
+        \ifx\@makecaption\@makecaption@arabic
           \caption@InfoNoLine{arabic babel option detected}%
         \else
+          \ifx\@makecaption\@makecaption@latvian
+            \caption@InfoNoLine{latvian babel option detected}%
+          \else
 %    \end{macrocode}
 % Otherwise we are clueless and use standard default settings for the captions anyway.
 % (And we unset the |document|\-|class| flag to indicate that the content of |\caption@document|\-|class| is not correct.)
 %    \begin{macrocode}
-          \caption@InfoNoLine{%
-            Unknown document class (or package),\MessageBreak
-            standard defaults will be used}%
-          \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-          \caption@setbool{documentclass}{0}% unknown document class
+            \caption@InfoNoLine{%
+              Unknown document class (or package),\MessageBreak
+              standard defaults will be used}%
+            \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
+            \caption@setbool{documentclass}{0}% unknown document class
+          \fi
         \fi
       \fi
     \fi
@@ -2844,7 +2862,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% If the language `arabic' or `farsi' is selected, we switch to the label separator `arabi'.
+% If the language `arabic' or `farsi' is selected, we switch the default label separator to `arabi'.
 %
 %    \begin{macrocode}
   \caption@ifdefined\extrasarabic{%
@@ -2890,7 +2908,7 @@
 \caption@IfBabelFrench{%
 %    \end{macrocode}
 %
-% If the language `french' is selected, we switch to the new label separator `french'
+% If the language `french' is selected, we switch the default label separator to `french'
 % which uses |\if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
 %
 %    \begin{macrocode}
@@ -2936,8 +2954,8 @@
 \caption@IfFrenchLe{%
 %    \end{macrocode}
 %
-% If the language `french' is selected, we switch to the new label separator `french'
-% which uses |\caption|\-|separator|, and switch to the font `it'.
+% If the language `french' is selected, we switch the default label separator to `french'
+% which uses |\caption|\-|separator|, and switch the default font to `it' and the default label font to `up'.
 %
 %    \begin{macrocode}
   \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
@@ -2996,8 +3014,8 @@
 %    \end{macrocode}
 %
 % If the language `hungarian' or `magyar' is selected,
-% we switch to the label format `magyar', to the separator `period',
-% and to the list format `subperiod'.
+% we switch the default label format to `magyar', the default separator to `period',
+% and the default list format to `subperiod'.
 %
 %    \begin{macrocode}
   \caption@ifdefined\extrashungarian{%
@@ -3018,7 +3036,37 @@
 %
 % \subsection{The latvian babel option}
 %
-% TODO: babel-latvian/latvian.ldf
+%    \begin{macrocode}
+\DeclareCaptionLabelFormat{latvian}{#2\bothIfSecond{~}{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@IfBabelLatvian}
+% |\caption@IfBabelLatvian|\marg{yes-code}\marg{no-code}
+%    \begin{macrocode}
+\newcommand*\caption@IfBabelLatvian{%
+  \caption@IfBabelPackageLoaded{latvian}{\bbl@latvianindent}}
+\@onlypreamble\caption@IfBabelLatvian
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifbabel@latvian{true}
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@IfBabelLatvian{%
+%    \end{macrocode}
+%
+% If the language `latvian' is selected, we switch the default label format to `latvian'.
+%
+%    \begin{macrocode}
+  \caption@ifdefined\extraslatvian{%
+    \addto\extraslatvian{%
+      \caption@switchdefault{labelformat}{\babel@save #1}{latvian}}}{}%
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+}{}
+%    \end{macrocode}
 %
 % \section{Package support}
 %

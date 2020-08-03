@@ -992,7 +992,7 @@
     {\let\caption@Debug\@gobble}}
 \DeclareOption{debug}{\setkeys{caption}{debug}}
 \setkeys{caption}{debug=0}
-\long\def\caption@makecaption@base#1#2{%
+\newcommand\@makecaption@standard[2]{%
   \vskip\abovecaptionskip
   \sbox\@tempboxa{#1: #2}%
   \ifdim \wd\@tempboxa >\hsize
@@ -1002,8 +1002,8 @@
     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
   \fi
   \vskip\belowcaptionskip}
-\@onlypreamble\caption@makecaption@base
-\long\def\caption@makecaption@arabic#1#2{%
+\@onlypreamble\@makecaption@standard
+\newcommand\@makecaption@arabic[2]{%
   \vskip\abovecaptionskip
   \sbox\@tempboxa{#1: #2}%
   \sbox\@Arabitempboxa{\textRL{#2} : #1}%
@@ -1021,7 +1021,16 @@
     \hb@xt@\hsize{\hfil\box\@tempboxa\hfil}%
   \fi}\fi
   \vskip\belowcaptionskip}
-\@onlypreamble\caption@makecaption@arabic
+\@onlypreamble\@makecaption@arabic
+\newcommand\@makecaption@latvian[2]{%
+  \vskip10\p@
+  \sbox\@tempboxa{#1\if\empty#2\else: #2\fi}%
+  \ifdim\wd\@tempboxa>\hsize
+    #1: #2\par
+  \else
+    \hbox to\hsize{\hfil\box\@tempboxa\hfil}%
+  \fi}
+\@onlypreamble\@makecaption@latvian
 \caption@setbool{documentclass}{1}
 \caption@ifundefined\caption@documentclass{%
   \@ifclassloaded{beamer}{%
@@ -1053,17 +1062,21 @@
     \ifx\@makecaption\@undefined
       \caption@InfoNoLine{Document class w/o caption stuff detected}%
     \else
-      \ifx\@makecaption\caption@makecaption@base
+      \ifx\@makecaption\@makecaption@standard
         \caption@InfoNoLine{Standard document class detected}%
       \else
-        \ifx\@makecaption\caption@makecaption@arabic
+        \ifx\@makecaption\@makecaption@arabic
           \caption@InfoNoLine{arabic babel option detected}%
         \else
-          \caption@InfoNoLine{%
-            Unknown document class (or package),\MessageBreak
-            standard defaults will be used}%
-          \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
-          \caption@setbool{documentclass}{0}% unknown document class
+          \ifx\@makecaption\@makecaption@latvian
+            \caption@InfoNoLine{latvian babel option detected}%
+          \else
+            \caption@InfoNoLine{%
+              Unknown document class (or package),\MessageBreak
+              standard defaults will be used}%
+            \caption@InfoNoLine{\string\@makecaption\space=\space\meaning\@makecaption\@gobble}%
+            \caption@setbool{documentclass}{0}% unknown document class
+          \fi
         \fi
       \fi
     \fi
@@ -1161,6 +1174,16 @@
       \caption@switchdefault{labelformat}{\babel@save #1}{magyar}%
       \caption@switchdefault{labelseparator}{\babel@save #1}{period}%
       \caption@switchdefault{listformat}{\babel@save #1}{subperiod}}}{}%
+}{}
+\DeclareCaptionLabelFormat{latvian}{#2\bothIfSecond{~}{#1}}
+\newcommand*\caption@IfBabelLatvian{%
+  \caption@IfBabelPackageLoaded{latvian}{\bbl@latvianindent}}
+\@onlypreamble\caption@IfBabelLatvian
+\providecommand*\caption@ifbabel@latvian{true}
+\caption@IfBabelLatvian{%
+  \caption@ifdefined\extraslatvian{%
+    \addto\extraslatvian{%
+      \caption@switchdefault{labelformat}{\babel@save #1}{latvian}}}{}%
 }{}
 \newcommand*\caption@ifpackageloaded[1]{%
   \expandafter\ifx\csname ver@#1.\caption@pkgextension\endcsname\relax
