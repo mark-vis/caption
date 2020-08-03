@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2740}
+% \CheckSum{2745}
 %
 % \iffalse
 %<*driver>
@@ -1550,15 +1550,16 @@
 %
 % \begin{macro}{\caption@setfnum}
 % \changes{v3.1}{2007/03/10}{This macro added}
-% \changes{v4.0}{2020/07/27}{Adapted to \package{caption3} v2.0}
+% \changes{v4.0}{2020/08/03}{Adapted to \package{caption3} v2.0}
 %  |\caption@setfnum|\marg{type}\\
-%  redefines |\fnum@|\meta{type} according the caption label format
-%  set with |labelformat=|. But if |labelformat=default| is set,
-%  |\fnum@|\meta{type} will not be overwritten by us.
+%  stores the original definition of |\fnum@|\meta{type} in |\caption@fnum@|\meta{type}
+% and re-defines it according the caption label format set with |label|\-|format=|.
 %    \begin{macrocode}
 \newcommand*\caption@setfnum[1]{%
-  \@ifundefined{fnum@#1}{\@secondoftwo}{\caption@ifset{labelformat}{default}}%
-    {}{\@namedef{fnum@#1}{\caption@fnum{#1}}}}
+  \@ifundefined{caption@fnum@#1}%
+    {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
+     \@namedef{fnum@#1}{\caption@fnum{#1}}}%
+    {}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2406,8 +2407,7 @@
 %    \begin{macrocode}
   \newcommand*\caption@float@setname[1]{%
     \expandafter\ifx\csname #1name\endcsname\relax
-      \expandafter\let\csname #1name\expandafter\endcsname
-                      \csname fname@#1\endcsname
+      \expandafter\let\csname #1name\expandafter\endcsname\csname fname@#1\endcsname
     \fi}%
 %    \end{macrocode}
 % \end{macro}

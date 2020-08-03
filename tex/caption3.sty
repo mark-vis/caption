@@ -425,15 +425,6 @@
 \def\caption@@set[#1]#2#3{%
   \caption@checkdecl{#1}{#3}{%
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
-\newcommand*\caption@ifset{%
-  \@dblarg\caption@@ifset}
-\def\caption@@ifset[#1]#2#3{%
-  \caption@set[{#1}]{tempa}{#3}%
-  \expandafter\ifx\csname caption@#2\endcsname\caption@tempa
-    \expandafter\@firstoftwo
-  \else
-    \expandafter\@secondoftwo
-  \fi}
 \newcommand*\SetCaptionDefault{%
   \@dblarg\caption@@setdefault}
 \@onlypreamble\SetCaptionDefault
@@ -674,7 +665,11 @@
 \DeclareCaptionLabelFormat{brace}{\bothIfFirst{#1}{\nobreakspace}#2)}
 \DeclareCaptionLabelFormat{autodot}{\bothIfFirst{#1}{\nobreakspace}#2\autodot}
 \DeclareCaptionLabelFormat{unnumbered}{#1}
-\SetCaptionDefault{labelformat}{simple}
+\DeclareCaptionLabelFormat{original}{%
+  \caption@ifdefined\caption@original@fnum
+    {\caption@original@fnum}%
+    {\caption@labelformat@simple{#1}{#2}}}
+\SetCaptionDefault{labelformat}{original}
 \newcommand\DeclareCaptionLabelSeparator{%
   \@ifstar
     \DeclareCaptionLabelSeparator@
@@ -1360,7 +1355,9 @@
   \fi}
 \newcommand*\caption@addsubcontentslines[1]{}
 \newif\ifcaption@star
-\newcommand*\caption@fnum[1]{\caption@labelformat{\@nameuse{#1name}}{\@nameuse{the#1}}}
+\newcommand*\caption@fnum[1]{%
+  \expandafter\let\expandafter\caption@original@fnum\csname caption@fnum@#1\endcsname % for label format `original'
+  \caption@labelformat{\@nameuse{#1name}}{\@nameuse{the#1}}}
 \newcommand\caption@make[2]{\caption@@make{\caption@labelformat{#1}{#2}}}
 \newcommand\caption@@make[2]{%
   \begingroup
