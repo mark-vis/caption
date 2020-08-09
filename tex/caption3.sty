@@ -40,7 +40,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/03 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/09 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -461,9 +461,26 @@
   \caption@ifdefined\caption@tempa
     {\caption@requirepackage\caption@tempa{#1=#2}}%
     {}}
-\newdimen\captionmargin
-\newdimen\captionmargin@
-\newdimen\captionwidth
+\newcommand*\DeclareCaptionLength[1]{%
+  \expandafter\newdimen\csname caption#1\endcsname
+  \SetCaptionDefaultLength*{#1}}
+\@onlypreamble\DeclareCaptionLength
+\newcommand*\SetCaptionDefaultLength{%
+  \caption@teststar\caption@setdefaultlength\def\edef}
+\@onlypreamble\SetCaptionDefaultLength
+\newcommand*\caption@setdefaultlength[3]{%
+  \expandafter#1\csname caption#2@default\endcsname{#3}}
+\@onlypreamble\caption@setdefaultlength
+\newcommand*\caption@setlength[2]{%
+  \edef\caption@tempa{#2}%
+  \def\caption@tempb{default}%
+  \ifx\caption@tempa\caption@tempb
+    \expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname
+  \fi
+  \expandafter\setlength\csname caption#1\endcsname\caption@tempa}
+\DeclareCaptionLength{margin}{0pt}
+\DeclareCaptionLength{margin@}{\the\captionmargin}
+\DeclareCaptionLength{width}{0pt}
 \newdimen\caption@tempdima
 \DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
 \DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
@@ -487,8 +504,8 @@
   #1{\captionwidth\z@}%
   \caption@@@setmargin#2,#2,\@nil}
 \def\caption@@@setmargin#1,#2,#3\@nil{%
-  \setlength\captionmargin@{#2}%
-  \setlength\captionmargin{#1}%
+  \caption@setlength{margin}{#1}%
+  \caption@setlength{margin@}{#2}%
   \addtolength\captionmargin@{-\captionmargin}}
 \newcommand*\setcaptionwidth{%
   \caption@resetcalcmargin
@@ -497,7 +514,7 @@
   \caption@teststar\caption@@setwidth\@gobble\@firstofone}
 \newcommand*\caption@@setwidth[2]{%
   #1{\captionmargin\z@\captionmargin@\z@}%
-  \setlength\captionwidth{#2}}%
+  \caption@setlength{width}{#2}}%
 \newcommand*\caption@resetcalcmargin{%
   \let\caption@calcmargin@hook\@empty}
 \newcommand*\caption@setcalcmargin{%
@@ -545,17 +562,17 @@
   \caption@ifoddpage}
 \newcommand*\caption@setoptcmd[2]{%
   \caption@ifinlist{#2}{0,false,no,off}{\let#1\@undefined}{\def#1{#2}}}
-\newdimen\caption@indent
-\newdimen\caption@parindent
-\newdimen\caption@hangindent
+\DeclareCaptionLength{@indent}{0pt}
+\DeclareCaptionLength{@parindent}{0pt}
+\DeclareCaptionLength{@hangindent}{0pt}
 \DeclareCaptionOption{indent}[\leftmargini]{% obsolete
-  \setlength\caption@indent{#1}}
+  \caption@setlength{@indent}{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
-  \setlength\caption@indent{#1}}
+  \caption@setlength{@indent}{#1}}
 \DeclareCaptionOption{parindent}{%
-  \setlength\caption@parindent{#1}}
+  \caption@setlength{@parindent}{#1}}
 \DeclareCaptionOption{hangindent}{%
-  \setlength\caption@hangindent{#1}}
+  \caption@setlength{@hangindent}{#1}}
 \DeclareCaptionOption{parskip}{%
   \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 \newcommand*\DeclareCaptionStyle[1]{%
@@ -588,15 +605,17 @@
   \caption@setup{%
     box=none,boxcolor=white,parbox=parbox,%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
-    justification=justified,font=,size=,labelfont=,textfont=,%
+    font=,labelfont=,textfont=,size=,%
+    justification=justified,slc,rule,strut,%
     margin=0pt,minmargin=0,maxmargin=0,%
-    indent=0pt,parindent=0pt,hangindent=0pt,%
-    slc,rule,strut}}
+    indent=0pt,parindent=0pt,hangindent=0pt}}
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
-  box=default,format=default,labelsep=default,textformat=default,%
-  font=default,labelfont=default,textfont=default,%
-  size=default,justification=default,slc=default}
+  box=default,%
+  format=default,labelformat=default,labelsep=default,textformat=default,%
+  font=default,labelfont=default,textfont=default,size=default,%
+  justification=default,slc=default,margin=default,%
+  indent=default,parindent=default,hangindent=default}
 \newcommand*\DeclareCaptionSinglelinecheck[2]{%
   \caption@decl{singlelinecheck}{#1}{#2}}
 \@onlypreamble\DeclareCaptionSinglelinecheck

@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3589}
+% \CheckSum{3623}
 %
 % \iffalse
 %<*driver>
@@ -194,7 +194,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/03 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/09 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1253,6 +1253,48 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \section{Declaring and setting lengths}
+%
+% \begin{macro}{\DeclareCaptionLength}
+% \changes{v2.0}{2020/08/09}{This macro added}
+%  |\DeclareCaptionLength|\marg{name}\marg{default value}
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionLength[1]{%
+  \expandafter\newdimen\csname caption#1\endcsname
+  \SetCaptionDefaultLength*{#1}}
+\@onlypreamble\DeclareCaptionLength
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionDefaultLength}
+% \changes{v2.0}{2020/08/09}{This macro added}
+%  |\SetCaptionDefaultLength*|\marg{name}\marg{value}
+%    \begin{macrocode}
+\newcommand*\SetCaptionDefaultLength{%
+  \caption@teststar\caption@setdefaultlength\def\edef}
+\@onlypreamble\SetCaptionDefaultLength
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setdefaultlength[3]{%
+  \expandafter#1\csname caption#2@default\endcsname{#3}}
+\@onlypreamble\caption@setdefaultlength
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setlength}
+% \changes{v2.0}{2020/08/09}{This macro added}
+%  |\caption@setlength|\marg{name}\marg{value}
+%    \begin{macrocode}
+\newcommand*\caption@setlength[2]{%
+  \edef\caption@tempa{#2}%
+  \def\caption@tempb{default}%
+  \ifx\caption@tempa\caption@tempb
+    \expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname
+  \fi
+  \expandafter\setlength\csname caption#1\endcsname\caption@tempa}
+%    \end{macrocode}
+% \end{macro}
+%
 % \section{Margin resp. width}
 % \changes{v1.0n}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
 % \changes{v1.0n}{2007/04/03}{Option `twoside' added}
@@ -1269,9 +1311,9 @@
 %  If |\captionwidth| is not zero we will take this value afterwards,
 %  otherwise |\captionmargin| and |\captionmargin@|.
 %    \begin{macrocode}
-\newdimen\captionmargin
-\newdimen\captionmargin@
-\newdimen\captionwidth
+\DeclareCaptionLength{margin}{0pt}
+\DeclareCaptionLength{margin@}{\the\captionmargin}
+\DeclareCaptionLength{width}{0pt}
 \newdimen\caption@tempdima
 %    \end{macrocode}
 % \end{macro}
@@ -1328,8 +1370,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@@@setmargin#1,#2,#3\@nil{%
-  \setlength\captionmargin@{#2}%
-  \setlength\captionmargin{#1}%
+  \caption@setlength{margin}{#1}%
+  \caption@setlength{margin@}{#2}%
   \addtolength\captionmargin@{-\captionmargin}}
 %    \end{macrocode}
 % \end{macro}
@@ -1354,7 +1396,7 @@
 %    \begin{macrocode}
 \newcommand*\caption@@setwidth[2]{%
   #1{\captionmargin\z@\captionmargin@\z@}%
-  \setlength\captionwidth{#2}}%
+  \caption@setlength{width}{#2}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1503,9 +1545,9 @@
 % \begin{macro}{\caption@hangindent}
 %  These are the indentions we support.
 %    \begin{macrocode}
-\newdimen\caption@indent
-\newdimen\caption@parindent
-\newdimen\caption@hangindent
+\DeclareCaptionLength{@indent}{0pt}
+\DeclareCaptionLength{@parindent}{0pt}
+\DeclareCaptionLength{@hangindent}{0pt}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1516,13 +1558,13 @@
 % \changes{v1.0f}{2005/08/22}{Undocumented defaults for \opt{parindent=}, \opt{hangindent=}, and \opt{parskip=} removed}
 %    \begin{macrocode}
 \DeclareCaptionOption{indent}[\leftmargini]{% obsolete
-  \setlength\caption@indent{#1}}
+  \caption@setlength{@indent}{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
-  \setlength\caption@indent{#1}}
+  \caption@setlength{@indent}{#1}}
 \DeclareCaptionOption{parindent}{%
-  \setlength\caption@parindent{#1}}
+  \caption@setlength{@parindent}{#1}}
 \DeclareCaptionOption{hangindent}{%
-  \setlength\caption@hangindent{#1}}
+  \caption@setlength{@hangindent}{#1}}
 \DeclareCaptionOption{parskip}{%
   \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 %    \end{macrocode}
@@ -1612,10 +1654,10 @@
   \caption@setup{%
     box=none,boxcolor=white,parbox=parbox,%
     format=plain,labelformat=default,labelsep=colon,textformat=simple,%
-    justification=justified,font=,size=,labelfont=,textfont=,%
+    font=,labelfont=,textfont=,size=,%
+    justification=justified,slc,rule,strut,%
     margin=0pt,minmargin=0,maxmargin=0,%
-    indent=0pt,parindent=0pt,hangindent=0pt,%
-    slc,rule,strut}}
+    indent=0pt,parindent=0pt,hangindent=0pt}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1632,9 +1674,11 @@
 %    \begin{macrocode}
 \DeclareCaptionStyle{base}[indent=0pt,justification=centering]{}
 \DeclareCaptionStyle{default}[indent=0pt,justification=centering]{%
-  box=default,format=default,labelsep=default,textformat=default,%
-  font=default,labelfont=default,textfont=default,%
-  size=default,justification=default,slc=default}
+  box=default,%
+  format=default,labelformat=default,labelsep=default,textformat=default,%
+  font=default,labelfont=default,textfont=default,size=default,%
+  justification=default,slc=default,margin=default,%
+  indent=default,parindent=default,hangindent=default}
 %    \end{macrocode}
 %
 % \begin{macro}{\DeclareCaptionSinglelinecheck}
