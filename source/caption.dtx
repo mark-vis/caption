@@ -28,7 +28,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3013}
+% \CheckSum{2981}
 %
 % \iffalse
 %<*driver>
@@ -2506,7 +2506,7 @@
     \fi}%
 %    \end{macrocode}
 %    \begin{macrocode}
-\AtBeginCaption{\caption@test@adjustwidth}
+  \AtBeginCaption{\caption@test@adjustwidth}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3306,18 +3306,9 @@
 % \changes{v3.4c}{2020/01/01}{Ugly workaround for usage in lists added}
 % \changes{v3.4d}{2020/01/01}{Ugly workaround for usage in lists revised}
 %  To support the \package{listings} package we need to redefine
-%  |\lst@MakeCaption| so the original stuff is nested with
+%  |\lst@Make|\-|Caption| so the original stuff is nested with
 %  |\caption@begin| and |\caption@end| etc.\par
-%  Unfortunately |\lst@MakeCaption| is sometimes used with |\linewidth| intact but sometimes with |\linewidth| adapted.
-%  So we either could write a bunch of very ugly code which is using internals of the \package{listings} package, or
-%  we could simply ignore this fact since |\hsize| will be left untouched by the \package{listings} package.
-%  (This is the reason why the caption is mis-aligned when using one of the options |linewidth=|, |xleftmargin=|, |yleftmargin=|, or |resetmargins=|,
-%   even if the \package{caption} package isn't used. This needs to be fixed within the \package{listings} package, for example by using
-%   |\lst@MakeCaption| inside a parbox of correct width.)
-%
-% The \package{listings} package calls |\lst@MakeCaption| sometimes with original |\linewidth|, sometimes with adapted |\linewidth|.
-% So we need to detect if |\linewidth| is already adapted or not.
-% We realize this by setting a flag inside the "Init" hook of the \package{listings} package (where the adaption takes place).
+% We set a flag inside the "Init" hook of the \package{listings} package (where adaption of |\line|\-|width| etc.~takes place).
 %    \begin{macrocode}
   \caption@setbool{lst@Init}{0}%
   \lst@AddToHook{Init}{\caption@setbool{lst@Init}{1}}%
@@ -3331,28 +3322,8 @@
 %    \begin{macrocode}
     \begingroup
 %    \end{macrocode}
-%    \begin{macrocode}
-%%    \caption@Debug{%
-%%      linewidth=\lst@linewidth,
-%%      xleftmargin=\lst@xleftmargin,\MessageBreak
-%%      xrightmargin=\lst@xrightmargin,
-%%      resetmargins=\lst@ifresetmargins true\else false\fi}%
-%    \end{macrocode}
-% If |\linewidth| isn't adapted by the \package{listings} package yet, do the adaption now.
-%    \begin{macrocode}
-%%    \caption@iflst@Init{}{%
-%%      \linewidth\lst@linewidth\relax
-%%      \lst@ifresetmargins
-%%        \advance\linewidth\@totalleftmargin
-%%        \advance\linewidth\rightmargin
-%%        \@totalleftmargin\z@
-%%      \fi
-%%      \advance\linewidth-\lst@xleftmargin
-%%      \advance\linewidth-\lst@xrightmargin
-%%      \advance\@totalleftmargin\lst@xleftmargin\relax}%
-%    \end{macrocode}
-% Inside lists the \package{listings} package ignores the left margin (|\@totalleftmargin|) for captions.
-% We emulate this behaviour by adding a negativ skip which will be typeset ahead of |\caption@box|.\par
+% Inside lists the \package{listings} package ignores the left margin (|\@total|\-|left|\-|margin|) for captions.
+% We emulate this behaviour by adding a negative skip which will be typeset ahead of |\caption@box|.\par
 % Note: We only need to do this if the ``Init'' hook of the \package{listings} package wasn't called yet.
 %    \begin{macrocode}
       \caption@iflst@Init{}{%
