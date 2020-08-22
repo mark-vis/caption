@@ -40,7 +40,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/09 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/22 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -426,18 +426,28 @@
   \caption@checkdecl{#1}{#3}{%
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
 \newcommand*\SetCaptionDefault{%
-  \@dblarg\caption@@setdefault}
+  \caption@teststar\caption@setdefault\def\edef}
 \@onlypreamble\SetCaptionDefault
-\def\caption@@setdefault[#1]#2#3{%
+\newcommand*\caption@setdefault[2]{%
+  \caption@ifinlist{#2}\caption@lengths
+  {\caption@setdefault@length{#1}}%
+  {\caption@ifinlist{#2}\caption@boxes
+   {\caption@setdefault@value{box}}%
+   {\caption@ifinlist{#2}\caption@fonts
+    {\caption@setdefault@value{font}}%
+    {\caption@setdefault@value{#2}}}}%
+  {#2}}
+\newcommand*\caption@setdefault@value[3]{%
   \caption@ifinlist{#3}{default}%
     {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
     {\caption@@set[{#1}]{#2@default}{#3}}}
-\newcommand*\caption@switchdefault{%
-  \@dblarg\caption@@switchdefault}
-\def\caption@@switchdefault[#1]#2#3{%
-  \def\caption@tempa##1{#3}%
-  \expandafter\caption@tempa\csname caption@#2@default\endcsname
-  \caption@@setdefault[{#1}]{#2}}
+\newcommand*\caption@lengths{}
+\newcommand*\caption@boxes{}
+\newcommand*\caption@fonts{}
+\newcommand*\caption@switchdefault[2]{%
+  \def\caption@tempa##1{#2}%
+  \expandafter\caption@tempa\csname caption@#1@default\endcsname
+  \caption@setdefault\def{#1}}
 \newcommand*\caption@restoredefault[2]{%
   \caption@checkdecl{#1}{default}{%
     \caption@ifdefined#2{%
@@ -463,14 +473,11 @@
     {}}
 \newcommand*\DeclareCaptionLength[1]{%
   \expandafter\newdimen\csname caption#1\endcsname
-  \SetCaptionDefaultLength*{#1}}
+  \caption@l@addto@list\caption@lengths{#1}%
+  \caption@setdefault@length\def{#1}}
 \@onlypreamble\DeclareCaptionLength
-\newcommand*\SetCaptionDefaultLength{%
-  \caption@teststar\caption@setdefaultlength\def\edef}
-\@onlypreamble\SetCaptionDefaultLength
-\newcommand*\caption@setdefaultlength[3]{%
+\newcommand*\caption@setdefault@length[3]{%
   \expandafter#1\csname caption#2@default\endcsname{#3}}
-\@onlypreamble\caption@setdefaultlength
 \newcommand*\caption@setlength[2]{%
   \edef\caption@tempa{#2}%
   \def\caption@tempb{default}%
@@ -633,6 +640,7 @@
 \@onlypreamble\DeclareCaptionBox
 \DeclareCaptionOption{box}{\caption@set{box}{#1}}
 \DeclareCaptionOption{parbox}{\caption@set[box]{parbox}{#1}}
+\caption@l@addto@list\caption@boxes{box,parbox}
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
 \DeclareCaptionBox{parbox}{\parbox[b]{#1}{#2}}
@@ -786,14 +794,13 @@
   \caption@add@to@font{font}{#1}}
 \newcommand*\caption@add@to@font[3]{%
   \expandafter\g@addto@macro\expandafter\caption@fnt\expandafter{\csname caption@#1@#2\endcsname{#3}}}
-\newcommand*\SetCaptionDefaultFont{\SetCaptionDefault[font]}
-\@onlypreamble\SetCaptionDefaultFont
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
+\caption@l@addto@list\caption@fonts{font,labelfont,textfont}
 \newcommand*\caption@setfont[1]{%
   \expandafter\let\csname caption#1\endcsname\@empty
   \caption@addtofont{#1}}
@@ -834,9 +841,9 @@
   \caption@font@normalfont\@unused
   \caption@font@normalsize\@unused
   \caption@font@singlespacing\@unused}
-\SetCaptionDefaultFont{font}{none}
-\SetCaptionDefaultFont{labelfont}{none}
-\SetCaptionDefaultFont{textfont}{none}
+\SetCaptionDefault{font}{none}
+\SetCaptionDefault{labelfont}{none}
+\SetCaptionDefault{textfont}{none}
 \newcommand\caption@smaller{%
   \ifx\@currsize\tiny
     \relax
@@ -890,7 +897,8 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\SetCaptionDefaultFont{size}{none}
+\caption@l@addto@list\caption@fonts{size}
+\SetCaptionDefault{size}{none}
 \newcommand*\DeclareCaptionJustification{%
   \caption@withoptargs\caption@declare@justification}
 \newcommand*\caption@declare@justification[3]{%
@@ -1159,8 +1167,8 @@
   \fi
   \g@addto@macro\extrasfrench{%
     \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
-    \caption@switchdefault[font]{font}{\let\caption@original@font#1}{it}%
-    \caption@switchdefault[font]{labelfont}{\let\caption@original@labelfont#1}{up}}%
+    \caption@switchdefault{font}{\let\caption@original@font#1}{it}%
+    \caption@switchdefault{labelfont}{\let\caption@original@labelfont#1}{up}}%
   \g@addto@macro\extrasenglish{%
     \caption@restoredefault{labelseparator}{\caption@original@labelseparator}%
     \caption@restoredefault{font}{\caption@original@font}%

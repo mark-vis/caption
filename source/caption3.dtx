@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3623}
+% \CheckSum{3634}
 %
 % \iffalse
 %<*driver>
@@ -194,7 +194,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/09 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/22 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1171,36 +1171,48 @@
 % \begin{macro}{\SetCaptionDefault}
 % \changes{v2.0}{2019/09/10}{This macro added}
 % \changes{v2.0}{2020/07/28}{Check for `default' added to prevent infinite loop}
-%  |\SetCaptionDefault|\oarg{source option}\marg{option}\marg{name}
+%  |\SetCaptionDefault*|\marg{option}\marg{name}
 %    \begin{macrocode}
 \newcommand*\SetCaptionDefault{%
-  \@dblarg\caption@@setdefault}
+  \caption@teststar\caption@setdefault\def\edef}
 \@onlypreamble\SetCaptionDefault
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@setdefault[#1]#2#3{%
+\newcommand*\caption@setdefault[2]{%
+  \caption@ifinlist{#2}\caption@lengths
+  {\caption@setdefault@length{#1}}%
+  {\caption@ifinlist{#2}\caption@boxes
+   {\caption@setdefault@value{box}}%
+   {\caption@ifinlist{#2}\caption@fonts
+    {\caption@setdefault@value{font}}%
+    {\caption@setdefault@value{#2}}}}%
+  {#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@setdefault@value[3]{%
   \caption@ifinlist{#3}{default}%
     {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
     {\caption@@set[{#1}]{#2@default}{#3}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@lengths{}
+\newcommand*\caption@boxes{}
+\newcommand*\caption@fonts{}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@switchdefault}
 % \changes{v2.0}{2020/08/01}{This macro added}
-% |\caption@switchdefault\oarg{source option}\marg{option}|\marg{code with \#1}\marg{name}\par
+% |\caption@switchdefault\marg{option}|\marg{code with \#1}\marg{name}\par
 % Same as |\Set|\-|Caption|\-|Default| but first expands the given code with the to-be-overwritten command name as argument,
 % so it can be stored (and restored later on).
 % The main purpose of this command is switching default settings in \package{babel} support packages, e.g.:
 % \begin{quote}|\caption@switchdefault{labelseparator}{\babel@save #1}{french}|\end{quote}
 %    \begin{macrocode}
-\newcommand*\caption@switchdefault{%
-  \@dblarg\caption@@switchdefault}
-%    \end{macrocode}
-%    \begin{macrocode}
-\def\caption@@switchdefault[#1]#2#3{%
-  \def\caption@tempa##1{#3}%
-  \expandafter\caption@tempa\csname caption@#2@default\endcsname
-  \caption@@setdefault[{#1}]{#2}}
+\newcommand*\caption@switchdefault[2]{%
+  \def\caption@tempa##1{#2}%
+  \expandafter\caption@tempa\csname caption@#1@default\endcsname
+  \caption@setdefault\def{#1}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1261,23 +1273,18 @@
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionLength[1]{%
   \expandafter\newdimen\csname caption#1\endcsname
-  \SetCaptionDefaultLength*{#1}}
+  \caption@l@addto@list\caption@lengths{#1}%
+  \caption@setdefault@length\def{#1}}
 \@onlypreamble\DeclareCaptionLength
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\SetCaptionDefaultLength}
+% \begin{macro}{\caption@setdefault@length}
 % \changes{v2.0}{2020/08/09}{This macro added}
-%  |\SetCaptionDefaultLength*|\marg{name}\marg{value}
+%  |\caption@setdefault@length*|\marg{cmd}\marg{name}\marg{value}
 %    \begin{macrocode}
-\newcommand*\SetCaptionDefaultLength{%
-  \caption@teststar\caption@setdefaultlength\def\edef}
-\@onlypreamble\SetCaptionDefaultLength
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@setdefaultlength[3]{%
+\newcommand*\caption@setdefault@length[3]{%
   \expandafter#1\csname caption#2@default\endcsname{#3}}
-\@onlypreamble\caption@setdefaultlength
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1738,6 +1745,7 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{box}{\caption@set{box}{#1}}
 \DeclareCaptionOption{parbox}{\caption@set[box]{parbox}{#1}}
+\caption@l@addto@list\caption@boxes{box,parbox}
 %    \end{macrocode}
 %
 % There are four pre-defined boxes, called `empty', `none',
@@ -2139,17 +2147,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\DeclareCaptionDefaultFont}
-% \changes{v1.1}{2006/05/14}{This macro added}
-% \changes{v1.2a}{2008/01/31}{Renamed from \cs{DeclareDefaultCaptionFont} to \cs{DeclareCaptionDefaultFont}}
-% \changes{v2.0}{2020/07/27}{Revised; 2nd argument changed from \meta{code} to \meta{value}}
-%  |\DeclareCaptionDefaultFont|\marg{name}\marg{value}
-%    \begin{macrocode}
-\newcommand*\SetCaptionDefaultFont{\SetCaptionDefault[font]}
-\@onlypreamble\SetCaptionDefaultFont
-%    \end{macrocode}
-% \end{macro}
-%
 %    \begin{macrocode}
 \DeclareCaptionOption{font}{\caption@setfont{font}{#1}}
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
@@ -2161,6 +2158,9 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@l@addto@list\caption@fonts{font,labelfont,textfont}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setfont}
@@ -2245,9 +2245,9 @@
 %
 % `default' usually maps to `none'.
 %    \begin{macrocode}
-\SetCaptionDefaultFont{font}{none}
-\SetCaptionDefaultFont{labelfont}{none}
-\SetCaptionDefaultFont{textfont}{none}
+\SetCaptionDefault{font}{none}
+\SetCaptionDefault{labelfont}{none}
+\SetCaptionDefault{textfont}{none}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@smaller}
@@ -2321,10 +2321,13 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
 %    \end{macrocode}
+%    \begin{macrocode}
+\caption@l@addto@list\caption@fonts{size}
+%    \end{macrocode}
 %
 % `default' usually maps to `none'.
 %    \begin{macrocode}
-\SetCaptionDefaultFont{size}{none}
+\SetCaptionDefault{size}{none}
 %    \end{macrocode}
 %
 % \section{Justifications}
@@ -3022,8 +3025,8 @@
   \fi
   \g@addto@macro\extrasfrench{%
     \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
-    \caption@switchdefault[font]{font}{\let\caption@original@font#1}{it}%
-    \caption@switchdefault[font]{labelfont}{\let\caption@original@labelfont#1}{up}}%
+    \caption@switchdefault{font}{\let\caption@original@font#1}{it}%
+    \caption@switchdefault{labelfont}{\let\caption@original@labelfont#1}{up}}%
   \g@addto@macro\extrasenglish{%
     \caption@restoredefault{labelseparator}{\caption@original@labelseparator}%
     \caption@restoredefault{font}{\caption@original@font}%
