@@ -1,0 +1,402 @@
+\documentclass{article}
+\usepackage{caption3,unittest}
+
+\makeatletter
+
+% \section{Generic helpers}
+
+\def\whatever{...}
+\@nameundef{whatever}
+\testundefined{nameundef 1}{whatever}
+
+\def\whatever{...}
+\begingroup
+  \l@addto@macro\whatever{...}
+  \testequal{l@addto@macro 1}\whatever{......}
+\endgroup
+\testequal{l@addto@macro 2}\whatever{...}
+
+\let\temp\@undefined
+\bothIfFirst{}{\def\temp{bothIfFirst 1}}
+\testundefined{bothIfFirst 1}{temp}
+\bothIfFirst{\relax}{\def\temp{bothIfFirst 2}}
+\testequal{bothIfFirst 2}\temp{bothIfFirst 2}
+
+\let\temp\@undefined
+\bothIfSecond{\def\temp{bothIfSecond 1}}{}
+\testundefined{bothIfSecond 1}{temp}
+\bothIfSecond{\def\temp{bothIfSecond 2}}{\relax}
+\testequal{bothIfSecond 2}\temp{bothIfSecond 2}
+
+\let\temp\@undefined
+\caption@ifundefined\temp\passed\failed{ifundefined 1}
+\csname temp\endcsname
+\caption@ifundefined\temp\passed\failed{ifundefined 2}
+\let\temp\@empty
+\caption@ifundefined\temp\failed\passed{ifundefined 3}
+
+\let\temp\@undefined
+\caption@ifdefined\temp\failed\passed{ifdefined 1}
+\csname temp\endcsname
+\caption@ifdefined\temp\failed\passed{ifdefined 2}
+\let\temp\@empty
+\caption@ifdefined\temp\passed\failed{ifdefined 3}
+
+\caption@ifinlist{frank}{}\failed\passed{ifinlist 1}
+\caption@ifinlist{frank}{axel,frank,olga,steven}\passed\failed{ifinlist 2}
+\caption@ifinlist{katja}{axel,frank,olga,steven}\failed\passed{ifinlist 3}
+
+\def\temp{}
+\caption@ifin@list\temp{frank}\failed\passed{ifin@list 1}
+\def\temp{axel,frank,olga,steven}
+\caption@ifin@list\temp{frank}\passed\failed{ifin@list 2}
+\caption@ifin@list\temp{katja}\failed\passed{ifin@list 3}
+\let\temp\@undefined
+\caption@ifin@list\temp{frank}\failed\passed{ifin@list 4}
+
+\let\temp\@undefined
+\begingroup
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\caption@ifin@list\temp{axel}\passed\failed{g@addto@list 1}
+\caption@ifin@list\temp{frank}\passed\failed{g@addto@list 2}
+\endgroup
+\caption@ifin@list\temp{axel}\passed\failed{g@addto@list 3}
+\caption@ifin@list\temp{frank}\passed\failed{g@addto@list 4}
+
+\let\temp\@undefined
+\begingroup
+\caption@l@addto@list\temp{axel}
+\caption@l@addto@list\temp{frank}
+\caption@ifin@list\temp{axel}\passed\failed{l@addto@list 1}
+\caption@ifin@list\temp{frank}\passed\failed{l@addto@list 2}
+\endgroup
+\caption@ifin@list\temp{axel}\failed\passed{l@addto@list 3}
+\caption@ifin@list\temp{frank}\failed\passed{l@addto@list 4}
+
+\let\temp\@undefined
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\begingroup
+\caption@g@removefrom@list\temp{axel}
+\caption@g@removefrom@list\temp{katja}
+\caption@ifin@list\temp{axel}\failed\passed{g@removefrom@list 1}
+\endgroup
+\caption@ifin@list\temp{axel}\failed\passed{g@removefrom@list 2}
+
+\let\temp\@undefined
+\caption@g@addto@list\temp{axel}
+\caption@g@addto@list\temp{frank}
+\begingroup
+\caption@l@removefrom@list\temp{axel}
+\caption@l@removefrom@list\temp{katja}
+\caption@ifin@list\temp{axel}\failed\passed{l@removefrom@list 1}
+\endgroup
+\caption@ifin@list\temp{axel}\passed\failed{l@removefrom@list 2}
+
+\caption@for@list\temp{\caption@l@addto@list\tempa{#1}}
+\testequal{for@list 1}\tempa{axel,frank}
+
+\let\temp\@undefined
+\caption@ifempty@list\temp\passed\failed{ifempty@list 1}
+\csname temp\endcsname
+\caption@ifempty@list\temp\passed\failed{ifempty@list 2}
+\let\temp\@empty
+\caption@ifempty@list\temp\passed\failed{ifempty@list 3}
+\caption@g@addto@list\temp{axel}
+\caption@ifempty@list\temp\failed\passed{ifempty@list 4}
+
+\caption@setbool{temp}{1}
+\caption@ifbool{temp}\passed\failed{setbool 1}
+\caption@setbool{temp}{true}
+\caption@ifbool{temp}\passed\failed{setbool 2}
+\caption@setbool{temp}{yes}
+\caption@ifbool{temp}\passed\failed{setbool 3}
+\caption@setbool{temp}{on}
+\caption@ifbool{temp}\passed\failed{setbool 4}
+\caption@setbool{temp}{0}
+\caption@ifbool{temp}\failed\passed{setbool 5}
+\caption@setbool{temp}{false}
+\caption@ifbool{temp}\failed\passed{setbool 6}
+\caption@setbool{temp}{no}
+\caption@ifbool{temp}\failed\passed{setbool 7}
+\caption@setbool{temp}{off}
+\caption@ifbool{temp}\failed\passed{setbool 8}
+\begingroup
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
+\caption@setbool{temp}{whatever}
+\testequal{setbool 9}\temp{Undefined boolean value `whatever'}
+\endgroup
+
+\testdefined{undefbool 1}{caption@iftemp}
+\caption@undefbool{temp}
+\testundefined{undefbool 2}{caption@iftemp}
+
+\caption@ifatletter\passed\failed{ifatletter 1}
+\let\temp\caption@ifatletter
+\makeatother
+\temp\failed\passed{ifatletter 2}
+\makeatletter
+
+\def\temp{\caption@withoptargs\tempa}
+\def\tempa#1#2{\def\tempb{#1}}
+\temp{whatever}
+\testequal{withoptargs 1}\tempb{}
+\temp*{whatever}
+\testequal{withoptargs 2}\tempb{*}
+\temp[1]{whatever}
+\testequal{withoptargs 3}\tempb{[{1}]}
+\temp*[1]{whatever}
+\testequal{withoptargs 4}\tempb{*[{1}]}
+\temp*[{1}]{whatever}
+\testequal{withoptargs 5}\tempb{*[{1}]}
+\temp*[1][2][3][4]{whatever}
+\testequal{withoptargs 4}\tempb{*[{1}][{2}][{3}][{4}]}
+
+\caption@gobble*[1][2][3][4]{whatever}
+
+% \section{Using the keyval package}
+
+% TODO
+
+% \section{Declaring and setting key values}
+
+% TODO: \caption@decl
+
+\caption@ifdecl{font}{normalsize}\passed\failed{ifdecl 1}
+\caption@ifdecl{font}{NormalSize}\failed\passed{ifdecl 2}
+\caption@decl{font}{NormalSize}{\whatever}
+\caption@ifdecl{font}{NormalSize}\passed\failed{ifdecl 3}
+
+\begingroup
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
+\let\temp\@undefined
+\caption@checkdecl{font}{normalsize}{}
+\testundefined{checkdecl 1}{temp}
+\caption@checkdecl{font}{Normalsize}{\whatever}
+\testequal{checkdecl 2}\temp{Undefined font `Normalsize'}
+\endgroup
+
+% TODO: \caption@set
+
+\caption@ifundefined\caption@ifset
+  {\newcommand*\caption@ifset[2]{%
+     \caption@@set{#1}{tempa}{#2}%
+     \expandafter\ifx\csname caption@#1\endcsname\caption@tempa
+       \expandafter\@firstoftwo
+     \else
+       \expandafter\@secondoftwo
+     \fi}}{}
+
+\caption@ifset{labelformat}{simple}\failed\passed{ifset 1}
+\caption@ifset{labelformat}{default}\passed\failed{ifset 2}
+\caption@set{labelformat}{simple}
+\caption@ifset{labelformat}{simple}\passed\failed{ifset 3}
+\caption@ifset{labelformat}{default}\failed\passed{ifset 4}
+
+\SetCaptionDefault{labelformat}{unnumbered}
+\testequal{SetDefault 1}\caption@labelformat@default{\caption@labelformat@unnumbered}
+\begingroup
+\renewcommand\caption@Error[1]{\gdef\temp{#1}}
+\SetCaptionDefault{labelformat}{default}
+\testequal{SetDefault 2}\temp{Invalid argument for \string\SetCaptionDefault: `default'}
+\endgroup
+
+% TODO: \caption@decl@package
+
+% TODO: \caption@load@package
+
+% \section{Margin resp. width}
+
+% TODO
+
+% \section{Indentions}
+
+% TODO
+
+% \section{Styles}
+
+% TODO
+
+% \section{Boxes}
+
+\testident{box@empty}\caption@box@empty\@gobbletwo
+\def\temp{\caption@box@none}
+\testident{box@default}\caption@box@default\temp
+\def\temp{\caption@box@parbox}
+%\testident{parbox@default}\caption@parbox@default\temp
+\testident{parbox@default}\caption@parbox@default\@undefined
+
+% \section{Formats}
+
+% TODO
+
+% \section{Label formats}
+
+% TODO
+
+% \section{Label separators}
+
+% TODO
+
+% \section{Text formats}
+
+% TODO
+
+% \section{Fonts}
+
+\def\temp{\caption@font@none}
+\testident{font@default}\caption@font@default\temp
+\testident{labelfont@default}\caption@labelfont@default\temp
+\testident{textfont@default}\caption@textfont@default\temp
+
+\captionsetup{font={normalsize,color=red,bf},labelfont={normalsize,color=red,bf},textfont={normalsize,color=red,bf}}
+\testequal{font 1}\captionfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\testequal{labelfont 1}\captionlabelfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\testequal{textfont 1}\captiontextfont{\caption@font@normalsize{}\caption@font@color{red}\caption@font@bf{}}
+\captionsetup{font=default,labelfont=default,textfont=default}
+\testequal{font 2}\captionfont{\caption@font@default{}}
+\testequal{labelfont 2}\captionlabelfont{\caption@labelfont@default{}}
+\testequal{textfont 2}\captiontextfont{\caption@textfont@default{}}
+\captionsetup{font+=none,labelfont+=none,textfont+=none}
+\testequal{font 3}\captionfont{\caption@font@default{}\caption@font@none{}}
+\testequal{labelfont 3}\captionlabelfont{\caption@labelfont@default{}\caption@font@none{}}
+\testequal{textfont 3}\captiontextfont{\caption@textfont@default{}\caption@font@none{}}
+
+% \section{Sizes}
+
+% TODO
+
+% \section{Justifications}
+
+% TODO
+
+% \section{Vertical spaces before and after captions}
+
+% TODO
+
+% \section{Positioning}
+
+\caption@position@t\passed\failed{position@top}
+\caption@position@b\failed\passed{position@bottom}
+
+\captionsetup{position=t}
+\caption@iftop\passed\failed{iftop 1}
+\captionsetup{position=b}
+\caption@iftop\failed\passed{iftop 2}
+\captionsetup{position=auto}
+\caption@iftop\failed\passed{iftop 3}
+
+\begingroup
+\caption@setautoposition{t}
+\caption@fixposition % Apply new autoposition
+\caption@iftop\passed\failed{iftop 4}
+\endgroup
+
+\begingroup
+\caption@setautoposition{b}
+\caption@fixposition % Apply new autoposition
+\caption@iftop\failed\passed{iftop 5}
+\endgroup
+
+% \section{Hooks}
+
+% TODO
+
+% \section{Lists}
+
+% TODO
+
+% \section{Debug option}
+
+% TODO
+
+% \subsection{The newfloat package}
+
+% TODO
+
+% \subsection{The ragged2e package}
+
+% TODO
+
+% \subsection{The sansmath package}
+
+% TODO
+
+% \subsection{The setspace package}
+
+% TODO
+
+% \section{Typesetting the caption}
+
+% TODO: \caption@calcmargin, \caption@ifempty
+
+% \section{Types \& sub-types}
+
+% TODO: ...
+
+\caption@savesubcounters
+\testequal{savesubcounters 1}\caption@restore@counters{}
+\caption@restorecounters
+\testequal{savesubcounters 2}\caption@restore@counters{}
+\DeclareCaptionSubType{figure}
+\DeclareCaptionSubType{table}
+\caption@savesubcounters
+\testequal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{0}\setcounter{subtable}{0}}
+\caption@restorecounters
+\testequal{savesubcounters 4}\caption@restore@counters{}
+\stepcounter{subfigure}
+\stepcounter{subfigure}
+\stepcounter{subtable}
+\caption@savesubcounters
+\testequal{savesubcounters 3}\caption@restore@counters{\setcounter{subfigure}{2}\setcounter{subtable}{1}}
+\stepcounter{subfigure}
+\stepcounter{subtable}
+\caption@restorecounters
+\testequal{savesubcounters 4}\caption@restore@counters{}
+\testcounter{savesubcounters 5}{subfigure}{2}
+\testcounter{savesubcounters 6}{subtable}{1}
+
+% TODO: ...
+
+\makeatother
+
+\begin{document}
+
+caption3 unit tests
+
+\makeatletter
+
+% \section{Formats}
+\begingroup
+\captionsetup{format=hang,labelsep=newline,slc=off}
+\renewcommand\caption@Error[1]{\gdef\temp{#1}\global\edef\tempa{\caption@labelsep@name}}
+\caption@make{figure}{1}{Text}
+\testequal{format-2 1}\temp{The option `labelsep=\caption@labelsep@name' does not work\MessageBreak with `format=hang'}
+\testequal{format-2 2}\tempa{newline}
+\endgroup
+
+% \section{Positioning}
+
+\caption@position@auto\failed\passed{position@auto 1}
+
+\begingroup
+\caption@fixposition
+\caption@position@auto\failed\passed{position@auto 2}
+\endgroup
+
+\noindent\parbox\textwidth{%
+Some stuff\par
+\caption@fixposition
+\caption@position@auto\failed\passed{position@auto 3}
+}
+
+\noindent\parbox\textwidth{%
+\caption@fixposition
+\caption@position@auto\passed\failed{position@auto 4}
+}
+
+\makeatother
+
+\end{document}
+

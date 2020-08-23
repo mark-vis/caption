@@ -26,45 +26,50 @@
 %% 
 %% This work consists of the files
 %%   caption.ins, caption.dtx, caption2.dtx, caption3.dtx,
+%%   caption-ams-smf.dtx, caption-beamer.dtx, caption-elsarticle.dtx,
+%%   caption-koma.dtx, caption-memoir.dtx, caption-ntg.dtx,
+%%   caption-thesis.dtx,
 %%   bicaption.dtx, ltcaption.dtx, subcaption.dtx,
 %% the derived files
 %%   caption.sty, caption2.sty, caption3.sty,
+%%   caption-ams-smf.sto, caption-beamer.sto, caption-elsarticle.sto,
+%%   caption-koma.sto, caption-memoir.sto, caption-ntg.sto,
+%%   caption-thesis.sto,
 %%   bicaption.sty, ltcaption.sty, subcaption.sty,
 %% and the user manuals
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2020/07/29 v1.3f Sub-captions (AR)]
-\RequirePackage{caption}[2020/07/29] % needs v3.4l or newer
-\newcommand\subcaption@CheckCompatibility{%
-  \@ifundefined{caption@ifcompatibility}{}{%
-    \caption@ifcompatibility{%
-      \caption@Error{%
-        The `subcaption' package does not work correctly\MessageBreak
-        in compatibility mode}}{}}%
+\ProvidesPackage{subcaption}[2020/08/23 v1.3g Sub-captions (AR)]
+\RequirePackage{caption}[2020/08/23] % needs v3.5 or newer
+\newcommand*\subcaption@CheckCompatibility{%
+  \caption@ifcompatibility{%
+    \PackageError{subcaption}%
+      {This package does not work with\MessageBreak
+       caption option `compatibility=v1'}%
+      {\subcaption@eh}%
+    \endinput}{}%
   \@ifpackageloaded{subfigure}{%
     \PackageError{subcaption}%
       {This package can't be used in cooperation\MessageBreak
        with the subfigure package}%
-      {\subcaption@EH}%
+      {\subcaption@eh}%
     \endinput}{}%
   \@ifpackageloaded{subfig}{%
     \PackageError{subcaption}%
       {This package can't be used in cooperation\MessageBreak
        with the subfig package}%
-      {\subcaption@EH}%
+      {\subcaption@eh}%
     \endinput}{}%
 }
-\newcommand*\subcaption@EH{%
+\newcommand*\subcaption@eh{%
   If you do not understand this error, please take a closer look\MessageBreak
   at the documentation of the `subcaption' package, especially the\MessageBreak
   section about errors.\MessageBreak\@ehc}
 \subcaption@CheckCompatibility
 \caption@AtBeginDocument{%
   \subcaption@CheckCompatibility
-  \let\subcaption@CheckCompatibility\@undefined
-  \let\subcaption@EH\@undefined
-}
+  \let\subcaption@CheckCompatibility\@undefined}
 \ForEachCaptionType{\DeclareCaptionSubType{#1}}
 \caption@ifundefined\newsubfloat{}{%
   \renewcommand*\newsubfloat{\DeclareCaptionSubType}}
@@ -136,9 +141,9 @@
 \newcommand*\p@subref{}
 \DeclareCaptionOption{subrefformat}{\subcaption@setrefformat{#1}}
 \newcommand*\subcaption@setrefformat[1]{%
-  \@ifundefined{caption@lfmt@#1}%
+  \@ifundefined{caption@labelformat@#1}%
     {\caption@Error{Undefined label format `#1'}}%
-    {\expandafter\let\expandafter\subcaption@reffmt\csname caption@lfmt@#1\endcsname}}
+    {\expandafter\let\expandafter\subcaption@reffmt\csname caption@labelformat@#1\endcsname}}
 \subcaption@setrefformat{simple}
 \caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
 \caption@ExecuteOptions{subcaption}{%
@@ -151,7 +156,7 @@
 \long\def\@@subfloat#1[#2]{%
   \@@@subfloat{\subcaptionbox[{#1}]}{#2}}
 \long\def\@@@subfloat#1#2#3{%
-  \caption@getlabel#3\label{}\@nil
+  \caption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \global\let\caption@thelabel\relax
   \ignorespaces}
