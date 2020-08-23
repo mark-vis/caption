@@ -34,7 +34,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3634}
+% \CheckSum{3619}
 %
 % \iffalse
 %<*driver>
@@ -194,7 +194,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/22 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/23 v2.0 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1139,32 +1139,13 @@
 %  |\caption@set|\oarg{source option}\marg{option}\marg{name}
 %    \begin{macrocode}
 \newcommand*\caption@set{%
-  \@dblarg\caption@@set}
+  \caption@maparg\caption@@set}%
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@set[#1]#2#3{%
+\newcommand*\caption@@set[3]{%
   \caption@checkdecl{#1}{#3}{%
 %   \expandafter\edef\csname caption@@#2\endcsname{#3}% could be used for debugging
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@ifset}
-% \changes{v2.0}{2020/07/27}{This macro added}
-%  |\caption@ifset|\oarg{source option}\marg{option}\marg{name}\marg{yes-code}\marg{no-code}\\
-%  is currently not used and therefore not defined.
-%    \begin{macrocode}
-%\newcommand*\caption@ifset{%
-%  \@dblarg\caption@@ifset}
-%    \end{macrocode}
-%    \begin{macrocode}
-%\def\caption@@ifset[#1]#2#3{%
-%  \caption@set[{#1}]{tempa}{#3}%
-%  \expandafter\ifx\csname caption@#2\endcsname\caption@tempa
-%    \expandafter\@firstoftwo
-%  \else
-%    \expandafter\@secondoftwo
-%  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1179,25 +1160,41 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setdefault[2]{%
-  \caption@ifinlist{#2}\caption@lengths
-  {\caption@setdefault@length{#1}}%
-  {\caption@ifinlist{#2}\caption@boxes
-   {\caption@setdefault@value{box}}%
-   {\caption@ifinlist{#2}\caption@fonts
-    {\caption@setdefault@value{font}}%
-    {\caption@setdefault@value{#2}}}}%
+  \@ifundefined{caption@setdefault@#2}%
+    {\caption@maparg\caption@@setdefault}%
+    {\@nameuse{caption@setdefault@#2}{#1}}%
   {#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@setdefault@value[3]{%
-  \caption@ifinlist{#3}{default}%
-    {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
-    {\caption@@set[{#1}]{#2@default}{#3}}}
+\newcommand*\caption@@setdefault[3]{%
+  \edef\caption@tempa{#3}%
+  \def\caption@tempb{default}%
+  \ifx\caption@tempa\caption@tempb
+    \caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}% would cause an infinite loop otherwise
+  \else
+    \caption@@set{#1}{#2@default}{#3}%
+  \fi}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setmapping}
+% \changes{v2.0}{2020/08/23}{This macro added}
+%  |\caption@setmapping|\marg{source option}\marg{destination option}
 %    \begin{macrocode}
-\newcommand*\caption@lengths{}
-\newcommand*\caption@boxes{}
-\newcommand*\caption@fonts{}
+\newcommand*\caption@setmapping[2]{%
+  \@namedef{caption@map@#1}{#2}}
+\@onlypreamble\caption@setmapping
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@maparg}
+% \changes{v2.0}{2020/08/23}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@maparg[2]{%
+  \@ifundefined{caption@map@#2}%
+    {#1{#2}}%
+    {#1{\csname caption@map@#2\endcsname}}%
+  {#2}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1273,8 +1270,9 @@
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionLength[1]{%
   \expandafter\newdimen\csname caption#1\endcsname
-  \caption@l@addto@list\caption@lengths{#1}%
-  \caption@setdefault@length\def{#1}}
+  \@namedef{caption@setdefault@#1}##1{%
+    \caption@setdefault@length{##1}}%
+  \SetCaptionDefault*{#1}}
 \@onlypreamble\DeclareCaptionLength
 %    \end{macrocode}
 % \end{macro}
@@ -1744,8 +1742,8 @@
 % \changes{v1.6}{2013/05/01}{Option \opt{parbox=} added}
 %    \begin{macrocode}
 \DeclareCaptionOption{box}{\caption@set{box}{#1}}
-\DeclareCaptionOption{parbox}{\caption@set[box]{parbox}{#1}}
-\caption@l@addto@list\caption@boxes{box,parbox}
+\DeclareCaptionOption{parbox}{\caption@set{parbox}{#1}}
+\caption@setmapping{parbox}{box}
 %    \end{macrocode}
 %
 % There are four pre-defined boxes, called `empty', `none',
@@ -2154,13 +2152,12 @@
 %    \begin{macrocode}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
+\caption@setmapping{labelfont}{font}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\caption@l@addto@list\caption@fonts{font,labelfont,textfont}
+\caption@setmapping{textfont}{font}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@setfont}
@@ -2320,9 +2317,7 @@
 % so old documents will work fine.
 %    \begin{macrocode}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\caption@l@addto@list\caption@fonts{size}
+\caption@setmapping{size}{font}
 %    \end{macrocode}
 %
 % `default' usually maps to `none'.
@@ -2571,7 +2566,7 @@
 %  replaces the above algorithm by a different one (or a fixed position setting).
 %    \begin{macrocode}
 \newcommand*\caption@setautoposition[1]{%
-  \def\caption@fixposition{\caption@set[position]{autoposition}{#1}}}
+  \def\caption@fixposition{\caption@@set{position}{autoposition}{#1}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2950,7 +2945,7 @@
 %    \begin{macrocode}
 \caption@ifdecl{labelseparator}{french}
   {\let\caption@french@labelseparator\@undefined}%
-  {\caption@@set[labelseparator]{labelseparator@french}{default}%
+  {\caption@@set{labelseparator}{labelseparator@french}{default}%
    \let\caption@french@labelseparator\caption@labelseparator@french}
 %    \end{macrocode}
 %

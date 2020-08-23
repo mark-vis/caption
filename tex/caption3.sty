@@ -40,7 +40,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/22 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/08/23 v2.0 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -421,29 +421,34 @@
      \@gobble}%
     \@firstofone}
 \newcommand*\caption@set{%
-  \@dblarg\caption@@set}
-\def\caption@@set[#1]#2#3{%
+  \caption@maparg\caption@@set}%
+\newcommand*\caption@@set[3]{%
   \caption@checkdecl{#1}{#3}{%
     \expandafter\def\csname caption@#2\expandafter\endcsname\expandafter{\csname caption@#1@#3\endcsname}}}
 \newcommand*\SetCaptionDefault{%
   \caption@teststar\caption@setdefault\def\edef}
 \@onlypreamble\SetCaptionDefault
 \newcommand*\caption@setdefault[2]{%
-  \caption@ifinlist{#2}\caption@lengths
-  {\caption@setdefault@length{#1}}%
-  {\caption@ifinlist{#2}\caption@boxes
-   {\caption@setdefault@value{box}}%
-   {\caption@ifinlist{#2}\caption@fonts
-    {\caption@setdefault@value{font}}%
-    {\caption@setdefault@value{#2}}}}%
+  \@ifundefined{caption@setdefault@#2}%
+    {\caption@maparg\caption@@setdefault}%
+    {\@nameuse{caption@setdefault@#2}{#1}}%
   {#2}}
-\newcommand*\caption@setdefault@value[3]{%
-  \caption@ifinlist{#3}{default}%
-    {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
-    {\caption@@set[{#1}]{#2@default}{#3}}}
-\newcommand*\caption@lengths{}
-\newcommand*\caption@boxes{}
-\newcommand*\caption@fonts{}
+\newcommand*\caption@@setdefault[3]{%
+  \edef\caption@tempa{#3}%
+  \def\caption@tempb{default}%
+  \ifx\caption@tempa\caption@tempb
+    \caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}% would cause an infinite loop otherwise
+  \else
+    \caption@@set{#1}{#2@default}{#3}%
+  \fi}
+\newcommand*\caption@setmapping[2]{%
+  \@namedef{caption@map@#1}{#2}}
+\@onlypreamble\caption@setmapping
+\newcommand*\caption@maparg[2]{%
+  \@ifundefined{caption@map@#2}%
+    {#1{#2}}%
+    {#1{\csname caption@map@#2\endcsname}}%
+  {#2}}
 \def\caption@switchdefault#1#2{%
   \def\caption@tempa##1{#2}%
   \expandafter\caption@tempa\csname caption@#1@default\endcsname
@@ -473,8 +478,9 @@
     {}}
 \newcommand*\DeclareCaptionLength[1]{%
   \expandafter\newdimen\csname caption#1\endcsname
-  \caption@l@addto@list\caption@lengths{#1}%
-  \caption@setdefault@length\def{#1}}
+  \@namedef{caption@setdefault@#1}##1{%
+    \caption@setdefault@length{##1}}%
+  \SetCaptionDefault*{#1}}
 \@onlypreamble\DeclareCaptionLength
 \newcommand*\caption@setdefault@length[3]{%
   \expandafter#1\csname caption#2@default\endcsname{#3}}
@@ -639,8 +645,8 @@
   \caption@decl{box}{#1}##1##2{#2}}
 \@onlypreamble\DeclareCaptionBox
 \DeclareCaptionOption{box}{\caption@set{box}{#1}}
-\DeclareCaptionOption{parbox}{\caption@set[box]{parbox}{#1}}
-\caption@l@addto@list\caption@boxes{box,parbox}
+\DeclareCaptionOption{parbox}{\caption@set{parbox}{#1}}
+\caption@setmapping{parbox}{box}
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
 \DeclareCaptionBox{parbox}{\parbox[b]{#1}{#2}}
@@ -798,9 +804,10 @@
 \DeclareCaptionOption{font+}{\caption@addtofont{font}{#1}}
 \DeclareCaptionOption{labelfont}{\caption@setfont{labelfont}{#1}}
 \DeclareCaptionOption{labelfont+}{\caption@addtofont{labelfont}{#1}}
+\caption@setmapping{labelfont}{font}
 \DeclareCaptionOption{textfont}{\caption@setfont{textfont}{#1}}
 \DeclareCaptionOption{textfont+}{\caption@addtofont{textfont}{#1}}
-\caption@l@addto@list\caption@fonts{font,labelfont,textfont}
+\caption@setmapping{textfont}{font}
 \newcommand*\caption@setfont[1]{%
   \expandafter\let\csname caption#1\endcsname\@empty
   \caption@addtofont{#1}}
@@ -897,7 +904,7 @@
       Try setting it with `size=' explicitly}%
   \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi}
 \DeclareCaptionOption{size}{\caption@setfont{size}{#1}}
-\caption@l@addto@list\caption@fonts{size}
+\caption@setmapping{size}{font}
 \SetCaptionDefault{size}{none}
 \newcommand*\DeclareCaptionJustification{%
   \caption@withoptargs\caption@declare@justification}
@@ -975,7 +982,7 @@
     \let\caption@autoposition\@secondoftwo   % position=below
   \fi}
 \newcommand*\caption@setautoposition[1]{%
-  \def\caption@fixposition{\caption@set[position]{autoposition}{#1}}}
+  \def\caption@fixposition{\caption@@set{position}{autoposition}{#1}}}
 \newcommand*\caption@beginhook{}
 \newcommand*\caption@endhook{}
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
@@ -1137,7 +1144,7 @@
 }
 \caption@ifdecl{labelseparator}{french}
   {\let\caption@french@labelseparator\@undefined}%
-  {\caption@@set[labelseparator]{labelseparator@french}{default}%
+  {\caption@@set{labelseparator}{labelseparator@french}{default}%
    \let\caption@french@labelseparator\caption@labelseparator@french}
 \newcommand*\caption@IfBabelFrench{%
   \caption@IfBabelPackageLoaded{french}{\FB@makecaption}}
