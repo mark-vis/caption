@@ -211,7 +211,7 @@
 \@onlypreamble\caption@declareoption
 \newcommand*\caption@declare@option{%
   \define@key{caption}}
-%% no \@onlypreamble\caption@declare@option, will be used by \captionsetup
+%% no \@onlypreamble\caption@declare@option since it will be used by \captionsetup
 \newcommand*\DeclareCaptionOptionNoValue{%
   \caption@teststar\caption@declareoption@novalue\AtEndOfPackage\@gobble}
 \@onlypreamble\DeclareCaptionOptionNoValue
@@ -349,7 +349,7 @@
   \fi
   \def\KV@errx{\KV@err}%
   \def\XKV@err{\let\@tempa\XKV@tkey\KV@err}%
-  \caption@Debug{\protect\setkeys{#2}{#3}}%
+  \caption@Debug{\noexpand\setkeys{#2}{#3}}%
   \setkeys{#2}{#3}%
   \edef\caption@keydepth{\expandafter\@gobble\caption@keydepth}%
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
@@ -416,10 +416,10 @@
 \newcommand*\caption@ifdecl[2]{%
   \@ifundefined{caption@#1@#2}\@secondoftwo\@firstoftwo}
 \newcommand*\caption@checkdecl[2]{%
-  \@ifundefined{caption@#1@#2}%
+  \caption@ifdecl{#1}{#2}%
+    \@firstofone
     {\caption@Error{Undefined #1 `#2'}%
-     \@gobble}%
-    \@firstofone}
+     \@gobble}}
 \newcommand*\caption@set{%
   \caption@maparg\caption@@set}%
 \newcommand*\caption@@set[3]{%
@@ -434,12 +434,16 @@
     {\@nameuse{caption@setdefault@#2}{#1}}%
   {#2}}
 \newcommand*\caption@@setdefault[3]{%
-  \edef\caption@tempa{#3}%
+  \caption@ifdefault{#3}%
+    {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
+    {\caption@@set{#1}{#2@default}{#3}}}
+\newcommand*\caption@ifdefault[1]{%
+  \edef\caption@tempa{#1}%
   \def\caption@tempb{default}%
   \ifx\caption@tempa\caption@tempb
-    \caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}% would cause an infinite loop otherwise
+    \expandafter\@firstoftwo
   \else
-    \caption@@set{#1}{#2@default}{#3}%
+    \expandafter\@secondoftwo
   \fi}
 \newcommand*\caption@setmapping[2]{%
   \@namedef{caption@map@#1}{#2}}
@@ -485,11 +489,9 @@
 \newcommand*\caption@setdefault@length[3]{%
   \expandafter#1\csname caption#2@default\endcsname{#3}}
 \newcommand*\caption@setlength[2]{%
-  \edef\caption@tempa{#2}%
-  \def\caption@tempb{default}%
-  \ifx\caption@tempa\caption@tempb
-    \expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname
-  \fi
+  \caption@ifdefault{#2}%
+    {\expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname}%
+    {\def\caption@tempa{#2}}%
   \expandafter\setlength\csname caption#1\endcsname\caption@tempa}
 \DeclareCaptionLength{margin}{0pt}
 \DeclareCaptionLength{margin@}{\the\captionmargin}
@@ -528,8 +530,6 @@
 \newcommand*\caption@@setwidth[2]{%
   #1{\captionmargin\z@\captionmargin@\z@}%
   \caption@setlength{width}{#2}}%
-\newcommand*\caption@resetcalcmargin{%
-  \let\caption@calcmargin@hook\@empty}
 \newcommand*\caption@setcalcmargin{%
   \caption@teststar{\caption@@setcalcmargin\caption@setmargin}%
     \@secondoftwo\@firstoftwo}
@@ -537,6 +537,8 @@
   #2{\caption@resetcalcmargin
      \l@addto@macro\caption@calcmargin@hook{#1{#3}}}%
     {\l@addto@macro\caption@calcmargin@hook{#1*{#3}}}}
+\newcommand*\caption@resetcalcmargin{%
+  \let\caption@calcmargin@hook\@empty}
 \newcommand*\caption@setcalcwidth{%
   \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
     \@secondoftwo\@firstoftwo}
@@ -650,12 +652,13 @@
 \DeclareCaptionBox{empty}{}
 \DeclareCaptionBox{none}{#2}
 \DeclareCaptionBox{parbox}{\parbox[b]{#1}{#2}}
-\DeclareCaptionBox{colorbox}{\colorbox{\caption@boxcolor}{%
-  \setlength\caption@tempdima{#1}%
-  \addtolength\caption@tempdima{-2\fboxsep}%
-  \linewidth\caption@tempdima
-  \hsize\caption@tempdima
-  #2}}
+\DeclareCaptionBox{colorbox}{%
+  \colorbox\caption@boxcolor{%
+    \setlength\caption@tempdima{#1}%
+    \addtolength\caption@tempdima{-2\fboxsep}%
+    \linewidth\caption@tempdima
+    \hsize\caption@tempdima
+    #2}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
 \SetCaptionDefault{box}{none}
@@ -754,14 +757,16 @@
 \long\def\caption@get@label#1\caption@makeanchor#2#3\@nil{%
   \def\caption@tempa{#2}%
   \ifx\caption@tempa\@empty
-    \caption@getlabel#1\label{}\@nil
+    \caption@getlabel{#1}%
   \else
-    \caption@getlabel#2\label{}\@nil
+    \caption@getlabel{#2}%
   \fi}
 \DeclareCaptionTextFormat{simple}{#1}
 \DeclareCaptionTextFormat{period}{#1.}
 \SetCaptionDefault{textformat}{simple}
-\long\def\caption@getlabel#1\label#2#3\@nil{%
+\newcommand\caption@getlabel[1]{%
+  \caption@@getlabel#1\label{}\@nil}
+\long\def\caption@@getlabel#1\label#2#3\@nil{%
   \def\@tempa{#2}%
   \ifx\@tempa\@empty
     \let\caption@thelabel\relax
@@ -769,23 +774,23 @@
     \def\@tempb{*}%
     \ifx\@tempa\@tempb
       \def\caption@thelabel{\label*}%
-      \caption@@getlabel#3\@nil
+      \caption@@@getlabel#3\@nil
     \else
       \def\caption@thelabel{\label}%
-      \caption@@getlabel{#2}#3\@nil
+      \caption@@@getlabel{#2}#3\@nil
     \fi
   \fi}
-\long\def\caption@@getlabel#1#2\@nil{%
+\long\def\caption@@@getlabel#1#2\@nil{%
   \def\@tempa{#1}%
   \def\@tempb{[}%
   \ifx\@tempa\@tempb
-    \caption@@@getlabel#1#2\@nil
+    \caption@@@@getlabel#1#2\@nil
   \else
     \l@addto@macro\caption@thelabel{{#1}}%
   \fi}
-\long\def\caption@@@getlabel[#1]#2\@nil{%
+\long\def\caption@@@@getlabel[#1]#2\@nil{%
   \l@addto@macro\caption@thelabel{[{#1}]}%
-  \caption@@getlabel#2\@nil}
+  \caption@@@getlabel#2\@nil}
 \let\caption@thelabel\relax
 \DeclareCaptionOption{strut}[1]{\caption@set@bool\caption@ifstrut{#1}}
 \newcommand*\DeclareCaptionFont{%
@@ -988,7 +993,7 @@
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
 \newcommand*\AtEndCaption{\l@addto@macro\caption@endhook}
 \DeclareCaptionOption{list}[1]{\caption@setlist{#1}}
-\DeclareCaptionOption{listof}[1]{\KV@caption@list{#1}}
+\DeclareCaptionOption{listof}[1]{\caption@setlist{#1}}
 \newcommand*\caption@setlist{\caption@set@bool\caption@iflist}
 \caption@setlist{on}
 \DeclareCaptionOption{listtype}{\caption@setlisttype{#1}}
