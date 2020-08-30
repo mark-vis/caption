@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2701}
+% \CheckSum{2715}
 %
 % \iffalse
 %<*driver>
@@ -217,7 +217,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/08/24 v3.5 Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/08/30 v3.5 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -742,6 +742,11 @@
 %
 % \begin{macro}{\caption@redefine}
 % \changes{v3.1k}{2009/03/30}{This macro added, it contains the patching code now}
+%    \begin{macrocode}
+\newcommand*\caption@redefine{}
+%    \end{macrocode}
+% \end{macro}
+%
 % Prior to \version{3.4} we only redefined |\caption| and |\@caption| if the current definitions
 % were well known, so documents written in the old (\package{caption} package \version{1.x}) days
 % (where |\caption| \& |\@caption| were not redefined by us) still compiled fine.
@@ -749,8 +754,8 @@
 % but is simply overcautious and especially unwanted by the user nowadays.
 % So starting with \version{3.4} we only do not redefine |\caption| and |\@caption| if the
 % `compatibility' option is set to `v1'.
+%
 %    \begin{macrocode}
-\newcommand*\caption@redefine{}
 \g@addto@macro\caption@redefine{%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -814,21 +819,49 @@
 % \begin{macro}{\@xfloat}
 % \changes{v3.1}{2007/05/09}{This re-definition added}
 % \changes{v3.1b}{2007/09/22}{Will now be redefined in compatibility mode, too}
-% We redefine |\@xfloat| so inside floating environments our
-% type-specific options will be used, a \package{hyperref}
-% anchor will be set etc.
+% \changes{v3.5}{2020/08/30}{Hook added}
+%   We redefine |\@x|\-|float| so inside floating environments our
+%   type-specific options will be used, a \package{hyperref}
+%   anchor will be set etc.
 %    \begin{macrocode}
   \let\caption@ORI@xfloat\@xfloat
+%    \end{macrocode}
+%    \begin{macrocode}
   \def\@xfloat#1[#2]{%
     \caption@ORI@xfloat{#1}[#2]%
-    \caption@settype{#1}}%
+    \caption@settype{#1}%
+    \caption@xfloat@hook}%
+%    \end{macrocode}
+%   Hook, could be extended with |\g@addto@macro\caption@x|\-|float@hook{|\ldots|}|.
+%   (The caption type could be found in |\@cap|\-|type|.)
+%    \begin{macrocode}
+  \newcommand*\caption@xfloat@hook{}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\@xdblfloat}
+% \changes{v3.5}{2020/08/30}{Re-definition of \cs{xdblfloat} added}
+%   We redefine |\@xdbl|\-|float|, too, so special options for |figure*|
+%   resp.~|table*| will be applied here.
+%    \begin{macrocode}
+  \let\caption@ORI@xdblfloat\@xdblfloat
+%    \end{macrocode}
+%    \begin{macrocode}
+  \def\@xdblfloat#1[#2]{%
+    \caption@ORI@xdblfloat{#1}[#2]% expands to \@xfloat{#1}[#2] + extra stuff
+    \caption@setoptions{#1*}%
+    \caption@xdblfloat@hook}%
+%    \end{macrocode}
+%   Hook, could be extended with |\g@addto@macro\caption@xdbl|\-|float@hook{|\ldots|}|.
+%   (The caption type could be found in |\@cap|\-|type|.)
+%    \begin{macrocode}
+  \newcommand*\caption@xdblfloat@hook{}%
 %    \end{macrocode}
 % \end{macro}
 %
 %    \begin{macrocode}
 }
 %    \end{macrocode}
-% \end{macro}
 %
 % Some packages (like the \package{hyperref} package for example) redefines
 % |\caption| and |\@caption|, too.
