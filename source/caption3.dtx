@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3636}
+% \CheckSum{3654}
 %
 % \iffalse
 %<*driver>
@@ -192,7 +192,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/08/30 v2.0 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/09/07 v2.0-babel-french caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3078,7 +3078,8 @@
 % \changes{v1.1}{2006/05/14}{\package{frenchb} babel support added}
 % \changes{v2.0}{2020/08/01}{\package{french} babel support updated}
 %
-% We provide a dummy `french' caption label separator (so |labelsep=french| works fine);
+% We provide a dummy `french' caption label separator
+% (so |\caption|\-|setup{label|\-|sep=french}| will work fine);
 % it will be re-defined dependant on the `french' package used later on.
 %    \begin{macrocode}
 \caption@ifdecl{labelseparator}{french}
@@ -3107,17 +3108,34 @@
 % which uses |\if|\-|FB|\-|Customise|\-|Fig|\-|Tab|\-|Captions| and |\Caption|\-|Separator|.
 %
 %    \begin{macrocode}
-  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
-    \DeclareCaptionLabelSeparator{french}{%
-      \ifFBCustomiseFigTabCaptions
-        \CaptionSeparator
-      \else
-        \space : %
-      \fi}%
+  \ifFBOldFigTabCaptions
+\typeout{OldFigTabCaptions=true}%
+    \DeclareCaptionLabelSeparator{french}{\CaptionSeparator}%
+    \caption@ifdefined\extrasfrench{%
+      \addto\extrasfrench{%
+        \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
+    \caption@ifdefined\extrasacadian{%
+      \addto\extrasacadian{%
+        \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
+  \else
+\typeout{OldFigTabCaptions=false}%
+    \DeclareCaptionLabelSeparator{french}{\ifFBfrench\space\fi : }%
+    \SetCaptionDefault{labelseparator}{french}%
+    % TODO: Only apply if language is switched (to preserve the current default label separator instead of forcing it to ": ")
   \fi
-  \caption@ifdefined\extrasfrench{%
-    \addto\extrasfrench{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
+  \ifFBCustomiseFigTabCaptions
+\typeout{CustomiseFigTabCaptions=true}%
+    \caption@AtBeginDocument{%
+      \ifFB@mainlanguage@FR
+\typeout{mainlanguage=FR}%
+        \DeclareCaptionLabelSeparator{french}{\CaptionSeparator}%
+        \SetCaptionDefault{labelseparator}{french}%
+      \else
+\typeout{mainlanguage=other}%
+      \fi}%
+  \else
+\typeout{CustomiseFigTabCaptions=false}%
+  \fi
 %    \end{macrocode}
 %
 % Suppress the warning about load order (since it's not longer valid anymore).
@@ -3153,9 +3171,7 @@
 % which uses |\caption|\-|separator|, and switch the default font to `it' and the default label font to `up'.
 %
 %    \begin{macrocode}
-  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
-    \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
-  \fi
+  \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
   \g@addto@macro\extrasfrench{%
     \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
     \caption@switchdefault{font}{\let\caption@original@font#1}{it}%
