@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/09/07 v2.0a caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/09/07 v2.0b caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -1148,26 +1148,37 @@
 }{%
   \let\caption@rl\@firstofone
 }
-\caption@ifdecl{labelseparator}{french}
-  {\let\caption@french@labelseparator\@undefined}%
-  {\caption@@set{labelseparator}{labelseparator@french}{default}%
-   \let\caption@french@labelseparator\caption@labelseparator@french}
+\DeclareCaptionLabelSeparator{french}{\caption@french@labelseparator}
 \newcommand*\caption@IfBabelFrench{%
   \caption@IfBabelPackageLoaded{french}{\FB@makecaption}}
 \@onlypreamble\caption@IfBabelFrench
 \providecommand*\caption@ifbabel@french{true}
 \caption@IfBabelFrench{%
-  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
-    \DeclareCaptionLabelSeparator{french}{%
-      \ifFBCustomiseFigTabCaptions
-        \CaptionSeparator
-      \else
-        \space : %
-      \fi}%
+  \providecommand\caption@french@labelseparator{\CaptionSeparator}%
+  \DeclareCaptionLabelSeparator{colon}{\autospace@beforeFDP : }%
+  \ifFBOldFigTabCaptions
+    \typeout{OldFigTabCaptions=true}%            %%%%%%%%%%% <= needs to be removed
+    \caption@ifdefined\extrasfrench{%
+      \addto\extrasfrench{%
+        \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
+    \caption@ifdefined\extrasacadian{%
+      \addto\extrasacadian{%
+        \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
+  \else
+    \typeout{OldFigTabCaptions=false}%           %%%%%%%%%%% <= needs to be removed
+    \ifFBCustomiseFigTabCaptions
+      \typeout{CustomiseFigTabCaptions=true}%    %%%%%%%%%%% <= needs to be removed
+      \caption@AtBeginDocument{%
+        \ifFB@mainlanguage@FR
+          \typeout{mainlanguage=FR}%
+          \SetCaptionDefault{labelseparator}{french}%
+        \else
+          \typeout{mainlanguage=other}%          %%%%%%%%%%% <= needs to be removed
+        \fi}%
+    \else
+      \typeout{CustomiseFigTabCaptions=false}%   %%%%%%%%%%% <= needs to be removed
+    \fi
   \fi
-  \caption@ifdefined\extrasfrench{%
-    \addto\extrasfrench{%
-      \caption@switchdefault{labelseparator}{\babel@save #1}{french}}}{}%
   \caption@AtBeginDocument{\@nameuse{@FBwarning@capsepfalse}}%
 }{}
 \newcommand*\caption@IfFrenchLe{%
@@ -1175,9 +1186,7 @@
 \@onlypreamble\caption@IfBabelFrenchLe
 \providecommand*\caption@ifbabel@frenchle{true}
 \caption@IfFrenchLe{%
-  \ifx\caption@french@labelseparator\caption@labelseparator@french % still set to dummy label separator?
-    \DeclareCaptionLabelSeparator{french}{\captionseparator\space}%
-  \fi
+  \providecommand\caption@french@labelseparator{\captionseparator\space}%
   \g@addto@macro\extrasfrench{%
     \caption@switchdefault{labelseparator}{\let\caption@original@labelseparator#1}{french}%
     \caption@switchdefault{font}{\let\caption@original@font#1}{it}%
