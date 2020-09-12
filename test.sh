@@ -154,7 +154,7 @@ then
   :
 elif $dirfound
 then
-  printf "\nThat's all, folks!\n"
+  printf "\nThat's all Folks!\n"
 else
   printf "*** No sub-directory '%s' found.\n" "$dironly" >&2
 fi
