@@ -133,6 +133,13 @@ function main
   local gl_end=$(timestamp)
 
   # Generate report file, if requested
+  # Note: GitLab CI does not care about "testsuites" or "testsuite" elements, it only evaluates "testcase" elements.
+  # The "classname" attribute will be displayed as "Suite", the "name" attribute as "Name", and the "time" as "Duration".
+  # The combination of "classname" and "name" must be unique, otherwise the "testcase" elements will not be counted as
+  # different tests. If the "testcase" contains a "failure" element it will be counted as "Failed", if it contains an
+  # "error" element it will be counted as "Error", if it contains a "skipped" element is will be counted as "Skipped",
+  # and all other "testcase" elements will be counted as "Passed".
+  # See also: https://docs.gitlab.com/ee/ci/unit_test_reports.html
   if [[ -n $output_file ]]
   then
     cd "$basedir" || exit
@@ -251,10 +258,10 @@ function compile_dir_file
   if (( result == 0 ))
   then
     printf "Compiling %s/%s passed.\n" "$1" "$2"
-    printf -v temp '<testcase name="%s" time="%s" />\n' "$2" "$(timestamp_diff "$start" "$end")"
+    printf -v temp '<testcase classname="%s" name="%s" time="%s" />\n' "$1" "$2" "$(timestamp_diff "$start" "$end")"
   else
     printf "\n*** Compiling %s/%s failed.\n" "$1" "$2"
-    printf -v temp '<testcase name="%s" time="%s"><failure message="%s" type="ERROR" /></testcase>\n' "$2" "$(timestamp_diff "$start" "$end")" "$(xml_escape "$message")"
+    printf -v temp '<testcase classname="%s" name="%s" time="%s"><failure message="%s" type="ERROR" /></testcase>\n' "$1" "$2" "$(timestamp_diff "$start" "$end")" "$(xml_escape "$message")"
 
     ((++failures))
 
@@ -347,7 +354,7 @@ function is_disabled
         ((++disabled))
 
         printf "* Compiling %s/%s skipped.\n" "$1" "$2"
-        printf -v temp '<testcase name="%s" time="%s"><skipped/></testcase>\n' "$2" "0.0"
+        printf -v temp '<testcase classname="%s" name="%s" time="%s"><skipped/></testcase>\n' "$1" "$2" "0.0"
         content+="$temp"
       fi
 
