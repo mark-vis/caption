@@ -3,159 +3,454 @@
 # test.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
+# Date:   2020-09-13
 
-# shellcheck disable=SC2103,SC2164
-
-help=false
-if [[ $1 == "-?" || $1 == "--help" ]]
-then
-  printf "Syntax: ./test.sh [<sub-directory>]\n"
-  printf "where <sub-directory> is either:\n"
-  printf "  all   - compiles all test files (default)\n"
-  printf "  clean - remove intermediate files only\n"
-  printf "or one of:\n"
-  help=true # print list of sub-directories without processing them
-fi
+# shellcheck disable=SC2155
 
 basedir=$(pwd)
-logfile="$basedir/test.log"
 
-# Store argument as $dironly (default is "all" -> "*")
-dironly=${1:-all}
-if [[ $dironly == "all" ]]; then dironly="*"; fi
-dirfound=false  # no matching directory was found so far
+all=true            # default: Target "all"
+disabled_cases=()   # default: Compile all testcases
+exit_on_error=true  # default: Exit after error
+interactive=true    # default: Interactive mode
+output_file=""      # default: Don't generate report file
 
-cleanup()
+shopt -s nullglob
+
+function main
+{
+  local gl_tests=0
+  local gl_failures=0
+  local gl_disabled=0
+  local gl_content=""
+  local gl_start=$(timestamp)
+
+  local disable_arg=false
+  local interactive_arg=false
+  local output_arg=false
+
+  local arg
+  for arg in "$@"
+  do
+    if [[ $arg == "-?" || $arg == "--help" ]]
+    then
+      printf "Usage: ./test.sh [OPTION]... [all|clean|DIRECTORY|FILE]...\n"
+      printf "\n"
+      printf "  -d, --disable=FILE      don't compile FILE (or DIRECTORY)\n"
+      printf "  -i, --interactive=BOOL  set interactive mode (default:true)\n"
+      printf "  -o, --output=FILE       generate report file\n"
+      printf "\n"
+      exit 1
+    elif [[ $arg == "-d" || $arg == "--disable" ]]
+    then
+      disable_arg=true
+    elif $disable_arg
+    then
+      disable "$arg"
+      disable_arg=false
+    elif [[ ${arg:0:2} == "-d" ]]
+    then
+      disable "${arg:2}"
+    elif [[ ${arg:0:10} == "--disable=" ]]
+    then
+      disable "${arg:10}"
+    elif [[ $arg == "-i" || $arg == "--interactive" ]]
+    then
+      interactive_arg=true
+    elif $interactive_arg
+    then
+      interactive=$(boolean "$arg")
+      interactive_arg=false
+    elif [[ ${arg:0:2} == "-i" ]]
+    then
+      interactive=$(boolean "${arg:2}")
+    elif [[ ${arg:0:14} == "--interactive=" ]]
+    then
+      interactive=$(boolean "${arg:14}")
+    elif [[ $arg == "-o" || $arg == "--output" ]]
+    then
+      output_arg=true
+    elif $output_arg
+    then
+      output_file="$arg"
+      exit_on_error=false
+      interactive=false
+      output_arg=false
+    elif [[ ${arg:0:2} == "-o" ]]
+    then
+      output_file="${arg:2}"
+      exit_on_error=false
+      interactive=false
+    elif [[ ${arg:0:9} == "--output=" ]]
+    then
+      output_file="${arg:9}"
+      exit_on_error=false
+      interactive=false
+    elif [[ $arg == "all" ]]
+    then
+      all=true
+    elif [[ $arg == "clean" ]]
+    then
+      clean
+      all=false
+    else
+      all=false
+
+      # Remove trailing /
+      if [[ ${arg:${#arg}-1} == "/" ]]
+      then
+         arg=${arg:0:${#arg}-1}
+      fi
+
+      # Compile either directory content or file
+      if [[ -d "$basedir/$arg" ]]
+      then
+        compile_dir "$arg"
+      elif [[ -f "$basedir/$arg" ]]
+      then
+        compile_file "$arg"
+      else
+        printf "*** Invalid argument '%s'.\n" "$arg"
+        exit 1
+      fi
+    fi
+  done
+
+  if $all
+  then
+    # Compile all files in all directories
+    local dirs=(*)
+    local dir
+    for dir in "${dirs[@]}"
+    do
+      if [[ -d "$basedir/$dir" ]]
+      then
+        is_disabled "$dir" || compile_dir "$dir"
+      fi
+    done
+  fi
+
+  local gl_end=$(timestamp)
+
+  # Generate report file, if requested
+  if [[ -n $output_file ]]
+  then
+    cd "$basedir" || exit
+    printf '<?xml version="1.0" encoding="UTF-8"?>\n<testsuites name=\"%s\" tests=\"%d\" failures=\"%d\" disabled=\"%d\" time=\"%s\">\n%s</testsuites>\n' "AllTests" "$gl_tests" "$gl_failures" "$gl_disabled" "$(timestamp_diff "$gl_start" "$gl_end")" "$gl_content" > "$output_file"
+  fi
+
+  # Return 0 if no failures occured, 1 otherwise
+  (( gl_failures == 0 ))
+}
+
+function clean
 {
   # Remove interim files
   # Note: This removes all unstaged (new) files as well.
   git clean -fdx -e source/ltxdoc.cfg
 }
 
-compile_all()
+function compile_dir
 {
-  [[ -d $2 ]] || return # Process directories only
+  # Compile all files in all sub-directories
 
-  # shellcheck disable=SC2053
-  if $help
-  then
-    # In help mode only print the sub-directory name
-    if [[ $1 == "." ]]
+  local dir="$1"
+
+  cd "$basedir/$dir" || exit
+
+  local subdirs=(*)
+  local files=(*.dtx *.ltx *.tex)
+
+  local subdir
+  for subdir in "${subdirs[@]}"
+  do
+    if [[ -d "$basedir/$dir/$subdir" ]]
     then
-      printf "  %s\n" "$2"
-    else
-      printf "  %s/%s\n" "$1" "$2"
+      is_disabled "$dir/$subdir" || compile_dir "$dir/$subdir"
     fi
-  elif [[ "$1/$2" == $dironly || "$2" == $dironly ]]
+  done
+
+  if (( ${#files[@]} > 0 ))
   then
-    dirfound=true # matching directory found
+    pre_compile_files
 
-    # Compile all files in the given directory
-    cd "$2"
-    cp -a "$basedir"/tex/*.sty "$basedir"/tex/*.sto .
+    local tests=0
+    local failures=0
+    local disabled=0
+    local content=""
+    local start=$(timestamp)
 
-    shopt -s nullglob
-    files=(*.dtx *.ltx *.tex)
+    local file
     for file in "${files[@]}"
     do
-      compile "$1" "$2" "$file"
+      is_disabled "$dir/$file" || compile_dir_file "$dir" "$file"
     done
 
-    cd ..
+    local end=$(timestamp)
+
+    post_compile_files
   fi
 }
 
-compile()
+function compile_file
 {
-  # Skip example documents which purpose is to produce an error
-  # (or cannot be compiled for a different reason)
-  [[ $2 == "floatrow"    && $3 == "floatrow.dtx"       ]] && return  # ! Arithmetic overflow.
-  [[ $2 == "floatrow"    && $3 == "floatrow-rus.tex"   ]] && return  # ! Arithmetic overflow.
-  [[ $2 == "floatrow"    && $3 == "frsample04.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "frsample10.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "frsample11.tex"     ]] && return  # Does not compile with pdflatex
-  [[ $2 == "floatrow"    && $3 == "fr-sample.tex"      ]] && return  # No need to test this (sample body)
-  [[ $2 == "floatrow"    && $3 == "pictures.tex"       ]] && return  # No need to test this
-  [[ $2 == "floatrow"    && $3 == "r-longtable.tex"    ]] && return  # No need to test this
-  [[ $2 == "floatrow"    && $3 == "s-longtable.tex"    ]] && return  # No need to test this
-  [[ $2 == "newfloat"    && $3 == "figurewithin-3.tex" ]] && return  # Intended to fail w/ error
-  [[ $2 == "ragged2e"    && $3 == "ragged2e_4.tex"     ]] && return  # Intended to fail w/ error
-  [[ $2 == "ragged2e"    && $3 == "ragged2e_5.tex"     ]] && return  # Intended to fail w/ error
-  [[ $2 == "email"       && $3 == "2009-09-29.tex"     ]] && return  # Intended to fail w/ error (related to floatrow)
-  [[ $2 == "other"       && $3 == "2007-09-13.tex"     ]] && return  # Intended to fail w/ error: labelsep=newline + \setcaphanging
-  [[ $2 == "other"       && $3 == "2012-09-21.tex"     ]] && return  # Bug in fltpage
-  [[ $2 == "other"       && $3 == "2013-01-09.tex"     ]] && return  # Bug in fltpage
-  [[ $2 == "sourceforge" && $3 == "ticket_2.tex"       ]] && return  # Bug in fltpage
-  [[ $2 == "sourceforge" && $3 == "ticket_4.tex"       ]] && return  # TODO: Adaption to hvfloat
-  [[ $2 == "sourceforge" && $3 == "ticket_12.tex"      ]] && return  # Can't compile tufte-book
-  [[ $2 == "sourceforge" && $3 == "ticket_26.tex"      ]] && return  # Bug in refcheck
-  [[ $2 == "sourceforge" && $3 == "ticket_37.tex"      ]] && return  # TODO: \iflistof
-  [[ $2 == "sourceforge" && $3 == "ticket_40.tex"      ]] && return  # Bug in catoptions
-  [[ $2 == "sourceforge" && $3 == "ticket_43.tex"      ]] && return  # Intended to fail w/ error: subcaption + subfig
-  [[ $2 == "sourceforge" && $3 == "ticket_44.tex"      ]] && return  # Intended to fail w/ error: \captionof{subfigure}
-  [[ $2 == "sourceforge" && $3 == "ticket_47.tex"      ]] && return  # TODO: \DeclareCaptionListHook
-  [[ $2 == "gitlab"      && $3 == "issue_25.tex"       ]] && return  # Doomed to fail: \newsubfloat + subcaption package
-  [[ $2 == "gitlab"      && $3 == "issue_29.tex"       ]] && return  # Needs Culmus fonts to compile
-  [[ $2 == "gitlab"      && $3 == "issue_35.tex"       ]] && return  # Needs <whatever> to compile (greek & farsi)
-  [[ $2 == "gitlab"      && $3 == "issue_65.tex"       ]] && return  # Doomed to fail: frontiers document class + subcaption package
+  # Compile a single file
 
-  # Compile document three times (so interim files will be used)
-  local logfile="${3%.*}.log"
+  local dir=$(dirname "$1")
+  local file=$(basename "$1")
+
+  pre_compile_files
+
+  local tests=0
+  local failures=0
+  local disabled=0
+  local content=""
+  local start=$(timestamp)
+
+  compile_dir_file "$dir" "$file"
+
+  local end=$(timestamp)
+
+  post_compile_files
+}
+
+function pre_compile_files
+{
+  # Change directory
+  cd "$basedir/$dir" || exit
+
+  # Update local LaTeX packages
+  cp -a "$basedir"/tex/*.sty "$basedir"/tex/*.sto .
+}
+
+function post_compile_files
+{
+  # Generate report
+  local temp
+  printf -v temp '<testsuite name=\"%s\" tests=\"%d\" failures=\"%d\" disabled=\"%d\" time=\"%s\">\n%s</testsuite>\n' "$dir" "$tests" "$failures" "$disabled" "$(timestamp_diff "$start" "$end")" "$content"
+  gl_content+="$temp"
+}
+
+function compile_dir_file
+{
+  # Compile a single file as "testcase" as part of a "testsuite"
+
+  ((++tests))
+  ((++gl_tests))
+
+  local start=$(timestamp)
+  compile "$2"
+  local result=$?
+  local end=$(timestamp)
+
+  local temp
+  if (( result == 0 ))
+  then
+    printf "Compiling %s/%s passed.\n" "$1" "$2"
+    printf -v temp '<testcase name="%s" time="%s" />\n' "$2" "$(timestamp_diff "$start" "$end")"
+  else
+    printf "\n*** Compiling %s/%s failed.\n" "$1" "$2"
+    printf -v temp '<testcase name="%s" time="%s"><failure message="%s" type="ERROR" /></testcase>\n' "$2" "$(timestamp_diff "$start" "$end")" "$(xml_escape "$message")"
+
+    ((++failures))
+    ((++gl_failures))
+
+    if $exit_on_error
+    then
+      exit $result
+    fi
+  fi
+
+  content+="$temp"
+  return $result
+}
+
+function compile
+{
+  # Compile document up to three times (so interim files will be used)
+
+  local logfile="${1%.*}.log"
+
+  # shellcheck disable=SC2034
   for i in {1..3}
   do
-    pdflatex "$3" || failed "$1" "$2" "$3"
+    local result log
+
+    if $interactive
+    then
+      log=""
+      pdflatex "$1"
+      result=$?
+    else
+#     sleep 0.1
+      log=$(pdflatex -halt-on-error "$1")
+      result=$?
+    fi
+
+    if (( result != 0 ))
+    then
+      printf '%s' "$log"
+      message=$(tail -n1 "$logfile")  # failure message for report file
+      return $result
+    fi
     if ! grep -Fq "Rerun to get" "$logfile"
     then
       break
     fi
   done
-  printf "Compiling %s/%s/%s passed.\n" "$1" "$2" "$3" | tee -a "$logfile"
 }
 
-failed()
+function boolean
 {
-  # Print error message and exit
-  printf "\n*** Compiling %s/%s/%s failed.\n" "$1" "$2" "$3" | tee -a "$logfile"
-  exit 1
+  # Convert boolean value to either "false" or "true"
+
+  if [[ $1 == "0" || $1 == "false" || $1 == "no" ]]
+  then
+    printf 'false\n'
+  elif [[ $1 == "1" || $1 == "true" || $1 == "yes" ]]
+  then
+    printf 'true\n'
+  else
+    printf "*** Invalid boolean value '%s'.\n" "$1"
+    exit 1
+  fi
 }
 
-# Do not remove intermediate files in help mode
-if ! $help
-then
-  # Remove intermediate files
-  cleanup
-  [[ $dironly != "clean" ]] || exit
-fi
+function disable
+{
+  # Disable a testsuite or testcase
 
-# Compile all package documentations
-compile_all "." "source"
+  disabled_cases+=( "$1" )
+}
 
-# Compile all test documents
-cd test
-dirs=(*)
-for dir in "${dirs[@]}"
-do
-  compile_all "test" "$dir"
-done
-cd ..
+function is_disabled
+{
+  # Test if the given testsuite or testcase is disabled
 
-# Compile all issue documents
-cd issues
-dirs=(*)
-for dir in "${dirs[@]}"
-do
-  compile_all "issues" "$dir"
-done
-cd ..
+  local d
+  for d in "${disabled_cases[@]}"
+  do
+    if [[ $d == "$1" ]]
+    then
+      ((++disabled))
+      ((++gl_disabled))
+      return 0
+    fi
+  done
+  return 1
+}
 
-# Print test result
-if $help
-then
-  :
-elif $dirfound
-then
-  printf "\nThat's all Folks!\n"
-else
-  printf "*** No sub-directory '%s' found.\n" "$dironly" >&2
-fi
+function timestamp
+{
+  # Print timestamp
+
+  date -u "+%s.%N"  # Seconds + nanoseconds since 1970-01-01
+}
+function timestamp_diff
+{
+  # Print difference of timestamps, in seconds
+
+# local start_s=$(("10#${1%.*}")) # older variants of bash do not support "10#" here
+# local start_n=$(("10#${1#*.}"))
+# local   end_s=$(("10#${2%.*}"))
+# local   end_n=$(("10#${2#*.}"))
+
+  local start_s=$(strip "${1%.*}")
+  local start_n=$(strip "${1#*.}")
+  local   end_s=$(strip "${2%.*}")
+  local   end_n=$(strip "${2#*.}")
+
+  if (( end_n < start_n ))
+  then
+    ((end_s -= 1))
+    ((end_n += 1000000000))
+  fi
+
+  printf '%u.%09u\n' "$((end_s - start_s))" "$((end_n - start_n))"
+}
+
+function strip
+{
+  # Strip leading 0s so the number will not be interpreted as octal
+
+  local i="$1"
+  while (( ${#i} > 1 )) && [[ ${i:0:1} == "0" ]]
+  do
+    i=${i:1}
+  done
+  printf '%u\n' "$i"
+}
+
+function xml_escape
+{
+  local src="$1"
+  local dest=""
+
+  while (( ${#src} > 0 ))
+  do
+    local ch=${src:0:1}
+    src=${src:1}
+
+    if [[ $ch == '&' ]]
+    then
+      dest+="&amp;"
+    elif [[ $ch == '<' ]]
+    then
+      dest+="&lt;"
+    elif [[ $ch == '>' ]]
+    then
+      dest+="&gt;"
+    elif [[ $ch == "'" ]]
+    then
+      dest+="&apos;"
+    elif [[ $ch == '"' ]]
+    then
+      dest+="&quot;"
+    else
+      dest+="$ch"
+    fi
+  done
+
+  printf '%s\n' "$dest"
+}
+
+# Test "caption package bundle"
+
+disable test/floatrow/floatrow.dtx        # ! Arithmetic overflow.
+disable test/floatrow/floatrow-rus.tex    # ! Arithmetic overflow.
+disable test/floatrow/frsample04.tex      # Does not compile with pdflatex
+disable test/floatrow/frsample10.tex      # Does not compile with pdflatex
+disable test/floatrow/frsample11.tex      # Does not compile with pdflatex
+disable test/floatrow/fr-sample.tex       # Interims file
+disable test/floatrow/pictures.tex        # Interims file
+disable test/floatrow/r-longtable.tex     # Interims file
+disable test/floatrow/s-longtable.tex     # Interims file
+disable test/newfloat/figurewithin-3.tex  # Intended to fail w/ error
+disable test/keyfloat/dtxexample_cut.tex  # Interims file
+disable test/keyfloat/testfloat_html.tex  # Interims file
+disable test/ragged2e/ragged2e_4.tex      # Intended to fail w/ error
+disable test/ragged2e/ragged2e_5.tex      # Intended to fail w/ error
+disable issues/email/2009-09-29.tex       # Intended to fail w/ error (related to floatrow)
+disable issues/usenet/2005-06-28-foo.tex  # Interims file
+disable issues/usenet/2005-06-28-bar.tex  # Interims file
+disable issues/usenet/2005-06-28-baz.tex  # Interims file
+disable issues/other/2007-09-13.tex       # Intended to fail w/ error: labelsep=newline + \setcaphanging
+disable issues/other/2012-09-21.tex       # Bug in fltpage
+disable issues/other/2013-01-09.tex       # Bug in fltpage
+disable issues/sourceforge/ticket_2.tex   # Bug in fltpage
+disable issues/sourceforge/ticket_4.tex   # TODO: Adaption to hvfloat
+disable issues/sourceforge/ticket_12.tex  # Can't compile tufte-book
+disable issues/sourceforge/ticket_26.tex  # Bug in refcheck
+disable issues/sourceforge/ticket_37.tex  # TODO: \iflistof
+disable issues/sourceforge/ticket_40.tex  # Bug in catoptions
+disable issues/sourceforge/ticket_43.tex  # Intended to fail w/ error: subcaption + subfig
+disable issues/sourceforge/ticket_44.tex  # Intended to fail w/ error: \captionof{subfigure}
+disable issues/sourceforge/ticket_47.tex  # TODO: \DeclareCaptionListHook
+disable issues/gitlab/issue_25.tex        # Doomed to fail: \newsubfloat + subcaption package
+disable issues/gitlab/issue_29.tex        # Needs Culmus fonts to compile
+disable issues/gitlab/issue_35.tex        # Needs <whatever> to compile (greek & farsi)
+disable issues/gitlab/issue_65.tex        # Doomed to fail: frontiers document class + subcaption package
+disable unsorted                          # TODO
+
+main "$@"
 
