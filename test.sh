@@ -183,7 +183,7 @@ function compile_dir
     local file
     for file in "${files[@]}"
     do
-      is_disabled "$dir/$file" || compile_dir_file "$dir" "$file"
+      is_disabled "$dir" "$file" || compile_dir_file "$dir" "$file"
     done
 
     local end=$(timestamp)
@@ -229,6 +229,11 @@ function post_compile_files
   local temp
   printf -v temp '<testsuite name=\"%s\" tests=\"%d\" failures=\"%d\" disabled=\"%d\" time=\"%s\">\n%s</testsuite>\n' "$dir" "$tests" "$failures" "$disabled" "$(timestamp_diff "$start" "$end")" "$content"
   gl_content+="$temp"
+
+  # Update global counters
+  (( gl_tests += tests ))
+  (( gl_failures += failures ))
+  (( gl_disabled += disabled ))
 }
 
 function compile_dir_file
@@ -236,7 +241,6 @@ function compile_dir_file
   # Compile a single file as "testcase" as part of a "testsuite"
 
   ((++tests))
-  ((++gl_tests))
 
   local start=$(timestamp)
   compile "$2"
@@ -253,7 +257,6 @@ function compile_dir_file
     printf -v temp '<testcase name="%s" time="%s"><failure message="%s" type="ERROR" /></testcase>\n' "$2" "$(timestamp_diff "$start" "$end")" "$(xml_escape "$message")"
 
     ((++failures))
-    ((++gl_failures))
 
     if $exit_on_error
     then
@@ -327,13 +330,28 @@ function is_disabled
 {
   # Test if the given testsuite or testcase is disabled
 
+  local path="$1"
+  if [[ -n $2 ]]; then path+="/$2"; fi
+
   local d
   for d in "${disabled_cases[@]}"
   do
-    if [[ $d == "$1" ]]
+    if [[ $d == "$path" ]]
     then
-      ((++disabled))
-      ((++gl_disabled))
+
+      # If a file (=testcase) is disabled, create an entry in the report file
+      # See also: https://gitlab.com/gitlab-org/gitlab/-/blob/master/spec/lib/gitlab/ci/parsers/test/junit_spec.rb
+      if [[ -n $2 ]]
+      then
+        ((++tests))
+        ((++disabled))
+
+        printf "* Compiling %s/%s skipped.\n" "$1" "$2"
+        printf -v temp '<testcase name="%s" time="%s"><skipped/></testcase>\n' "$2" "0.0"
+        content+="$temp"
+      fi
+
+      # Directory resp. file is disabled
       return 0
     fi
   done
