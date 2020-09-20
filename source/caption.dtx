@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2697}
+% \CheckSum{2802}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2015/09/16 v3.5 Implementation of the caption package]
+\ProvidesFile{caption.drv}[2020/09/20 v3.6 Implementation of the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -217,7 +217,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/09/12 v3.5b Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/09/20 v3.6 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -258,16 +258,15 @@
 %    \end{macrocode}
 % \begin{macro}{\caption@DisablePositionOption}
 % \changes{v3.1g}{2008/03/20}{\texttt{position=b} added}
-% \changes{v3.1h}{2008/03/29}{%
-%   Name changed from \cs{caption@IncompatiblePackage} to \cs{caption@DisablePositionOption};
-%   disables the `position' option now instead of issuing a warning}
+% \changes{v3.1h}{2008/03/29}{Name changed from \cs{caption@IncompatiblePackage} to \cs{caption@DisablePositionOption}; disables the `position' option now instead of issuing a warning}
+% \changes{v3.6}{2020/09/20}{Usage of \cs{caption@setposition} replaced by \cs{caption@setup}}
 % |\caption@DisablePositionOption|\marg{package}\par
 % disables the `position' option.
 %    \begin{macrocode}
 \newcommand*\caption@DisablePositionOption[1]{%
   \caption@InfoNoLine{%
     `#1' package detected; setting `position=b' for compatibility reasons}%
-  \caption@setposition b%
+  \caption@setup{position=b}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \DeclareCaptionOption{position}{%
@@ -351,30 +350,44 @@
 \captionsetup{@minipage=default}
 %    \end{macrocode}
 %
-% \subsection{caption v1.x compatibility options}
+% \subsection{Compatibility options}
 % \changes{v3.1}{2007/07/21}{Option `compatibility' added}
 % \changes{v3.1}{2007/09/01}{caption v1.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v1.x$ compatibility options}
 % \changes{v3.5a}{2020/09/02}{caption v1.x compatibility options fixed}
+% \changes{v3.6}{2020/09/20}{Option `compatibility=v3.5' added}
 %
-% Currently we support |v1| and |v3| as values for the |compatibility=| option.
+% Currently we support |v1| and |v3.4| as values for the |compatibility=| option.
 % But since this used to be a boolean option is the past we still support any boolean value
 % for compatibility reasons.
 %
 %    \begin{macrocode}
-\DeclareCaptionOption{compatibility}[v1]{%
-  \caption@ifinlist{#1}{v1,1,true,yes,on}{%
-    \let\caption@ifcompatibility\@firstoftwo
-  }{\caption@ifinlist{#1}{v3,3,0,false,no,off}{%
-    \let\caption@ifcompatibility\@secondoftwo
-  }{%
-    \caption@Error{Undefined compatibility value `#1'}%
-  }}}
+\DeclareCaptionOption{compatibility}[v1]{\caption@setcompatibility{#1}}
 \@onlypreamble@key{caption}{compatibility}
 %    \end{macrocode}
+%
+% \begin{macro}{\caption@setcompatibility}
+% \changes{v3.6}{2020/09/20}{This macro added}
 %    \begin{macrocode}
-\caption@setbool{compatibility}{0} % default: Try not to be compatible to v1.x
+\newcommand*\caption@setcompatibility[1]{%
+  \caption@ifinlist{#1}{v1,1,true,yes,on}{%
+    \let\caption@ifcompatibility\@firstoftwo
+    \let\caption@ifoldcounterhandling\@firstoftwo
+  }{\caption@ifinlist{#1}{v3.0,v3.1,v3.2,v3.3,v3.4,v3.5}{%
+    \let\caption@ifcompatibility\@secondoftwo
+    \let\caption@ifoldcounterhandling\@firstoftwo
+  }{\caption@ifinlist{#1}{v3.6,v3,0,false,no,off}{%
+    \let\caption@ifcompatibility\@secondoftwo
+    \let\caption@ifoldcounterhandling\@secondoftwo
+  }{%
+    \caption@Error{Undefined compatibility value `#1'}%
+  }}}}
+\@onlypreamble\caption@setcompatibility
 %    \end{macrocode}
+%    \begin{macrocode}
+\caption@setcompatibility{false} % default: Try not to be compatible to old versions
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\caption@setincompatible}
 % \changes{v3.4}{2019/09/09}{This macro added}
@@ -385,7 +398,7 @@
     \caption@WarningNoLine{%
       #2;\MessageBreak
       Setting compatibility to v1}%
-    \caption@setbool{compatibility}{1}%
+    \caption@setcompatibility{v1}%
   }{}}
 %    \end{macrocode}
 % \end{macro}
@@ -542,25 +555,18 @@
 %
 % \section{\cs{caption}, \cs{@caption}, and \cs{@makecaption}}
 %
-% \begin{macro}{\caption@ifflag}
-% \changes{v3.3}{2011/12/28}{This switch added}
-% \changes{v3.3}{2018/08/08}{Rewritten (and renamed) so a counter is used instead of a switch}
+% \begin{macro}{\c@caption@flags}
+% \changes{v3.3}{2018/08/08}{This counter and associated macros added}
 % Since we support continued floats and sub-figures it's not an easy task
 % to manage the figure (and table) counter. (Especially since previous versions
-% of the caption package has proven that correcting a counter locally is not a good idea.)
-%
-% These three switches hold the
-% current status: |\caption@if|\-|flag{2}| is set if the caption was already
-% typeset (so the counter doesn't need to be incremented for sub-figures),
-% |\caption@if|\-|flag{4}| is set if there is already content which have
-% incremented the counter (so the counter doesn't need to be incremented
-% for the main caption, further sub-figures, and other stuff), and
-% |\caption@if|\-|flag{1}| is set if |\continued|\-|float| was given.
+% of the caption package have proven that correcting a counter locally is not a good idea,
+% and to make it dependent on the |position=| setting (like the \package{subfig} package does)
+% is not a good idea, either.)
 %
 % In the past three boolean switches were used to store the flags, but since some
 % packages (like the \package{floatrow} and \package{tabu} package) try hard to keep
 % counter changes locally under certain circumstances, it seems a good idea to make
-% these flags a counter value, too.
+% these flags a counter value.
 %    \begin{macrocode}
 \newcounter{caption@flags}
 %    \end{macrocode}
@@ -574,32 +580,54 @@
     \expandafter\@secondoftwo
   \fi}
 %    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@clrflags}
-% \changes{v3.3}{2018/08/08}{This macro added}
-% \begin{macro}{\caption@clrflag}
-% \changes{v3.3}{2013/04/14}{This macro added}
-% \changes{v3.3}{2018/08/08}{Rewritten so a counter is used instead of a switch}
-% \begin{macro}{\caption@setflag}
-% \changes{v3.3}{2013/04/14}{This macro added}
-% \changes{v3.3}{2018/08/08}{Rewritten so a counter is used instead of a switch}
-% Furthermore we introduce the macros \cs{caption@clrflag} and \cs{caption@setflag}
-% for clearing resp.~setting these flags.
+%    \begin{macrocode}
+\newcommand*\caption@setflag[1]{%
+  \caption@ifflag{#1}\@gobbletwo\addtocounter{caption@flags}{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+%\newcommand*\caption@clrflag[1]{%
+%  \caption@ifflag{#1}\addtocounter\@gobbletwo{caption@flags}{-#1}}
+%    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@clrflags{%
-  \setcounter{caption@flags}\z@}
+  \setcounter{caption@flags}{0}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifcontinued}
+% \changes{v3.3}{2011/12/28}{This switch added}
+% \changes{v3.3}{2018/08/08}{Rewritten and renamed from \cs{ifcaption@ContinuedFloat} to \cs{caption@ifflag1}}
+% \changes{v3.6}{2020/09/20}{Rewritten and renamed from \cs{caption@ifflag1} to \cs{caption@ifcontinued}}
+%   |\caption@if|\-|continued| is set if the counter is either already incremented or
+%   should not be incremented, for example if |\continued|\-|float| was given.
 %    \begin{macrocode}
-\newcommand*\caption@clrflag[1]{%
-  \caption@ifflag{#1}{\caption@addtoflags{-#1}}{}}
-\newcommand*\caption@setflag[1]{%
-  \caption@ifflag{#1}{}{\caption@addtoflags{#1}}}
-\newcommand*\caption@addtoflags{%
-  \addtocounter{caption@flags}}
+\newcommand*\caption@ifcontinued{\caption@ifflag1}
+\newcommand*\caption@setcontinued{\caption@setflag1}
 %    \end{macrocode}
 % \end{macro}
+%
+% \begin{macro}{\caption@ifcaption}
+% \changes{v3.3}{2011/12/28}{This switch added}
+% \changes{v3.3}{2018/08/08}{Rewritten and renamed from \cs{ifcaption@caption} to \cs{caption@ifflag2}}
+% \changes{v3.6}{2020/09/20}{Rewritten and renamed from \cs{caption@ifflag2} to \cs{caption@ifcaption}}
+%   |\caption@if|\-|caption| is set if a caption was typeset.
+%    \begin{macrocode}
+\newcommand*\caption@ifcaption{\caption@ifflag2}
+\newcommand*\caption@setcaption{\caption@setflag2}
+%    \end{macrocode}
 % \end{macro}
+%
+% \begin{macro}{\caption@ifsubcaption@xxx}
+% \changes{v3.3}{2011/12/28}{This switch added}
+% \changes{v3.3}{2018/08/08}{Rewritten and renamed from \cs{ifcaption@subcaption} to \cs{caption@ifflag4}}
+% \changes{v3.6}{2020/09/20}{Rewritten and renamed from \cs{caption@ifflag4} to \cs{caption@ifsubcaption}}
+%   |\caption@if|\-|subcaption@above| is set if a sub-caption was typeset \emph{above} a caption.
+%   |\caption@if|\-|subcaption@below| is set if a sub-caption was typeset \emph{below} a caption.
+%    \begin{macrocode}
+\newcommand*\caption@ifsubcaption@above{\caption@ifflag4}
+\newcommand*\caption@ifsubcaption@below{\caption@ifflag8}
+\newcommand*\caption@setsubcaption{\caption@ifflag2{\caption@setflag8}{\caption@setflag4}}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@caption}
@@ -1019,7 +1047,7 @@
 %
 % \begin{macro}{\caption@iftype}
 % \changes{v3.1}{2007/04/11}{This macro and its usage added}
-%  Since we often need to check if |\@captype| is defined (means: we
+%  Since we often need to check if |\@cap|\-|type| is defined (means: we
 %  are inside a floating environment) this helper macro was introduced.
 %    \begin{macrocode}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
@@ -1184,7 +1212,7 @@
 \def\caption@listentry#1[#2]#3{%
   \@bsphack
     #1{\caption@gettitle{#3}}%
-      {\caption@refstepcounter{#2}%
+      {\caption@refstepcounter{#2}%  TODO: Only use \caption@refstepcounter if no optional argument is used, use \refstepcounter instead
        \caption@makecurrent{#2}{#3}}%
     \caption@addcontentsline{#2}{#3}%
   \@esphack}
@@ -1289,8 +1317,7 @@
 %  will be used instead of
 %  \begin{quote}\meta{type}|.|\meta{type \#}\quad\quad.\end{quote}
 %  \par{\small(This implementation follows an idea from Steven Douglas Cochran.)}
-%  \Note{This does not help if the \package{hyperref} package option
-%        \texttt{naturalnames=true} is set.}
+%  \Note{This does not help if the \package{hyperref} package option \texttt{naturalnames=true} is set.}
 %    \begin{macrocode}
 \def\continuedfloat{%
   \caption@iftype
@@ -1299,6 +1326,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@continuedfloat[1]{%
+  \caption@clrflags
+  \caption@setcontinued
   \@ifstar
     {\caption@@refstepcounter\@captype
      \caption@@continuedfloat{#1}}%
@@ -1316,14 +1345,11 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@continuedfloat{%
-  \caption@setflag1% continued float
-  \caption@@@continuedfloat}
-\newcommand*\caption@@@continuedfloat{%
   \stepcounter{continuedfloat}%
-  \caption@@@@continuedfloat}
+  \caption@@@continuedfloat}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@@@continuedfloat[1]{%
+\newcommand*\caption@@@continuedfloat[1]{%
   \caption@setoptions{ContinuedFloat}% for compatibility reasons
   \caption@setoptions{continuedfloat}%
   \caption@setoptions{continued#1}%
@@ -1331,7 +1357,7 @@
   \@ifundefined{theH#1}{}{%
     \expandafter\l@addto@macro\csname theH#1\endcsname{%
       \@alph\c@continuedfloat}}%
-  \let\caption@@@@continuedfloat\@gobble}
+  \let\caption@@@continuedfloat\@gobble}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@CFtype{??}
@@ -1377,7 +1403,29 @@
 %    \begin{macrocode}
 \def\caption@ContinuedFloat{%
   \let\caption@reset@continuedfloat\@gobble
-  \caption@@@continuedfloat}
+  \caption@@continuedfloat}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\nextfloat}
+% \changes{v3.6}{2020/09/20}{This command added}
+%    \begin{macrocode}
+\providecommand*\nextfloat{%
+  \caption@iftype
+    {\caption@nextfloat\@captype}%
+    {\caption@Error{\noexpand\nextfloat outside float}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@nextfloat[1]{%
+  \caption@ifoldcounterhandling
+    {\caption@Error{Not available with option `compatibility=v3.5'}}%
+    {\ifx\caption@@@continuedfloat\@gobble
+       \caption@continuedfloat{#1}%
+     \else
+       \caption@clrflags
+     \fi
+     % xxx xxxxxxx TODO: Set hyperref anchor etc., just like in \@figure}
+    }}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1400,78 +1448,104 @@
 % \changes{v3.2}{2010/10/26}{Error message moved from \cs{caption@@@settype} to here}
 % \changes{v3.2c}{2011/09/04}{Support of \cs{donemaincaptiontrue} from \textsf{memoir} document class added}
 % \changes{v3.3}{2011/12/28}{Usage of \cs{ifcaption@caption}, \cs{ifcaption@subcaption}, and \cs{ifcaption@ContinuedFloat} added}
+% \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@ifrefstepcounter}}
 %  Increments the float (i.e. |figure| or |table|) counter,
 %  resets the continuation counter, and redefines itself to |\@gobble|.
 %    \begin{macrocode}
 \newcommand*\caption@refstepcounter[1]{%
   \@ifundefined{c@#1}%
     {\caption@Error{No float type '#1' defined}}%
-    {\caption@ref@stepcounter{#1}%
-%    \end{macrocode}
-% Set flag if this part of the figure (or table) contains a caption now.
-% (If |\caption@if|\-|top| is not set, |\caption| is at the bottom of this part,
-% therefore ending this part, so we set the flag to |false| in this case.)
-%    \begin{macrocode}
-     \caption@fixposition % TODO: Make this independant on the "position" setting
-     \caption@iftop\caption@setflag\caption@clrflag2% caption
-%    \end{macrocode}
-% This part does not contain content (like sub-figures) yet,
-% so we set |\if|\-|caption@sub|\-|caption| to |false|.
-%    \begin{macrocode}
-     \caption@clrflag4% subcaption
+    {\caption@ifrefstepcounter
+       \caption@@refstepcounter\caption@@refcounter{#1}%
 %    \end{macrocode}
 % Support of the \textsf{memoir} document class.
 %    \begin{macrocode}
      \@nameuse{donemaincaptiontrue}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@ref@stepcounter{%
-  \caption@ifflag1{% continued float
-    \let\caption@tempa\caption@@refcounter
-    \caption@clrflag1% continued float
-  }{%
-    \let\caption@tempa\caption@@refstepcounter
-    \caption@ifflag2{}{% caption
-      \caption@ifflag4{% subcaption
-% Counter was already incremented by content, so we suppress \stepcounter{#1} here
-        \let\caption@tempa\caption@@refcounter
-      }{}%
-    }%
-  }%
-  \caption@tempa}
+\newcommand*\caption@@refstepcounter[1]{%
+\typeout{caption@@refstepcounter}%
+  \caption@prepare@stepcounter{#1}{ref}%
+  \caption@@@refstepcounter{#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@stepcounter[1]{%
+\typeout{caption@@stepcounter}%
+  \caption@prepare@stepcounter{#1}{}%
+  \caption@@@stepcounter{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@refcounter[1]{%
+\typeout{caption@@refcounter}%
   \let\caption@stepcounter@ORI\stepcounter
   \def\stepcounter##1{%
-    \def\caption@tempa{#1}%
-    \def\caption@tempb{##1}%
-    \ifx\caption@tempa\caption@tempb \else
+    \edef\caption@tempa{#1}%
+    \edef\caption@tempb{##1}%
+    \ifx\caption@tempa\caption@tempb
+      % Suppress incrementation of counter
+    \else
       \caption@stepcounter@ORI{##1}%
     \fi}%
    \caption@@@refstepcounter{#1}%
    \let\stepcounter\caption@stepcounter@ORI}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@refstepcounter[1]{%
-  \caption@prepare@stepcounter{#1}{ref}%
-  \caption@@@refstepcounter{#1}}
+\newcommand*\caption@@@refstepcounter{\refstepcounter}
+\newcommand*\caption@@@stepcounter{\stepcounter}
 %    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@@stepcounter[1]{%
-  \caption@prepare@stepcounter{#1}{}%
-  \caption@@@stepcounter{#1}}
-%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@prepare@stepcounter}
 %    \begin{macrocode}
 \newcommand*\caption@prepare@stepcounter[2]{%
   \caption@addsubcontentslines{#2stepcounter}%
   \caption@reset@continuedfloat{#1}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifrefstepcounter}
+% \changes{v3.6}{2020/09/20}{This macro added}
 %    \begin{macrocode}
-\newcommand*\caption@@@refstepcounter{\refstepcounter}
+\newcommand*\caption@ifrefstepcounter{%
+  \let\caption@tempa\caption@ifcaption
+  \caption@ifcontinued
+    {\typeout{continued}\caption@ifoldcounterhandling
+       {\caption@iftop{\let\caption@tempa\@firstoftwo}{}}%
+       {}}%
+    {\typeout{non-continued}\let\caption@tempa\@firstoftwo}%
+  \caption@tempa
+    {\caption@ifsubcaption@below
+       {\caption@iftop{}{\caption@Warning{Ambiguous caption, use \noexpand\nextfloat}}}%
+       {}%
+     \typeout{inc}\caption@clrflags\let\caption@tempa\@firstoftwo}%
+    {\typeout{non-inc}\let\caption@tempa\@secondoftwo}%
+  \caption@setcontinued
+  \caption@setcaption
+  \caption@tempa}%
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@subrefstepcounter}
+% \changes{v3.6}{2020/09/20}{This macro added}
 %    \begin{macrocode}
-\newcommand*\caption@@@stepcounter{\stepcounter}
+\newcommand*\caption@subrefstepcounter{%
+  \def\caption@tempa{%
+    \caption@ifcaption\caption@ifsubcaption@above\@secondoftwo}%
+  \caption@ifcontinued
+    {\caption@ifoldcounterhandling
+       {\caption@iftop{}{\caption@ifcaption{\let\caption@tempa\@firstoftwo}{}}}%
+       {}}%
+    {\let\caption@tempa\@firstoftwo}%
+  \caption@tempa
+    {\caption@ifcaption
+       {\caption@iftop{\caption@Warning{Ambiguous sub-caption, use \noexpand\nextfloat}}{}}%
+       {}%
+     \caption@clrflags
+     \caption@@stepcounter\@captype
+     \let\caption@tempa\@firstoftwo}%
+    {\let\caption@tempa\@secondoftwo}%
+  \caption@setcontinued
+  \caption@setsubcaption}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1702,6 +1776,7 @@
 % \changes{v3.3}{2018/09/06}{Adapted to the \package{chkfloat} package}
 % \changes{v3.4f}{2020/01/03}{Redefinition of \cs{@caption} added since it was redefined by the \env{threeparttable} environment}
 % \changes{v3.5}{2020/07/27}{Adapted to \package{caption3} v2.0}
+% \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@subrefstepcounter}}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -1709,22 +1784,12 @@
 \newcommand*\caption@subtypehook{%
   \ifx\caption\caption@subcaption \else
     \caption@warmup
-%    \end{macrocode}
-%    \begin{macrocode}
-    \caption@ifflag2{}{% caption
-% no \caption in this part of the (floating) environment yet
-      \let\caption@add@contentsline\caption@addsubcontentsline
-      \let\caption@addsubcontentslines\@gobble
-      \caption@ifflag4{}{% subcaption
-% no \subcaption in this part of the (floating) environment yet
-        \caption@ifflag1{% continued float
-          \caption@clrflag1%
-        }{%
-          \caption@@stepcounter\@captype
-        }%
-        \caption@setflag4% subcaption
-      }%
-    }%
+    \caption@subrefstepcounter
+    \caption@ifcaption
+      {\typeout{subtypehook: ok}}%
+      {\typeout{subtypehook: patch}%
+       \let\caption@add@contentsline\caption@addsubcontentsline
+       \let\caption@addsubcontentslines\@gobble}%
 %    \end{macrocode}
 %    \begin{macrocode}
     \c@continuedfloat=0\relax
@@ -2094,7 +2159,7 @@
     \newcommand*\caption@freeze{%
       \let\caption@frozen@continuedfloat\continuedfloat
       \def\continuedfloat{%
-        \caption@@freeze{\caption@@@@continuedfloat\@captype}%
+        \caption@@freeze{\caption@@@continuedfloat\@captype}%
         \caption@frozen@continuedfloat}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -3480,7 +3545,7 @@
       \let\caption@@start\relax
       \caption@prepareslc
     \else
-      \caption@setflag1%
+      \xxx@caption@setflag1%
     \fi
 %    \end{macrocode}
 % The argument |#1| could contain simply the caption text
