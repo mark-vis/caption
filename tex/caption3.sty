@@ -38,21 +38,24 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/09/17 v2.1b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/09/21 v2.2 caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
   \edef#1{\unexpanded\expandafter{#1#2}}}
-\def\bothIfFirst#1#2{%
-  \protected@edef\caption@tempa{#1}%
+\def\bothIfFirst#1#2{\caption@bothif{#1}{#1#2}}
+\def\bothIfSecond#1#2{\caption@bothif{#2}{#1#2}}
+\newcommand*\caption@bothif[2]{%
+  \begingroup
+    \caption@prepare@bothif
+    \protected@xdef\caption@tempa{#1}%
+  \endgroup
   \ifx\caption@tempa\@empty \else
-    #1#2%
+    #2%
   \fi}
-\def\bothIfSecond#1#2{%
-  \protected@edef\caption@tempa{#2}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
+\providecommand*\caption@prepare@bothif{}
+\g@addto@macro\caption@prepare@bothif{%
+  \let\inputencoding\@gobble}
 \newcommand*\caption@ifundefined[1]{%
   \ifdefined#1%
     \ifx#1\relax
@@ -435,9 +438,10 @@
   \caption@ifdefault{#3}%
     {\caption@Error{Invalid argument for \string\SetCaptionDefault: `#3'}}% would cause an infinite loop otherwise
     {\caption@@set{#1}{#2@default}{#3}}}
-\newcommand*\caption@ifdefault[1]{%
+\newcommand*\caption@ifdefault{\caption@ifequal{default}}
+\newcommand*\caption@ifequal[2]{%
   \edef\caption@tempa{#1}%
-  \def\caption@tempb{default}%
+  \edef\caption@tempb{#2}%
   \ifx\caption@tempa\caption@tempb
     \expandafter\@firstoftwo
   \else
@@ -460,6 +464,14 @@
     \caption@ifdefined#2{%
       \expandafter\let\csname caption@#1@default\endcsname#2%
       \let#2\@undefined}{}}}
+\newcommand*\SetCaptionFallback{%
+  \caption@maparg\caption@@setfallback}
+\@onlypreamble\SetCaptionFallback
+\newcommand*\caption@@setfallback[3]{%
+  \caption@ifequal{fallback}{#3}%
+    {\caption@Error{Invalid argument for \string\SetCaptionFallback: `#3'}}% would cause an infinite loop otherwise
+    {\caption@@set{#1}{#2@fallback}{#3}}}
+\@onlypreamble\caption@@setfallback
 \newcommand*\caption@decl@package[2]{%
   \@ifnextchar[%]
     {\caption@declare@package{#1}{#2}}%
@@ -702,8 +714,9 @@
 \DeclareCaptionLabelFormat{original}{%
   \caption@ifdefined\caption@original@fnum
     {\caption@original@fnum}%
-    {\caption@labelformat@simple{#1}{#2}}}
+    {\caption@labelformat@fallback{#1}{#2}}}
 \SetCaptionDefault{labelformat}{original}
+\SetCaptionFallback{labelformat}{simple}
 \newcommand\DeclareCaptionLabelSeparator{%
   \@ifstar
     \DeclareCaptionLabelSeparator@

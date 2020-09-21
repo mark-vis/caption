@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3648}
+% \CheckSum{3674}
 %
 % \iffalse
 %<*driver>
@@ -84,7 +84,7 @@
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
-% \newcommand*\version[2][]{\textit{v#2}}
+% \newcommand*\version[2][]{v$#2$}
 %
 % \GetFileInfo{caption3.drv}
 % \let\docdate\filedate
@@ -192,7 +192,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/09/17 v2.1b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/09/21 v2.2 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -223,27 +223,42 @@
 % \end{macro}
 %
 % \begin{macro}{\bothIfFirst}
+% \changes{v2.2}{2020/09/21}{Usage of \cs{caption@prepare@bothif} added}
 % \begin{macro}{\bothIfSecond}
+% \changes{v2.2}{2020/09/21}{Usage of \cs{caption@prepare@bothif} added}
 %   |\bothIfFirst|\marg{code no. 1}\marg{code no. 2}\\
 %   |\bothIfSecond|\marg{code no. 1}\marg{code no. 2}\\
 %   |\bothIfFirst| tests if the first argument is not empty, |\bothIfSecond|
 %   tests if the second argument is not empty. If yes both arguments get
 %   typeset, otherwise none of them.
 %    \begin{macrocode}
-\def\bothIfFirst#1#2{%
-  \protected@edef\caption@tempa{#1}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
+\def\bothIfFirst#1#2{\caption@bothif{#1}{#1#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\bothIfSecond#1#2{%
-  \protected@edef\caption@tempa{#2}%
+\def\bothIfSecond#1#2{\caption@bothif{#2}{#1#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@bothif[2]{%
+  \begingroup
+    \caption@prepare@bothif
+    \protected@xdef\caption@tempa{#1}%
+  \endgroup
   \ifx\caption@tempa\@empty \else
-    #1#2%
+    #2%
   \fi}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@prepare@bothif}
+% \changes{v2.2}{2020/09/21}{This macro added}
+%   |\caption@prepare@bothif|\\
+%   re-defines anything which could disturb either |\both|\-|If|\-|First| or |\both|\-|If|\-|Second| check.
+%    \begin{macrocode}
+\providecommand*\caption@prepare@bothif{}
+\g@addto@macro\caption@prepare@bothif{%
+  \let\inputencoding\@gobble}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@ifundefined}
@@ -1225,9 +1240,12 @@
 %   expands to \meta{yes-code} if the \meta{value} expands to `default',
 %   and to \meta{no-code} otherwise.
 %    \begin{macrocode}
-\newcommand*\caption@ifdefault[1]{%
+\newcommand*\caption@ifdefault{\caption@ifequal{default}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@ifequal[2]{%
   \edef\caption@tempa{#1}%
-  \def\caption@tempb{default}%
+  \edef\caption@tempb{#2}%
   \ifx\caption@tempa\caption@tempb
     \expandafter\@firstoftwo
   \else
@@ -1293,6 +1311,24 @@
     \caption@ifdefined#2{%
       \expandafter\let\csname caption@#1@default\endcsname#2%
       \let#2\@undefined}{}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionFallback}
+% \changes{v2.2}{2020/09/21}{This macro added}
+%   |\SetCaptionFallback|\marg{option}\marg{name}\\
+%   sets the fallback value for the \meta{option}.
+%    \begin{macrocode}
+\newcommand*\SetCaptionFallback{%
+  \caption@maparg\caption@@setfallback}
+\@onlypreamble\SetCaptionFallback
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@setfallback[3]{%
+  \caption@ifequal{fallback}{#3}%
+    {\caption@Error{Invalid argument for \string\SetCaptionFallback: `#3'}}% would cause an infinite loop otherwise
+    {\caption@@set{#1}{#2@fallback}{#3}}}
+\@onlypreamble\caption@@setfallback
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1991,12 +2027,13 @@
 \DeclareCaptionLabelFormat{original}{%
   \caption@ifdefined\caption@original@fnum
     {\caption@original@fnum}%
-    {\caption@labelformat@simple{#1}{#2}}}
+    {\caption@labelformat@fallback{#1}{#2}}}
 %    \end{macrocode}
 %
-% `default' usually maps to `original'.
+% `default' usually maps to `original' resp. `simple'.
 %    \begin{macrocode}
 \SetCaptionDefault{labelformat}{original}
+\SetCaptionFallback{labelformat}{simple}
 %    \end{macrocode}
 %
 % \section{Label separators}
