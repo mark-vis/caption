@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{223}
+% \CheckSum{224}
 %
 % \iffalse
 %<*driver>
@@ -935,7 +935,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2020/09/28 v1.3h Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/09/28 v1.3i Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
@@ -1234,32 +1234,37 @@
 % \changes{v1.3a}{2019/09/01}{\cs{ignorespaces} copied from \cs{sf@@@subfloat}}
 % \changes{v1.3b}{2020/01/03}{Previous definition of \cs{subfloat} will be overwritten}
 % \changes{v1.3f}{2020/07/29}{Bugfix: Usage of \cs{caption@hj@default} replaced by \cs{captionbox@innerpos@default}}
+% \changes{v1.3i}{2020/09/28}{This macro will be defined with \cs{providecommand} now to preserve an original definition}
 %  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
 %  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
 %  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
 %  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
 %  In both cases we do a |\ignore|\-|spaces| at the end since the original implementation of |\sub|\-|float| does this, too.
 %    \begin{macrocode}
-\def\subfloat{%
-  \@ifnextchar[\@subfloat\subfloat@}
+\caption@AtBeginDocument{\providecommand*\subfloat{%
+  \@ifnextchar[%]
+    \subcaption@subfloat
+    \subcaption@subfloat@}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\@subfloat[#1]{%
-  \@ifnextchar[{\@@subfloat{#1}}{\@@@subfloat\subcaptionbox{#1}}}
+\long\def\subcaption@subfloat[#1]{%
+  \@ifnextchar[%]
+    {\subcaption@@subfloat{#1}}%
+    {\subcaption@@@subfloat\subcaptionbox{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\@@subfloat#1[#2]{%
-  \@@@subfloat{\subcaptionbox[{#1}]}{#2}}
+\long\def\subcaption@@subfloat#1[#2]{%
+  \subcaption@@@subfloat{\subcaptionbox[{#1}]}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\@@@subfloat#1#2#3{%
+\long\def\subcaption@@@subfloat#1#2#3{%
   \caption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \global\let\caption@thelabel\relax
   \ignorespaces}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\subfloat@#1{%
+\def\subcaption@subfloat@#1{%
   \setbox\@tempboxa\hbox{#1}%
   \caption@iiiibox
     \setcaptionsubtype
