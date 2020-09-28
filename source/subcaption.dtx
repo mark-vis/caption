@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{228}
+% \CheckSum{223}
 %
 % \iffalse
 %<*driver>
@@ -935,15 +935,25 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{subcaption}[2020/08/23 v1.3g Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/09/28 v1.3h Sub-captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Initial code}
 %
 % Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[2020/08/23] % needs v3.5 or newer
+\RequirePackage{caption}[2020/09/28] % needs v3.5c or newer
 %    \end{macrocode}
+%
+% \begin{macro}{\subcaption@Error}
+% \changes{v1.3h}{2020/09/28}{This macro added}
+%   |\subcaption@Error|\marg{message}\\
+%   issues an error message (with code line indication).
+%    \begin{macrocode}
+\newcommand*\subcaption@Error[1]{%
+  \PackageError{subcaption}{#1}{\caption@@eh{subcaption}}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\subcaption@CheckCompatibility}
 % \changes{v1.1}{2011/09/01}{Compatibility error added}
@@ -956,36 +966,27 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@ifcompatibility{%
-    \PackageError{subcaption}%
+    \subcaption@Error
       {This package does not work with\MessageBreak
        caption option `compatibility=v1'}%
-      {\subcaption@eh}%
     \endinput}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \@ifpackageloaded{subfigure}{%
-    \PackageError{subcaption}%
+    \subcaption@Error
       {This package can't be used in cooperation\MessageBreak
        with the subfigure package}%
-      {\subcaption@eh}%
     \endinput}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \@ifpackageloaded{subfig}{%
-    \PackageError{subcaption}%
+    \subcaption@Error
       {This package can't be used in cooperation\MessageBreak
        with the subfig package}%
-      {\subcaption@eh}%
     \endinput}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
 }
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\subcaption@eh{%
-  If you do not understand this error, please take a closer look\MessageBreak
-  at the documentation of the `subcaption' package, especially the\MessageBreak
-  section about errors.\MessageBreak\@ehc}
 %    \end{macrocode}
 %    \begin{macrocode}
 \subcaption@CheckCompatibility
@@ -1018,8 +1019,8 @@
 % \subsubsection{The \cs{subcaption} command}
 %
 % \begin{macro}{\subcaption}
-% \changes{v1.1}{2012/04/06}{\cs{newcommand} changed to \cs{def}
-%     so it works with the \package{memoir} document class, too}
+% \changes{v1.1}{2012/04/06}{\cs{newcommand} changed to \cs{def} so it works with the \package{memoir} document class, too}
+% \changes{v1.3h}{2020/09/28}{Usage of \cs{caption@Error} replaced by \cs{subcaption@Error}}
 % Without a prefacing |\set|\-|caption|\-|sub|\-|type|, |\sub|\-|caption| is some kind
 % of |\caption|\-|of{sub|\-|\@cap|\-|type}|.
 % \Note{Like \cs{captionof}, this command is designed to be used inside an
@@ -1028,7 +1029,7 @@
 \def\subcaption{%
   \caption@iftype
     {\setcaptionsubtype*\caption}%
-    {\caption@Error{\noexpand\subcaption outside float}%
+    {\subcaption@Error{\noexpand\subcaption outside float}%
      \caption@gobble}}%
 %    \end{macrocode}
 % But with a prefacing |\set|\-|caption|\-|sub|\-|type|, |\sub|\-|caption| is simply
@@ -1044,12 +1045,13 @@
 %
 % \begin{macro}{\phantomsubcaption}
 % \changes{v1.1}{2011/08/17}{This macro added}
+% \changes{v1.3h}{2020/09/28}{Usage of \cs{caption@Error} replaced by \cs{subcaption@Error}}
 % Same as |\phantom|\-|caption|, but for subfigures.
 %    \begin{macrocode}
 \newcommand*\phantomsubcaption{%
   \caption@iftype
     {\setcaptionsubtype*\phantomcaption}%
-    {\caption@Error{\noexpand\phantomsubcaption outside float}}}%
+    {\subcaption@Error{\noexpand\phantomsubcaption outside float}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
 \g@addto@macro\caption@subtypehook{%
@@ -1194,12 +1196,13 @@
 %
 % \begin{macro}{\subcaption@setrefformat}
 % \changes{v1.3g}{2020/07/27}{Adapted to \package{caption3} v2.0}
+% \changes{v1.3h}{2020/09/28}{Usage of \cs{caption@Error} replaced by \cs{subcaption@Error}}
 %  |\subcaption@setrefformat|\marg{name}\par
 %  Selecting a subref format simply means saving the code (in |\subcaption@reffmt|).
 %    \begin{macrocode}
 \newcommand*\subcaption@setrefformat[1]{%
   \@ifundefined{caption@labelformat@#1}%
-    {\caption@Error{Undefined label format `#1'}}%
+    {\subcaption@Error{Undefined label format `#1'}}%
     {\expandafter\let\expandafter\subcaption@reffmt\csname caption@labelformat@#1\endcsname}}
 %    \end{macrocode}
 %    \begin{macrocode}
