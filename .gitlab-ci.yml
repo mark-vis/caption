@@ -1,8 +1,47 @@
+# MikTeX
+# https://miktex.org/howto/miktex-docker
 miktex:
   image: miktex/miktex
   stage: test
+# when: manual
   script:
-    - ./test.sh --admin -o miktex.xml test/ntg/fonts.tex
+    - initexmf --admin --default-paper-size=a4 --enable-installer --engine=pdftex --force --mkmaps --update-fndb
+    - ./test.sh -o miktex.xml test/ntg/fonts.tex
   artifacts:
     reports:
       junit: miktex.xml
+
+# TeXlive
+# https://nico.dorfbrunnen.eu/de/posts/2020/docker-latex/
+# https://gitlab.com/islandoftex/images/texlive
+latest:
+  image: registry.gitlab.com/islandoftex/images/texlive:latest
+  stage: test
+  script:
+    - ./test.sh -o latest.xml
+  artifacts:
+    reports:
+      junit: latest.xml
+
+# Ubuntu 18.04 + TeXlive 2017
+# https://gitlab.com/axelsommerfeldt/docker-texlive
+ubuntu_bionic:
+  image: axelsommerfeldt/texlive:ubuntu_bionic
+  stage: test
+  script:
+    - ./test.sh -o ubuntu_bionic.xml
+  artifacts:
+    reports:
+      junit: ubuntu_bionic.xml
+
+# Latest Ubuntu (currently 20.04 + TeXlive 2019)
+# https://gitlab.com/axelsommerfeldt/docker-texlive
+ubuntu_latest:
+  image: axelsommerfeldt/texlive:ubuntu_latest
+  stage: test
+  script:
+    - ./test.sh -o ubuntu_latest.xml
+  artifacts:
+    reports:
+      junit: ubuntu_latest.xml
+
