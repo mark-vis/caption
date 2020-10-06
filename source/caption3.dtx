@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3677}
+% \CheckSum{3660}
 %
 % \iffalse
 %<*driver>
@@ -192,7 +192,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/09/28 v2.2a caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/06 v2.2b caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -4558,50 +4558,23 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% Unfortunately the \class{memoir} document class resets the
-% \texttt{subfigure} resp.~\texttt{subtable} counter at the begin
-% of floating environments, i.e.~at |\@float|.
-% As a side-effect |\continued|\-|float| does not work correctly.
-% For that reason we need to introduce macros to save and restore
-% all sub-caption counters here.
-%
-% \begin{macro}{\caption@savesubcounters}
-% \changes{v1.5}{2013/05/01}{This macro added}
+% \begin{macro}{\@memresetsubcounter}
+% \changes{v1.5}{2013/05/01}{The macro \cs{caption@savesubcounters} added}
 % \changes{v1.13}{2020/07/28}{Uses \cs{caption@for@list} now for iterating the list}
-%   |\caption@save|\-|sub|\-|counters|\\
-%   saves all sub-caption counters,
-%   so they can be restored with |\caption@restore|\-|counters| later on.
+% \changes{v2.2b}{2020/10/06}{This stuff replaced by a patch of \cs{@memresetsubcounter}}
+%   The \class{memoir} document class resets the \texttt{subfigure}
+%   resp.~\texttt{subtable} counter at the begin of floating environments using
+%   |\@mem|\-|reset|\-|sub|\-|counter|.
+%   As a side-effect |\continued|\-|float| does not work correctly.
+%   For that reason we need to patch |\@mem|\-|reset|\-|sub|\-|counter| here,
+%   suppressing the counter reset if the counter was defined with
+%   |\Declare|\-|Caption|\-|Sub|\-|Type|.
 %    \begin{macrocode}
-\newcommand*\caption@savesubcounters{%
-  \caption@for@list\caption@subtypelist{\caption@savecounter{##1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@savecounter}
-% \changes{v1.5}{2013/05/01}{This macro added}
-%   |\caption@save|\-|counter|\marg{counter}\\
-%   saves the given counter, so it can be restored with
-%   |\caption@restore|\-|counters| later on.
-%    \begin{macrocode}
-\newcommand*\caption@savecounter[1]{%
-  \edef\caption@tempa{%
-    \noexpand\l@addto@macro\noexpand\caption@restore@counters
-      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
-  \caption@tempa}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@restorecounters}
-% \changes{v1.5}{2013/05/01}{This macro added}
-%   |\caption@restore|\-|counters|
-%   restores all counters saved with |\caption@save|\-|counter|.
-%    \begin{macrocode}
-\newcommand*\caption@restorecounters{%
-  \caption@restore@counters
-  \global\let\caption@restore@counters\@empty}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@restore@counters{}
+\caption@ifdefined\@memresetsubcounter
+  {\let\caption@memresetsubcounter\@memresetsubcounter
+   \renewcommand*\@memresetsubcounter[1]{%
+     \caption@ifsubtype{sub#1}\@gobble\caption@memresetsubcounter{#1}}}%
+  {}
 %    \end{macrocode}
 % \end{macro}
 %
