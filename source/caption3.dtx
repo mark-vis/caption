@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3660}
+% \CheckSum{3661}
 %
 % \iffalse
 %<*driver>
@@ -192,17 +192,17 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/10/06 v2.2b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/07 v2.2b caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
 %
 % \begin{macro}{\@nameundef}
 %   |\@nameundef|\marg{command name}\\
-%   is the opposite to |\@namedef| which is offered by the \LaTeX\ kernel.
+%   is the opposite to |\@name|\-|def| which is offered by the \LaTeX\ kernel.
 %   We use it to remove the definition of some commands and keyval options after
 %   |\begin{document}| (to save \TeX\ memory) and to remove caption options defined
-%   with |\captionsetup|\oarg{type}.
+%   with |\caption|\-|setup|\oarg{type}.
 %    \begin{macrocode}
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
@@ -745,7 +745,7 @@
 %
 % \begin{macro}{\ifcaptionsetup@star}
 % \changes{v1.2a}{2008/01/12}{This macro added}
-%   If the starred form of |\captionsetup| is used, this will be set to |true|.
+%   If the starred form of |\caption|\-|setup| is used, this will be set to |true|.
 %   (It will be reset to |false| at the end of |\caption@set|\-|keys|.)
 %    \begin{macrocode}
 \newif\ifcaptionsetup@star
@@ -1566,9 +1566,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@counter}
+% \begin{macro}{\caption@thecounter}
 % \changes{v1.0n}{2007/04/03}{This counter added}
-% \changes{v1.1e}{2007/10/28}{Renamed to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
+% \changes{v1.1e}{2007/10/28}{Renamed from \cs{caption@counter} to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/04/09}{\cs{caption@stepcounter} renamed to \cs{caption@stepthecounter}}
 %   Internal counter.
 %   At the moment it will be used inside |\caption@if|\-|odd|\-|page| only.
@@ -2132,7 +2132,7 @@
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
 %
-% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{\textbackslash}}
+% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
 % \changes{v1.0f}{2005/08/24}{Caption label separator \opt{endash} added}
 % There are seven pre-defined label separators, called `none', `colon', `period', `space',
 % `quad', `newline', and `endash'.
@@ -3448,7 +3448,9 @@
     \renewcommand\captionlabel[1]{{% l.559
       \def\FR@tmp{\@captype}%
       \ifnum\floatbox@depth>\@ne
-        \def\FR@tmp{sub\@captype}\caption@setsubtype*{\FR@tmp}\stepcounter{\FR@tmp}%
+        \def\FR@tmp{sub\@captype}%
+        \caption@setsubtype*{\FR@tmp}%
+        \caption@@@stepcounter{\FR@tmp}% <= \stepcounter replaced by \caption@@@stepcounter
       \fi
       \caption@format % <= This line added
       \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
@@ -3998,9 +4000,9 @@
 %
 % \begin{macro}{\caption@slc}
 % \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} added}
-% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{\caption@sls} added after \cs{begingroup}}
+% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{caption@sls} added after \cs{begingroup}}
 % \changes{v1.1}{2007/07/29}{\cs{caption@calcmargin} added}
-% \changes{v1.1c}{2007/10/14}{\cs{caption@setup}\cs{\caption@opt@SingleLine} outsourced to \cs{caption@SingleLine}}
+% \changes{v1.1c}{2007/10/14}{\cs{caption@setup}\cs{caption@opt@SingleLine} outsourced to \cs{caption@SingleLine}}
 % \changes{v1.3}{2010/09/04}{Split into \cs{caption@slc} and \cs{caption@@slc}}
 % \changes{v1.5}{2012/12/26}{Merged into a single macro again}
 % \changes{v1.5}{2013/04/14}{Usage of \cs{ifsinglelinecaption} added}
@@ -4424,7 +4426,7 @@
 %   Check if the sub-type was already defined by |\Declare|\-|Sub|\-|Type|.
 %   If not, define the counter and list entry.
 %    \begin{macrocode}
-  \caption@ifin@list\caption@subtypelist{#4}%
+  \caption@ifsubtype{#4}%
     {\caption@Debug{Modify subtype `#4'}}%
     {\caption@Debug{New subtype `#4'}%
      \newcounter{#4}[{#3}]%
