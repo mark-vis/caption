@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2802}
+% \CheckSum{2799}
 %
 % \iffalse
 %<*driver>
@@ -84,7 +84,7 @@
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
-% \newcommand*\version[2][]{\textit{v#2}}
+% \newcommand*\version[2][]{v$#2$}
 %
 % \newcommand*\issue[1]{GitLab~\##1}
 %
@@ -217,13 +217,13 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/09/20 v3.6 Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/10/07 v3.6 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/09/12] % needs v2.1 or newer
+\RequirePackage{caption3}[2020/10/06] % needs v2.2b or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -954,6 +954,7 @@
 %
 % \begin{macro}{\setcaptionsubtype}
 % \changes{v3.2a}{2011/08/15}{This macro added}
+% \changes{v3.5d}{2020/09/28}{This macro revised}
 % Same, but sets the sub-type.
 %    \begin{macrocode}
 \newcommand\setcaptionsubtype{%
@@ -963,9 +964,11 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@setsubtype{%
-  \@ifstar
-    {\caption@@settype{sub}*{sub\@captype}}%
-    {\caption@@settype{sub}{sub\@captype}}}%
+  \caption@teststar\caption@@setsubtype\@firstoftwo\@secondoftwo}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@setsubtype[1]{%
+  \caption@@@settype{sub}{#1}{sub\@captype}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -979,6 +982,7 @@
 % \changes{v3.2}{2010/10/26}{Error message moved from here to \cs{caption@refstepcounter}}
 % \changes{v3.3}{2011/12/28}{Resetting of \cs{ifcaption@caption} and \cs{ifcaption@subcaption} added}
 % \changes{v3.4e}{2020/01/02}{Checks added to prevent misuse regading subtypes}
+% \changes{v3.5d}{2020/09/28}{This macro revised}
 %  |\caption@settype*|\marg{type}\par
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@set|\-|options|).
@@ -996,17 +1000,17 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@set@type{%
-  \caption@@settype{}}
+  \caption@teststar\caption@@settype\@firstoftwo\@secondoftwo}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@settype[1]{%
-  \caption@teststar{\caption@@@settype{#1}}\@firstoftwo\@secondoftwo}
+\newcommand*\caption@@settype{%
+  \caption@@@settype{}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@@settype[3]{%
 % #1 = "" or "sub"
 % #2 = \@firstoftwo in star form, \@secondoftwo otherwise
-% #3 = <type>, e.g. "figure" or "subfigure"
+% #3 = <type>, e.g.: "figure" or "subfigure"
   \caption@Debug{#1type=#3}%
   \@nameuse{caption@check#1type}{#3}%
     {\caption@checkgrouplevel{#1}{%
@@ -1301,6 +1305,7 @@
 % \changes{v3.3}{2013/05/01}{Usage of \cs{caption@restorecounters} added}
 % \changes{v3.3}{2013/12/16}{Bugfix: Does not use \cs{caption@ContinuedFloat} anymore since this breaks \cs{ContinuedFloat} offered by the \package{subfig} package}
 % \changes{v3.4}{2015/09/16}{Renamed from \cs{ContinuedFloat} to \cs{continuedfloat}}
+% \changes{v3.5f}{2020/10/06}{Usage of \cs{caption@restorecounters} removed}
 %  |\continuedfloat|\\
 %  |\continuedfloat*|\par
 %  This mainly sets the appropriate flag, increments the
@@ -1337,7 +1342,6 @@
 \newcommand*\caption@continued@float[1]{%
   \edef\caption@tempa{#1}%
   \ifx\caption@tempa\caption@CFtype
-    \caption@restorecounters
     \caption@@continuedfloat{#1}%
   \else
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
@@ -1429,18 +1433,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\donemaincaptionfalse}
-% Since the \class{memoir} document class resets the sub-caption
-% counter at |\@float|, right after |\done|\-|main|\-|caption|\-|false|,
-% we save all sub-caption counters at |\done|\-|main|\-|caption|\-|false|
-% so we can restore them using |\caption@restore|\-|counters|
-% inside |\continued|\-|float|.
-%    \begin{macrocode}
-\caption@ifdefined\donemaincaptionfalse{%
-  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}{}
-%    \end{macrocode}
-% \end{macro}
-%
 % \section{Internal helpers}
 %
 % \begin{macro}{\caption@refstepcounter}
@@ -1448,6 +1440,7 @@
 % \changes{v3.2}{2010/10/26}{Error message moved from \cs{caption@@@settype} to here}
 % \changes{v3.2c}{2011/09/04}{Support of \cs{donemaincaptiontrue} from \textsf{memoir} document class added}
 % \changes{v3.3}{2011/12/28}{Usage of \cs{ifcaption@caption}, \cs{ifcaption@subcaption}, and \cs{ifcaption@ContinuedFloat} added}
+% \changes{v3.5e}{2020/09/28}{Bugfix in re-definition of \cs{stepcounter}; uses \cs{edef} instead of \cs{def} now}
 % \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@ifrefstepcounter}}
 %  Increments the float (i.e. |figure| or |table|) counter,
 %  resets the continuation counter, and redefines itself to |\@gobble|.
@@ -1551,8 +1544,7 @@
 %
 % \begin{macro}{\caption@dblarg}
 % \changes{v3.1}{2007/02/05}{This macro added}
-% \changes{v3.1f}{2007/12/06}{Bugfix 07-12-06: Changed so it works without \cs{kernel@ifnextchar}
-%        (which was introduced in \LaTeXe\ 2004/01/23), too}
+% \changes{v3.1f}{2007/12/06}{Bugfix 07-12-06: Changed so it works without \cs{kernel@ifnextchar} (which was introduced in \LaTeXe\ 2004/01/23), too}
 % \changes{v3.3}{2012/03/25}{Support of option \opt{list-entry} added}
 %  A |\relax| was added compared to |\@dblarg| so |\caption{}| will be
 %  expanded to |\caption[\relax]{}| (and not to |\caption[]{}|).
@@ -1841,7 +1833,8 @@
 \caption@AtBeginDocument{%
   \caption@ifundefined\@subfloatrowtrue
    {\newif\if@subfloatrow
-    \caption@ifundefined\subfloatrow{}%
+    \caption@ifundefined\subfloatrow
+    {}%
     {\caption@Debug{Patching subfloatrow environment}%
      \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
      \g@addto@macro\killfloatstyle{%
@@ -1896,8 +1889,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@addsubcontentsline}
-% \changes{v3.1i}{2008/08/02}{Bugfix 08-07-28:
-%    \cs{label}, \cs{index}, and \cs{glossary} are allowed inside the list entry now}
+% \changes{v3.1i}{2008/08/02}{\cs{label}, \cs{index}, and \cs{glossary} are allowed inside the list entry now}
 % \changes{v3.2}{2011/06/26}{Uses \cs{caption@@addcontentsline} instead of \cs{addcontentsline} now}
 % \changes{v3.2c}{2011/08/19}{Uses \cs{caption@gobble} instead of \cs{@gobble} now}
 % \changes{v3.3}{2012/01/15}{Debug message added}

@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3648}
+% \CheckSum{3661}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2020/09/12 v2.1 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2020/09/21 v2.2 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -84,7 +84,7 @@
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
 % \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
-% \newcommand*\version[2][]{\textit{v#2}}
+% \newcommand*\version[2][]{v$#2$}
 %
 % \GetFileInfo{caption3.drv}
 % \let\docdate\filedate
@@ -192,17 +192,17 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/09/17 v2.1b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/07 v2.2b caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
 %
 % \begin{macro}{\@nameundef}
 %   |\@nameundef|\marg{command name}\\
-%   is the opposite to |\@namedef| which is offered by the \LaTeX\ kernel.
+%   is the opposite to |\@name|\-|def| which is offered by the \LaTeX\ kernel.
 %   We use it to remove the definition of some commands and keyval options after
 %   |\begin{document}| (to save \TeX\ memory) and to remove caption options defined
-%   with |\captionsetup|\oarg{type}.
+%   with |\caption|\-|setup|\oarg{type}.
 %    \begin{macrocode}
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
@@ -223,27 +223,42 @@
 % \end{macro}
 %
 % \begin{macro}{\bothIfFirst}
+% \changes{v2.2}{2020/09/21}{Usage of \cs{caption@prepare@bothif} added}
 % \begin{macro}{\bothIfSecond}
+% \changes{v2.2}{2020/09/21}{Usage of \cs{caption@prepare@bothif} added}
 %   |\bothIfFirst|\marg{code no. 1}\marg{code no. 2}\\
 %   |\bothIfSecond|\marg{code no. 1}\marg{code no. 2}\\
 %   |\bothIfFirst| tests if the first argument is not empty, |\bothIfSecond|
 %   tests if the second argument is not empty. If yes both arguments get
 %   typeset, otherwise none of them.
 %    \begin{macrocode}
-\def\bothIfFirst#1#2{%
-  \protected@edef\caption@tempa{#1}%
-  \ifx\caption@tempa\@empty \else
-    #1#2%
-  \fi}
+\def\bothIfFirst#1#2{\caption@bothif{#1}{#1#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\bothIfSecond#1#2{%
-  \protected@edef\caption@tempa{#2}%
+\def\bothIfSecond#1#2{\caption@bothif{#2}{#1#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@bothif[2]{%
+  \begingroup
+    \caption@prepare@bothif
+    \protected@xdef\caption@tempa{#1}%
+  \endgroup
   \ifx\caption@tempa\@empty \else
-    #1#2%
+    #2%
   \fi}
 %    \end{macrocode}
 % \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@prepare@bothif}
+% \changes{v2.2}{2020/09/21}{This macro added}
+%   |\caption@prepare@bothif|\\
+%   re-defines anything which could disturb either |\both|\-|If|\-|First| or |\both|\-|If|\-|Second| check.
+%    \begin{macrocode}
+\providecommand*\caption@prepare@bothif{}
+\g@addto@macro\caption@prepare@bothif{%
+  \let\inputencoding\@gobble}
+%    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@ifundefined}
@@ -612,16 +627,17 @@
 % \changes{v1.0j}{2007/01/20}{This macro added, will now be used for errors}
 % \changes{v1.0o}{2007/04/11}{Renamed from \cs{caption@error} to \cs{caption@Error}}
 % \changes{v1.1b}{2007/09/18}{Usage of \cs{caption@Package} removed}
+% \changes{v2.2a}{2020/09/28}{\cs{caption@eh} renamed to \cs{caption@@eh} and revised}
 %   |\caption@Error|\marg{message}\\
 %   issues an error message (with code line indication).
 %    \begin{macrocode}
 \newcommand*\caption@Error[1]{%
-  \PackageError{caption}{#1}\caption@eh}
+  \PackageError{caption}{#1}{\caption@@eh{caption}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@eh{%
+\newcommand*\caption@@eh[1]{%
   If you do not understand this error, please take a closer look\MessageBreak
-  at the documentation of the `caption' package, especially the\MessageBreak
+  at the documentation of the `#1' package, especially the\MessageBreak
   section about errors.\MessageBreak\@ehc}
 %    \end{macrocode}
 % \end{macro}
@@ -729,7 +745,7 @@
 %
 % \begin{macro}{\ifcaptionsetup@star}
 % \changes{v1.2a}{2008/01/12}{This macro added}
-%   If the starred form of |\captionsetup| is used, this will be set to |true|.
+%   If the starred form of |\caption|\-|setup| is used, this will be set to |true|.
 %   (It will be reset to |false| at the end of |\caption@set|\-|keys|.)
 %    \begin{macrocode}
 \newif\ifcaptionsetup@star
@@ -1225,9 +1241,12 @@
 %   expands to \meta{yes-code} if the \meta{value} expands to `default',
 %   and to \meta{no-code} otherwise.
 %    \begin{macrocode}
-\newcommand*\caption@ifdefault[1]{%
+\newcommand*\caption@ifdefault{\caption@ifequal{default}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@ifequal[2]{%
   \edef\caption@tempa{#1}%
-  \def\caption@tempb{default}%
+  \edef\caption@tempb{#2}%
   \ifx\caption@tempa\caption@tempb
     \expandafter\@firstoftwo
   \else
@@ -1293,6 +1312,24 @@
     \caption@ifdefined#2{%
       \expandafter\let\csname caption@#1@default\endcsname#2%
       \let#2\@undefined}{}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\SetCaptionFallback}
+% \changes{v2.2}{2020/09/21}{This macro added}
+%   |\SetCaptionFallback|\marg{option}\marg{name}\\
+%   sets the fallback value for the \meta{option}.
+%    \begin{macrocode}
+\newcommand*\SetCaptionFallback{%
+  \caption@maparg\caption@@setfallback}
+\@onlypreamble\SetCaptionFallback
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@setfallback[3]{%
+  \caption@ifequal{fallback}{#3}%
+    {\caption@Error{Invalid argument for \string\SetCaptionFallback: `#3'}}% would cause an infinite loop otherwise
+    {\caption@@set{#1}{#2@fallback}{#3}}}
+\@onlypreamble\caption@@setfallback
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1529,9 +1566,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@counter}
+% \begin{macro}{\caption@thecounter}
 % \changes{v1.0n}{2007/04/03}{This counter added}
-% \changes{v1.1e}{2007/10/28}{Renamed to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
+% \changes{v1.1e}{2007/10/28}{Renamed from \cs{caption@counter} to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/04/09}{\cs{caption@stepcounter} renamed to \cs{caption@stepthecounter}}
 %   Internal counter.
 %   At the moment it will be used inside |\caption@if|\-|odd|\-|page| only.
@@ -1991,12 +2028,13 @@
 \DeclareCaptionLabelFormat{original}{%
   \caption@ifdefined\caption@original@fnum
     {\caption@original@fnum}%
-    {\caption@labelformat@simple{#1}{#2}}}
+    {\caption@labelformat@fallback{#1}{#2}}}
 %    \end{macrocode}
 %
-% `default' usually maps to `original'.
+% `default' usually maps to `original' resp. `simple'.
 %    \begin{macrocode}
 \SetCaptionDefault{labelformat}{original}
+\SetCaptionFallback{labelformat}{simple}
 %    \end{macrocode}
 %
 % \section{Label separators}
@@ -2094,7 +2132,7 @@
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
 %
-% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{\textbackslash}}
+% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
 % \changes{v1.0f}{2005/08/24}{Caption label separator \opt{endash} added}
 % There are seven pre-defined label separators, called `none', `colon', `period', `space',
 % `quad', `newline', and `endash'.
@@ -3410,7 +3448,9 @@
     \renewcommand\captionlabel[1]{{% l.559
       \def\FR@tmp{\@captype}%
       \ifnum\floatbox@depth>\@ne
-        \def\FR@tmp{sub\@captype}\caption@setsubtype*{\FR@tmp}\stepcounter{\FR@tmp}%
+        \def\FR@tmp{sub\@captype}%
+        \caption@setsubtype*{\FR@tmp}%
+        \caption@@@stepcounter{\FR@tmp}% <= \stepcounter replaced by \caption@@@stepcounter
       \fi
       \caption@format % <= This line added
       \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
@@ -3626,6 +3666,7 @@
     \caption@InfoNoLine{subfig package v1.3 is loaded}%
 %    \end{macrocode}
 %    \begin{macrocode}
+    \def\caption@eh{\caption@@eh{subfig}}%
     \let\caption@setfloattype\@gobble
     \let\@dottedxxxline\sf@NEW@dottedxxxline
     \let\sf@subfloat\sf@NEW@subfloat
@@ -3959,9 +4000,9 @@
 %
 % \begin{macro}{\caption@slc}
 % \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} added}
-% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{\caption@sls} added after \cs{begingroup}}
+% \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{caption@sls} added after \cs{begingroup}}
 % \changes{v1.1}{2007/07/29}{\cs{caption@calcmargin} added}
-% \changes{v1.1c}{2007/10/14}{\cs{caption@setup}\cs{\caption@opt@SingleLine} outsourced to \cs{caption@SingleLine}}
+% \changes{v1.1c}{2007/10/14}{\cs{caption@setup}\cs{caption@opt@SingleLine} outsourced to \cs{caption@SingleLine}}
 % \changes{v1.3}{2010/09/04}{Split into \cs{caption@slc} and \cs{caption@@slc}}
 % \changes{v1.5}{2012/12/26}{Merged into a single macro again}
 % \changes{v1.5}{2013/04/14}{Usage of \cs{ifsinglelinecaption} added}
@@ -4385,7 +4426,7 @@
 %   Check if the sub-type was already defined by |\Declare|\-|Sub|\-|Type|.
 %   If not, define the counter and list entry.
 %    \begin{macrocode}
-  \caption@ifin@list\caption@subtypelist{#4}%
+  \caption@ifsubtype{#4}%
     {\caption@Debug{Modify subtype `#4'}}%
     {\caption@Debug{New subtype `#4'}%
      \newcounter{#4}[{#3}]%
@@ -4519,50 +4560,23 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% Unfortunately the \class{memoir} document class resets the
-% \texttt{subfigure} resp.~\texttt{subtable} counter at the begin
-% of floating environments, i.e.~at |\@float|.
-% As a side-effect |\continued|\-|float| does not work correctly.
-% For that reason we need to introduce macros to save and restore
-% all sub-caption counters here.
-%
-% \begin{macro}{\caption@savesubcounters}
-% \changes{v1.5}{2013/05/01}{This macro added}
+% \begin{macro}{\@memresetsubcounter}
+% \changes{v1.5}{2013/05/01}{The macro \cs{caption@savesubcounters} added}
 % \changes{v1.13}{2020/07/28}{Uses \cs{caption@for@list} now for iterating the list}
-%   |\caption@save|\-|sub|\-|counters|\\
-%   saves all sub-caption counters,
-%   so they can be restored with |\caption@restore|\-|counters| later on.
+% \changes{v2.2b}{2020/10/06}{This stuff replaced by a patch of \cs{@memresetsubcounter}}
+%   The \class{memoir} document class resets the \texttt{subfigure}
+%   resp.~\texttt{subtable} counter at the begin of floating environments using
+%   |\@mem|\-|reset|\-|sub|\-|counter|.
+%   As a side-effect |\continued|\-|float| does not work correctly.
+%   For that reason we need to patch |\@mem|\-|reset|\-|sub|\-|counter| here,
+%   suppressing the counter reset if the counter was defined with
+%   |\Declare|\-|Caption|\-|Sub|\-|Type|.
 %    \begin{macrocode}
-\newcommand*\caption@savesubcounters{%
-  \caption@for@list\caption@subtypelist{\caption@savecounter{##1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@savecounter}
-% \changes{v1.5}{2013/05/01}{This macro added}
-%   |\caption@save|\-|counter|\marg{counter}\\
-%   saves the given counter, so it can be restored with
-%   |\caption@restore|\-|counters| later on.
-%    \begin{macrocode}
-\newcommand*\caption@savecounter[1]{%
-  \edef\caption@tempa{%
-    \noexpand\l@addto@macro\noexpand\caption@restore@counters
-      {\noexpand\setcounter{#1}{\number\value{#1}}}}%
-  \caption@tempa}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@restorecounters}
-% \changes{v1.5}{2013/05/01}{This macro added}
-%   |\caption@restore|\-|counters|
-%   restores all counters saved with |\caption@save|\-|counter|.
-%    \begin{macrocode}
-\newcommand*\caption@restorecounters{%
-  \caption@restore@counters
-  \global\let\caption@restore@counters\@empty}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@restore@counters{}
+\caption@ifdefined\@memresetsubcounter
+  {\let\caption@memresetsubcounter\@memresetsubcounter
+   \renewcommand*\@memresetsubcounter[1]{%
+     \caption@ifsubtype{sub#1}\@gobble\caption@memresetsubcounter{#1}}}%
+  {}
 %    \end{macrocode}
 % \end{macro}
 %

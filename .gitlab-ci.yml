@@ -1,17 +1,52 @@
-# use docker image with latex preinstalled
-# since there is no official latex image, use https://github.com/blang/latex-docker (Base: ubuntu:16.04)
-# possible alternative: https://github.com/natlownes/docker-latex (Base: ubuntu:14.04)
-image: blang/latex:ctanfull
-
-before_script:
-  - apt-get update
-  - apt-get --yes install ghostscript
-
-test:
+# Ubuntu 18.04 + TeXlive 2017
+# https://gitlab.com/axelsommerfeldt/docker-texlive
+ubuntu_bionic:
+  image: axelsommerfeldt/texlive:ubuntu_bionic
   stage: test
   script:
-    - ./test.sh -d issues/github/issue_9.tex -d issues/gitlab/issue_23a.tex -d issues/gitlab/issue_23b.tex -d issues/gitlab/issue_42.tex -d issues/gitlab/issue_49.tex -d issues/gitlab/issue_58.tex -d issues/gitlab/issue_61c.tex -d issues/gitlab/issue_79.tex -d test/babel/acmart.tex -d test/babel/french-1.tex -d test/babel/french-2.tex -d test/babel/french-3.tex -d test/babel/french-4.tex -d test/babel/french-5.tex -d test/babel/french-6.tex -d test/caption-light/french-1.tex -d test/keyfloat -d test/thesis -o report.xml
-# when: manual
+    - ./test.sh -d test/keyfloat -d test/thesis -d issues/gitlab/issue_23a.tex -d issues/gitlab/issue_23b.tex -d issues/gitlab/issue_34.tex -o ubuntu_bionic.xml
+      # The thesis document class is not part of TeXlive 2017
+      # issues/gitlab/issue_23?.tex need at least KOMA-Script 3.25 (but TeXlive 2017 only offers 3.24)
+      # issues/gitlab/issue_34.tex needs a newer version of pdfx
   artifacts:
     reports:
-      junit: report.xml
+      junit: ubuntu_bionic.xml
+
+# Latest Ubuntu (currently 20.04 + TeXlive 2019)
+# https://gitlab.com/axelsommerfeldt/docker-texlive
+ubuntu_latest:
+  image: axelsommerfeldt/texlive:ubuntu_latest
+  stage: test
+  script:
+    - ./test.sh -d test/thesis -o ubuntu_latest.xml
+      # The thesis document class is not part of TeXlive 2019
+  artifacts:
+    reports:
+      junit: ubuntu_latest.xml
+
+# MikTeX
+# https://miktex.org/howto/miktex-docker
+miktex:
+  image: miktex/miktex
+  stage: test
+  when: manual
+  script:
+    - initexmf --admin --default-paper-size=a4 --enable-installer --engine=pdftex --force --mkmaps --update-fndb
+    - ./test.sh -o miktex.xml test/ntg/fonts.tex
+  artifacts:
+    reports:
+      junit: miktex.xml
+
+# TeXlive
+# https://nico.dorfbrunnen.eu/de/posts/2020/docker-latex/
+# https://gitlab.com/islandoftex/images/texlive
+latest:
+  image: registry.gitlab.com/islandoftex/images/texlive:latest
+  stage: test
+  when: manual
+  script:
+    - ./test.sh -o latest.xml
+  artifacts:
+    reports:
+      junit: latest.xml
+

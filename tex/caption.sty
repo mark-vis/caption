@@ -38,8 +38,8 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/09/20 v3.6 Customizing captions (AR)]
-\RequirePackage{caption3}[2020/09/12] % needs v2.1 or newer
+\ProvidesPackage{caption}[2020/10/07 v3.6 Customizing captions (AR)]
+\RequirePackage{caption3}[2020/10/06] % needs v2.2b or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -305,16 +305,16 @@
     \caption@setsubtype
     {\caption@Error{\noexpand\setcaptionsubtype outside float}}}%
 \newcommand\caption@setsubtype{%
-  \@ifstar
-    {\caption@@settype{sub}*{sub\@captype}}%
-    {\caption@@settype{sub}{sub\@captype}}}%
+  \caption@teststar\caption@@setsubtype\@firstoftwo\@secondoftwo}
+\newcommand*\caption@@setsubtype[1]{%
+  \caption@@@settype{sub}{#1}{sub\@captype}}
 \newcommand*\caption@settype{%
   \caption@clrflags
   \caption@set@type}
 \newcommand*\caption@set@type{%
-  \caption@@settype{}}
-\newcommand*\caption@@settype[1]{%
-  \caption@teststar{\caption@@@settype{#1}}\@firstoftwo\@secondoftwo}
+  \caption@teststar\caption@@settype\@firstoftwo\@secondoftwo}
+\newcommand*\caption@@settype{%
+  \caption@@@settype{}}
 \newcommand*\caption@@@settype[3]{%
   \caption@Debug{#1type=#3}%
   \@nameuse{caption@check#1type}{#3}%
@@ -458,7 +458,6 @@
 \newcommand*\caption@continued@float[1]{%
   \edef\caption@tempa{#1}%
   \ifx\caption@tempa\caption@CFtype
-    \caption@restorecounters
     \caption@@continuedfloat{#1}%
   \else
     \caption@Error{Continued `#1' after `\caption@CFtype'}%
@@ -501,8 +500,6 @@
      \fi
      % xxx xxxxxxx TODO: Set hyperref anchor etc., just like in \@figure}
     }}
-\caption@ifdefined\donemaincaptionfalse{%
-  \g@addto@macro\donemaincaptionfalse\caption@savesubcounters}{}
 \newcommand*\caption@refstepcounter[1]{%
   \@ifundefined{c@#1}%
     {\caption@Error{No float type '#1' defined}}%
@@ -661,7 +658,8 @@
 \caption@AtBeginDocument{%
   \caption@ifundefined\@subfloatrowtrue
    {\newif\if@subfloatrow
-    \caption@ifundefined\subfloatrow{}%
+    \caption@ifundefined\subfloatrow
+    {}%
     {\caption@Debug{Patching subfloatrow environment}%
      \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
      \g@addto@macro\killfloatstyle{%
