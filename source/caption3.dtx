@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3667}
+% \CheckSum{3708}
 %
 % \iffalse
 %<*driver>
@@ -192,7 +192,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/10/09 v2.2b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/10 v2.2c caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2132,8 +2132,9 @@
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
 %
-% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
+% \changes{v1.0e}{2005/06/11}{Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
 % \changes{v1.0f}{2005/08/24}{Caption label separator \opt{endash} added}
+% \changes{v1.12}{2020/05/30}{Caption label separator \opt{newline} implementation changed from \cs{textbackslash} to \cs{captionnewline}}
 % There are seven pre-defined label separators, called `none', `colon', `period', `space',
 % `quad', `newline', and `endash'.
 %    \begin{macrocode}
@@ -2143,8 +2144,33 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
+% TODO: \DeclareCaptionLabelSeparator should detect on its own if it contains \captionnewline or not
 \caption@LabelSeparatorWithNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
+%    \end{macrocode}
+%
+% \changes{v2.2c}{2020/10/10}{Caption label separators \opt{gobble} and \opt{gobbletwo} added}
+%
+% It's a common hack to mis-use |\fnum@figure| and |\fnum@table| to replace the caption
+% label separator, for example changing the separator to a period plus space with
+% \begin{quote}
+%   |\renewcommand\fnum@figure[1]{\figurename~\thefigure.}|
+% \end{quote}
+% or dropping the label and separator completely with
+% \begin{quote}
+%   |\renewcommand\fnum@figure[1]{\ignorespaces}|\quad
+% \end{quote}
+% (taken from \url{http://compgroups.net/comp.text.tex/figure-without-caption/1915079}).
+%
+% We emulate the behaviour of |\@make|\-|caption| of the base document classes
+% \class{article}, \class{report}, and \class{book} in this regard (in |\caption@@@make|)
+% so these hacks still work if the \package{caption} package is loaded.
+%
+% These are the label separators used when one or two tokens after the label format
+% should be dropped, called `gobble' and `gobbletwo':
+%    \begin{macrocode}
+\DeclareCaptionLabelSeparator{gobble}{ }
+\DeclareCaptionLabelSeparator{gobbletwo}{}
 %    \end{macrocode}
 %
 % \begin{macro}{\captionnewline}
@@ -4187,17 +4213,33 @@
 % \changes{v1.3}{2010/11/01}{Bugfix: If the caption text is empty, the text format will be set to \opt{simple} now}
 % \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
 % \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{caption@textend}}
+% \changes{v2.2c}{2020/10/10}{Usage of the label separators \opt{gobble} and \opt{gobbletwo} added}
 %   |\caption@@@make|\marg{caption label}\marg{caption text}\\
 %   This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
 \newcommand\caption@@@make[2]{%
 %    \end{macrocode}
-%   If the label is empty, we use no caption label separator.
+%   If the label is empty, we use the label separator `none'.
+%   Futhermore we use this check to determine if |#1| ends with either
+%   |\@gobble|, |\@gobble|\-|two|, and/or |\ignore|\-|spaces|.
+%   If yes, we use the corresponding label separator.
 %    \begin{macrocode}
-  \sbox\@tempboxa{#1}%
+  \global\def\caption@tempa{gobbletwo}%
+  \global\def\caption@tempb{}%
+  \sbox\@tempboxa{%
+    \let\caption@ignorespaces\ignorespaces
+    \def\ignorespaces{%
+      \global\def\caption@tempb{two}% "gobble" -> "gobbletwo" if \ignorespaces is used addtionally
+      \caption@ignorespaces}%
+    #1%
+      {\global\let\caption@tempa\@undefined\aftergroup\@gobble}%
+      {\global\def\caption@tempa{gobble\caption@tempb}}}%
   \ifdim\wd\@tempboxa=\z@
-    \caption@set{labelseparator}{none}%
+    \gdef\caption@tempa{none}%
 %   \@capbreakfalse
+  \fi
+  \ifx\caption@tempa\@undefined \else
+    \@expandtwoargs\caption@set{labelseparator}{\caption@tempa}%
   \fi
 %    \end{macrocode}
 %   If the text is empty, we use no caption label separator, too.
@@ -4225,7 +4267,7 @@
     {\ifcaption@star\else
        \begingroup
          \captionlabelfont
-         #1%
+         #1\relax\relax
        \endgroup
      \fi}%
     {\ifcaption@star\else

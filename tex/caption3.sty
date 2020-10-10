@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/10/09 v2.2b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/10 v2.2c caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -755,6 +755,8 @@
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
 \caption@LabelSeparatorWithNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
+\DeclareCaptionLabelSeparator{gobble}{ }
+\DeclareCaptionLabelSeparator{gobbletwo}{}
 \newcommand*\captionnewline{\\\relax}
 \SetCaptionDefault{labelseparator}{colon}
 \newcommand*\DeclareCaptionTextFormat[2]{%
@@ -1556,9 +1558,21 @@
 \newcommand*\caption@applyfont{%
   \caption@justification\captionfont\captionsize}
 \newcommand\caption@@@make[2]{%
-  \sbox\@tempboxa{#1}%
+  \global\def\caption@tempa{gobbletwo}%
+  \global\def\caption@tempb{}%
+  \sbox\@tempboxa{%
+    \let\caption@ignorespaces\ignorespaces
+    \def\ignorespaces{%
+      \global\def\caption@tempb{two}% "gobble" -> "gobbletwo" if \ignorespaces is used addtionally
+      \caption@ignorespaces}%
+    #1%
+      {\global\let\caption@tempa\@undefined\aftergroup\@gobble}%
+      {\global\def\caption@tempa{gobble\caption@tempb}}}%
   \ifdim\wd\@tempboxa=\z@
-    \caption@set{labelseparator}{none}%
+    \gdef\caption@tempa{none}%
+  \fi
+  \ifx\caption@tempa\@undefined \else
+    \@expandtwoargs\caption@set{labelseparator}{\caption@tempa}%
   \fi
   \caption@ifempty{#2}{%
     \caption@set{labelseparator}{none}%
@@ -1571,7 +1585,7 @@
     {\ifcaption@star\else
        \begingroup
          \captionlabelfont
-         #1%
+         #1\relax\relax
        \endgroup
      \fi}%
     {\ifcaption@star\else

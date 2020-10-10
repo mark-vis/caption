@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{7}
+% \CheckSum{8}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.drv}[2018/05/24 v2.0 Implementation of the caption-memoir package]
+\ProvidesFile{caption-memoir.drv}[2020/10/10 v2.0 Implementation of the caption-memoir package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -183,7 +183,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.sto}[2020/07/31 v2.0 Adaption of the caption package to the memoir document class (AR)]
+\ProvidesFile{caption-memoir.sto}[2020/10/10 v2.0a Adaption of the caption package to the memoir document class (AR)]
 %    \end{macrocode}
 %
 % \section{Adaptions already included in the caption package}
@@ -193,23 +193,36 @@
 %   \item \cs{@caption} expands \cs{memcaptioninfo}
 %   \item \cs{caption@prepareanchor} expands \cs{M@gettitle}
 %   \item \cs{caption@refstepcounter} expands \cs{donemaincaptiontrue}
-%   \item Since the \class{memoir} document class resets the sub-caption
-%         counter at |\@float|, right after |\done|\-|main|\-|caption|\-|false|,
-%         all sub-caption counters will be saved at |\done|\-|main|\-|caption|\-|false|
-%         so they can (and will) be restored using |\caption@|\-|restore|\-|counters|
-%         at |\continued|\-|float|.
+%   \item All sub-caption counters will be reset at |\@mem|\-|reset|\-|sub|\-|counter|,
+%         even if they weren't defined by the \class{memoir} document class itself.
+%         As work-around this command will be patched to protect the counters
+%         defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
 % \end{itemize}
 %
 % \section{Single-line-check}
 %
 % \begin{macro}{\caption@prepareslc}
-% \changes{v1.4a}{2011/10/21}{Redefinition of \cs{pagenote} from \textsf{memoir} document class added}
-% We re-define \cs{pagenote} here so it won't disturb the single-line-check.
+% \changes{v1.4a}{2011/10/21}{Re-definition of \cs{pagenote} added}
+%   We re-define \cs{pagenote} here so it won't disturb the single-line-check.
 %    \begin{macrocode}
 \g@addto@macro\caption@prepareslc{%
   \let\pagenote\caption@gobble}
 %    \end{macrocode}
 % \end{macro}
+%
+% \section{Label separator}
+%
+% \changes{v2.0a}{2020/10/10}{Re-definition of label separator `gobble' added}
+% If |\fnum@figure| (or |\fnum@table| or\ldots) ends with |\@gobble|, the `:' part of the caption
+% label separator will be suppressed when a standard document class (\class{article}, \class{report},
+% or \class{book}) will be used, leaving the following space character intact.
+% This is different when using the \class{memoir} document class, in this case the complete
+% label separator will be suppressed. For this reason we re-define the pre-defined caption label
+% separator `gobble' to emulate this behaviour.
+%
+%    \begin{macrocode}
+\DeclareCaptionLabelSeparator{gobble}{}
+%    \end{macrocode}
 %
 % \iffalse
 %</package>
