@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3661}
+% \CheckSum{3725}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2020/09/21 v2.2 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2020/10/11 v2.2 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -117,6 +117,56 @@
 % \package{subfig} packages.
 % \end{abstract}
 % 
+% \section*{Internal commands}
+%
+% These internal commands are save to use by other packages as well
+% since their interface will not change in future releases:
+% \begin{quote}\begin{tabular}{ll}
+%   Internal command            & Currently used by  \\
+% \hline
+%   |\caption@addcontentsline|  & \package{floatrow} \\
+%   |\caption@fnun|             & \package{floatrow} \\
+%   |\caption@ifinlist|         & \package{floatrow} \\
+%   |\caption@iftop|            & \package{keyfloat}, \package{subfig} \\
+%   |\caption@make|             & \package{subfig}   \\
+%   |\caption@@make|            & \package{floatrow} \\
+%   |\caption@setautoposition|  & \package{bidi}     \\
+%   |\caption@setoptions|       & \package{floatrow} \\
+%   |\caption@setposition|      & \package{floatrow} \\
+%   |\caption@switchdefault|    & \emph{none}        \\
+% \end{tabular}\end{quote}
+%
+% If your package wants to use any other internal command of the \package{caption3} package,
+% please write me an e-mail so we can define a proper interface together.
+%
+% Unfortunately these internal commands are used by other packages and therefore will likely
+% not change in the future, too, but I do not support them (and maybe I will change them anyway
+% and patch the other package on-the-fly instead, at least if it's unmaintained):
+% \begin{quote}\begin{tabular}{ll}
+%   Internal command            & Currently used by  \\
+% \hline
+%   |\caption@hangindent     |  & \package{bidi}     \\
+%   |\caption@@@make|           & \package{floatrow} \\
+%   |\caption@@par|             & \package{bidi}     \\
+%   |\caption@parindent|        & \package{bidi}     \\
+%   |\caption@set@bool|         & \package{floatrow} \\
+%   |\caption@setfont|          & \package{floatrow} \\
+%   |\caption@setkeys|          & \package{floatrow} \\
+%   |\caption@setstyle*|        & \package{floatrow} \\
+% \hline
+%   |\caption@hj@|\meta{name}   & \package{floatrow} \\
+%   |\caption@lsep@|\meta{name} & \package{floatrow} \\
+%   |\caption@lsep@default|     & \package{babel-hungarian} \\
+%   |\caption@sty@|\meta{name}  & \package{floatrow} \\
+% \end{tabular}\end{quote}
+%
+% Furthermore the \package{floatrow} package uses the undocumented option
+% |position=a| (as abbreviation of |position=auto|).
+%
+% The \package{lwarp} package uses a lot of internal commands as well,
+% but we are working on it on the Git branch \texttt{feature/lwarp}:
+% \url{https://gitlab.com/axelsommerfeldt/caption/-/tree/feature/lwarp}
+%
 % \StopEventually{}
 % \clearpage
 % \tableofcontents
@@ -192,7 +242,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/10/07 v2.2b caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/11 v2.2d caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1578,7 +1628,7 @@
 %    \begin{macrocode}
 \newcommand*\caption@stepthecounter{%
   \@tempcnta\caption@thecounter
-  \advance\@tempcnta\@ne
+  \advance\@tempcnta\@ne\relax
   \xdef\caption@thecounter{\the\@tempcnta}}
 %    \end{macrocode}
 % \end{macro}
@@ -1899,8 +1949,8 @@
   \colorbox{\caption@boxcolor}{%
     \setlength\caption@tempdima{#1}%
     \addtolength\caption@tempdima{-2\fboxsep}%
-    \linewidth\caption@tempdima
-    \hsize\caption@tempdima
+    \linewidth\caption@tempdima\relax
+    \hsize\caption@tempdima\relax
     #2}}
 \DeclareCaptionOption{boxcolor}{\def\caption@boxcolor{#1}}
 \DeclareCaptionOption{boxsep}{\setlength\fboxsep{#1}}
@@ -1975,8 +2025,8 @@
        The option `labelsep=\caption@labelsep@name' does not work\MessageBreak
        with `format=hang'}}%
     {\@hangfrom{#1#2}%
-     \advance\caption@parindent\hangindent
-     \advance\caption@hangindent\hangindent
+     \advance\caption@parindent\hangindent\relax
+     \advance\caption@hangindent\hangindent\relax
      \caption@@par#3\par}}
 %    \end{macrocode}
 %
@@ -2132,8 +2182,9 @@
 \DeclareCaptionOption{labelseparator}{\caption@set{labelseparator}{#1}}
 %    \end{macrocode}
 %
-% \changes{v1.0e}{2005/06/11}{Bugfix 05-03-23: Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
+% \changes{v1.0e}{2005/06/11}{Caption label separator \opt{newline} implementation changed from \cs{newline} to \cs{textbackslash}}
 % \changes{v1.0f}{2005/08/24}{Caption label separator \opt{endash} added}
+% \changes{v1.12}{2020/05/30}{Caption label separator \opt{newline} implementation changed from \cs{textbackslash} to \cs{captionnewline}}
 % There are seven pre-defined label separators, called `none', `colon', `period', `space',
 % `quad', `newline', and `endash'.
 %    \begin{macrocode}
@@ -2143,8 +2194,33 @@
 \DeclareCaptionLabelSeparator{space}{ }
 \DeclareCaptionLabelSeparator*{quad}{\quad}
 \DeclareCaptionLabelSeparator*{newline}{\captionnewline}
+% TODO: \DeclareCaptionLabelSeparator should detect on its own if it contains \captionnewline or not
 \caption@LabelSeparatorWithNewline{newline} % does not work with "format=hang"
 \DeclareCaptionLabelSeparator*{endash}{\space\textendash\space}
+%    \end{macrocode}
+%
+% \changes{v2.2c}{2020/10/10}{Caption label separators \opt{gobble} and \opt{gobbletwo} added}
+%
+% It's a common hack to mis-use |\fnum@figure| and |\fnum@table| to replace the caption
+% label separator, for example changing the separator to a period plus space with
+% \begin{quote}
+%   |\renewcommand\fnum@figure[1]{\figurename~\thefigure.}|
+% \end{quote}
+% or dropping the label and separator completely with
+% \begin{quote}
+%   |\renewcommand\fnum@figure[1]{\ignorespaces}|\quad
+% \end{quote}
+% (taken from \url{http://compgroups.net/comp.text.tex/figure-without-caption/1915079}).
+%
+% We emulate the behaviour of |\@make|\-|caption| of the base document classes
+% \class{article}, \class{report}, and \class{book} in this regard (in |\caption@@@make|)
+% so these hacks still work if the \package{caption} package is loaded.
+%
+% These are the label separators used when one or two tokens after the label format
+% should be dropped, called `gobble' and `gobbletwo':
+%    \begin{macrocode}
+\DeclareCaptionLabelSeparator{gobble}{ }
+\DeclareCaptionLabelSeparator{gobbletwo}{}
 %    \end{macrocode}
 %
 % \begin{macro}{\captionnewline}
@@ -2650,9 +2726,6 @@
 % \changes{v2.0}{2020/07/27}{Uses \cs{caption@set} now}
 %   |\caption@setposition|\marg{position}\\
 %   puts |\caption@position| to the right value.
-%   \emph{Please do \textbf{not} use the internal macro
-%     \cs{caption@position} in your own package or document, but use the
-%     wrapper command \cs{caption@iftop} instead.}\par
 %   (Note: Since this command is used by the \package{floatrow} package as well
 %    its syntax should not change.)
 %    \begin{macrocode}
@@ -3131,7 +3204,7 @@
 }
 %    \end{macrocode}
 %
-% \subsection{The french babel option}
+% \subsection{The babel-french package}
 % \changes{v1.1}{2006/05/14}{\package{frenchb} babel support added}
 % \changes{v2.0}{2020/08/01}{\package{french} babel support updated}
 %
@@ -3169,7 +3242,10 @@
 % in order to avoid problems when |Auto|\-|Space|\-|Punctuation| is set to |false|.
 %
 %    \begin{macrocode}
-  \DeclareCaptionLabelSeparator{colon}{\autospace@beforeFDP : }%
+  \ifFB@active@punct
+    \DeclareCaptionLabelSeparator{colon}{%
+      \ifFBfrench\penalty\@M\FBcolonspace\fi : }%
+  \fi
 %    \end{macrocode}
 %
 % We switch the default label separator to `french', dependant on the switches
@@ -3253,7 +3329,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsection{The hungarian \& magyar babel option}
+% \subsection{The babel-hungarian package}
 % \changes{v1.3}{2009/03/29}{\package{magyar} babel support added}
 % \changes{v1.3a}{2011/08/12}{\package{magyar} babel support revised}
 % \changes{v1.8b}{2018/08/26}{\package{magyar} babel support revised}
@@ -3711,7 +3787,7 @@
     \let\sf@oldlabel=\label
     \let\label=\subfloat@label
     \ifmaincaptiontop\else
-      \advance\@nameuse{c@\@captype}\@ne
+      \advance\@nameuse{c@\@captype}\@ne\relax
     \fi
     \refstepcounter{sub\@captype}%
     \setcounter{sub\@captype @save}{\value{sub\@captype}}%
@@ -3898,9 +3974,9 @@
     \caption@calcmargin
     \caption@tempdima\captionmargin
     \ifdim\captionmargin@=\z@ \else
-      \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@}%
+      \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@\relax}%
     \fi
-    \caption@ifhmode{\advance\caption@tempdima\caption@indent}%
+    \caption@ifhmode{\advance\caption@tempdima\caption@indent\relax}%
     \hspace\caption@tempdima
 %    \end{macrocode}
 %   We actually use a |\vbox| of width |\captionwidth - \caption@indent|
@@ -3909,7 +3985,7 @@
 %   was defined with \cs{DeclareCaptionFormat*}.}
 %    \begin{macrocode}
     \caption@tempdima\captionwidth
-    \caption@ifhmode{\advance\caption@tempdima-\caption@indent}%
+    \caption@ifhmode{\advance\caption@tempdima-\caption@indent\relax}%
     \caption@parbox\caption@tempdima{%
 %    \end{macrocode}
 %   Typeset the indention (option |indention=|)\\
@@ -3931,7 +4007,7 @@
 %    \begin{macrocode}
     \caption@tempdima\captionmargin
     \ifdim\captionmargin@=\z@ \else
-      \caption@ifoddpage{\advance\caption@tempdima\captionmargin@}{}%
+      \caption@ifoddpage{\advance\caption@tempdima\captionmargin@\relax}{}%
     \fi
     \hspace\caption@tempdima
 %    \end{macrocode}
@@ -3976,14 +4052,14 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \ifdim\captionwidth=\z@
-    \captionwidth\hsize
-    \advance\captionwidth by -2\captionmargin
-    \advance\captionwidth by -\captionmargin@
+    \captionwidth\hsize\relax
+    \advance\captionwidth by -2\captionmargin\relax
+    \advance\captionwidth by -\captionmargin@\relax
   \else
-    \captionmargin\hsize
-    \advance\captionmargin by -\captionwidth
-    \divide\captionmargin by 2
-    \captionmargin@\z@
+    \captionmargin\hsize\relax
+    \advance\captionmargin by -\captionwidth\relax
+    \divide\captionmargin by 2\relax
+    \captionmargin@\z@\relax
   \fi
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -4184,17 +4260,33 @@
 % \changes{v1.3}{2010/11/01}{Bugfix: If the caption text is empty, the text format will be set to \opt{simple} now}
 % \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
 % \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{caption@textend}}
+% \changes{v2.2c}{2020/10/10}{Usage of the label separators \opt{gobble} and \opt{gobbletwo} added}
 %   |\caption@@@make|\marg{caption label}\marg{caption text}\\
 %   This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
 \newcommand\caption@@@make[2]{%
 %    \end{macrocode}
-%   If the label is empty, we use no caption label separator.
+%   If the label is empty, we use the label separator `none'.
+%   Futhermore we use this check to determine if |#1| ends with either
+%   |\@gobble|, |\@gobble|\-|two|, and/or |\ignore|\-|spaces|.
+%   If yes, we use the corresponding label separator.
 %    \begin{macrocode}
-  \sbox\@tempboxa{#1}%
+  \global\def\caption@tempa{gobbletwo}%
+  \global\def\caption@tempb{}%
+  \sbox\@tempboxa{%
+    \let\caption@ignorespaces\ignorespaces
+    \def\ignorespaces{%
+      \global\def\caption@tempb{two}% "gobble" -> "gobbletwo" if \ignorespaces is used addtionally
+      \caption@ignorespaces}%
+    #1%
+      {\global\let\caption@tempa\@undefined\aftergroup\@gobble}%
+      {\global\def\caption@tempa{gobble\caption@tempb}}}%
   \ifdim\wd\@tempboxa=\z@
-    \caption@set{labelseparator}{none}%
+    \gdef\caption@tempa{none}%
 %   \@capbreakfalse
+  \fi
+  \ifx\caption@tempa\@undefined \else
+    \@expandtwoargs\caption@set{labelseparator}{\caption@tempa}%
   \fi
 %    \end{macrocode}
 %   If the text is empty, we use no caption label separator, too.
@@ -4222,7 +4314,7 @@
     {\ifcaption@star\else
        \begingroup
          \captionlabelfont
-         #1%
+         #1\relax\relax
        \endgroup
      \fi}%
     {\ifcaption@star\else

@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{7}
+% \CheckSum{56}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.drv}[2018/05/24 v2.0 Implementation of the caption-memoir package]
+\ProvidesFile{caption-memoir.drv}[2020/10/10 v2.1 Implementation of the caption-memoir package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -183,7 +183,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.sto}[2020/07/31 v2.0 Adaption of the caption package to the memoir document class (AR)]
+\ProvidesFile{caption-memoir.sto}[2020/10/10 v2.1 Adaption of the caption package to the memoir document class (AR)]
 %    \end{macrocode}
 %
 % \section{Adaptions already included in the caption package}
@@ -193,23 +193,114 @@
 %   \item \cs{@caption} expands \cs{memcaptioninfo}
 %   \item \cs{caption@prepareanchor} expands \cs{M@gettitle}
 %   \item \cs{caption@refstepcounter} expands \cs{donemaincaptiontrue}
-%   \item Since the \class{memoir} document class resets the sub-caption
-%         counter at |\@float|, right after |\done|\-|main|\-|caption|\-|false|,
-%         all sub-caption counters will be saved at |\done|\-|main|\-|caption|\-|false|
-%         so they can (and will) be restored using |\caption@|\-|restore|\-|counters|
-%         at |\continued|\-|float|.
+%   \item All sub-caption counters will be reset at |\@mem|\-|reset|\-|sub|\-|counter|,
+%         even if they weren't defined by the \class{memoir} document class itself.
+%         As work-around this command will be patched to protect the counters
+%         defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
 % \end{itemize}
 %
 % \section{Single-line-check}
 %
 % \begin{macro}{\caption@prepareslc}
-% \changes{v1.4a}{2011/10/21}{Redefinition of \cs{pagenote} from \textsf{memoir} document class added}
-% We re-define \cs{pagenote} here so it won't disturb the single-line-check.
+% \changes{v1.4a}{2011/10/21}{Re-definition of \cs{pagenote} added}
+%   We re-define \cs{pagenote} here so it won't disturb the single-line-check.
 %    \begin{macrocode}
 \g@addto@macro\caption@prepareslc{%
   \let\pagenote\caption@gobble}
 %    \end{macrocode}
 % \end{macro}
+%
+% \section{Label separator}
+%
+% The `default' caption label separator maps to \cs{@contdelim}.
+%    \begin{macrocode}
+\DeclareCaptionLabelSeparator{@contdelim}{\@contdelim}
+\SetCaptionDefault{labelseparator}{@contdelim}
+%    \end{macrocode}
+%
+% \begin{macro}{\captiondelim}
+% \changes{v2.1}{2020/10/10}{Re-definition of \cs{captiondelim} added}
+%   We re-define |\caption|\-|delim| so it will set the \package{caption3} label separator setting, too.
+%    \begin{macrocode}
+\let\caption@memoir@delim\captiondelim
+\renewcommand\captiondelim{%
+  \captionsetup{labelsep=@contdelim}%
+  \caption@memoir@delim}
+%    \end{macrocode}
+% \end{macro}
+%
+% \changes{v2.0a}{2020/10/10}{Re-definition of label separator `gobble' added}
+% If |\fnum@figure| (or |\fnum@table| or\ldots) ends with |\@gobble|, the `:' part of the caption
+% label separator will be suppressed when a standard document class (\class{article}, \class{report},
+% or \class{book}) will be used, leaving the following space character intact.
+% This is different when using the \class{memoir} document class, in this case the complete
+% label separator will be suppressed. For this reason we re-define the pre-defined caption label
+% separator `gobble' to emulate this behaviour.
+%
+%    \begin{macrocode}
+\DeclareCaptionLabelSeparator{gobble}{}
+%    \end{macrocode}
+%
+% \section{Fonts}
+%
+% The `default' caption fonts map to \cs{@contnfont} resp.~\cs{conttfont}.
+%    \begin{macrocode}
+\DeclareCaptionFont{@contnfont}{\@contnfont}
+\SetCaptionDefault{labelfont}{@contnfont}
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionFont{@conttfont}{\@conttfont}
+\SetCaptionDefault{textfont}{@conttfont}
+%    \end{macrocode}
+%
+% \begin{macro}{\captionnamefont}
+% \changes{v2.1}{2020/10/10}{Re-definition of \cs{captionnamefont} added}
+%   We re-define |\caption|\-|delim| so it will set the \package{caption3} label separator setting, too.
+%    \begin{macrocode}
+\let\caption@memoir@namefont\captionnamefont
+\renewcommand\captionnamefont{%
+  \captionsetup{labelfont=@contnfont}%
+  \caption@memoir@namefont}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\captiontitlefont}
+% \changes{v2.1}{2020/10/10}{Re-definition of \cs{captiontitlefont} added}
+%   We re-define |\caption|\-|delim| so it will set the \package{caption3} label separator setting, too.
+%    \begin{macrocode}
+\let\caption@memoir@titlefont\captiontitlefont
+\renewcommand\captiontitlefont{%
+  \captionsetup{textfont=@conttfont}%
+  \caption@memoir@titlefont}
+%    \end{macrocode}
+% \end{macro}
+%
+% \section{Vertical spaces before and after captions}
+%
+% The \class{memoir} document classes uses |\above|\-|caption|\-|skip| and |\below|\-|caption|\-|skip|
+% different than the standard document classes and the \package{caption} package:
+% They always typeset |\above|\-|caption|\-|skip| before the caption and
+% |\below|\-|caption|\-|skip| after the captions. Both are preset to |0.5\one|\-|line|\-|skip|.
+%
+% For this reason we have to set the |\below|\-|caption|\-|skip| to |0pt| if the \package{caption}
+% package is used, so no extra vertical space will be created.
+%
+%    \begin{macrocode}
+\AtCaptionPackage{\setlength\belowcaptionskip{0pt}}
+%    \end{macrocode}
+%
+% \section{TODO}
+%
+%    \begin{macrocode}
+% TODO: \captionstyle
+% TODO: \captionwidth, \changecaptionwidth, \normalcaptionwidth
+% TODO: \hangcaption, \indentcaption, \normalcaption
+% TODO: \precaption, \postcaption, \midbicaption
+% TODO: \captiontitlefinal
+% TODO: \contcaption
+% TODO: \newfixedcaption, \renewfixedcaption, \providefixedcaption
+% 
+%    \end{macrocode}
 %
 % \iffalse
 %</package>
