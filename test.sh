@@ -3,7 +3,7 @@
 # test.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-09-13
+# Date:   2020-10-21
 
 # shellcheck disable=SC2155
 
@@ -443,9 +443,9 @@ function xml_escape
 
 disable test/floatrow/floatrow.dtx        # ! Arithmetic overflow.
 disable test/floatrow/floatrow-rus.tex    # ! Arithmetic overflow.
-disable test/floatrow/frsample04.tex      # Does not compile with pdflatex
-disable test/floatrow/frsample10.tex      # Does not compile with pdflatex
-disable test/floatrow/frsample11.tex      # Does not compile with pdflatex
+disable test/floatrow/frsample04.tex      # Does not compile with pdflatex (PSTricks)
+disable test/floatrow/frsample10.tex      # Does not compile with pdflatex (PSTricks)
+disable test/floatrow/frsample11.tex      # Does not compile with pdflatex (PSTricks)
 disable test/floatrow/fr-sample.tex       # Interims file
 disable test/floatrow/pictures.tex        # Interims file
 disable test/floatrow/r-longtable.tex     # Interims file

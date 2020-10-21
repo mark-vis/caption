@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3725}
+% \CheckSum{3674}
 %
 % \iffalse
 %<*driver>
@@ -242,7 +242,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption3}[2020/10/11 v2.2d caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2020/10/21 v2.2e caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2472,6 +2472,15 @@
 \SetCaptionDefault{textfont}{none}
 %    \end{macrocode}
 %
+% The \package{floatrow} package uses the fonts `footfont` and `@tempa` additionally,
+% so we need to map and define the default value for them, too.
+%    \begin{macrocode}
+\caption@setmapping{footfont}{font}
+\SetCaptionDefault{footfont}{none}
+\caption@setmapping{@tempa}{font}
+\SetCaptionDefault{@tempa}{none}
+%    \end{macrocode}
+%
 % \begin{macro}{\caption@smaller}
 %   |\caption@smaller|\\
 %   selects a font size which is smaller than the current one.
@@ -3502,86 +3511,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{The floatrow package}
-% \changes{v2.0}{2020/07/28}{Adaptions to the \package{floatrow} package added}
-%
-% Since the \package{floatrow} package is not maintained anymore,
-% we have to make adaptions to \thispackage~\version{2.0} here.
-% Please note that we only support the version $0.3b$ of the \package{floatrow} package,
-% so older versions do not work with this version of \thispackage, and newer
-% versions are expected to be adapted.
-%
-%    \begin{macrocode}
-\caption@AtBeginDocument{%
-  \def\@tempa{2008/08/02 v0.3b floatrow: float package extension}%
-  \expandafter\ifx\csname ver@floatrow.sty\endcsname\@tempa
-    \caption@InfoNoLine{floatrow package v0.3b is loaded}%
-%    \end{macrocode}
-%
-% \begin{macro}{\captionlabel}
-%   |\caption@format| needs to be expanded prior the use of |\caption@@@make|.
-%    \begin{macrocode}
-    \renewcommand\captionlabel[1]{{% l.559
-      \def\FR@tmp{\@captype}%
-      \ifnum\floatbox@depth>\@ne
-        \def\FR@tmp{sub\@captype}%
-        \caption@setsubtype*{\FR@tmp}%
-        \caption@@@stepcounter{\FR@tmp}% <= \stepcounter replaced by \caption@@@stepcounter
-      \fi
-      \caption@format % <= This line added
-      \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\flrow@setstyle}
-%   This patch isn't working since |\flrow@setstyle| will be used by
-%   \package{floatrow} right after loading \package{caption3}.
-%   For this reason we still define |\caption@sty@|\meta{name} in
-%   |\Declare|\-|Caption|\-|Style| instead.
-%    \begin{macrocode}
-%   \renewcommand*\flrow@setstyle[1]{% l.986
-%     \@ifundefined{flrow@sty@#1}%
-%       {\flrow@error{Undefined float style `#1'}}%
-%       {\FBstyle@reset
-%        \def\flrow@capsetup{%
-%           \caption@ifdecl{style}{#1}{\caption@setstyle*{#1}}{}%
-%           \caption@setoptions{#1}}%
-%        \flrow@esetup{\csname flrow@sty@#1\endcsname}}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\flrow@FBoAlign}
-%   This patch isn't working since |\flrow@FBoAlign| will be used by
-%   \package{floatrow} right after loading \package{caption3}.
-%   For this reason we still define |\caption@hj@|\meta{name} in
-%   |\Declare|\-|Caption|\-|Justification| instead.
-%    \begin{macrocode}
-%   \renewcommand*\flrow@FBoAlign[1]{% l.1168
-%     \caption@ifdecl{justification}{#1}%
-%       {\expandafter\let\expandafter\floatobjectset
-%          \csname caption@justification@#1\endcsname}%
-%       {\flrow@error{Undefined object setting `#1'}}}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\flrow@setFRsep}
-%   This patch isn't working since |\flrow@setFRsep| will be used by
-%   \package{floatrow} right after loading \package{caption3}.
-%   For this reason we still define |\caption@lsep@|\meta{name} in
-%   |\Declare|\-|Caption|\-|Label|\-|Separator| instead.
-%    \begin{macrocode}
-%   \renewcommand*\flrow@setFRsep[2]{% l.1187
-%     \caption@ifdecl{labelseparator}{#2}%
-%       {\@nameuse{caption@labelseparator@#2}% defines \caption@labelsep
-%        \let#1\caption@labelsep}%
-%       {\flrow@error{Undefined float separator `#2'}}}%
-%    \end{macrocode}
-% \end{macro}
-%
-%    \begin{macrocode}
-  \fi}
-%    \end{macrocode}
-%
 % \subsection{The newfloat package}
 %
 % \begin{macro}{\caption@newfloat}
@@ -4261,10 +4190,20 @@
 % \changes{v1.7}{2016/02/01}{Bugfix: \cs{relax} added before \cs{caption@lsep} so the label separator will not be gobbled if the label font command ignores spaces, e.g. by usage of \cs{color}}
 % \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{caption@textend}}
 % \changes{v2.2c}{2020/10/10}{Usage of the label separators \opt{gobble} and \opt{gobbletwo} added}
+% \changes{v2.2e}{2020/10/21}{Adaptions to \package{floatrow} package added}
 %   |\caption@@@make|\marg{caption label}\marg{caption text}\\
 %   This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
 \newcommand\caption@@@make[2]{%
+%    \end{macrocode}
+% The \package{floatrow} package uses |\caption@@@make|, too,
+% but without using |\caption@single|\-|line| or |\caption@multi|\-|line|.
+% For this reason we must expand |\caption@format| if |\caption@fmt| isn't defined yet.
+% Furthermore it uses |\caption@lfmt| as argument which was renamed to
+% |\caption@label|\-|format| in \package{caption3}\version{2.0}.
+%    \begin{macrocode}
+  \ifx\caption@fmt\@undefined\caption@format\fi
+  \let\caption@lfmt\caption@labelformat
 %    \end{macrocode}
 %   If the label is empty, we use the label separator `none'.
 %   Futhermore we use this check to determine if |#1| ends with either
