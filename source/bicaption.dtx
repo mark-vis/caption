@@ -2,7 +2,7 @@
 % 
 % This is file `bicaption.dtx'.
 % 
-% Copyright (C) 2010-2018 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2010-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{431}
+% \CheckSum{457}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2016/03/27 v1.2 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2020/10/25 v1.3 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -45,17 +45,11 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 %
-\newcommand\LineBreak{\linebreak[3]}
-\newcommand\PageBreak{\pagebreak[3]}
 \usepackage{ifpdf}
 \ifpdf
   \usepackage{mathptmx,courier}
   \usepackage[scaled=0.90]{helvet}
   \addtolength\marginparwidth{15pt}
-  \ifdim\paperheight=297mm % a4paper
-    \renewcommand\LineBreak{\\}
-    \renewcommand\PageBreak{\clearpage}
-  \fi
 \fi
 %
 \usepackage[T1]{fontenc}
@@ -167,16 +161,17 @@
 % \label{sec:options}
 %
 % \DescribeMacro{\captionsetup}
+% The command
 % \begin{quote}
 %   |\captionsetup[bi]|\marg{options}
 % \end{quote}
-% do setup options which will be used for bilanguage captions \emph{additionally}
+% does setup options which will be used for bilanguage captions \emph{additionally}
 % to the ones which are setup for the specific floating environment.
 %
 % \begin{quote}
 %   |\captionsetup[bi-first]|\marg{options}
 % \end{quote}
-% do setup options which will be used for the \emph{first} heading
+% does setup options which will be used for the \emph{first} heading
 % of the bilanguage captions \emph{additionally}
 % to the ones which are setup for the specific floating environment
 % and the ones which are setup by |\captionsetup[bi]{|\ldots|}|.
@@ -184,16 +179,16 @@
 % \begin{quote}
 %   |\captionsetup[bi-second]|\marg{options}
 % \end{quote}
-% do setup options which will be used for the \emph{second} heading
+% does setup options which will be used for the \emph{second} heading
 % of the bilanguage captions \emph{additionally}
 % to the ones which are setup for the specific floating environment
 % and the ones which are setup by |\captionsetup[bi]{|\ldots|}|.
 %
 % \bigskip
 %
-% Options specified with |\use|\-|package[|\ldots|]{bi|\-|caption}| and
-% |\caption|\-|setup[bi|\ldots|]{|\ldots|}| will override the ones specified by
-% |\caption|\-|setup{|\ldots|}| and |\caption|\-|setup[fig|\-|ure]{|\ldots|}|
+% Options specified with |\use|\-|package[|\ldots|]{bi|\-|cap|\-|tion}| and
+% |\cap|\-|tion|\-|setup[bi|\ldots|]{|\ldots|}| will override the ones specified by
+% |\cap|\-|tion|\-|setup{|\ldots|}| and |\cap|\-|tion|\-|setup[fig|\-|ure]{|\ldots|}|
 % (same for `table'). So finally we have the following order how
 % settings for bilingual captions are applied:
 % \begin{enumerate}
@@ -242,7 +237,6 @@
 %
 % \begin{Options}{language=}
 %   \item[lang=]
-%   \DescribeMacro{language=}
 %   Sets the language of the caption, e.g.
 %   \begin{quote}|\use|\-|package|\-|[lang=eng|\-|lish]{bi|\-|caption}|\end{quote}
 %   will typeset the second caption of bilingual captions in English.
@@ -250,7 +244,6 @@
 %    see \autoref{sec:babel} for details.)
 %
 %   \item[bi-lang=]
-%   \DescribeMacro{bi-lang=}
 %   Causes a selection of the headings of bilingual captions.
 %   \begin{quote}|\captionsetup{bi-lang=both}|\end{quote}
 %   will cause that both caption headings are being typeset.\\
@@ -261,18 +254,42 @@
 %   will cause that only the \emph{second} heading is being typeset.
 %
 %   \item[bi-slc=]
-%   \DescribeMacro{bi-singlelinecheck=}
-%   Switches the common single-line-check |on| or |off|, i.e.~when switched on
+%   \begin{quote}|\captionsetup{bi-slc=|\meta{bool}|}|\end{quote}
+%   switches the common single-line-check |on| or |off|, i.e.~when switched on
 %   only a single check will be done for both captions, and the result will affect
 %   both captions afterwards. So if only one caption is longer than a single line,
 %   both captions will be treated as if they are longer than a single line, even if
 %   the second one isn't. (The default is |on|.)
 %
 %   \item[bi-swap=]
-%   \DescribeMacro{bi-swap=}
 %   \begin{quote}|\captionsetup{bi-swap}|\end{quote}
 %   will swap the primary and secondary language,
 %   making the first language the second one and vice versa. (The default is |false|.)
+%
+%   \NEWfeature{v1.3}
+%   \item[bi-separator=]
+%   \begin{quote}|\captionsetup{bi-separator=|\meta{name}|}|\end{quote}
+%   will select a separator between first and second bilingual caption.
+%   You could choose one of the following: `none' (which is the default one
+%   and could also be addressed as `default'), `smallskip', `medskip',
+%   `largeskip', or a self-defined one using
+%   \DescribeMacro{\DeclareBiCaptionSeparator}
+%   \begin{quote}|\DeclareBiCaptionSeparator|\marg{name}\marg{code}\end{quote}
+%   Examples:
+%   \begin{quote}
+%     |\captionsetup{bi-separator=smallskip}|
+%   \end{quote}
+%   will put a |\smallskip| between the two bilingual captions.
+%   \begin{quote}
+%     |\DeclareBiCaptionSeparator{hrule}{\hrule}|\\
+%     |\captionsetup{bi-separator=hrule}|
+%   \end{quote}
+%   will draw a horizontal line between the two bilingual captions.
+%   \begin{quote}
+%     |\DeclareBiCaptionSeparator{3pt}{\vspace{3pt}}|\\
+%     |\captionsetup{bi-separator=3pt}|
+%   \end{quote}
+%   will put |3pt| vertical space between the two bilingual captions.
 % \end{Options}
 %
 % \section{The \cs{bicaption} commands}
@@ -337,7 +354,7 @@
 % \cs{subcaptionbox}.)
 % \endgroup
 %
-% \PageBreak
+% \pagebreak[3]
 % \section{A sample document}
 % \label{sec:example}
 %
@@ -444,7 +461,7 @@
 %   |\end{document}|
 % \end{quote}
 %
-% \PageBreak
+% \pagebreak[3]
 % \captionsetup[bi-first]{lang=german}
 % \captionsetup[bi-second]{lang=english,font=it}
 % \captionsetup[sub]{format=hang,list=on}
@@ -535,7 +552,7 @@
 %     {Short English heading}
 % \end{figure}
 %
-% \PageBreak
+% \pagebreak[3]
 % \section{Customising lists}
 % \label{sec:lists}
 %
@@ -831,7 +848,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2020/08/23 v1.2a Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2020/10/25 v1.3 Bilingual Captions (AR)]
 %    \end{macrocode}
 %    \begin{macrocode}
 \RequirePackage{caption}[2020/08/23] % needs v3.5 or newer
@@ -953,6 +970,37 @@
   \caption@set@bool\bicaption@ifswap{#1}}
 %    \end{macrocode}
 %
+% The option |bi-separator| will setup the separator between
+% the two bi-lingual captions.
+%    \begin{macrocode}
+\DeclareCaptionOption{bi-separator}[1]{%
+  \caption@set{biseparator}{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\DeclareBiCaptionSeparator}
+% \changes{v1.3}{2020/10/25}{This macro added}
+%   |\DeclareBiCaptionSeparator|\marg{name}\marg{code}
+%    \begin{macrocode}
+\newcommand\DeclareBiCaptionSeparator[2]{%
+  \caption@decl{biseparator}{#1}{#2}}
+\@onlypreamble\DeclareBiCaptionSeparator
+%    \end{macrocode}
+% \end{macro}
+%
+% There are four pre-defined separators, called `none',
+% `smallskip', `medskip', and `bigskip'.
+%    \begin{macrocode}
+\DeclareBiCaptionSeparator{none}{}
+\DeclareBiCaptionSeparator{smallskip}{\smallskip}
+\DeclareBiCaptionSeparator{medskip}{\medskip}
+\DeclareBiCaptionSeparator{bigskip}{\bigskip}
+%    \end{macrocode}
+%
+% The default separator usually maps to `none'.
+%    \begin{macrocode}
+\SetCaptionDefault{biseparator}{none}
+%    \end{macrocode}
+%
 % The option |lang=|\meta{language} will setup the language of the caption.
 % We can't set the language immediately because otherwise we will get in trouble, e.g. when
 % using the \package{microtype} package via |\usepackage[babel]{microtype}|.
@@ -1052,9 +1100,10 @@
 % \pagebreak[3]
 % \subsection{Execution of options}
 %
-% Setup default values for |bi-lang| and |bi-singlelinecheck|.
+% Setup default values for |bi-lang|, |bi-single|\-|line|\-|check|,
+% |bi-swap|, and |bi-separator|.
 %    \begin{macrocode}
-\caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0}
+\caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0,bi-separator=default}
 %    \end{macrocode}
 %
 % Set the language for the first caption.
@@ -1178,6 +1227,7 @@
 %
 % \begin{macro}{\bicaption@@make}
 % \changes{v1.1}{2015/09/16}{\cs{bicaption@label} replaced by \cs{caption@thelabel}}
+% \changes{v1.3}{2020/10/25}{Usage of \cs{caption@biseparator} added}
 % |\bicaption@@make|\marg{text \#2}\marg{label}\marg{text \#1}\par
 % Typeset both captions using the original version of \cs{caption@@make}.
 %    \begin{macrocode}
@@ -1191,8 +1241,8 @@
 %    \begin{macrocode}
   \ifnum\bicaption@lang=0\relax
     \bicaption@ifslc
-      {\caption@slc{#2}{#3}{}{\KV@caption@singlelinecheck0}%
-       \caption@slc{#2}{#1}{}{\KV@caption@singlelinecheck0}}%
+      {\caption@slc{#2}{#3}{}{\caption@setsinglelinecheck0}%
+       \caption@slc{#2}{#1}{}{\caption@setsinglelinecheck0}}%
       {}%
   \fi
 %    \end{macrocode}
@@ -1202,23 +1252,29 @@
   \ifnum\bicaption@lang=2\relax
     \caption@thelabel
     \global\let\caption@thelabel\relax
+    \let\bicaption@tempa\relax
   \else
     \begingroup
       \caption@setoptions{bi-first}%
       \caption@@make@{#2}{#3}%
     \endgroup
+    \def\bicaption@tempa{\bicaption@separator\caption@biseparator}%
   \fi
 %    \end{macrocode}
 % Typeset the second caption, if requested.
 %    \begin{macrocode}
   \ifnum\bicaption@lang=1\relax
   \else
+    \bicaption@tempa
     \begingroup
       \caption@setoptions{bi-second}%
       \caption@@make@{#2}{#1}%
     \endgroup
   \fi
 }
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\bicaption@separator{\par}
 %    \end{macrocode}
 % \end{macro}
 %
