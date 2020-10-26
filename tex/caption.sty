@@ -38,7 +38,7 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/10/07 v3.5f Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/10/26 v3.5g Customizing captions (AR)]
 \RequirePackage{caption3}[2020/10/06] % needs v2.2b or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -76,16 +76,29 @@
   }}}
 \DeclareCaptionOption{list-entry}{\caption@selectlistentry{#1}}
 \captionsetup{list-entry=default}
-\newcommand*\caption@setparboxrestore[1]{%
-  \caption@ifinlist{#1}{full}{%
-    \caption@setfullparboxrestore
-  }{\caption@ifinlist{#1}{default,light,partial}{%
-    \let\caption@parboxrestore\@secondoftwo
-  }{%
-    \caption@Error{Undefined parboxrestore `#1'}%
-  }}}
-\newcommand*\caption@setfullparboxrestore{%
-  \let\caption@parboxrestore\@firstoftwo}
+\newcommand\caption@declparboxrestore{%
+  \caption@decl{parboxrestore}}
+\@onlypreamble\caption@declparboxrestore
+\newcommand*\caption@setparboxrestore{%
+  \caption@set{parboxrestore}}
+\caption@declparboxrestore{full}{%
+  \@parboxrestore}
+\caption@declparboxrestore{partial}{%
+  \let\if@nobreak\iffalse
+  \let\if@noskipsec\iffalse
+  \let\par\@@par
+  \parindent\z@ \parskip\z@skip
+  \everypar{}%
+  \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
+  \parfillskip\@flushglue \lineskip\normallineskip
+  \baselineskip\normalbaselineskip
+  \sloppy
+  \let\\\@normalcr}
+\caption@declparboxrestore{mini}{%
+  \let\par\@@par
+  \parindent\z@ \parskip\z@skip
+  \sloppy}
+\SetCaptionDefault{parboxrestore}{full}
 \DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
 \captionsetup{parboxrestore=default}
 \DeclareCaptionOption{@minipage}{%
@@ -208,7 +221,7 @@
   \par
   \caption@beginex{#1}{#2}{#3}%
     \caption@setfloatcapt{%
-      \caption@boxrestore
+      \caption@parboxrestore
       \if@minipage
         \@setminipage
       \fi
@@ -288,7 +301,7 @@
   \DeclareCaptionOptionNoValue{subtype*}{\setcaptionsubtype*}%
 }
 \def\setcaptiontype{%
-  \caption@boxrestore@mini
+  \caption@parboxrestore@mini
   \caption@settype}
 \newcommand\setcaptionsubtype{%
   \caption@iftype
@@ -543,23 +556,6 @@
     {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
      \@namedef{fnum@#1}{\caption@fnum{#1}}}%
     {}}
-\newcommand*\caption@boxrestore{%
-  \caption@parboxrestore{\@parboxrestore}{%
-    \let\if@nobreak\iffalse
-    \let\if@noskipsec\iffalse
-    \let\par\@@par
-    \parindent\z@ \parskip\z@skip
-    \everypar{}%
-    \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
-    \parfillskip\@flushglue \lineskip\normallineskip
-    \baselineskip\normalbaselineskip
-    \sloppy
-    \let\\\@normalcr
-  }}
-\newcommand\caption@boxrestore@mini{%
-  \let\par\@@par
-  \parindent\z@ \parskip\z@skip
-  \sloppy}
 \newcommand*\caption@normalsize{%
   \caption@font@normal\@unused}
 \let\caption@setfloatcapt\@firstofone
@@ -887,7 +883,7 @@
   \newcommand*\caption@floatflt[1]{%
     \caption@settype{#1}%
     \caption@clearmargin
-    \caption@setfullparboxrestore
+    \caption@setparboxrestore{full}%
     \caption@setoptions{floating#1}}%
 }{}
 \caption@IfPackageLoaded{fltpage}[1998/10/29 v.0.3]{%
@@ -1165,7 +1161,7 @@
     \caption@setautoposition b%
     \caption@settype{#1}%
     \caption@clearmargin
-    \caption@setfullparboxrestore}%
+    \caption@setparboxrestore{full}}%
   \newcommand\caption@wincaption[1]{%
     \ifdim\picwd=\z@
       \let\caption@makecurrent\@gobbletwo
@@ -1202,7 +1198,7 @@
       \caption@freezeHref % will be defrosted in \ivparpic
       \caption@settype\@piccaptype
       \caption@clearmargin
-      \caption@setfullparboxrestore
+      \caption@setparboxrestore{full}%
       \caption@setoptions{parpic}%
       \caption@setautoposition b%
       \expandafter\expandafter\expandafter\caption@ORI
@@ -1299,7 +1295,7 @@
     \caption@setoptions{supertabular}%
     \caption@setposition{\if@topcaption t\else b\fi}%
     \caption@beginex{#1}{#2}{#3}%
-      \caption@boxrestore
+      \caption@parboxrestore
       \caption@normalsize
       \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
     \caption@end}%
@@ -1319,7 +1315,7 @@
     \caption@set{position}{\if@topcaption t\else b\fi}%
     \@initisotab
     \caption@beginex{#1}{#2}{#3}%
-      \caption@boxrestore
+      \caption@parboxrestore
       \caption@normalsize
       \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
     \caption@end

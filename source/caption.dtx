@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2694}
+% \CheckSum{2692}
 %
 % \iffalse
 %<*driver>
@@ -241,7 +241,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/10/07 v3.5f Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/10/26 v3.5g Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -335,36 +335,105 @@
 \captionsetup{list-entry=default}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setparboxrestore}
-% \changes{v3.2}{2010/11/07}{This macro added}
-%  |\caption@setparboxrestore|\marg{\purett{partial} or \purett{full}}
+% \begin{macro}{\caption@declparboxrestore}
+% \changes{v3.5g}{2020/10/26}{This macro added}
+%  |\caption@declparboxrestore|\marg{name}\marg{code}
 %    \begin{macrocode}
-\newcommand*\caption@setparboxrestore[1]{%
-  \caption@ifinlist{#1}{full}{%
-    \caption@setfullparboxrestore
-  }{\caption@ifinlist{#1}{default,light,partial}{%
-    \let\caption@parboxrestore\@secondoftwo
-  }{%
-    \caption@Error{Undefined parboxrestore `#1'}%
-  }}}
+% TODO: Remove \caption@declparboxrestore
+\newcommand\caption@declparboxrestore{%
+  \caption@decl{parboxrestore}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\@onlypreamble\caption@declparboxrestore
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\caption@setfullparboxrestore}
+% \begin{macro}{\caption@setparboxrestore}
 % \changes{v3.2}{2010/11/07}{This macro added}
-%  |\caption@setfullparboxrestore|\par
-%  This is an abbreviation for |\caption@setparboxrestore{full}|.
+% \changes{v3.5g}{2020/10/26}{New implementation; default changed from `partial' to `full'}
+%  |\caption@setparboxrestore|\marg{\purett{partial} or \purett{full}}
 %    \begin{macrocode}
-\newcommand*\caption@setfullparboxrestore{%
-  \let\caption@parboxrestore\@firstoftwo}
+% TODO: Remove \caption@setparboxrestore
+\newcommand*\caption@setparboxrestore{%
+  \caption@set{parboxrestore}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@declparboxrestore{full}{%
+  \@parboxrestore}
+%    \end{macrocode}
+%  The original code (from |latex/base/ltboxes.dtx|):
+%  \begin{verbatim}
+%  \def\@parboxrestore{\@arrayparboxrestore\let\\\@normalcr}
+%  \def\@arrayparboxrestore{%
+%    \let\if@nobreak\iffalse
+%    \let\if@noskipsec\iffalse
+%    \let\par\@@par
+%    \let\-\@dischyph
+%    \let\'\@acci\let\`\@accii\let\=\@acciii
+%    \parindent\z@ \parskip\z@skip
+%    \everypar{}%
+%    \linewidth\hsize
+%    \@totalleftmargin\z@
+%    \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
+%    \parfillskip\@flushglue \lineskip\normallineskip
+%    \baselineskip\normalbaselineskip
+%    \sloppy}
+%  \end{verbatim}%^^A
+% This one will be used by |\@caption| instead of |\@parboxrestore|.
+%    \begin{macrocode}
+\caption@declparboxrestore{partial}{%
+  \let\if@nobreak\iffalse
+  \let\if@noskipsec\iffalse
+  \let\par\@@par
+% \let\-\@dischyph
+% \let\'\@acci\let\`\@accii\let\=\@acciii
+  \parindent\z@ \parskip\z@skip
+  \everypar{}%
+% \linewidth\hsize
+% \@totalleftmargin\z@ 
+  \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
+  \parfillskip\@flushglue \lineskip\normallineskip
+  \baselineskip\normalbaselineskip
+  \sloppy
+  \let\\\@normalcr}
 %    \end{macrocode}
 % \end{macro}
+%
+% \begin{macro}{\caption@parboxrestore@mini}
+% \changes{v3.2}{2010/10/24}{This macro added}
+% \changes{v3.5g}{2020/10/26}{Renamed from \cs{caption@boxrestore@mini} to \cs{caption@parboxrestore@mini}}
+% Resets |\par| so the very first |\par| in |\@caption| behaves quite the same as in floating environments.
+% Will be used by |\set|\-|caption|\-|type|.
+%    \begin{macrocode}
+\caption@declparboxrestore{mini}{%
+  \let\par\@@par
+  \parindent\z@ \parskip\z@skip
+  \sloppy}
+%    \end{macrocode}
+% \end{macro}
+%
+% `default' usually maps to `full'.
+% \changes{v3.5g}{2020/10/26}{The default of \cs{caption@parboxrestore} maps to `full' instead of `partial' now}
+%    \begin{macrocode}
+\SetCaptionDefault{parboxrestore}{full}
+%    \end{macrocode}
 %
 % \changes{v3.2}{2010/11/07}{Option \opt{parboxrestore} added}
 %    \begin{macrocode}
+% TODO: Remove the (undocumentated) option "parboxrestore"
 \DeclareCaptionOption{parboxrestore}{\caption@setparboxrestore{#1}}
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@parboxrestore}
+% \changes{v3.1}{2007/03/03}{This macro and its usage added}
+% \changes{v3.1b}{2007/09/17}{Bugfix: Redefinition of CR added}
+% \changes{v3.2}{2010/11/07}{Support of option \opt{parboxrestore} added}
+% \changes{v3.5g}{2020/10/26}{New implementation; renamed from \cs{caption@boxrestore} to \cs{caption@parboxrestore}}
+%    \begin{macrocode}
+% TODO: Change definition to \def\caption@parboxrestore{\@parboxrestore}
 \captionsetup{parboxrestore=default}
 %    \end{macrocode}
+% \end{macro}
 %
 % \changes{v3.1f}{2007/11/28}{Option \opt{@minipage=} added}
 %    \begin{macrocode}
@@ -668,14 +737,10 @@
 % \changes{v3.2f}{2012/01/14}{Usage of \cs{M@gettitle} moved to \cs{caption@prepareanchor}}
 % \changes{v3.3}{2013/01/06}{Adapted to the \textsf{nag} package}
 %  As above, our version has been adapted to the packages we support.
-%  Additionally our code is nested by |\caption@beginex| \&
-%  |\caption@end| instead of |\begingroup| \& |\endgroup|.
-%  Furthermore we use |\caption@boxrestore| instead of |\@parboxrestore|
-%  so this code also works correctly inside list-based environments
-%  like |wide| \& |addmargin|. (This, and the fact that we use
-%  |\linewidth| instead of |\hsize| inside |\@makecaption|, solves
-%  \href{http://www.latex-project.org/cgi-bin/ltxbugs2html?pr=latex/2472}%^^A
-%  {\LaTeX\ PR \texttt{latex/2472}}.)
+%  Additionally our code is nested by |\caption@begin|\-|ex| \&
+%  |\caption@end| instead of |\begin|\-|group| \& |\end|\-|group|.
+%  Furthermore we use |\caption@par|\-|box|\-|restore| instead of
+%  |\@parbox|\-|restore|.
 %    \begin{macrocode}
 \long\def\caption@@caption#1[#2]#3{%
 %    \end{macrocode}
@@ -690,7 +755,7 @@
   \par
   \caption@beginex{#1}{#2}{#3}%
     \caption@setfloatcapt{%
-      \caption@boxrestore
+      \caption@parboxrestore
       \if@minipage
         \@setminipage
       \fi
@@ -940,10 +1005,10 @@
 % \changes{v3.2}{2010/10/24}{This macro added}
 % \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 % \changes{v3.5}{2020/08/24}{Definition method adapted to the \package{caption-light} package}
-%  Like |\captionsetup{type=xxx}|, but also works if \cs{captionsetup} was redefined.
+%  Like |\captionsetup{type=xxx}|, but also works if |\caption|\-|setup| was redefined.
 %    \begin{macrocode}
 \def\setcaptiontype{%
-  \caption@boxrestore@mini
+  \caption@parboxrestore@mini
   \caption@settype}
 %    \end{macrocode}
 % \end{macro}
@@ -1585,62 +1650,6 @@
     {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
      \@namedef{fnum@#1}{\caption@fnum{#1}}}%
     {}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@boxrestore}
-% \changes{v3.1}{2007/03/03}{This macro and its usage added}
-% \changes{v3.1b}{2007/09/17}{Bugfix: Redefinition of CR added}
-% \changes{v3.2}{2010/11/07}{Support of option \opt{parboxrestore} added}
-%  The original code (from |latex/base/ltboxes.dtx|):
-%  \begin{verbatim}
-%  \def\@parboxrestore{\@arrayparboxrestore\let\\\@normalcr}
-%  \def\@arrayparboxrestore{%
-%    \let\if@nobreak\iffalse
-%    \let\if@noskipsec\iffalse
-%    \let\par\@@par
-%    \let\-\@dischyph
-%    \let\'\@acci\let\`\@accii\let\=\@acciii
-%    \parindent\z@ \parskip\z@skip
-%    \everypar{}%
-%    \linewidth\hsize
-%    \@totalleftmargin\z@ 
-%    \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
-%    \parfillskip\@flushglue \lineskip\normallineskip
-%    \baselineskip\normalbaselineskip
-%    \sloppy}
-%  \end{verbatim}%^^A
-% This one will be used by |\@caption| instead of |\@parboxrestore|.
-%    \begin{macrocode}
-\newcommand*\caption@boxrestore{%
-  \caption@parboxrestore{\@parboxrestore}{%
-    \let\if@nobreak\iffalse
-    \let\if@noskipsec\iffalse
-    \let\par\@@par
-%   \let\-\@dischyph
-%   \let\'\@acci\let\`\@accii\let\=\@acciii
-    \parindent\z@ \parskip\z@skip
-    \everypar{}%
-%   \linewidth\hsize
-%   \@totalleftmargin\z@ 
-    \leftskip\z@skip \rightskip\z@skip \@rightskip\z@skip
-    \parfillskip\@flushglue \lineskip\normallineskip
-    \baselineskip\normalbaselineskip
-    \sloppy
-    \let\\\@normalcr
-  }}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@boxrestore@mini}
-% \changes{v3.2}{2010/10/24}{This macro added}
-% Resets \cs{par} so the very first \cs{par} in \cs{@caption} behaves quite the same as in floating environments.
-% Will be used by \cs{setcaptiontype}.
-%    \begin{macrocode}
-\newcommand\caption@boxrestore@mini{%
-  \let\par\@@par
-  \parindent\z@ \parskip\z@skip
-  \sloppy}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2567,14 +2576,14 @@
 %       |\caption|\-|setup[|\-|floating|\meta{type}|]{|\ldots|}| is supported.
 %    \item |\line|\-|width| must be set correctly.
 %       Usually this is done by |\@par|\-|box|\-|restore| inside |\@caption|,
-%       but since we use |\@caption@box|\-|restore| we have to map this to
+%       but since we use |\@caption@parbox|\-|restore| we have to map this to
 %       |\@par|\-|box|\-|restore| instead.
 %  \end{enumerate}
 %    \begin{macrocode}
   \newcommand*\caption@floatflt[1]{%
     \caption@settype{#1}%
     \caption@clearmargin
-    \caption@setfullparboxrestore
+    \caption@setparboxrestore{full}%
     \caption@setoptions{floating#1}}%
 %    \end{macrocode}
 % \end{macro}
@@ -3467,7 +3476,7 @@
 %
 % \begin{macro}{\caption@window}
 % \changes{v3.1c}{2007/10/06}{Bugfix: \cs{caption@clearmargin} added}
-% Beside calling |\caption@settype| we redefine |\caption@boxrestore|
+% Beside calling |\caption@settype| we redefine |\caption@par|\-|box|\-|restore|
 % (as in \package{floatflt} \& \package{picins} package support)
 % and |\@makecaption| (as in \package{float} package support) here.
 %    \begin{macrocode}
@@ -3476,7 +3485,7 @@
     \caption@setautoposition b%
     \caption@settype{#1}%
     \caption@clearmargin
-    \caption@setfullparboxrestore}%
+    \caption@setparboxrestore{full}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3583,9 +3592,9 @@
 %    \item We use |\caption@setoptions{parpic}| so
 %          |\captionsetup[parpic]{|\ldots|}| is supported.
 %    \item |\linewidth| must be set correctly.
-%          Usually this is done by |\@parboxrestore| inside |\@caption|,
-%          but since we use |\@caption@boxrestore| we have to map this to
-%          |\@parboxrestore| instead.
+%          Usually this is done by |\@parbox|\-|restore| inside |\@caption|,
+%          but since we use |\@caption@parbox|\-|restore| we have to map this to
+%          |\@parbox|\-|restore| instead.
 %    \item The two arguments of |\caption| (|\sh@rtf@rm| \& |\capti@nt@xt|)
 %          should be expanded on first level so |\caption[]{|\ldots|}| and
 %          |\caption[|\ldots|]{}| work correctly.
@@ -3604,7 +3613,7 @@
 %     \else
 %       \captionwidth\z@ % do not use "width=" setting
 %     \fi
-      \caption@setfullparboxrestore
+      \caption@setparboxrestore{full}%
       \caption@setoptions{parpic}%
       \caption@setautoposition b%
 %    \end{macrocode}
@@ -3921,7 +3930,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
     \caption@beginex{#1}{#2}{#3}%
-      \caption@boxrestore
+      \caption@parboxrestore
       \caption@normalsize
       \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
     \caption@end}%
@@ -3988,7 +3997,7 @@
 %    \begin{macrocode}
     \@initisotab
     \caption@beginex{#1}{#2}{#3}%
-      \caption@boxrestore
+      \caption@parboxrestore
       \caption@normalsize
       \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
     \caption@end
