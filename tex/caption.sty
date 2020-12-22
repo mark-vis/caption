@@ -111,26 +111,28 @@
     {\let\caption@if@minipage\@gobbletwo}%
     {\caption@set@bool\caption@if@minipage{#1}}}
 \captionsetup{@minipage=default}
-\DeclareCaptionOption{compatibility}[v1]{%
-  \caption@ifinlist{#1}{v1,1,true,yes,on}{%
-    \let\caption@ifcompatibility\@firstoftwo
-  }{\caption@ifinlist{#1}{v3,3,0,false,no,off}{%
-    \let\caption@ifcompatibility\@secondoftwo
+\DeclareCaptionOption{compatibility}[1]{%
+  \caption@ifinlist{#1}{1,true,yes,on}{%
+    \caption@Error{%
+      Obsolete compatibility value `#1',\MessageBreak
+      please use either \string\usepackage{caption}[=v1]\MessageBreak
+      or \string\usepackage{caption-light} instead}%
+  }{\caption@ifinlist{#1}{0,false,no,off}{%
+    % nothing to do
   }{%
     \caption@Error{Undefined compatibility value `#1'}%
   }}}
 \@onlypreamble@key{caption}{compatibility}
-\caption@setbool{compatibility}{0} % default: Try not to be compatible to v1.x
 \newcommand*\caption@setincompatible[2]{%
   #1{%
-    \caption@WarningNoLine{%
-      #2;\MessageBreak
-      Setting compatibility to v1}%
-    \caption@setbool{compatibility}{1}%
+    \caption@Error{%
+      The #2 is incompatible to the\MessageBreak
+      current version of the `caption' package,\MessageBreak
+      so try \string\usepackage{caption}[=v1] instead}%
   }{}}
-\caption@AtBeginDocument{\caption@ifcompatibility{}{%
-  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package is loaded}%
-}}
+\caption@AtBeginDocument{%
+  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package}%
+}
 \DeclareCaptionOptionNoValue*{normal}{%
   \caption@setup{format=plain,justification=justified}}
 \DeclareCaptionOptionNoValue*{isu}{%
@@ -258,25 +260,9 @@
     \caption@belowskip}
 \newcommand*\caption@redefine{}
 \g@addto@macro\caption@redefine{%
-  \caption@ifcompatibility{%
-    \caption@InfoNoLine{
-      \noexpand\caption will not be redefined since `compatibility' is set to v1}%
-    \renewcommand*\caption@redefine{}%
-    \renewcommand*\caption@continuedfloat[1]{%
-      \caption@Error{Not available with option `compatibility=v1'}}%
-    \caption@AtBeginDocument*{%
-      \let\caption@start\relax
-      \caption@ifdefined\caption@ORI@capstart{%
-        \caption@Debug{%
-          Restore hypcap definition of \string\capstart\@gobble}%
-        \let\capstart\caption@ORI@capstart}{}%
-    }%
-    \renewcommand*\caption@star[2]{#1#2}%
-  }{%
-    \renewcommand*\caption@redefine{%
-      \let\caption\caption@caption
-      \let\@caption\caption@@caption}%
-  }%
+  \renewcommand*\caption@redefine{%
+    \let\caption\caption@caption
+    \let\@caption\caption@@caption}%
   \caption@redefine
   \caption@AtBeginDocument*{%
     \let\caption@ORI@capstart\@undefined}%
@@ -840,13 +826,13 @@
     \caption@float@setname{#1}%
     \caption@freezeHref % will be defrosted in \float@makebox
     \caption@ORI@float@setevery{#1}}%
-  \caption@AtBeginDocument{\caption@ifcompatibility{}{%
+  \caption@AtBeginDocument{%
     \caption@ifdefined\HyOrg@float@makebox
       {\let\caption@ORI@float@makebox\HyOrg@float@makebox}%
       {\let\caption@ORI@float@makebox\float@makebox}%
     \renewcommand\float@makebox[1]{%
       \caption@ORI@float@makebox{#1\relax \caption@defrostHref}}%
-  }}%
+  }%
   \newcommand*\caption@float@setname[1]{%
     \expandafter\ifx\csname #1name\endcsname\relax
       \expandafter\let\csname #1name\expandafter\endcsname\csname fname@#1\endcsname
