@@ -5,15 +5,11 @@
 
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-16
+# Date:   2020-12-21
 
 source ./test-lib.sh
 
-disable test/floatrow/floatrow.dtx        # ! Arithmetic overflow.
 disable test/floatrow/floatrow-rus.tex    # ! Arithmetic overflow.
-disable test/floatrow/frsample04.tex      # Does not compile with pdflatex (PSTricks)
-disable test/floatrow/frsample10.tex      # Does not compile with pdflatex (PSTricks)
-disable test/floatrow/frsample11.tex      # Does not compile with pdflatex (PSTricks)
 disable test/floatrow/fr-sample.tex       # Interims file
 disable test/floatrow/pictures.tex        # Interims file
 disable test/floatrow/r-longtable.tex     # Interims file
@@ -44,6 +40,30 @@ disable issues/gitlab/issue_29.tex        # Needs Culmus fonts to compile
 disable issues/gitlab/issue_35.tex        # Needs <whatever> to compile (greek & farsi)
 disable issues/gitlab/issue_65.tex        # Doomed to fail: frontiers document class + subcaption package
 disable unsorted                          # TODO
+
+disable --xelatex \
+	source/caption-rus.tex \
+	issues/gitlab/issue_34.tex
+
+disable --lualatex \
+	source/caption-rus.tex \
+	test/babel/farsi-*.tex \
+	issues/other/2012-01-25.tex \
+	issues/sourceforge/ticket_33.tex \
+	issues/github/issue_8.tex
+
+disable --xelatex --lualatex \
+	test/babel/arabic-*.tex \
+	test/floatrow/sample-longtable-rus.tex \
+	test/keyfloat/keyfloat.dtx \
+	issues/gitlab/issue_99.tex \
+	issues/gitlab/issue_99a.tex
+
+disable --pdflatex --lualatex \
+	test/floatrow/floatrow.dtx \
+	test/floatrow/frsample04.tex \
+	test/floatrow/frsample10.tex \
+	test/floatrow/frsample11.tex
 
 main "$@"
 
