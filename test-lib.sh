@@ -3,7 +3,7 @@
 # Module: test-lib.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-21
+# Date:   2020-12-24
 
 # shellcheck disable=SC2155
 #   disables the warning "Declare and assign separately to avoid masking return values."
@@ -257,7 +257,7 @@ function pre_compile_files
 
 function copy_package_files
 {
-  cp -a "$basedir"/tex/*.sty "$basedir"/tex/*.sto .
+  cp -a "$basedir"/tex/*.sty "$basedir"/tex/*.sto "$basedir"/release/* .
 }
 
 function post_compile_files

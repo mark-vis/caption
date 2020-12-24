@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{223}
+% \CheckSum{388}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2020/12/22 v1.4 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2020/08/24 v1.4 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -278,7 +278,7 @@
 % \end{quote}
 % gives the result:\par
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \centering
 %   \subcaptionbox{A cat\label{cat}}
 %     {\includegraphics[width=30pt]{cat}}
@@ -302,7 +302,7 @@
 %   |  |\ldots
 % \end{quote}
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \centering
 %   \subcaptionbox{A cat\label{cat2}}
 %     [2.5cm]{\includegraphics[width=30pt]{cat}}
@@ -326,7 +326,7 @@
 %   |  |\ldots
 % \end{quote}
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \centering
 %   \subcaptionbox{A cat\label{cat3}}
 %     [.4\linewidth]{\includegraphics[width=39.34724pt]{cat}}%^^A
@@ -339,7 +339,7 @@
 %
 % \iffalse
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \centering
 %   \hbox{\subcaptionbox{An elephant\label{elephant4}}
 %     {\includegraphics[width=.4\textwidth]{elephant}}%^^A
@@ -466,7 +466,7 @@
 % gives the result:
 % \par\bigskip
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \begin{minipage}[b]{.5\linewidth}
 %     \centering\large A
 %     \subcaption{A subfigure}\label{fig:1a}
@@ -532,7 +532,7 @@
 % will give you sub-captions in |table|s like these ones:
 % \par\bigskip
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{table}
+%   \captionsetup{type=table}
 %   \centering
 %   \caption{Two tables}
 %   \subcaptionbox{Table one}[3cm][c]{\begin{tabular}{cc}A & B\\ C & D\\ \end{tabular}}
@@ -695,7 +695,7 @@
 % \end{quote}
 %
 % \noindent\begin{minipage}{\linewidth}
-%   \setcaptiontype{figure}
+%   \captionsetup{type=figure}
 %   \centering
 %  {\begin{overpic}[width=60pt]{cat}
 %     \put(40,34){(a)}
@@ -949,18 +949,17 @@
 %
 % Declare all supported releases.
 %    \begin{macrocode}
-% ... (TODO)
-\DeclareCurrentRelease{v1.4}{2020-12-22}
+\DeclareCurrentRelease{v1}{2007/12/06}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2020/12/22 v1.4 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/12/24 v1.4 Sub-captions (AR)]
 %    \end{macrocode}
 %
-% Since we base on the \package{caption} package we load it here (in a matching version).
+% Since we base on the \package{caption} package we load it here.
 %    \begin{macrocode}
-\RequirePackage{caption}[\@ifundefined{requestedLaTeXdate}{}{=}2020/12/22] % needs v3.6
+\RequirePackage{caption}[2010/01/09] % we need at least v3.1m
 %    \end{macrocode}
 %
 % \subsection{Initial code}
@@ -972,6 +971,12 @@
 %    \begin{macrocode}
 \newcommand*\subcaption@Error[1]{%
   \PackageError{subcaption}{#1}{\caption@@eh{subcaption}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@@eh[1]{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `#1' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1012,6 +1017,16 @@
 %
 % \subsection{Main code}
 %
+% \begin{macro}{\setcaptionsubtype}
+% \changes{v1.4}{2020/12/24}{This macro definition added}
+% |\setcaptionsubtype| is available since \package{caption} package \version{3.2a},
+% so we need to define it first if only an older version is loaded (in fallback mode).
+%    \begin{macrocode}
+\providecommand\setcaptionsubtype{%
+  \@ifstar{\captionsetup{subtype*}}{\captionsetup{subtype}}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \pagebreak[3]
 % \subsubsection{The \cs{subcaption} command}
 %
@@ -1044,6 +1059,7 @@
 % \changes{v1.1}{2011/08/17}{This macro added}
 % \changes{v1.3h}{2020/09/28}{Usage of \cs{caption@Error} replaced by \cs{subcaption@Error}}
 % Same as |\phantom|\-|caption|, but for subfigures.
+% Note that this commands needs at least \package{caption} package \version{3.2}.
 %    \begin{macrocode}
 \newcommand*\phantomsubcaption{%
   \caption@iftype
@@ -1054,24 +1070,21 @@
 \g@addto@macro\caption@subtypehook{%
   \let\phantomsubcaption\phantomcaption}
 %    \end{macrocode}
+%    \begin{macrocode}
+\providecommand\phantomcaption{%
+  \subcaption@Error{\noexpand\phantomcaption needs at least caption v3.2}}
+%    \end{macrocode}
 % \end{macro}
 %
 % \pagebreak[3]
 % \subsubsection{The subfigure \& subtable environments}
 %
-% \begin{macro}{subfigure}
-% \begin{macro}{subtable}
+% \begin{macro}{\subcaption@newenvironment}
 % \changes{v1.2}{2016/02/21}{Optional argument values `B' and `T' added}
 % \changes{v1.3d}{2020/01/22}{Definition and usage of \cs{@subfloatboxreset} added}
-% \changes{v1.3e}{2020/07/29}{Uses \cs{ForEachCaptionSubType} (instead of \cs{caption@For}) to define the environments now}
-% This is just an ordinary \env{minipage} environment with
-% |\setcaptionsubtype| as first contents line.
-% It will be defined using the helper macro |\For|\-|Each|\-|Caption|\-|Sub|\-|Type|
-% offered by the \package{caption} kernel, so for every caption sub-type
-% declared with |\Declare|\-|Caption|\-|Sub|\-|Type| a corresponding
-% `sub' environment will be defined automatically.
+% A sub-environment is a \env{minipage} with |\set|\-|caption|\-|sub|\-|type| as first contents line.
 %    \begin{macrocode}
-\ForEachCaptionSubType{%
+\newcommand*\subcaption@newenvironment[1]{%
   \newenvironment{#1}%
     {\@ifnextchar[%]
        \subcaption@iminipage
@@ -1083,7 +1096,9 @@
 % |\caption@with|\-|opt|\-|args| offered by the \package{caption} kernel).
 %    \begin{macrocode}
 \def\subcaption@iminipage[#1]{%
-  \caption@withoptargs{\subcaption@iiminipage{#1}}}
+% \caption@withoptargs{\subcaption@iiminipage{#1}}}  % would need at least caption3 v1.5
+  \def\subcaption@tempa{\subcaption@iiminipage{#1}}%
+  \caption@withoptargs\subcaption@tempa}
 %    \end{macrocode}
 % `B' and `T' will add a |\vspace{0pt}|, all other values (and additional
 % optional arguments) will be passed unseen to the |minipage| environment.
@@ -1106,6 +1121,20 @@
 \providecommand*\@subfloatboxreset{}
 %    \end{macrocode}
 % \end{macro}
+%
+% \begin{macro}{subfigure}
+% \begin{macro}{subtable}
+% \changes{v1.3e}{2020/07/29}{Uses \cs{ForEachCaptionSubType} (instead of \cs{caption@For}) to define the environments now}
+% The sub-environments will be defined using the helper macro |\For|\-|Each|\-|Caption|\-|Sub|\-|Type|
+% offered by the \package{caption} kernel v1.13 (2020/07/29), so for every caption sub-type
+% declared with |\Declare|\-|Caption|\-|Sub|\-|Type| a corresponding `sub' environment will be defined automatically.
+% (If the \package{caption} kernel v1.13 is not available we use \cs{caption@For} as fallback.)
+%    \begin{macrocode}
+\@ifundefined{ForEachCaptionSubType}  % caption3 v1.13
+  {\caption@For{subtypelist}{\subcaption@newenvironment{sub#1}}}
+  {\ForEachCaptionSubType{\subcaption@newenvironment{#1}}}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \pagebreak[3]
@@ -1117,10 +1146,77 @@
 % \changes{v1.0}{2010/12/17}{Uses \cs{caption@box} now}
 % \changes{v1.1}{2011/08/16}{Adapted to actual version of \cs{caption@box}}
 % \changes{v1.1}{2012/04/09}{Adapted to actual version of \cs{caption@ibox}}
+% \changes{v1.4}{2020/12/24}{Fallback definition of \cs{caption@ibox} added}
 % A |\parbox| with contents and sub-caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
 \newcommand*\subcaptionbox{%
-  \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
+% \caption@withoptargs{\caption@ibox\setcaptionsubtype}}  % would need at least caption3 v1.5
+  \def\subcaption@tempa{\caption@ibox\setcaptionsubtype}%
+  \caption@withoptargs\subcaption@tempa}
+%    \end{macrocode}
+%    \begin{macrocode}
+\@ifundefined{caption@ibox}{%  caption v3.3
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@ibox[3]{%
+  \kernel@ifnextchar[%]
+    {\caption@iibox{#1}{#2}{#3}}%
+    {\caption@iibox@{#1}{#2}{#3}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@iibox#1#2#3[#4]{%
+  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@iibox@#1#2#3#4{%
+  \setbox\@tempboxa\hbox{#4}%
+  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@iiibox#1{%
+  \caption@iiiibox{#1}\vbox\vtop}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
+  \@ifundefined{caption@justification@#7}%  caption3 v2.x
+    {\@ifundefined{caption@hj@#7}%          caption3 v1.x
+       {\subcaption@Error{Undefined justification `#7'}\@gobble}%
+       {\def\subcaption@tempa{caption@hj@#7}\@firstofone}}%
+    {\def\subcaption@tempa{caption@justification@#7}\@firstofone}%
+    {\begingroup
+     #1*% set \caption@position
+     \caption@iftop{%
+       \endgroup
+       \parbox[t]{#6}{%
+         #1\relax
+         \caption@setposition t%
+         #2{\caption#4{#5}}%
+         \captionbox@hrule
+         \csname\subcaption@tempa\endcsname
+         #8}%
+     }{%
+       \endgroup
+       \parbox[b]{#6}{%
+         #1\relax
+         \caption@setposition b%
+         \csname\subcaption@tempa\endcsname
+         #8%
+         \captionbox@hrule
+         #3{\caption#4{#5}}}%
+     }}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\captionbox@innerpos@default{c}
+\newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@justification@c{\centering}
+\providecommand*\caption@justification@l{\raggedright}
+\providecommand*\caption@justification@r{\raggedleft}
+\providecommand*\caption@justification@s{}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1171,7 +1267,7 @@
     {\caption@withoptargs\subcaption@ref*}%
     {\caption@withoptargs\@subref}}
 \newcommand*\@subref[2]{%
-  \caption@ifundefined\hyperref
+  \@ifundefined{hyperref}%
     {\subcaption@ref{#1}{#2}}%
     {\hyperref[{#2}]{\subcaption@ref{*#1}{#2}}}}
 %    \end{macrocode}
@@ -1195,12 +1291,15 @@
 % \changes{v1.3g}{2020/07/27}{Adapted to \package{caption3} v2.0}
 % \changes{v1.3h}{2020/09/28}{Usage of \cs{caption@Error} replaced by \cs{subcaption@Error}}
 % \changes{v1.3j}{2020/10/07}{Definition of the label formats \texttt{subsimple} and \texttt{subparens} added}
+% \changes{v1.4}{2020/12/24}{Adapted to older versions of the caption package (fallback)}
 %  |\subcaption@setrefformat|\marg{name}\par
 %  Selecting a subref format simply means saving the code (in |\subcaption@reffmt|).
 %    \begin{macrocode}
 \newcommand*\subcaption@setrefformat[1]{%
-  \@ifundefined{caption@labelformat@#1}%
-    {\subcaption@Error{Undefined label format `#1'}}%
+  \@ifundefined{caption@labelformat@#1}%  caption3 v2.x
+    {\@ifundefined{caption@lfmt@#1}%      caption3 v1.x
+       {\subcaption@Error{Undefined label format `#1'}}%
+       {\expandafter\let\expandafter\subcaption@reffmt\csname caption@lfmt@#1\endcsname}}%
     {\expandafter\let\expandafter\subcaption@reffmt\csname caption@labelformat@#1\endcsname}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1222,17 +1321,37 @@
 % We use |\caption@Execute|\-|Options| and |\caption@Process|\-|Options| here to add
 % the options to the `|sub|' option list instead of executing them immediately.
 %    \begin{macrocode}
-\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
-\caption@ExecuteOptions{subcaption}{%
-  font+=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
+\let\caption@setkeys@ORI\caption@setkeys
+\@ifundefined{caption@SetupOptions}  % caption3 v1.3
+  {\renewcommand\caption@setkeys[2]{\captionsetup[sub]{#2}}}
+  {\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\@ifundefined{caption@smaller}       % caption3 v1.7-169
+  {\caption@ExecuteOptions{subcaption}{%
+     font+=small,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}}
+  {\caption@ExecuteOptions{subcaption}{%
+     font+=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}}
+%    \end{macrocode}
+%    \begin{macrocode}
 \caption@ProcessOptions*{subcaption}
+%    \end{macrocode}
+%    \begin{macrocode}
+\let\caption@setkeys\caption@setkeys@ORI
+\let\caption@setkeys@ORI\@undefined
 %    \end{macrocode}
 %
 % \changes{v1.1}{2011/10/30}{Adapted to the newfloat package}
 % We call |\Declare|\-|Caption|\-|Sub|\-|Type| for |figure|, |table|,
 % and each floating environment declared with |\Declare|\-|Floating|\-|Environment| here.
 %    \begin{macrocode}
-\ForEachCaptionType{\DeclareCaptionSubType{#1}}
+\@ifundefined{ForEachCaptionType}      % caption3 v1.13
+  {\@ifundefined{caption@ForEachType}  % caption3 v1.4a
+     {\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}%
+      \@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}%
+      \caption@For{typelist}{\DeclareCaptionSubType{#1}}}
+     {\caption@ForEachType{\DeclareCaptionSubType{#1}}}}
+  {\ForEachCaptionType{\DeclareCaptionSubType{#1}}}
 %    \end{macrocode}
 %
 % \subsection{Bonus material}
@@ -1247,6 +1366,7 @@
 % \changes{v1.3b}{2020/01/03}{Previous definition of \cs{subfloat} will be overwritten}
 % \changes{v1.3f}{2020/07/29}{Bugfix: Usage of \cs{caption@hj@default} replaced by \cs{captionbox@innerpos@default}}
 % \changes{v1.3i}{2020/09/28}{This macro will be defined with \cs{providecommand} now to preserve an original definition}
+% \changes{v1.4}{2020/12/24}{Usage of \cs{caption@getlabel} replaced by \cs{subcaption@getlabel}}
 %  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
 %  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
 %  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
@@ -1270,7 +1390,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\subcaption@@@subfloat#1#2#3{%
-  \caption@getlabel{#3}%
+  \subcaption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \global\let\caption@thelabel\relax
   \ignorespaces}
@@ -1286,6 +1406,34 @@
     [\wd\@tempboxa][\captionbox@innerpos@default]%
     {\unhbox\@tempboxa}%
   \ignorespaces}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\subcaption@getlabel}
+% \changes{v1.4}{2020/12/24}{This macro added}
+%   |\subcaption@getlabel|\marg{text}\\
+%   gets the label command out of the given caption text and stores it to
+%   |\caption@the|\-|label|.
+%    \begin{macrocode}
+\newcommand\subcaption@getlabel[1]{%
+  \@ifundefined{caption@@@@getlabel}%  caption3 v2.x
+    {\@ifundefined{caption@getlabel}%  caption3 v1.7
+       {\subcaption@Error{\noexpand\subfloat needs at least caption v3.4}%
+        \let\caption@thelabel\relax}%  not available
+       {\caption@getlabel#1\label{}\@nil}}%
+    {\caption@getlabel{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@gobble}
+% \changes{v1.4}{2020/12/24}{This macro added}
+%   |\caption@gobble*|\oarg{arg}\oarg{\ldots}\marg{arg}\\
+%   is similar to |\@gobble| but gobbles a star and optional arguments as well.
+%    \begin{macrocode}
+\@ifundefined{caption@gobble}{%  caption3 v1.4
+  \DeclareRobustCommand*\caption@gobble{%
+    \caption@withoptargs\@gobbletwo}%
+}{}
 %    \end{macrocode}
 % \end{macro}
 %

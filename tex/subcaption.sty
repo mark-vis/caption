@@ -40,11 +40,15 @@
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
-\DeclareCurrentRelease{v1.4}{2020-12-22}
-\ProvidesPackage{subcaption}[2020/12/22 v1.4 Sub-captions (AR)]
-\RequirePackage{caption}[\@ifundefined{requestedLaTeXdate}{}{=}2020/12/22] % needs v3.6
+\DeclareCurrentRelease{v1}{2007/12/06}
+\ProvidesPackage{subcaption}[2020/12/24 v1.4 Sub-captions (AR)]
+\RequirePackage{caption}[2010/01/09] % we need at least v3.1m
 \newcommand*\subcaption@Error[1]{%
   \PackageError{subcaption}{#1}{\caption@@eh{subcaption}}}
+\providecommand*\caption@@eh[1]{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `#1' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
 \newcommand*\subcaption@CheckCompatibility{%
   \@ifpackageloaded{subfigure}{%
     \subcaption@Error
@@ -61,6 +65,8 @@
 \caption@AtBeginDocument{%
   \subcaption@CheckCompatibility
   \let\subcaption@CheckCompatibility\@undefined}
+\providecommand\setcaptionsubtype{%
+  \@ifstar{\captionsetup{subtype*}}{\captionsetup{subtype}}}
 \def\subcaption{%
   \caption@iftype
     {\setcaptionsubtype*\caption}%
@@ -74,7 +80,9 @@
     {\subcaption@Error{\noexpand\phantomsubcaption outside float}}}%
 \g@addto@macro\caption@subtypehook{%
   \let\phantomsubcaption\phantomcaption}
-\ForEachCaptionSubType{%
+\providecommand\phantomcaption{%
+  \subcaption@Error{\noexpand\phantomcaption needs at least caption v3.2}}
+\newcommand*\subcaption@newenvironment[1]{%
   \newenvironment{#1}%
     {\@ifnextchar[%]
        \subcaption@iminipage
@@ -82,7 +90,8 @@
     {\subcaption@endminipage
      \endminipage}}
 \def\subcaption@iminipage[#1]{%
-  \caption@withoptargs{\subcaption@iiminipage{#1}}}
+  \def\subcaption@tempa{\subcaption@iiminipage{#1}}%
+  \caption@withoptargs\subcaption@tempa}
 \newcommand*\subcaption@iiminipage[3]{%
   \let\subcaption@endminipage\@empty
   \if#1B%
@@ -97,8 +106,58 @@
   \@subfloatboxreset
   \setcaptionsubtype\relax}
 \providecommand*\@subfloatboxreset{}
+\@ifundefined{ForEachCaptionSubType}  % caption3 v1.13
+  {\caption@For{subtypelist}{\subcaption@newenvironment{sub#1}}}
+  {\ForEachCaptionSubType{\subcaption@newenvironment{#1}}}
 \newcommand*\subcaptionbox{%
-  \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
+  \def\subcaption@tempa{\caption@ibox\setcaptionsubtype}%
+  \caption@withoptargs\subcaption@tempa}
+\@ifundefined{caption@ibox}{%  caption v3.3
+\newcommand\caption@ibox[3]{%
+  \kernel@ifnextchar[%]
+    {\caption@iibox{#1}{#2}{#3}}%
+    {\caption@iibox@{#1}{#2}{#3}}}
+\long\def\caption@iibox#1#2#3[#4]{%
+  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
+\long\def\caption@iibox@#1#2#3#4{%
+  \setbox\@tempboxa\hbox{#4}%
+  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
+\long\def\caption@iiibox#1{%
+  \caption@iiiibox{#1}\vbox\vtop}
+\long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
+  \@ifundefined{caption@justification@#7}%  caption3 v2.x
+    {\@ifundefined{caption@hj@#7}%          caption3 v1.x
+       {\subcaption@Error{Undefined justification `#7'}\@gobble}%
+       {\def\subcaption@tempa{caption@hj@#7}\@firstofone}}%
+    {\def\subcaption@tempa{caption@justification@#7}\@firstofone}%
+    {\begingroup
+     #1*% set \caption@position
+     \caption@iftop{%
+       \endgroup
+       \parbox[t]{#6}{%
+         #1\relax
+         \caption@setposition t%
+         #2{\caption#4{#5}}%
+         \captionbox@hrule
+         \csname\subcaption@tempa\endcsname
+         #8}%
+     }{%
+       \endgroup
+       \parbox[b]{#6}{%
+         #1\relax
+         \caption@setposition b%
+         \csname\subcaption@tempa\endcsname
+         #8%
+         \captionbox@hrule
+         #3{\caption#4{#5}}}%
+     }}}
+\newcommand*\captionbox@innerpos@default{c}
+\newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
+\providecommand*\caption@justification@c{\centering}
+\providecommand*\caption@justification@l{\raggedright}
+\providecommand*\caption@justification@r{\raggedleft}
+\providecommand*\caption@justification@s{}
+}{}
 \g@addto@macro\caption@subtypehook{%
   \ifx\label\subcaption@label \else
     \let\subcaption@ORI@label\label
@@ -118,7 +177,7 @@
     {\caption@withoptargs\subcaption@ref*}%
     {\caption@withoptargs\@subref}}
 \newcommand*\@subref[2]{%
-  \caption@ifundefined\hyperref
+  \@ifundefined{hyperref}%
     {\subcaption@ref{#1}{#2}}%
     {\hyperref[{#2}]{\subcaption@ref{*#1}{#2}}}}
 \newcommand*\subcaption@ref[2]{%
@@ -129,17 +188,33 @@
 \newcommand*\p@subref{}
 \DeclareCaptionOption{subrefformat}{\subcaption@setrefformat{#1}}
 \newcommand*\subcaption@setrefformat[1]{%
-  \@ifundefined{caption@labelformat@#1}%
-    {\subcaption@Error{Undefined label format `#1'}}%
+  \@ifundefined{caption@labelformat@#1}%  caption3 v2.x
+    {\@ifundefined{caption@lfmt@#1}%      caption3 v1.x
+       {\subcaption@Error{Undefined label format `#1'}}%
+       {\expandafter\let\expandafter\subcaption@reffmt\csname caption@lfmt@#1\endcsname}}%
     {\expandafter\let\expandafter\subcaption@reffmt\csname caption@labelformat@#1\endcsname}}
 \subcaption@setrefformat{simple}
 \DeclareCaptionLabelFormat{subsimple}{#2}
 \DeclareCaptionLabelFormat{subparens}{(#2)}
-\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}%
-\caption@ExecuteOptions{subcaption}{%
-  font+=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}
+\let\caption@setkeys@ORI\caption@setkeys
+\@ifundefined{caption@SetupOptions}  % caption3 v1.3
+  {\renewcommand\caption@setkeys[2]{\captionsetup[sub]{#2}}}
+  {\caption@SetupOptions{subcaption}{\captionsetup[sub]{#2}}}
+\@ifundefined{caption@smaller}       % caption3 v1.7-169
+  {\caption@ExecuteOptions{subcaption}{%
+     font+=small,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}}
+  {\caption@ExecuteOptions{subcaption}{%
+     font+=smaller,labelformat=parens,labelsep=space,skip=6pt,list=0,hypcap=0}}
 \caption@ProcessOptions*{subcaption}
-\ForEachCaptionType{\DeclareCaptionSubType{#1}}
+\let\caption@setkeys\caption@setkeys@ORI
+\let\caption@setkeys@ORI\@undefined
+\@ifundefined{ForEachCaptionType}      % caption3 v1.13
+  {\@ifundefined{caption@ForEachType}  % caption3 v1.4a
+     {\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}%
+      \@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}%
+      \caption@For{typelist}{\DeclareCaptionSubType{#1}}}
+     {\caption@ForEachType{\DeclareCaptionSubType{#1}}}}
+  {\ForEachCaptionType{\DeclareCaptionSubType{#1}}}
 \caption@AtBeginDocument{\providecommand*\subfloat{%
   \@ifnextchar[%]
     \subcaption@subfloat
@@ -151,7 +226,7 @@
 \long\def\subcaption@@subfloat#1[#2]{%
   \subcaption@@@subfloat{\subcaptionbox[{#1}]}{#2}}
 \long\def\subcaption@@@subfloat#1#2#3{%
-  \caption@getlabel{#3}%
+  \subcaption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \global\let\caption@thelabel\relax
   \ignorespaces}
@@ -165,6 +240,17 @@
     [\wd\@tempboxa][\captionbox@innerpos@default]%
     {\unhbox\@tempboxa}%
   \ignorespaces}
+\newcommand\subcaption@getlabel[1]{%
+  \@ifundefined{caption@@@@getlabel}%  caption3 v2.x
+    {\@ifundefined{caption@getlabel}%  caption3 v1.7
+       {\subcaption@Error{\noexpand\subfloat needs at least caption v3.4}%
+        \let\caption@thelabel\relax}%  not available
+       {\caption@getlabel#1\label{}\@nil}}%
+    {\caption@getlabel{#1}}}
+\@ifundefined{caption@gobble}{%  caption3 v1.4
+  \DeclareRobustCommand*\caption@gobble{%
+    \caption@withoptargs\@gobbletwo}%
+}{}
 \endinput
 %%
 %% End of file `subcaption.sty'.
