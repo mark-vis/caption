@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{388}
+% \CheckSum{397}
 %
 % \iffalse
 %<*driver>
@@ -954,7 +954,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2020/12/24 v1.4 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2020/12/25 v1.4 Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \package{caption} package we load it here.
@@ -1149,42 +1149,39 @@
 % \changes{v1.4}{2020/12/24}{Fallback definition of \cs{caption@ibox} added}
 % A |\parbox| with contents and sub-caption, separated by an invisible |\hrule|.
 %    \begin{macrocode}
-\newcommand*\subcaptionbox{%
-% \caption@withoptargs{\caption@ibox\setcaptionsubtype}}  % would need at least caption3 v1.5
-  \def\subcaption@tempa{\caption@ibox\setcaptionsubtype}%
-  \caption@withoptargs\subcaption@tempa}
+\@ifundefined{caption@ibox}{%
 %    \end{macrocode}
 %    \begin{macrocode}
-\@ifundefined{caption@ibox}{%  caption v3.3
+  \newcommand*\subcaptionbox{%  caption v3.1
+    \def\subcaption@tempa{\caption@ibox\setcaptionsubtype}%
+    \caption@withoptargs\subcaption@tempa}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand\caption@ibox[3]{%
-  \kernel@ifnextchar[%]
-    {\caption@iibox{#1}{#2}{#3}}%
-    {\caption@iibox@{#1}{#2}{#3}}}
+  \newcommand\caption@ibox[3]{%
+    \kernel@ifnextchar[%]
+      {\caption@iibox{#1}{#2}{#3}}%
+      {\caption@iibox@{#1}{#2}{#3}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\caption@iibox#1#2#3[#4]{%
-  \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
+  \long\def\caption@iibox#1#2#3[#4]{%
+    \@testopt{\caption@iiibox{#1}{#2}{#3}[{#4}]}\captionbox@innerpos@default}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\caption@iibox@#1#2#3#4{%
-  \setbox\@tempboxa\hbox{#4}%
-  \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
+  \long\def\caption@iibox@#1#2#3#4{%
+    \setbox\@tempboxa\hbox{#4}%
+    \caption@iiibox{#1}{#2}{#3}[\wd\@tempboxa][\captionbox@innerpos@default]{\unhbox\@tempboxa}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\caption@iiibox#1{%
-  \caption@iiiibox{#1}\vbox\vtop}
+  \long\def\caption@iiibox#1{%
+    \caption@iiiibox{#1}\vbox\vtop}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
-  \@ifundefined{caption@justification@#7}%  caption3 v2.x
-    {\@ifundefined{caption@hj@#7}%          caption3 v1.x
-       {\subcaption@Error{Undefined justification `#7'}\@gobble}%
-       {\def\subcaption@tempa{caption@hj@#7}\@firstofone}}%
-    {\def\subcaption@tempa{caption@justification@#7}\@firstofone}%
+  \long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
+    \@ifundefined{caption@hj@#7}%
+      {\subcaption@Error{Undefined justification `#7'}\@gobble}%
+      {\@firstofone}%
     {\begingroup
-     #1*% set \caption@position
+     #1*% set \caption@position so \caption@iftop expands correctly
      \caption@iftop{%
        \endgroup
        \parbox[t]{#6}{%
@@ -1192,31 +1189,47 @@
          \caption@setposition t%
          #2{\caption#4{#5}}%
          \captionbox@hrule
-         \csname\subcaption@tempa\endcsname
+         \csname caption@hj@#7\endcsname
          #8}%
      }{%
        \endgroup
        \parbox[b]{#6}{%
          #1\relax
          \caption@setposition b%
-         \csname\subcaption@tempa\endcsname
+         \csname caption@hj@#7\endcsname
          #8%
          \captionbox@hrule
          #3{\caption#4{#5}}}%
      }}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\captionbox@innerpos@default{c}
-\newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
+  \newcommand*\captionbox@innerpos@default{c}
+  \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
-\providecommand*\caption@justification@c{\centering}
-\providecommand*\caption@justification@l{\raggedright}
-\providecommand*\caption@justification@r{\raggedleft}
-\providecommand*\caption@justification@s{}
+  \providecommand*\caption@hj@c{\centering}
+  \providecommand*\caption@hj@l{\raggedright}
+  \providecommand*\caption@hj@r{\raggedleft}
+  \providecommand*\caption@hj@s{}
 %    \end{macrocode}
 %    \begin{macrocode}
-}{}
+}{\@ifundefined{caption@iiibox}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\subcaptionbox{%  caption v3.2
+    \def\captionbox@type{subtype}%
+    \let\captionbox@settype\setcaptionsubtype
+    \caption@withoptargs\caption@box}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\subcaptionbox{%  caption >= v3.3
+    \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
+%    \end{macrocode}
+%    \begin{macrocode}
+}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1373,10 +1386,11 @@
 %  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
 %  In both cases we do a |\ignore|\-|spaces| at the end since the original implementation of |\sub|\-|float| does this, too.
 %    \begin{macrocode}
-\caption@AtBeginDocument{\providecommand*\subfloat{%
-  \@ifnextchar[%]
-    \subcaption@subfloat
-    \subcaption@subfloat@}}
+\caption@AtBeginDocument{%
+  \providecommand*\subfloat{%
+    \@ifnextchar[%]
+      \subcaption@subfloat
+      \subcaption@subfloat@}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\subcaption@subfloat[#1]{%
@@ -1412,16 +1426,33 @@
 % \begin{macro}{\subcaption@getlabel}
 % \changes{v1.4}{2020/12/24}{This macro added}
 %   |\subcaption@getlabel|\marg{text}\\
-%   gets the label command out of the given caption text and stores it to
-%   |\caption@the|\-|label|.
+%   gets the label command out of the given caption text and stores it to |\caption@the|\-|label|.
+%   It uses |\caption@get|\-|label| for this purpose which interface unfortunately has changed over time.
+%   (Changing the interface was a bad idea in the first place but now it is as it is).
 %    \begin{macrocode}
-\newcommand\subcaption@getlabel[1]{%
-  \@ifundefined{caption@@@@getlabel}%  caption3 v2.x
-    {\@ifundefined{caption@getlabel}%  caption3 v1.7
-       {\subcaption@Error{\noexpand\subfloat needs at least caption v3.4}%
-        \let\caption@thelabel\relax}%  not available
-       {\caption@getlabel#1\label{}\@nil}}%
-    {\caption@getlabel{#1}}}
+\@ifundefined{caption@getlabel}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand\subcaption@getlabel[1]{%  caption3 < v1.7
+    \subcaption@Error{\noexpand\subfloat needs at least caption v3.4}%
+    \let\caption@thelabel\relax}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{\@ifundefined{caption@@@@getlabel}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand\subcaption@getlabel[1]{%  caption3 >= v1.7
+    \caption@getlabel#1\label{}\@nil}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\subcaption@getlabel{%    caption3 >= v2.0
+    \caption@getlabel}
+%    \end{macrocode}
+%    \begin{macrocode}
+}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1430,8 +1461,8 @@
 %   |\caption@gobble*|\oarg{arg}\oarg{\ldots}\marg{arg}\\
 %   is similar to |\@gobble| but gobbles a star and optional arguments as well.
 %    \begin{macrocode}
-\@ifundefined{caption@gobble}{%  caption3 v1.4
-  \DeclareRobustCommand*\caption@gobble{%
+\@ifundefined{caption@gobble}{%
+  \DeclareRobustCommand*\caption@gobble{%  caption3 < v1.4
     \caption@withoptargs\@gobbletwo}%
 }{}
 %    \end{macrocode}
