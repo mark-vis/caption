@@ -38,7 +38,12 @@
 %%   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption2}[2020/09/28 v2.2f Customising captions (AR)]
+\providecommand\DeclareRelease[3]{}
+\providecommand\DeclareCurrentRelease[2]{}
+\DeclareRelease{v2.0}{1995-10-09}{caption2_1995-10-09.sty}
+\DeclareRelease{v2.1}{2002-08-03}{caption2_2005-10-03.sty}
+\DeclareCurrentRelease{v2.2}{2007-04-09} % 1st version using caption3
+\ProvidesPackage{caption2}[2020/12/25 v2.3 Customising captions (AR)]
 \PackageWarning{caption2}{%
   ****************************************************\MessageBreak
   THIS PACKAGE IS OBSOLETE:\MessageBreak
@@ -48,14 +53,13 @@
   NOT be used for NEW documents! New documents should\MessageBreak
   use the regular `caption' package v3.x instead.\MessageBreak
   ****************************************************\@gobbletwo}%
-\RequirePackage{caption3}[2020/09/28] % needs v2.2a or newer
-\let\captionsetup\@undefined
-\let\clearcaptionsetup\@undefined
-\let\showcaptionsetup\@undefined
-\let\DeclareCaptionType\@undefined
-\let\DeclareCaptionSubType\@undefined
+\RequirePackage{caption3}[2007/03/04]
 \newcommand*\captiontwo@Error[2][]{%
   \PackageError{caption2}{#2}{#1\caption@@eh{caption2}}}
+\providecommand*\caption@@eh[1]{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `#1' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
 \@ifpackageloaded{caption}{%
   \captiontwo@Error{%
     You can't use both, the (current) caption *and*\MessageBreak
@@ -65,7 +69,9 @@
 \newcommand*\captionlabeldelim{}
 \newcommand*\captionlabelsep{}
 \newcommand*\ifcaptionwidth{\ifdim\captionwidth>\z@}
-\let\captionindent\caption@indent
+\@ifundefined{captionindent}
+  {\let\captionindent\caption@indent}
+  {}
 \def\ifcaptionlabel{%
   \ifcaption@star
     \@tempswafalse
@@ -227,9 +233,9 @@
 \fi
 \def\captionof{\@ifstar{\caption@of{\caption*}}{\caption@of\caption}}
 \newcommand*\caption@of[2]{\def\@captype{#2}#1}
-\caption@ifundefined\abovecaptionskip{%
+\@ifundefined{abovecaptionskip}{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
-\caption@ifundefined\belowcaptionskip{%
+\@ifundefined{belowcaptionskip}{%
   \newlength\belowcaptionskip\setlength\belowcaptionskip{0\p@}}{}
 \newdimen\captionlinewidth
 \newdimen\realcaptionwidth
@@ -256,7 +262,7 @@
     \fi
   \fi\next}
 \newcommand*\usecaptionstyle[1]{%
-  \caption@ifundefined\captiontext{%
+  \@ifundefined{captiontext}{%
     \captiontwo@Error
       [The usage of \protect#1 is only
        allowed inside code declared with\MessageBreak \protect\defcaptionstyle,
@@ -323,7 +329,7 @@
     \renewcommand*\caption@of[2]{\def\@captype{#2}%
       \@ifundefined{fst@#2}{}{%
         \@nameuse{fst@#2}%
-        \caption@ifundefined\@float@setevery{}{\@float@setevery{#2}}%
+        \@ifundefined{@float@setevery}{}{\@float@setevery{#2}}%
         \let\caption@fs@capt\@fs@capt
         \let\@fs@capt\caption@of@float}%
       #1}
@@ -356,8 +362,6 @@
       \hss}}}
   \fi}
 \newcommand*\setsubcapstyle{%
-  \caption@ifundefined\subcapraggedrightfalse{%
-    \newif\ifsubcapraggedright}{}%
   \ifsubcaphang
     \ifsubcapcenter
       \subcapstyle{hang+center}%
@@ -377,6 +381,9 @@
   \else
     \subcapstyle{normal}%
   \fi\fi\fi\fi}
+\AtBeginDocument{%
+  \@ifundefined{subcapraggedrightfalse}{%
+    \newif\ifsubcapraggedright}{}}
 \newcommand\caption@makesubcaption[2]{%
   \renewcommand*\captionfont{\subcapsize\subcapfont}%
   \renewcommand*\captionlabelfont{\normalfont\subcapsize\subcaplabelfont}%

@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{457}
+% \CheckSum{571}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2020/10/25 v1.3 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2020/10/25 v1.4 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -847,12 +847,31 @@
 %
 % \subsection{Identification}
 %
+% We need at least \LaTeX2e\ version 1994/12/01.
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{bicaption}[2020/10/25 v1.3 Bilingual Captions (AR)]
 %    \end{macrocode}
+%
+% Bypass the release declarations in case the \LaTeX\ kernel doesn’t know how to deal with them
+% (as suggested by \url{https://www.latex-project.org/publications/2018-FMi-TUB-tb122mitt-version-rollback.pdf}).
 %    \begin{macrocode}
-\RequirePackage{caption}[2020/08/23] % needs v3.5 or newer
+\providecommand\DeclareRelease[3]{}
+\providecommand\DeclareCurrentRelease[2]{}
+%    \end{macrocode}
+%
+% Declare all supported releases.
+%    \begin{macrocode}
+\DeclareCurrentRelease{v1}{2011/07/13}
+%    \end{macrocode}
+%
+% Identify the current version of the package.
+%    \begin{macrocode}
+\ProvidesPackage{bicaption}[2020/12/25 v1.4 Bilingual Captions (AR)]
+%    \end{macrocode}
+%
+% Since we base on the \package{caption} package we load it here.
+%    \begin{macrocode}
+\RequirePackage{caption}[2011/11/10] % we need at least v3.2e
 %    \end{macrocode}
 %
 % \bigskip
@@ -893,7 +912,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\bicaption@wh{%
-  See the bicaption package documentation for explanation.}
+  See the `bicaption' package documentation for explanation.}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -901,37 +920,13 @@
 %  |\bicaption@Error|\marg{message}
 %    \begin{macrocode}
 \newcommand*\bicaption@Error[1]{%
-  \PackageError{bicaption}{#1}\bicaption@eh}
-%\let\bicaption@KV@err\bicaption@Error
+  \PackageError{bicaption}{#1}{\caption@@eh{bicaption}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\bicaption@eh{%
+\providecommand*\caption@@eh[1]{%
   If you do not understand this error, please take a closer look\MessageBreak
-  at the documentation of the `bicaption' package.\MessageBreak\@ehc}
-%    \end{macrocode}
-% \end{macro}
-%
-% \pagebreak[3]
-% \subsection{Compatibility check}
-%
-% \begin{macro}{\bicaption@CheckCompatibility}
-% \changes{v1.0}{2011/09/01}{Compatibility error added}
-% \changes{v1.2a}{2020/08/01}{Error text adapted to \package{caption} package~\version{4.0}}
-%    \begin{macrocode}
-\newcommand*\bicaption@CheckCompatibility{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \caption@ifcompatibility{%
-    \bicaption@Error
-      {This package does not work with\MessageBreak
-       caption option `compatibility=v1'}%
-    \endinput}{}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\bicaption@CheckCompatibility
-\caption@AtBeginDocument{%
-  \bicaption@CheckCompatibility
-  \let\bicaption@CheckCompatibility\@undefined}
+  at the documentation of the `#1' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -977,6 +972,12 @@
 \DeclareCaptionOption{bi-separator}[1]{%
   \caption@set{biseparator}{#1}}
 %    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@set[2]{%
+  \@ifundefined{caption@#1@#2}%
+    {\caption@Error{Undefined #1 `#2'}}%
+    {\expandafter\let\csname caption@#1\expandafter\endcsname\csname caption@#1@#2\endcsname}}
+%    \end{macrocode}
 %
 % \begin{macro}{\DeclareBiCaptionSeparator}
 % \changes{v1.3}{2020/10/25}{This macro added}
@@ -985,6 +986,10 @@
 \newcommand\DeclareBiCaptionSeparator[2]{%
   \caption@decl{biseparator}{#1}{#2}}
 \@onlypreamble\DeclareBiCaptionSeparator
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@decl[2]{%
+  \global\long\expandafter\def\csname caption@#1@#2\endcsname}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -999,7 +1004,9 @@
 %
 % The default separator usually maps to `none'.
 %    \begin{macrocode}
-\SetCaptionDefault{biseparator}{none}
+\caption@ifundefined\SetCaptionDefault
+  {\def\caption@biseparator@default{\caption@biseparator@none}}
+  {\SetCaptionDefault{biseparator}{none}}
 %    \end{macrocode}
 %
 % The option |lang=|\meta{language} will setup the language of the caption.
@@ -1209,8 +1216,14 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@@make}
+% \changes{v1.4}{2020/12/25}{Fallback code of \cs{caption@@make@} added}
 % We redefine |\caption@@make| (of the \package{caption} package kernel)
 % so |\bi|\-|caption@@make| will be used for bilingual captions instead.
+%    \begin{macrocode}
+\caption@ifundefined\caption@@make@
+  {\let\caption@@make@\caption@@make}
+  {}
+%    \end{macrocode}
 %    \begin{macrocode}
 \renewcommand\caption@@make[2]{%
   \caption@ifundefined\bicaption@text
@@ -1222,13 +1235,14 @@
      \global\let\bicaption@text\@undefined}%
 %    \end{macrocode}
 %    \begin{macrocode}
-  \caption@@make@epilogue}
+  \@nameuse{caption@@make@epilogue}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\bicaption@@make}
 % \changes{v1.1}{2015/09/16}{\cs{bicaption@label} replaced by \cs{caption@thelabel}}
 % \changes{v1.3}{2020/10/25}{Usage of \cs{caption@biseparator} added}
+% \changes{v1.4}{2020/12/25}{Definitions of \cs{bicaption@slc} and \cs{caption@setsinglelinecheck} added (fallback)}
 % |\bicaption@@make|\marg{text \#2}\marg{label}\marg{text \#1}\par
 % Typeset both captions using the original version of \cs{caption@@make}.
 %    \begin{macrocode}
@@ -1242,8 +1256,8 @@
 %    \begin{macrocode}
   \ifnum\bicaption@lang=0\relax
     \bicaption@ifslc
-      {\caption@slc{#2}{#3}{}{\caption@setsinglelinecheck0}%
-       \caption@slc{#2}{#1}{}{\caption@setsinglelinecheck0}}%
+      {\bicaption@slc{#2}{#3}{}{\caption@setsinglelinecheck0}%
+       \bicaption@slc{#2}{#1}{}{\caption@setsinglelinecheck0}}%
       {}%
   \fi
 %    \end{macrocode}
@@ -1272,10 +1286,21 @@
       \caption@@make@{#2}{#1}%
     \endgroup
   \fi
+%    \end{macrocode}
+%    \begin{macrocode}
 }
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\bicaption@separator{\par}
+%    \end{macrocode}
+%    \begin{macrocode}
+\caption@ifundefined\caption@@slc
+  {\newcommand\bicaption@slc{\caption@slc}}
+  {\newcommand\bicaption@slc[2]{\caption@@slc{#1}{#2}{\captionwidth}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@setsinglelinecheck{%
+  \caption@set@bool\caption@ifslc}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1318,6 +1343,7 @@
 % \begin{macro}{\@bicaption}
 % \changes{v1.0}{2011/08/31}{Optional parameter \meta{list entry \#2} added}
 % \changes{v1.1}{2015/09/16}{\cs{bicaption@getlabel} replaced by \cs{caption@getlabel}}
+% \changes{v1.4}{2020/12/25}{Usage of \cs{caption@getlabel} replaced by \cs{bicaption@getlabel}}
 % |\@bicaption|\marg{cmd}*\oarg{entry \#1}\marg{text \#1}\oarg{entry \#2}\marg{text \#2}\ldots
 %    \begin{macrocode}
 \newcommand*\@bicaption[1]{%
@@ -1337,7 +1363,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\@@@@bicaption#1#2[#3]#4{%
-  \caption@getlabel{#2}%
+  \bicaption@getlabel{#2}%
   \bicaption@ifswap
     {\bicaption@setup{#1}{#2}%
      \bicaption@cmd[{#3}]{#4}}%
@@ -1371,7 +1397,7 @@
 %    \begin{macrocode}
 \long\def\LT@@@@bicaption#1#2[#3]#4{%
   \gdef\bicaption@LTsetup{%
-    \caption@getlabel{#2}%
+    \bicaption@getlabel{#2}%
     \bicaption@LT@setup}%
   \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
@@ -1389,12 +1415,85 @@
 %
 % \begin{macro}{\caption@LT@setup}
 % \changes{v1.1}{2016/01/31}{Adaption to \package{longtable} package added}
+% \changes{v1.4}{2020/12/25}{Fallback code for \package{caption} package \version{v3.2} added}
 % Execute the stuff defined by \cs{LT@bicaption} to prepare the typesetting
 % of the \package{longtable} bilingual caption.
 %    \begin{macrocode}
-\g@addto@macro\caption@LT@setup{%
-  \bicaption@LTsetup
-  \global\let\bicaption@LTsetup\relax}
+\caption@ifundefined\caption@LT@setup{%
+  % Fallback code for caption v3.2
+  \captionsetup*[longtable]{bicaption-lt-setup}
+  \DeclareCaptionOptionNoValue{bicaption-lt-setup}{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\relax}
+}{%
+  \g@addto@macro\caption@LT@setup{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\relax}
+}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\bicaption@getlabel}
+% \changes{v1.0}{2011/09/03}{\cs{label} can have optional arguments now}
+% \changes{v1.4}{2020/12/25}{This macro re-added}
+%   |\bicaption@getlabel|\marg{text}\\
+%   gets the label command out of the given caption text and stores it to |\caption@the|\-|label|.
+%   It uses |\caption@get|\-|label| for this purpose which interface unfortunately has changed over time.
+%   (Changing the interface was a bad idea in the first place but now it is as it is).
+%    \begin{macrocode}
+\@ifundefined{caption@getlabel}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand\bicaption@getlabel[1]{%  caption3 < v1.7
+    \bicaption@@getlabel#1\label{}\@nil}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \long\def\bicaption@@getlabel#1\label#2#3\@nil{%
+    \def\@tempa{#2}%
+    \ifx\@tempa\@empty
+      \let\caption@thelabel\relax
+    \else
+      \def\@tempb{*}%
+      \ifx\@tempa\@tempb
+        \def\caption@thelabel{\label*}%
+        \bicaption@@@getlabel#3\@nil
+      \else
+        \def\caption@thelabel{\label}%
+        \bicaption@@@getlabel{#2}#3\@nil
+      \fi
+    \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \long\def\bicaption@@@getlabel#1#2\@nil{%
+    \def\@tempa{#1}%
+    \def\@tempb{[}%
+    \ifx\@tempa\@tempb
+      \bicaption@@@@getlabel#1#2\@nil
+    \else
+      \l@addto@macro\caption@thelabel{{#1}}%
+    \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \long\def\bicaption@@@@getlabel[#1]#2\@nil{%
+    \l@addto@macro\caption@thelabel{[{#1}]}%
+    \bicaption@@@getlabel#2\@nil}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{\@ifundefined{caption@@@@getlabel}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand\bicaption@getlabel[1]{%  caption3 >= v1.7
+    \caption@getlabel#1\label{}\@nil}
+%    \end{macrocode}
+%    \begin{macrocode}
+}{%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \newcommand*\bicaption@getlabel{%    caption3 >= v2.0
+    \caption@getlabel}
+%    \end{macrocode}
+%    \begin{macrocode}
+}}
 %    \end{macrocode}
 % \end{macro}
 %

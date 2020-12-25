@@ -32,13 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{864}
+% \CheckSum{859}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption2.drv}%
-  [2007/11/28 v2.2 Documentated code of the (obsolete) caption2 package]
+\ProvidesFile{caption2.drv}[2007/11/28 v2.3 Documentated code of the (obsolete) caption2 package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -70,8 +69,15 @@
 % \newcommand*{\purerm}[1]{{\upshape\mdseries\rmfamily #1}}
 % \newcommand*{\puresf}[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*{\purett}[1]{{\upshape\mdseries\ttfamily #1}}
-% \let\package\puresf\def\thispackage{\package{caption2}}
+% \let\class\puresf \let\package\puresf
 % \let\env\purett \let\opt\purett
+%
+% \def\thispackage{the \package{caption2} package}
+% \def\Thispackage{The \package{caption2} package}
+%
+% \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
+% \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
+% \newcommand*\version[2][]{v$#2$}
 %
 % \GetFileInfo{caption2.drv}
 % \let\docdate\filedate
@@ -209,9 +215,28 @@
 %
 % \subsection{Identificaton}
 %
+% We need at least \LaTeX2e\ version 1994/12/01.
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption2}[2020/09/28 v2.2f Customising captions (AR)]
+%    \end{macrocode}
+%
+% Bypass the release declarations in case the \LaTeX\ kernel doesn’t know how to deal with them
+% (as suggested by \url{https://www.latex-project.org/publications/2018-FMi-TUB-tb122mitt-version-rollback.pdf}).
+%    \begin{macrocode}
+\providecommand\DeclareRelease[3]{}
+\providecommand\DeclareCurrentRelease[2]{}
+%    \end{macrocode}
+%
+% Declare all supported releases.
+%    \begin{macrocode}
+\DeclareRelease{v2.0}{1995-10-09}{caption2_1995-10-09.sty}
+\DeclareRelease{v2.1}{2002-08-03}{caption2_2005-10-03.sty}
+\DeclareCurrentRelease{v2.2}{2007-04-09} % 1st version using caption3
+%    \end{macrocode}
+%
+% Identify the current version of the package.
+%    \begin{macrocode}
+\ProvidesPackage{caption2}[2020/12/25 v2.3 Customising captions (AR)]
 %    \end{macrocode}
 %
 % \changes{v2.2b}{2007/06/15}{Made obsolete warning even more annoying}
@@ -230,25 +255,23 @@
 % \subsection{Loading the caption3 kernel}
 %
 %    \begin{macrocode}
-\RequirePackage{caption3}[2020/09/28] % needs v2.2a or newer
-%    \end{macrocode}
-% We undefine user commands offered by \package{caption} but not by \package{caption2}
-% since they should not be used together with \package{caption2}.
-%    \begin{macrocode}
-\let\captionsetup\@undefined
-\let\clearcaptionsetup\@undefined
-\let\showcaptionsetup\@undefined
-\let\DeclareCaptionType\@undefined
-\let\DeclareCaptionSubType\@undefined
+\RequirePackage{caption3}[2007/03/04]
 %    \end{macrocode}
 %
 % \begin{macro}{\captiontwo@Error}
 % \changes{v2.2f}{2020/09/28}{This macro added}
+% \changes{v2.3}{2020/12/25}{Fallback definition of \cs{caption@@eh} added}
 %   |\captiontwo@Error|\marg{message}\\
 %   issues an error message (with code line indication).
 %    \begin{macrocode}
 \newcommand*\captiontwo@Error[2][]{%
   \PackageError{caption2}{#2}{#1\caption@@eh{caption2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@@eh[1]{%
+  If you do not understand this error, please take a closer look\MessageBreak
+  at the documentation of the `#1' package, especially the\MessageBreak
+  section about errors.\MessageBreak\@ehc}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -291,10 +314,14 @@
 %
 % \begin{macro}{\captionindent}
 % \changes{v2.2b}{2007/08/12}{Re-added since the \package{caption3} kernel uses \cs{caption@indent} now}
+% \changes{v2.3}{2020/12/25}{Will only be defined if it is not defined yet}
 % \cs{captionindent} will be used in caption style \texttt{indent} and specifies the indention
-% after the first line.
+% after the first line. (In \package{caption3} \version{1.1} \cs{captionindent} was renamed to
+% \cs{caption@indent} to improve compatibility to the AMS \& SMF document classes.)
 %    \begin{macrocode}
-\let\captionindent\caption@indent
+\@ifundefined{captionindent}
+  {\let\captionindent\caption@indent}
+  {}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -767,9 +794,9 @@
 % (like \textsf{ucthesis}), so we do it here if not already done.
 % \changes{v2.1}{2002/02/19}{\cs{abovecaptionskip} and \cs{belowcaptionskip} will be defined if neccessary}
 %    \begin{macrocode}
-\caption@ifundefined\abovecaptionskip{%
+\@ifundefined{abovecaptionskip}{%
   \newlength\abovecaptionskip\setlength\abovecaptionskip{10\p@}}{}
-\caption@ifundefined\belowcaptionskip{%
+\@ifundefined{belowcaptionskip}{%
   \newlength\belowcaptionskip\setlength\belowcaptionskip{0\p@}}{}
 %    \end{macrocode}
 % \end{macro}
@@ -783,7 +810,7 @@
 % These values are only set and used within the caption code itself.
 % \cs{captionlinewidth} will be set to the given vertical space for the caption,
 % normally this is \cs{linewidth}. (This value was called \cs{realcaptionwidth}
-% within \thispackage\ \mbox{2.0}, so we will offer this, too.)
+% within \thispackage\ \version{2.0}, so we will offer this, too.)
 %
 % \cs{captionlabel} and \cs{captiontext} will be set to the caption label
 % resp.\ the caption text.
@@ -845,7 +872,7 @@
 % If we are we call the appropriate caption definition.
 %    \begin{macrocode}
 \newcommand*\usecaptionstyle[1]{%
-  \caption@ifundefined\captiontext{%
+  \@ifundefined{captiontext}{%
     \captiontwo@Error
       [The usage of \protect#1 is only
        allowed inside code declared with\MessageBreak \protect\defcaptionstyle,
@@ -861,7 +888,7 @@
 % \end{macro}
 %
 % \begin{macro}{\@makecaption}
-% This is the heart of the \thispackage\ package -- the redefinition of the
+% This is the heart of the \thispackage{} -- the redefinition of the
 % core caption code. It was taken from the \LaTeXe\ standard classes and modified.
 % It's very easy -- apart from using \cs{abovecaptionskip} and \cs{belowcaptionskip}
 % we just set \cs{captionlinewidth}, \cs{captionlabel} and \cs{captiontext}
@@ -1008,7 +1035,7 @@
     \renewcommand*\caption@of[2]{\def\@captype{#2}%
       \@ifundefined{fst@#2}{}{%
         \@nameuse{fst@#2}%
-        \caption@ifundefined\@float@setevery{}{\@float@setevery{#2}}%
+        \@ifundefined{@float@setevery}{}{\@float@setevery{#2}}%
         \let\caption@fs@capt\@fs@capt
         \let\@fs@capt\caption@of@float}%
       #1}
@@ -1091,13 +1118,8 @@
 %
 % \begin{macro}{\setsubcapstyle}
 % This sets the subcaptionstyle to a appropriate value.
-%
-% If \cs{ifsubcapraggedright} is undefined (it was introduced
-% into v2.1 of the \textsf{subfigure} package) we define it first.
 %    \begin{macrocode}
 \newcommand*\setsubcapstyle{%
-  \caption@ifundefined\subcapraggedrightfalse{%
-    \newif\ifsubcapraggedright}{}%
   \ifsubcaphang
     \ifsubcapcenter
       \subcapstyle{hang+center}%
@@ -1117,6 +1139,13 @@
   \else
     \subcapstyle{normal}%
   \fi\fi\fi\fi}
+%    \end{macrocode}
+% If \cs{ifsubcapraggedright} is undefined (it was introduced
+% in \version{2.1} of the \textsf{subfigure} package) we define it first.
+%    \begin{macrocode}
+\AtBeginDocument{%
+  \@ifundefined{subcapraggedrightfalse}{%
+    \newif\ifsubcapraggedright}{}}
 %    \end{macrocode}
 % \end{macro}
 %
