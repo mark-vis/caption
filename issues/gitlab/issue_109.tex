@@ -1,0 +1,45 @@
+% Issue: 109
+% Title: subcaption's default "font+=smaller" seems not working
+% Date:  Dec 20, 2020 6:34am GMT+0100
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/109
+
+% In the question comments of this TeX-SX question[1], it is found that the default setting font+=smaller for subcaption is not working in the latest release (CTAN_2019-11-24), when \usepackage[font=small]{subcaption} is used. I then did a per git tag search and found the problem occur since CTAN_2020-08-30.
+% 
+% Example adapted from that Tex-SX question:
+
+\documentclass{article}
+
+\usepackage{graphicx}
+\usepackage[font=small]{caption}
+\usepackage[font=small]{subcaption}
+
+\def\showFontSize{\csname f@size\endcsname pt}
+
+% 2020-12-20 (AS) Definition and usage of \checkFontSize added
+\makeatletter
+\def\checkFontSize#1{%
+  \edef\caption@tempa{\csname f@size\endcsname pt}%
+  \edef\caption@tempb{#1}%
+  \ifx\caption@tempa\caption@tempb\else
+    \caption@Error{Font size is `\caption@tempa' but should be `\caption@tempb'}
+  \fi}
+\makeatother
+
+\begin{document}
+
+\begin{figure}
+    \centering
+    \subcaptionbox
+      {AAAAA~\showFontSize\checkFontSize{9pt}}
+      {\includegraphics[width=0.48\textwidth]{example-image}}
+    \subcaptionbox
+      {BBBBB~\showFontSize\checkFontSize{9pt}}
+      {\includegraphics[width=0.48\textwidth]{example-image}}
+    \caption{CCCCC~\showFontSize\checkFontSize{9pt}}
+\end{figure}
+
+main text \showFontSize\checkFontSize{10pt}
+\end{document}
+
+% [1] https://tex.stackexchange.com/q/575713
+

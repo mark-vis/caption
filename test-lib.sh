@@ -3,19 +3,22 @@
 # Module: test-lib.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-16
+# Date:   2020-12-21
 
 # shellcheck disable=SC2155
 #   disables the warning "Declare and assign separately to avoid masking return values."
 
 basedir=$(pwd)
 
-all=true             # default: Target "all"
-disabled_cases=()    # default: Compile all testcases
-exit_on_error=true   # default: Exit after error
-interactive=true     # default: Interactive mode
-output_file=""       # default: Don't generate report file
-pdflatex="pdflatex"  # default: Use pdflatex
+all=true                 # default: Target "all"
+disabled_pdflatex=()     # default: Compile all testcases (pdflatex engine)
+disabled_xelatex=()      # default: Compile all testcases (xelatex engine)
+disabled_lualatex=()     # default: Compile all testcases (lualatex engine)
+exit_on_error=true       # default: Exit after error
+interactive=true         # default: Interactive mode
+output_file=""           # default: Don't generate report file
+latex_engine="pdflatex"  # default: Use pdflatex
+latex_suffix=""          # default: Use regular version of latex
 
 shopt -s nullglob
 
@@ -41,7 +44,10 @@ function main
       printf "  -d, --disable=FILE      doesn't compile FILE (or DIRECTORY)\n"
       printf "  -i, --interactive=BOOL  sets interactive mode (default:true)\n"
       printf "  -o, --output=FILE       generates a report file\n"
-      printf "  -x, --dev               uses pdflatex-dev instead of pdflatex\n"
+      printf "      --pdflatex          uses pdflatex as LaTeX engine (default)\n"
+      printf "      --xelatex           uses xelatex as LaTeX engine\n"
+      printf "      --lualatex          uses lualatex as LaTeX engine\n"
+      printf "      --dev               uses the current development version of LaTeX\n"
       printf "\n"
       exit 1
     elif [[ $arg == "-d" || $arg == "--disable" ]]
@@ -89,9 +95,22 @@ function main
       output_file="${arg:9}"
       exit_on_error=false
       interactive=false
-    elif [[ $arg == "-x" || $arg == "--dev" ]]
+    elif [[ $arg == "--pdflatex" ]]
     then
-      pdflatex="pdflatex-dev"
+      latex_engine="pdflatex"
+    elif [[ $arg == "--xelatex" ]]
+    then
+      latex_engine="xelatex"
+    elif [[ $arg == "--lualatex" ]]
+    then
+      latex_engine="lualatex"
+    elif [[ $arg == "--dev" ]]
+    then
+      latex_suffix="-dev"
+    elif [[ ${arg:0:1} == "-" ]]
+    then
+      printf "*** Invalid option '%s'.\n" "$arg" >&2
+      exit 1
     elif [[ $arg == "all" ]]
     then
       all=true
@@ -116,7 +135,7 @@ function main
       then
         compile_file "$arg"
       else
-        printf "*** Invalid argument '%s'.\n" "$arg"
+        printf "*** Invalid argument '%s'.\n" "$arg" >&2
         exit 1
       fi
     fi
@@ -300,11 +319,11 @@ function compile
     if $interactive
     then
       log=""
-      $pdflatex "$1"
+      $latex_engine$latex_suffix "$1"
       result=$?
     else
 #     sleep 0.1
-      log=$($pdflatex -halt-on-error "$1")
+      log=$($latex_engine$latex_suffix -halt-on-error "$1")
       result=$?
     fi
 
@@ -332,16 +351,57 @@ function boolean
   then
     printf 'true\n'
   else
-    printf "*** Invalid boolean value '%s'.\n" "$1"
+    printf "*** Invalid boolean value '%s'.\n" "$1" >&2
     exit 1
   fi
 }
 
 function disable
 {
-  # Disable a testsuite or testcase
+  # Disable test-suites or test-cases
 
-  disabled_cases+=( "$1" )
+  local all=true  # default: disable tests for all LaTeX engines
+  local pdflatex=false
+  local xelatex=false
+  local lualatex=false
+
+  local arg
+  for arg in "$@"
+  do
+    if [[ $arg == "--pdflatex" ]]
+    then
+      all=false
+      pdflatex=true
+    elif [[ $arg == "--xelatex" ]]
+    then
+      all=false
+      xelatex=true
+    elif [[ $arg == "--lualatex" ]]
+    then
+      all=false
+      lualatex=true
+    elif [[ ${arg:0:1} == "-" ]]
+    then
+      printf "*** Invalid option '%s'.\n" "$arg" >&2
+      exit 1
+    else
+      if $all || $pdflatex
+      then
+#       printf "Disable pdflatex: %s\n" "$arg"
+        disabled_pdflatex+=( "$arg" )
+      fi
+      if $all || $xelatex
+      then
+#       printf "Disable xelatex: %s\n" "$arg"
+        disabled_xelatex+=( "$arg" )
+      fi
+      if $all || $lualatex
+      then
+#       printf "Disable lualatex: %s\n" "$arg"
+        disabled_lualatex+=( "$arg" )
+      fi
+    fi
+  done
 }
 
 function is_disabled
@@ -350,6 +410,21 @@ function is_disabled
 
   local path="$1"
   if [[ -n $2 ]]; then path+="/$2"; fi
+
+  local -a disabled_cases
+  if [[ $latex_engine == "pdflatex" ]]
+  then
+    disabled_cases=( "${disabled_pdflatex[@]}" )
+  elif [[ $latex_engine == "xelatex" ]]
+  then
+    disabled_cases=( "${disabled_xelatex[@]}" )
+  elif [[ $latex_engine == "lualatex" ]]
+  then
+    disabled_cases=( "${disabled_lualatex[@]}" )
+  else
+    printf "*** Unknown LaTeX engine '%s'.\n" "$latex_engine" >&2
+    exit 1
+  fi
 
   local d
   for d in "${disabled_cases[@]}"
