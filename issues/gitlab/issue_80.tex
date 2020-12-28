@@ -1,0 +1,68 @@
+% Issue: 80
+% Title: apparent incompatibility between amsart document class and subcaption package: faulty increments of 'figure' counter
+% Date:  May 4, 2020 10:49pm
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/80
+
+% Hi. Please see the posting https://tex.stackexchange.com/q/542255/5001. A new user, @pawel, has stumbled across the following issue: If the amsart document class is used and subfigures are created via subfigure environments inside figure environments, then the overall figure counter gets incremented by 2 rather than just 1. The issue goes away if some other document class (say, article) is used and/or if no subfigure environments are created.
+
+% https://tex.stackexchange.com/questions/542255/wrong-figure-numbers-incrementing-by-2-possible-amsart-and-subcaption-clash
+% Title: Wrong figure numbers (incrementing by 2): possible amsart and subcaption clash?
+
+% When using subcaption in an amsart document my figure numbers increase by 2 (instead of by 1). The problem vanishes when I switch to article instead of amsart, leading me to wonder whether this is caused by a package clash? If so, is there a quick fix, perhaps (I would like to continue using amsart and I would like to have subfigures in the document as well)?
+% 
+% MWE illustrating the issue and the compilation results follow below.
+% 
+% Thanks in advance for any help! Pawel
+
+\documentclass{amsart}
+
+\usepackage[demo]{graphicx}
+\usepackage{subcaption}
+
+\makeatletter
+\newcommand*\checkref[2]{%
+  \@ifundefined{r@#1}{}%
+    {\edef\tempa{\noexpand\@firstoftwo\csname r@#1\endcsname}%
+     \edef\tempa{\tempa}%
+     \edef\tempb{#2}%
+     \ifx\tempa\tempb \else
+       \PackageError{checkref}{\tempa\space <> \tempb}{whatever}%
+     \fi}}
+\makeatother
+
+\begin{document}
+
+\begin{figure}[!htb]
+\caption{\textbf{First Figure}}
+\label{F1}%
+\begin{subfigure}[t]{.48\textwidth}
+\centering
+\includegraphics[width=\linewidth,height=0.25\textheight]{F1A}
+        \caption{Data}\label{F1:A}
+\end{subfigure}
+\begin{subfigure}[t]{.48\textwidth}
+\centering
+\includegraphics[width=\linewidth,height=0.25\textheight]{F1B}
+\caption{Simulation}\label{F1:B}
+\end{subfigure}
+\end{figure}
+
+\begin{figure}[!htb]
+\caption{\textbf{Second Figure}}
+\label{F2}%
+\begin{subfigure}[t]{.48\textwidth}
+\centering
+\includegraphics[width=\linewidth,height=0.25\textheight]{F2A}
+        \caption{Data}\label{F2:A}
+\end{subfigure}
+\begin{subfigure}[t]{.48\textwidth}
+\centering
+\includegraphics[width=\linewidth,height=0.25\textheight]{F2B}
+\caption{Simulation}\label{F2:B}
+\end{subfigure}
+\end{figure}
+
+\checkref{F2}{2}
+
+\end{document}
+

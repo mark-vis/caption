@@ -197,6 +197,16 @@
 \caption@SetupOptions{caption}{\caption@setkeys{#1}{#2}}
 \caption@ProcessOptions*{caption}
 \newcounter{caption@flags}
+\newcommand*\caption@clrflags{%
+  \setcounter{caption@flags}{0}}
+\newcommand*\caption@ifflags{%
+  \ifcase\c@caption@flags
+    \expandafter\@secondoftwo
+  \else
+    \expandafter\@firstoftwo
+  \fi}
+\newcommand*\caption@setflag[1]{%
+  \caption@ifflag{#1}{}{\addtocounter{caption@flags}{#1}}}
 \newcommand*\caption@ifflag[1]{%
   \@tempcnta\c@caption@flags
   \divide\@tempcnta #1\relax
@@ -205,17 +215,14 @@
   \else
     \expandafter\@secondoftwo
   \fi}
-\newcommand*\caption@setflag[1]{%
-  \caption@ifflag{#1}\@gobbletwo\addtocounter{caption@flags}{#1}}
-\newcommand*\caption@clrflags{%
-  \setcounter{caption@flags}{0}}
-\newcommand*\caption@ifcontinued{\caption@ifflag1}
 \newcommand*\caption@setcontinued{\caption@setflag1}
-\newcommand*\caption@ifcaption{\caption@ifflag2}
+\newcommand*\caption@ifcontinued{\caption@ifflag1}
 \newcommand*\caption@setcaption{\caption@setflag2}
+\newcommand*\caption@ifcaption{\caption@ifflag2}
+\newcommand*\caption@setsubcaption{%
+  \caption@ifcaption{\caption@setflag8}{\caption@setflag4}}
 \newcommand*\caption@ifsubcaption@above{\caption@ifflag4}
 \newcommand*\caption@ifsubcaption@below{\caption@ifflag8}
-\newcommand*\caption@setsubcaption{\caption@ifflag2{\caption@setflag8}{\caption@setflag4}}
 \def\caption@caption{%
   \caption@iftype
     {\caption@checkgrouplevel\@empty\caption
@@ -391,18 +398,19 @@
   \def\captionof{\caption@teststar\caption@of{\caption*}\caption}}
 \providecommand*\caption@of[2]{\setcaptiontype*{#2}#1}
 \newcommand*\captionlistentry{%
-  \caption@teststar\@captionlistentry\@firstoftwo\@secondoftwo}
-\newcommand*\@captionlistentry[1]{%
-  \@ifnextchar[%]
-    \caption@listentry@\caption@listentry{#1}}
+  \caption@teststar\caption@listentry\@firstoftwo\@secondoftwo}
 \newcommand*\caption@listentry[1]{%
+  \@ifnextchar[%]
+    {\caption@listentry@{#1}}%
+    {\caption@@listentry{#1}}}
+\def\caption@listentry@#1[#2]{%
+  \caption@@@listentry{#1}{#2}{\caption@refstepcounter@}}
+\newcommand*\caption@@listentry[1]{%
   \caption@iftype
-    {\caption@@listentry{#1}{\@captype}{\caption@refstepcounter}}%
+    {\caption@@@listentry{#1}{\@captype}{\caption@refstepcounter}}%
     {\caption@Error{\noexpand\captionlistentry outside float}%
      \@gobble}}
-\def\caption@listentry@#1[#2]{%
-  \caption@@listentry{#1}{#2}{\caption@refstepcounter@}}
-\newcommand*\caption@@listentry[4]{%
+\newcommand*\caption@@@listentry[4]{%
   \@bsphack
     #1{\caption@gettitle{#4}}%
       {#3{#2}\caption@makecurrent{#2}{#4}}%
@@ -496,8 +504,7 @@
 \newcommand*\caption@nextfloat[1]{%
   \caption@iftype
     {\caption@@nextfloat\@captype
-     \caption@reset@currentlabel
-     #1\relax\caption@start}%
+     #1{}{\caption@reset@currentlabel\caption@start}}%
     {\caption@Error{\noexpand\nextfloat outside float}}}
 \newcommand*\caption@@nextfloat[1]{%
   \caption@clrflags
@@ -507,14 +514,11 @@
   \fi}
 \newcommand*\caption@refstepcounter{%
   \@nameuse{donemaincaptiontrue}% Support of the memoir document class
-\typeout{caption@refstepcounter}%
   \caption@ifrefstepcounter\caption@@refstepcounter\caption@@refcounter}
 \newcommand*\caption@@refstepcounter[1]{%
-\typeout{caption@@refstepcounter #1}%
   \caption@prepare@stepcounter{ref}{#1}%
   \caption@refstepcounter@{#1}}
 \newcommand*\caption@@refcounter[1]{%
-\typeout{caption@@refcounter #1}%
   \let\caption@stepcounter@ORI\stepcounter
   \def\stepcounter##1{%
     \edef\caption@tempa{#1}%
@@ -528,54 +532,40 @@
   \let\stepcounter\caption@stepcounter@ORI}
 \newcommand*\caption@refstepcounter@{\refstepcounter}
 \newcommand*\caption@stepcounter{%
-\typeout{caption@stepcounter}%
   \caption@ifstepcounter\caption@@stepcounter\caption@@counter}
 \newcommand*\caption@@stepcounter[1]{%
-\typeout{caption@@stepcounter #1}%
   \caption@prepare@stepcounter{}{#1}%
   \caption@stepcounter@{#1}}
-\newcommand*\caption@@counter[1]{%
-\typeout{caption@@counter #1}%
-  }
+\newcommand*\caption@@counter[1]{} % nothing to do
 \newcommand*\caption@stepcounter@{\stepcounter}
 \newcommand*\caption@prepare@stepcounter[1]{%
   \caption@addsubcontentslines{#1stepcounter}%
   \caption@reset@continuedfloat}
 \newcommand*\caption@ifrefstepcounter{%
-  \caption@ifcontinued
-    {\typeout{continued}%
-     \caption@ifcaption
-       {\typeout{caption}%
-        \caption@ifsubcaption@below
-          {\caption@iftop\@gobble\caption@Warning{Ambiguous caption, use \string\nextfloat}%
-           \caption@clrflags}%
-          {}%
-        \let\caption@next\@firstoftwo}%
-       {\typeout{!caption}%
-        \let\caption@next\@secondoftwo}}%
-    {\typeout{!continued}%
-     \let\caption@next\@firstoftwo}%
-  \caption@setcontinued
-  \caption@setcaption
-  \caption@next}
+  \caption@ifcounter
+    {\caption@ifcaption}%
+    {\caption@ifsubcaption@below{\caption@iftop\@secondoftwo\@firstoftwo}{\@secondoftwo}}%
+    {\caption@setcaption}}
 \newcommand*\caption@ifstepcounter{%
-  \caption@ifcontinued
-    {\typeout{continued}%
-     \caption@ifcaption\caption@ifsubcaption@above\@secondoftwo
-       {\typeout{caption+subcaption@above}%
-        \caption@iftop\caption@Warning\@gobble{Ambiguous sub-caption, use \string\nextfloat}%
+  \caption@ifcounter
+    {\caption@ifcaption\caption@ifsubcaption@above\@secondoftwo}%
+    {\caption@iftop}%
+    {\caption@setsubcaption}}
+\newcommand*\caption@ifcounter[3]{%
+  \caption@ifflags
+    {#1%
+       {#2\caption@Warning\@gobble{Ambiguous sub-caption(s), use \string\nextfloat}%
         \caption@clrflags
         \let\caption@next\@firstoftwo}%
-       {\typeout{!caption+subcaption@above}%
-        \let\caption@next\@secondoftwo}}%
-    {\typeout{!continued}%
-     \let\caption@next\@firstoftwo}%
-  \caption@setcontinued
-  \caption@setsubcaption
+       {\let\caption@next\@secondoftwo}}%
+    {\let\caption@next\@firstoftwo}%
+  #3%
   \caption@next}
 \@ifundefined{kernel@ifnextchar}{\let\kernel@ifnextchar\@ifnextchar}{}
 \newcommand\caption@dblarg[1]{%
-  \kernel@ifnextchar[{\caption@ydblarg{#1}}{\caption@xdblarg{#1}}}
+  \kernel@ifnextchar[%]
+    {\caption@ydblarg{#1}}%
+    {\caption@xdblarg{#1}}}
 \newcommand\caption@xdblarg[2]{%
   #1[{#2\relax}]{#2}}
 \long\def\caption@ydblarg#1[#2]#3{%
@@ -614,9 +604,8 @@
     \caption@warmup
     \caption@stepcounter\@captype
     \caption@ifcaption
-      {\typeout{subtypehook: ok}}%
-      {\typeout{subtypehook: patch}%
-       \let\caption@add@contentsline\caption@addsubcontentsline
+      {}%
+      {\let\caption@add@contentsline\caption@addsubcontentsline
        \let\caption@addsubcontentslines\@gobble}%
     \c@continuedfloat=0\relax
     \let\caption@setfloatcapt\@firstofone
@@ -666,7 +655,7 @@
 \newcommand*\caption@sublistentry{%
   \caption@teststar\@subcaptionlistentry\@firstoftwo\@secondoftwo}
 \newcommand*\@subcaptionlistentry[1]{%
-  \@testopt{\caption@listentry{#1}}\@subcaptype}
+  \@testopt{\caption@listentry{#1}}{\@subcaptype}}
 \newcommand*\caption@clearsubcontentslines{%
   \global\let\caption@subcontentslines\@empty}
 \caption@clearsubcontentslines
@@ -1201,7 +1190,9 @@
       \let\caption@@start\relax
       \caption@prepareslc
     \else
-      \xxx@caption@setflag1%
+      % don't increment the figure or table counter again
+      \caption@clrflags
+      \caption@setcontinued
     \fi
     \edef\@tempa{\expandafter\noexpand\@car#1\@nil}%
     \if\@tempa*%
@@ -1394,7 +1385,7 @@
       \@nameuse{fst@#1}%
       \def\WF@floatstyhook{\let\@currbox\WF@box
          \global\setbox\WF@box\float@makebox{\wd\WF@box}}}%
-    \@ifnextchar[\WF@wr{\WF@wr[]}}
+    \@testopt\WF@wr{}}
   \def\WF@rapt[#1]#2{% final two args: #1 = overhang,  #2 = width,
     \gdef\WF@ovh{#1}% hold overhang for later, when \width is known
     \global\setbox\WF@box\vtop\bgroup \setlength\hsize{#2}%
