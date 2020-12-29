@@ -48,7 +48,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
-\ProvidesPackage{caption}[2020/12/28 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/12/29 v3.6-dev Customizing captions (AR)]
 \RequirePackage{caption3}[2020/12/28] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -756,16 +756,15 @@
       \def\continuedfloat{%
         \caption@@freeze{\caption@@@continuedfloat\@captype}%
         \caption@frozen@continuedfloat}%
+      \let\caption@frozen@nextfloat\nextfloat
+      \def\nextfloat{\caption@freeze@error}%
       \let\caption@frozen@setup\caption@setup
       \def\caption@setup##1{%
         \caption@@freeze{\caption@setup{##1}}%
         \caption@frozen@setup{##1}}%
       \let\caption@frozen@caption\caption
       \def\caption{%
-        \def\caption{%
-          \caption@Error{%
-            Only one \noexpand\caption can be placed in this environment}%
-          \caption@gobble}%
+        \def\caption{\caption@freeze@error\caption@gobble}%
         \@ifstar
         {\caption@SC@caption*}%
         {\let\@currentlabel\caption@SClabel
@@ -792,9 +791,12 @@
         \g@addto@macro\caption@frozen@content}%
       \def\caption@warmup{%
         \let\continuedfloat\caption@frozen@continuedfloat
+        \let\nextfloat\caption@frozen@nextfloat
         \let\caption@setup\caption@frozen@setup
         \let\caption\caption@frozen@caption
         \let\label\caption@frozen@label}}%
+    \newcommand*\caption@freeze@error{%
+      \caption@Error{Only one \noexpand\caption can be placed in this environment}}
     \newcommand*\caption@prepare@defrost{%
       \let\caption@settype\caption@@settype}
     \newcommand*\caption@defrost{%
@@ -1401,6 +1403,21 @@
 %%%    \caption@setoptions{wrap}%
     \caption@setoptions{wrap#1}}%
 }{}
+\newcommand*\caption@checkcounter[1]{%
+  \caption@check{\the#1}{\@nameuse{the#1}}}
+\newcommand*\caption@check[3]{%
+  \edef\caption@tempa{#2}%
+  \edef\caption@tempb{#3}%
+  \ifx\caption@tempa\caption@tempb
+    \caption@Info{\string#1 = \caption@tempa}%
+  \else
+    \caption@Error{\string#1 = \caption@tempa\space <> \caption@tempb}%
+  \fi}
+\newcommand*\caption@checkref[2]{%
+  \@ifundefined{r@#1}{}%
+    {\expandafter\expandafter\expandafter\caption@@checkref\csname r@#1\endcsname\@nil{#1}{#2}}}
+\def\caption@@checkref#1#2\@nil#3#4{%
+  \caption@check{\ref{#3}}{#1}{#4}}
 \caption@endtitles@code
 \let\caption@endtitles@code\@undefined
 \let\AfterCaptionPackage\@firstofone

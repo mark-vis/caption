@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2769}
+% \CheckSum{2820}
 %
 % \iffalse
 %<*driver>
@@ -265,7 +265,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2020/12/28 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2020/12/29 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -2310,6 +2310,10 @@
         \caption@frozen@continuedfloat}%
 %    \end{macrocode}
 %    \begin{macrocode}
+      \let\caption@frozen@nextfloat\nextfloat
+      \def\nextfloat{\caption@freeze@error}%
+%    \end{macrocode}
+%    \begin{macrocode}
       \let\caption@frozen@setup\caption@setup
       \def\caption@setup##1{%
         \caption@@freeze{\caption@setup{##1}}%
@@ -2318,10 +2322,7 @@
 %    \begin{macrocode}
       \let\caption@frozen@caption\caption
       \def\caption{%
-        \def\caption{%
-          \caption@Error{%
-            Only one \noexpand\caption can be placed in this environment}%
-          \caption@gobble}%
+        \def\caption{\caption@freeze@error\caption@gobble}%
         \@ifstar
         {\caption@SC@caption*}%
         {\let\@currentlabel\caption@SClabel
@@ -2354,9 +2355,14 @@
 %    \begin{macrocode}
       \def\caption@warmup{%
         \let\continuedfloat\caption@frozen@continuedfloat
+        \let\nextfloat\caption@frozen@nextfloat
         \let\caption@setup\caption@frozen@setup
         \let\caption\caption@frozen@caption
         \let\label\caption@frozen@label}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+    \newcommand*\caption@freeze@error{%
+      \caption@Error{Only one \noexpand\caption can be placed in this environment}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4341,6 +4347,43 @@
 %    \begin{macrocode}
 }{}
 %    \end{macrocode}
+%
+% \section{Debug stuff}
+%
+% \begin{macro}{\caption@checkcounter}
+% \changes{v3.6}{2020/12/28}{This macro added}
+% |\caption@checkref|\marg{counter}\marg{expected value}\\
+% checks if |\value|\marg{counter} would result in the \meta{expected value}.
+%    \begin{macrocode}
+\newcommand*\caption@checkcounter[1]{%
+  \caption@check{\the#1}{\@nameuse{the#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@check[3]{%
+  \edef\caption@tempa{#2}%
+  \edef\caption@tempb{#3}%
+  \ifx\caption@tempa\caption@tempb
+    \caption@Info{\string#1 = \caption@tempa}%
+  \else
+    \caption@Error{\string#1 = \caption@tempa\space <> \caption@tempb}%
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@checkref}
+% \changes{v3.6}{2020/12/28}{This macro added}
+% |\caption@checkref|\marg{marker}\marg{expected value}\\
+% checks if |\ref|\marg{marker} would result in the \meta{expected value}.
+%    \begin{macrocode}
+\newcommand*\caption@checkref[2]{%
+  \@ifundefined{r@#1}{}%
+    {\expandafter\expandafter\expandafter\caption@@checkref\csname r@#1\endcsname\@nil{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@checkref#1#2\@nil#3#4{%
+  \caption@check{\ref{#3}}{#1}{#4}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \section{That's all Folks!}
 %
