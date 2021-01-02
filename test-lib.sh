@@ -3,7 +3,7 @@
 # Module: test-lib.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-21
+# Date:   2020-12-29
 
 # shellcheck disable=SC2155
 #   disables the warning "Declare and assign separately to avoid masking return values."
@@ -156,6 +156,12 @@ function main
   fi
 
   local gl_end=$(timestamp)
+
+  # Print test summary
+  if (( gl_tests > 1 ))
+  then
+    printf '\ntests=%d, failures=%d, disabled=%d, time=%ss\n' "$gl_tests" "$gl_failures" "$gl_disabled" "$(timestamp_diff "$gl_start" "$gl_end")"
+  fi
 
   # Generate report file, if requested
   # Note: GitLab CI does not care about "testsuites" or "testsuite" elements, it only evaluates "testcase" elements.
