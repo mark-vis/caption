@@ -47,7 +47,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2021-01-01} % TODO: Insert CTAN release date of v2.3 here!
-\ProvidesPackage{caption3}[2020/12/28 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/01/02 v2.3-dev caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -982,41 +982,38 @@
 \newcommand*\caption@rule{\caption@ifrule\caption@hrule\relax}
 \newcommand*\caption@hrule{\hrule\@height\z@}
 \DeclareCaptionOption{rule}[1]{\caption@set@bool\caption@ifrule{#1}}
-\newcommand*\caption@declare@position[2]{%
-  \caption@decl{position}{#1}{#2}}
-\@onlypreamble\caption@declare@position
+\newcommand*\DeclareCaptionPosition[3]{%
+  \caption@decl[\edef]{position}{#1}{%
+    \unexpanded{\def\caption@fallback@position}####1####2\unexpanded{{#2}}%
+    \unexpanded{\def\caption@regular@position}####1####2\unexpanded{{#3}}}}
+\@onlypreamble\DeclareCaptionPosition
 \DeclareCaptionOption{position}{\caption@setposition{#1}}
 \DeclareCaptionOption{figureposition}{\captionsetup*[figure]{position=#1}}
 \@onlypreamble@key{caption}{figureposition}
 \DeclareCaptionOption{tableposition}{\captionsetup*[table]{position=#1}}
 \@onlypreamble@key{caption}{tableposition}
-\newcommand*\caption@setposition{\caption@set{position}}
-\caption@declare@position{t}{\@firstoftwo}
-\caption@declare@position{top}{\@firstoftwo}
-\caption@declare@position{above}{\@firstoftwo}
-\caption@declare@position{b}{\@secondoftwo}
-\caption@declare@position{bottom}{\@secondoftwo}
-\caption@declare@position{below}{\@secondoftwo}
-\caption@declare@position{a}{\caption@autoposition}% needed by floatrow package, \flrow@cappos
-\caption@declare@position{auto}{\caption@autoposition}
-\SetCaptionDefault{position}{auto}
-\let\caption@autoposition\@secondoftwo
-\newcommand*\caption@iftop{\caption@position}
+\newcommand*\caption@setposition{%
+  \caption@initposition
+  \caption@set{position}}
+\DeclareCaptionPosition{top}{#1}{#1}
+\def\caption@position@t{\caption@position@top}
+\def\caption@position@above{\caption@position@top}
+\DeclareCaptionPosition{bottom}{#2}{#2}
+\def\caption@position@b{\caption@position@bottom}
+\def\caption@position@below{\caption@position@bottom}
+\SetCaptionDefault{position}{bottom}
+\newcommand*\caption@initposition{%
+  \let\caption@@iftop\@undefined}
+\newcommand*\caption@iftop{%
+  \caption@@fixposition\caption@fallback@position
+  \caption@@iftop}
 \newcommand*\caption@fixposition{%
-  \ifvmode
-    \edef\caption@tempa{\the\prevdepth}%
-    \caption@Debug{\protect\prevdepth=\caption@tempa}%
-    \ifdim\prevdepth>-\p@
-      \let\caption@autoposition\@secondoftwo % position=below
-    \else
-      \let\caption@autoposition\@firstoftwo  % position=above
-    \fi
-  \else
-    \caption@Debug{no \protect\prevdepth}%
-    \let\caption@autoposition\@secondoftwo   % position=below
+  \caption@@fixposition\caption@regular@position}
+\newcommand*\caption@@fixposition[1]{%
+  \ifx\caption@@iftop\@undefined
+    \caption@position % defines \caption@fallback@position and \caption@regular@position
+    #1{\let\caption@@iftop\@firstoftwo}{\let\caption@@iftop\@secondoftwo}%
   \fi}
-\newcommand*\caption@setautoposition[1]{%
-  \def\caption@fixposition{\caption@@set{position}{autoposition}{#1}}}
 \newcommand*\caption@beginhook{}
 \newcommand*\caption@endhook{}
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}
