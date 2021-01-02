@@ -48,7 +48,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
-\ProvidesPackage{caption}[2020/12/29 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/02 v3.6-dev Customizing captions (AR)]
 \RequirePackage{caption3}[2020/12/28] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -61,17 +61,18 @@
   \endinput
 }{}
 \caption@AtBeginDocument{%
-  \@ifpackageloaded{ftcap}{\caption@DisablePositionOption{ftcap}}{}%
-  \@ifpackageloaded{nonfloat}{\caption@DisablePositionOption{nonfloat}}{}%
-  \@ifpackageloaded{topcapt}{\caption@DisablePositionOption{topcapt}}{}}
-\newcommand*\caption@DisablePositionOption[1]{%
-  \caption@InfoNoLine{%
-    `#1' package detected; setting `position=b' for compatibility reasons}%
-  \caption@setup{position=b}%
-  \DeclareCaptionOption{position}{%
-    \caption@Error{Usage of the `position' option is incompatible\MessageBreak
-      to the `#1' package}}}
-\@onlypreamble\caption@DisablePositionOption
+  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package}%
+  \caption@setincompatible{\@ifpackageloaded{ftcap}}{ftcap package}%
+  \caption@setincompatible{\@ifpackageloaded{nonfloat}}{nonfloat package}%
+  \caption@setincompatible{\@ifpackageloaded{topcapt}}{topcapt package}}
+\newcommand*\caption@setincompatible[2]{%
+  #1{%
+    \caption@Error{%
+      The #2 is incompatible to the\MessageBreak
+      current version of the `caption' package,\MessageBreak
+      so try \string\usepackage{caption}[=v1] instead}%
+  }{}}
+\@onlypreamble\caption@setincompatible
 \DeclareCaptionOption*{config}[caption]{%
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
@@ -127,16 +128,6 @@
   }{%
     \caption@Error{Undefined compatibility value `#1'}%
   }}}
-\newcommand*\caption@setincompatible[2]{%
-  #1{%
-    \caption@Error{%
-      The #2 is incompatible to the\MessageBreak
-      current version of the `caption' package,\MessageBreak
-      so try \string\usepackage{caption}[=v1] instead}%
-  }{}}
-\caption@AtBeginDocument{%
-  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package}%
-}
 \DeclareCaptionOptionNoValue*{normal}{%
   \caption@setup{format=plain,justification=justified}}
 \DeclareCaptionOptionNoValue*{isu}{%

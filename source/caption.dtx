@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2820}
+% \CheckSum{2812}
 %
 % \iffalse
 %<*driver>
@@ -265,7 +265,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2020/12/29 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/02 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -296,35 +296,32 @@
 }{}
 %    \end{macrocode}
 %
+% Check against incompatible packages which used to work fine with \version{1} of the `caption' package.
 % \changes{v3.1}{2007/06/15}{Check against incompatible \package{ftcap} package added}
 % \changes{v3.1}{2007/06/15}{Check against incompatible \package{nonfloat} package added}
 % \changes{v3.1}{2007/06/18}{Check against incompatible \package{topcapt} package added}
+% \changes{v3.6}{2021/01/02}{Check against incompatible packages \package{ftcap}, \package{nonfloat}, and \package{topcapt} revised}
 %    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \@ifpackageloaded{ftcap}{\caption@DisablePositionOption{ftcap}}{}%
-  \@ifpackageloaded{nonfloat}{\caption@DisablePositionOption{nonfloat}}{}%
-  \@ifpackageloaded{topcapt}{\caption@DisablePositionOption{topcapt}}{}}
+  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package}%
+  \caption@setincompatible{\@ifpackageloaded{ftcap}}{ftcap package}%
+  \caption@setincompatible{\@ifpackageloaded{nonfloat}}{nonfloat package}%
+  \caption@setincompatible{\@ifpackageloaded{topcapt}}{topcapt package}}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@DisablePositionOption}
-% \changes{v3.1g}{2008/03/20}{\texttt{position=b} added}
-% \changes{v3.1h}{2008/03/29}{Name changed from \cs{caption@IncompatiblePackage} to \cs{caption@DisablePositionOption}; disables the `position' option now instead of issuing a warning}
-% \changes{v3.6}{2020/09/20}{Usage of \cs{caption@setposition} replaced by \cs{caption@setup}}
-% |\caption@DisablePositionOption|\marg{package}\par
-% disables the `position' option.
+% \begin{macro}{\caption@setincompatible}
+% \changes{v3.4}{2019/09/09}{This macro added}
+% \changes{v3.6}{2020/12/22}{Adapted to fallback concept}
+% |\caption@setincompatible|\marg{condition}\marg{message text}
 %    \begin{macrocode}
-\newcommand*\caption@DisablePositionOption[1]{%
-  \caption@InfoNoLine{%
-    `#1' package detected; setting `position=b' for compatibility reasons}%
-  \caption@setup{position=b}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \DeclareCaptionOption{position}{%
-    \caption@Error{Usage of the `position' option is incompatible\MessageBreak
-      to the `#1' package}}}
-%    \end{macrocode}
-%    \begin{macrocode}
-\@onlypreamble\caption@DisablePositionOption
+\newcommand*\caption@setincompatible[2]{%
+  #1{%
+    \caption@Error{%
+      The #2 is incompatible to the\MessageBreak
+      current version of the `caption' package,\MessageBreak
+      so try \string\usepackage{caption}[=v1] instead}%
+  }{}}
+\@onlypreamble\caption@setincompatible
 %    \end{macrocode}
 % \end{macro}
 %
@@ -471,7 +468,6 @@
 \captionsetup{@minipage=default}
 %    \end{macrocode}
 %
-% \subsection{Compatibility options}
 % \changes{v3.1}{2007/07/21}{Option `compatibility' added}
 % \changes{v3.1}{2007/09/01}{caption v1.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v1.x$ compatibility options}
@@ -495,34 +491,7 @@
   }}}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@setincompatible}
-% \changes{v3.4}{2019/09/09}{This macro added}
-% \changes{v3.6}{2020/12/22}{Adapted to fallback concept}
-% |\caption@setincompatible|\marg{condition}\marg{message text}
-%    \begin{macrocode}
-\newcommand*\caption@setincompatible[2]{%
-  #1{%
-    \caption@Error{%
-      The #2 is incompatible to the\MessageBreak
-      current version of the `caption' package,\MessageBreak
-      so try \string\usepackage{caption}[=v1] instead}%
-  }{}}
-%    \end{macrocode}
-% \end{macro}
-%
-% Check against incompatible packages which used to work fine with \version{1} of the `caption' package.
-%    \begin{macrocode}
-\caption@AtBeginDocument{%
-%    \end{macrocode}
-% The usage of the (now obsolete) \package{captcont} package,
-% which brings its own definition of |\caption*|, was quite common in the old days.
-%    \begin{macrocode}
-  \caption@setincompatible{\@ifpackageloaded{captcont}}{captcont package}%
-%    \end{macrocode}
-% To be continued\ldots
-%    \begin{macrocode}
-}
-%    \end{macrocode}
+% \subsection{caption v1.x compatibility options}
 %
 %    \begin{macrocode}
 \DeclareCaptionOptionNoValue*{normal}{%
