@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2821}
+% \CheckSum{2847}
 %
 % \iffalse
 %<*driver>
@@ -262,7 +262,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2021/01/02 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/03 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -327,14 +327,51 @@
 %
 % \section{Positioning}
 %
-% TODO
+%    \begin{macrocode}
+\DeclareCaptionPosition{auto}{#2}{%
+  \caption@ifsubcaption@above{#2}{%
+%    \end{macrocode}
+%   We try to guess the current position of the caption by checking |\prev|\-|depth|.
+%
+%   A different solution would be setting the |\space|\-|factor| to something
+%   not much less than 1000 (for example 994) in |\caption@start| and
+%   checking this value here by |\ifnum\space|\-|factor=994|.
+%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)
+%
+%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
+%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
+%    \begin{macrocode}
+    \ifvmode
+      \edef\caption@tempa{\the\prevdepth}%
+      \caption@Debug{\string\prevdepth=\caption@tempa}%
+      \ifdim\prevdepth>-\p@
+        #2% position=bottom
+      \else
+        #1% position=top
+      \fi
+    \else
+      \caption@Debug{no \noexpand\prevdepth available}%
+      #2% position=bottom
+    \fi}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@position@a{\caption@position@auto} % needed by floatrow package, \flrow@cappos
+%    \end{macrocode}
+%
+%    \begin{macrocode}
+\SetCaptionDefault{position}{auto}
+%    \end{macrocode}
 %
 % \begin{macro}{\caption@setautoposition}
+% \changes{v3.1}{2007/06/10}{This macro added}
+% \changes{v3.5}{2020/07/27}{Adapted to current implementation of `auto'}
+%   |\caption@setautoposition|\marg{position}\\
+%   replaces the above algorithm by a different one (or a fixed position setting).
 %    \begin{macrocode}
 \newcommand*\caption@setautoposition[1]{} % TODO
 %    \end{macrocode}
 % \end{macro}
-
+%
 % \section{Declaration of options}
 %
 % \subsection{Miscellaneous options}
