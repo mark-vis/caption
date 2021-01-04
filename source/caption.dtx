@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2743}
+% \CheckSum{2759}
 %
 % \iffalse
 %<*driver>
@@ -265,7 +265,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2021/01/02 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/04 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -3159,6 +3159,7 @@
 % \changes{v3.2}{2010/10/26}{Bugfix 10-07-20a: Set \cs{hsize} to \cs{linewidth}, if necessary}
 % \changes{v3.4c}{2020/01/01}{Ugly workaround for usage in lists added}
 % \changes{v3.4d}{2020/01/01}{Ugly workaround for usage in lists revised}
+% \changes{v3.6}{2021/01/04}{Re-definition of \cs{addcontentsline} added}
 %  To support the \package{listings} package we need to redefine
 %  |\lst@Make|\-|Caption| so the original stuff is nested with
 %  |\caption@begin| and |\caption@end| etc.\par
@@ -3169,7 +3170,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
-  \def\lst@MakeCaption#1{% #1 is `t' or `b'
+  \renewcommand*\lst@MakeCaption[1]{% #1 is `t' or `b'
 %    \end{macrocode}
 % This macro is always called twice by the \package{listings} package (with `t' resp. `b' as parameter),
 % therefore we need an extra group here.
@@ -3208,6 +3209,15 @@
 % setting from the \package{listings} package.
 %    \begin{macrocode}
       \caption@setautoposition{#1}%
+%    \end{macrocode}
+%    \begin{macrocode}
+% We re-define |\addcontentsline| so our list format gets used for the lol entry etc.
+      \ifx\lst@@caption\@empty \else
+        \let\caption@ORI@addcontentsline\addcontentsline
+        \renewcommand*\addcontentsline[3]{%
+          \let\addcontentsline\caption@ORI@addcontentsline
+          \caption@addcontentsline{lstlisting}{\lst@@caption}}%
+      \fi
 %    \end{macrocode}
 % At the end we do similar stuff as in our \cs{@caption} code.
 %    \begin{macrocode}

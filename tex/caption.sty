@@ -48,7 +48,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
-\ProvidesPackage{caption}[2021/01/02 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/04 v3.6-dev Customizing captions (AR)]
 \RequirePackage{caption3}[2020/12/28] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -1041,7 +1041,7 @@
   \caption@setbool{lst@Init}{0}%
   \lst@AddToHook{Init}{\caption@setbool{lst@Init}{1}}%
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
-  \def\lst@MakeCaption#1{% #1 is `t' or `b'
+  \renewcommand*\lst@MakeCaption[1]{% #1 is `t' or `b'
     \begingroup
       \caption@iflst@Init{}{%
         \edef\caption@lst@leftskip{\noexpand\hskip-\the\@totalleftmargin\noexpand\relax}%
@@ -1054,6 +1054,12 @@
       \caption@setup{rule=0}%
       \caption@setoptions{lstlisting}%
       \caption@setautoposition{#1}%
+      \ifx\lst@@caption\@empty \else
+        \let\caption@ORI@addcontentsline\addcontentsline
+        \renewcommand*\addcontentsline[3]{%
+          \let\addcontentsline\caption@ORI@addcontentsline
+          \caption@addcontentsline{lstlisting}{\lst@@caption}}%
+      \fi
       \caption@begin{lstlisting}%
         \caption@ORI@lst@MakeCaption{#1}%
       \caption@end

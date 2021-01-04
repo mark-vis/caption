@@ -41,7 +41,7 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2011/07/13}
-\ProvidesPackage{bicaption}[2020/12/26 v1.4a Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2021/01/04 v1.5 Bilingual Captions (AR)]
 \RequirePackage{caption}[2011/11/10] % we need at least v3.2e
 \newcommand*\bicaption@Info[1]{%
   \PackageInfo{bicaption}{#1}}
@@ -252,41 +252,6 @@
     {\bicaption@setup{#3}{#4}%
      \bicaption@cmd[{#1}]{#2}}}
 \long\def\bicaption@star#1[#2]{#1*}
-\newcommand\LT@bicaption{%
-  \noalign\bgroup
-    \@ifstar
-      {\gdef\bicaption@cmd{\LT@c@ption\@gobble}%
-       \LT@@bicaption}%
-      {\gdef\bicaption@cmd{\LT@c@ption\@firstofone}%
-       \caption@dblarg\LT@@@bicaption}}
-\newcommand\LT@@bicaption[1]{%
-  \LT@@@@bicaption{}{#1}[]}
-\long\def\LT@@@bicaption[#1]#2{%
-  \caption@dblarg{\LT@@@@bicaption{#1}{#2}}}
-\long\def\LT@@@@bicaption#1#2[#3]#4{%
-  \gdef\bicaption@LTsetup{%
-    \bicaption@getlabel{#2}%
-    \bicaption@LT@setup}%
-  \gdef\bicaption@LT@setup{%
-    \bicaption@ifswap
-      {\bicaption@setup{#1}{#2}}%
-      {\bicaption@setup{#3}{#4}}}%
-  \bicaption@ifswap
-    {\egroup\bicaption@cmd[{#3}]{#4}}%
-    {\egroup\bicaption@cmd[{#1}]{#2}}}
-\let\bicaption@LTsetup\relax
-\let\bicaption@LT@setup\relax
-\caption@ifundefined\caption@LT@setup{%
-  % Fallback code for caption v3.2
-  \captionsetup*[longtable]{bicaption-lt-setup}
-  \DeclareCaptionOptionNoValue{bicaption-lt-setup}{%
-    \bicaption@LTsetup
-    \global\let\bicaption@LTsetup\relax}
-}{%
-  \g@addto@macro\caption@LT@setup{%
-    \bicaption@LTsetup
-    \global\let\bicaption@LTsetup\relax}
-}
 \@ifundefined{caption@getlabel}{%
   \newcommand\bicaption@getlabel[1]{%  caption3 < v1.7
     \bicaption@@getlabel#1\label{}\@nil}
@@ -329,7 +294,10 @@
 }
 \newcommand\bicaption@setup[2]{%
   \def\bicaption@lentry{#1}%
-  \def\bicaption@text{\ignorespaces#2}}
+  \def\bicaption@text{\ignorespaces #2}}
+\newcommand*\bicaption@clear{%
+  \let\bicaption@lentry\@undefined
+  \let\bicaption@text\@undefined}
 \AtBeginDocument{%
   \ifx\caption@freeze\@undefined \else
     \g@addto@macro\caption@freeze{%
@@ -349,6 +317,57 @@
       \l@addto@macro\caption@warmup{%
         \let\bicaption\caption@frozen@bicaption}}%
   \fi}
+\caption@IfPackageLoaded{listings}[2004/02/13 v1.2]{%
+  \lst@Key{caption1}\relax{%
+    \lstKV@OptArg[{#1}]{#1}{%
+      \bicaption@ifswap
+        {\bicaption@setup{##1}{##2}}%
+        {\def\lst@@caption{##1}\def\lst@caption{##2}}}%
+    \let\lst@title\@empty}%
+  \lst@Key{caption2}\relax{%
+    \lstKV@OptArg[{#1}]{#1}{%
+      \bicaption@ifswap
+        {\def\lst@@caption{##1}\def\lst@caption{##2}}%
+        {\bicaption@setup{##1}{##2}}}%
+    \let\lst@title\@empty}%
+  \lst@AddToHookExe{TextStyle}{%
+    \bicaption@clear}%
+}{}
+\newcommand\LT@bicaption{%
+  \noalign\bgroup
+    \@ifstar
+      {\gdef\bicaption@cmd{\LT@c@ption\@gobble}%
+       \LT@@bicaption}%
+      {\gdef\bicaption@cmd{\LT@c@ption\@firstofone}%
+       \caption@dblarg\LT@@@bicaption}}
+\newcommand\LT@@bicaption[1]{%
+  \LT@@@@bicaption{}{#1}[]}
+\long\def\LT@@@bicaption[#1]#2{%
+  \caption@dblarg{\LT@@@@bicaption{#1}{#2}}}
+\long\def\LT@@@@bicaption#1#2[#3]#4{%
+  \gdef\bicaption@LTsetup{%
+    \bicaption@getlabel{#2}%
+    \bicaption@LT@setup}%
+  \gdef\bicaption@LT@setup{%
+    \bicaption@ifswap
+      {\bicaption@setup{#1}{#2}}%
+      {\bicaption@setup{#3}{#4}}}%
+  \bicaption@ifswap
+    {\egroup\bicaption@cmd[{#3}]{#4}}%
+    {\egroup\bicaption@cmd[{#1}]{#2}}}
+\let\bicaption@LTsetup\relax
+\let\bicaption@LT@setup\relax
+\caption@ifundefined\caption@LT@setup{%
+  % Fallback code for caption v3.2
+  \captionsetup*[longtable]{bicaption-lt-setup}
+  \DeclareCaptionOptionNoValue{bicaption-lt-setup}{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\relax}
+}{%
+  \g@addto@macro\caption@LT@setup{%
+    \bicaption@LTsetup
+    \global\let\bicaption@LTsetup\relax}
+}
 \endinput
 %%
 %% End of file `bicaption.sty'.
