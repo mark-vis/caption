@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2850}
+% \CheckSum{2854}
 %
 % \iffalse
 %<*driver>
@@ -262,7 +262,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2021/01/03 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/05 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -330,28 +330,10 @@
 %    \begin{macrocode}
 \DeclareCaptionPosition{auto}{#2}{%
   \caption@ifsubcaption@above{#2}{%
-%    \end{macrocode}
-%   We try to guess the current position of the caption by checking |\prev|\-|depth|.
-%
-%   A different solution would be setting the |\space|\-|factor| to something
-%   not much less than 1000 (for example 994) in |\caption@start| and
-%   checking this value here by |\ifnum\space|\-|factor=994|.
-%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)
-%
-%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
-%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
-%    \begin{macrocode}
     \ifvmode
-      \edef\caption@tempa{\the\prevdepth}%
-      \caption@Debug{\string\prevdepth=\caption@tempa}%
-      \ifdim\prevdepth>-\p@
-        #2% position=bottom
-      \else
-        #1% position=top
-      \fi
+      \caption@autoposition{#1}{#2}%
     \else
-      \caption@Debug{no \noexpand\prevdepth available}%
-      #2% position=bottom
+      #2%
     \fi}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -370,7 +352,47 @@
 %   replaces the above algorithm by a different one (or a fixed position setting).
 %    \begin{macrocode}
 \newcommand*\caption@setautoposition[1]{%
-  \renewcommand*\caption@position@auto{\@nameuse{caption@position@#1}}}
+  \renewcommand*\caption@position@auto{%
+    \@nameuse{caption@position@#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@autoposition}
+% \changes{v3.0a}{2004/01/23}{\cs{ifvmode} added}
+% \changes{v3.0b}{2004/05/16}{Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
+% \changes{v3.5}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v3.6}{2021/01/05}{Adapted to current implementation of `auto'; \cs{ifvmode} moved into definition of `auto'}
+%   We try to guess the current position of the caption by checking |\prev|\-|depth|.
+%
+%   A different solution would be setting the |\space|\-|factor| to something
+%   not much less than 1000 (for example 994) in |\caption@start| and
+%   checking this value here by |\ifnum\space|\-|factor=994|.
+%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)
+%
+%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
+%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
+%    \begin{macrocode}
+\newcommand*\caption@autoposition[2]{%
+  \edef\caption@tempa{\the\prevdepth}%
+  \caption@Debug{\string\prevdepth=\caption@tempa}%
+  \ifdim\prevdepth>-\p@
+    #2% position=bottom
+  \else
+    #1% position=top
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@autoposition}
+% \changes{v3.6}{2021/01/05}{This macro added}
+% |\DeclareCaptionAutoPosition|\marg{code with \#1 and \#2}\\
+% replaces the inner algorithm of |position=auto| with a custom one.
+% If \#1 is applied the skip will be typeset below the caption
+% (like |position=t|), if \#2 is applied the skip will by typeset
+% above the caption (like |position=b|).
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionAutoPosition{%
+  \renewcommand*\caption@autoposition[2]}%
 %    \end{macrocode}
 % \end{macro}
 %

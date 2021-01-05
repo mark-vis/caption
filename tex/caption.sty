@@ -48,7 +48,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
-\ProvidesPackage{caption}[2021/01/03 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/05 v3.6-dev Customizing captions (AR)]
 \RequirePackage{caption3}[2021/01/02] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -75,21 +75,25 @@
 \DeclareCaptionPosition{auto}{#2}{%
   \caption@ifsubcaption@above{#2}{%
     \ifvmode
-      \edef\caption@tempa{\the\prevdepth}%
-      \caption@Debug{\string\prevdepth=\caption@tempa}%
-      \ifdim\prevdepth>-\p@
-        #2% position=bottom
-      \else
-        #1% position=top
-      \fi
+      \caption@autoposition{#1}{#2}%
     \else
-      \caption@Debug{no \noexpand\prevdepth available}%
-      #2% position=bottom
+      #2%
     \fi}}
 \def\caption@position@a{\caption@position@auto} % needed by floatrow package, \flrow@cappos
 \SetCaptionDefault{position}{auto}
 \newcommand*\caption@setautoposition[1]{%
-  \renewcommand*\caption@position@auto{\@nameuse{caption@position@#1}}}
+  \renewcommand*\caption@position@auto{%
+    \@nameuse{caption@position@#1}}}
+\newcommand*\caption@autoposition[2]{%
+  \edef\caption@tempa{\the\prevdepth}%
+  \caption@Debug{\string\prevdepth=\caption@tempa}%
+  \ifdim\prevdepth>-\p@
+    #2% position=bottom
+  \else
+    #1% position=top
+  \fi}
+\newcommand*\DeclareCaptionAutoPosition{%
+  \renewcommand*\caption@autoposition[2]}%
 \DeclareCaptionOption*{config}[caption]{%
    \InputIfFileExists{#1.cfg}%
      {\typeout{*** Local configuration file #1.cfg used ***}}%
