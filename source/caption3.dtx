@@ -2,7 +2,7 @@
 % 
 % This is file `caption3.dtx'.
 % 
-% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2021 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3685}
+% \CheckSum{3680}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2020/12/24 v2.3 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2021/01/02 v2.3 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -147,12 +147,8 @@
 % \begin{quote}\begin{tabular}{ll}
 %   Internal command            & Currently used by    \\
 % \hline
-%   |\caption@hangindent     |  & \package{bidi}       \\
 %   |\caption@@@make|           & \package{floatrow}   \\
-%   |\caption@@par|             & \package{bidi}       \\
-%   |\caption@parindent|        & \package{bidi}       \\
 %   |\caption@set@bool|         & \package{floatrow}   \\
-%   |\caption@setautoposition|  & \package{bidi}       \\
 %   |\caption@setfont|          & \package{floatrow}   \\
 %   |\caption@setkeys|          & \package{floatrow}   \\
 %   |\caption@setstyle*|        & \package{floatrow}   \\
@@ -268,7 +264,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2020/12/28 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/01/02 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2740,16 +2736,19 @@
 % usually has to take care for himself that this hint actually matches the
 % right position.
 %
-% \begin{macro}{\caption@declare@position}
+% \begin{macro}{\DeclareCaptionPosition}
 % \changes{v2.0}{2020/07/26}{This macro added}
-%   |\caption@declare@position|\marg{name}\marg{code}\\
-%   declares a captionposition setting of the given \meta{name},
-%   \meta{code} must either expand to |\@first|\-|of|\-|two| (top) or
-%   |\@second|\-|of|\-|two| (below).
+% \changes{v2.3}{2021/01/02}{This macro renamed from \cs{caption@declare@position} to \cs{DeclareCaptionPosition} and rewritten}
+%   |\DeclareCaptionPosition|\marg{name}\marg{fallback-code}\marg{regular-code}\\
+%   declares a caption position setting of the given \meta{name}.
+%   The \meta{fallback-code} will be used when |\caption@iftop| is used before |\caption|
+%   and the \meta{regular-code} will be used when |\caption| is used before |\caption@iftop|.
 %    \begin{macrocode}
-\newcommand*\caption@declare@position[2]{%
-  \caption@decl{position}{#1}{#2}}
-\@onlypreamble\caption@declare@position
+\newcommand*\DeclareCaptionPosition[3]{%
+  \caption@decl[\edef]{position}{#1}{%
+    \unexpanded{\def\caption@fallback@position}####1####2\unexpanded{{#2}}%
+    \unexpanded{\def\caption@regular@position}####1####2\unexpanded{{#3}}}}
+\@onlypreamble\DeclareCaptionPosition
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2770,38 +2769,45 @@
 % \changes{v1.0a}{2004/01/22}{Now the positions \opt{t}, \opt{above}, \opt{b}, \opt{below}, and \opt{a} are allowed, too}
 % \changes{v1.0c}{2004/08/10}{Usage of \cs{caption@defaultpos} added}
 % \changes{v2.0}{2020/07/27}{Uses \cs{caption@set} now}
+% \changes{v2.3}{2021/01/02}{Uses \cs{caption@initposition} additionally}
 %   |\caption@setposition|\marg{position}\\
 %   puts |\caption@position| to the right value.
-%   (Note: Since this command is used by the \package{floatrow} package as well
-%    its syntax should not change.)
+%   (Note: Since this command is used by the \package{floatrow} package as well its syntax should not change.)
 %    \begin{macrocode}
-\newcommand*\caption@setposition{\caption@set{position}}
+\newcommand*\caption@setposition{%
+  \caption@initposition
+  \caption@set{position}}
 %    \end{macrocode}
 % \end{macro}
 %
 % These are the pre-defined position code snippets.
 %    \begin{macrocode}
-\caption@declare@position{t}{\@firstoftwo}
-\caption@declare@position{top}{\@firstoftwo}
-\caption@declare@position{above}{\@firstoftwo}
-\caption@declare@position{b}{\@secondoftwo}
-\caption@declare@position{bottom}{\@secondoftwo}
-\caption@declare@position{below}{\@secondoftwo}
-\caption@declare@position{a}{\caption@autoposition}% needed by floatrow package, \flrow@cappos
-\caption@declare@position{auto}{\caption@autoposition}
+\DeclareCaptionPosition{top}{#1}{#1}
+\def\caption@position@t{\caption@position@top}
+\def\caption@position@above{\caption@position@top}
+%    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionPosition{bottom}{#2}{#2}
+\def\caption@position@b{\caption@position@bottom}
+\def\caption@position@below{\caption@position@bottom}
 %    \end{macrocode}
 %
 % \changes{v1.1}{2007/05/08}{Default position changed from `bottom' to `auto'}
-% `default' usually maps to `auto'.
+% \changes{v1.3}{2021/01/02}{Default position changed back from `auto' to `bottom'}
+% `default' usually maps to `bottom'.
 %    \begin{macrocode}
-\SetCaptionDefault{position}{auto}
+\SetCaptionDefault{position}{bottom}
 %    \end{macrocode}
 %
-% \begin{macro}{\caption@autoposition}
-% \changes{v2.0}{2020/07/27}{This macro added}
-% If in doubt, `position=auto' maps to `position=below'.
+% \begin{macro}{\caption@initposition}
+% \changes{v2.3}{2021/01/02}{This macro added}
+%   |\caption@initposition|\\
+%   initialize the position option defined with |\Declare|\-|Caption|\-|Position|.
+%   This macro is usually used at |\@float|, i.e. at the beginning of a floating
+%   environment.
 %    \begin{macrocode}
-\let\caption@autoposition\@secondoftwo
+\newcommand*\caption@initposition{%
+  \let\caption@@iftop\@undefined}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2810,10 +2816,13 @@
 % \changes{v1.0c}{2005/02/12}{Adapted to \cs{caption@defaultpos}}
 % \changes{v1.1}{2007/05/08}{Position will be fixed to `bottom' if `auto'}
 % \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/02}{Adapted to current implementation of `position'}
 %   |\caption@iftop|\marg{true-code}\marg{false-code}\\
-%   Since version \version{2.0} this command is identical to |\caption@position|.
+%   tests if the caption position is set to `top' and sets the state to 2.
 %    \begin{macrocode}
-\newcommand*\caption@iftop{\caption@position}
+\newcommand*\caption@iftop{%
+  \caption@@fixposition\caption@fallback@position
+  \caption@@iftop}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2821,39 +2830,22 @@
 % \changes{v1.0a}{2004/01/23}{\cs{ifvmode} added}
 % \changes{v1.0b}{2004/05/16}{Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
 % \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/02}{Adapted to current implementation of `position'}
 %   |\caption@fixposition|\\
-%   We try to guess the current position of the caption by checking |\prev|\-|depth|.\par
-%   A different solution would be setting the |\space|\-|factor| to something
-%   not much less than 1000 (for example 994) in |\caption@start| and
-%   checking this value here by |\ifnum\space|\-|factor=994|.
-%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)\par
-%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
-%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
+%   freezes the position settings defined with |\Declare|\-|Caption|\-|Position|
+%   by expanding the given code, either the \meta{fallback-code} or the \meta{regular-code}.
+%   This macro is usually used at |\caption|, i.e. before the main caption is
+%   typeset. (Note: This macro is not used at |\caption| inside sub-figures.)
 %    \begin{macrocode}
 \newcommand*\caption@fixposition{%
-  \ifvmode
-    \edef\caption@tempa{\the\prevdepth}%
-    \caption@Debug{\protect\prevdepth=\caption@tempa}%
-    \ifdim\prevdepth>-\p@
-      \let\caption@autoposition\@secondoftwo % position=below
-    \else
-      \let\caption@autoposition\@firstoftwo  % position=above
-    \fi
-  \else
-    \caption@Debug{no \protect\prevdepth}%
-    \let\caption@autoposition\@secondoftwo   % position=below
-  \fi}
+  \caption@@fixposition\caption@regular@position}
 %    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@setautoposition}
-% \changes{v1.1}{2007/06/10}{This macro added}
-% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
-%   |\caption@setautoposition|\marg{position}\\
-%   replaces the above algorithm by a different one (or a fixed position setting).
 %    \begin{macrocode}
-\newcommand*\caption@setautoposition[1]{%
-  \def\caption@fixposition{\caption@@set{position}{autoposition}{#1}}}
+\newcommand*\caption@@fixposition[1]{%
+  \ifx\caption@@iftop\@undefined
+    \caption@position % defines \caption@fallback@position and \caption@regular@position
+    #1{\let\caption@@iftop\@firstoftwo}{\let\caption@@iftop\@secondoftwo}%
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
