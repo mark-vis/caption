@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3680}
+% \CheckSum{3686}
 %
 % \iffalse
 %<*driver>
@@ -110,7 +110,7 @@
 % called |\@makecaption| and no options to control its behavior (except the
 % vertical skips above and below the caption itself), we provide similar
 % commands called |\caption@make| and |\caption@@make|, but with a lot of
-% options which can be selected with |\captionsetup|.
+% options which can be selected with |\caption|\-|setup|.
 % Loading the kernel part do not change the output of a \LaTeX\ document
 % -- it just provides functionality which can be used by \LaTeXe\ packages
 % which typesets captions, for example the \package{caption} and
@@ -264,7 +264,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2021/01/02 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/01/06 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3773,6 +3773,7 @@
 % \changes{v1.7}{2015/09/15}{Argument \#3 which holds the environment name added to \cs{caption@lstfmt}}
 % \changes{v1.7}{2015/09/20}{Unfortunately \package{subfig} defines and uses \cs{caption@lstfmt} as well, so I replaced the third argument with \cs{captionlisttype}}
 % \changes{v1.8}{2018/09/06}{Adapted to the \package{chkfloat} package}
+% \changes{v2.3}{2021/01/06}{Usage of \cs{p@xxx} and \cs{thexxx} replaced by \cs{caption@p} and \cs{caption@the}}
 %   |\caption@addcontentsline|\marg{type}\marg{list entry}\\
 %   makes an entry in the list-of-whatever, if requested, i.e.~the argument
 %   \meta{list entry} is not empty and |list|\-|of=| was set to |true|.
@@ -3791,7 +3792,7 @@
       \@tempa
         {\caption@Debug{addcontentsline: #1 => \caption@listtype}%
 %        \caption@setoptions\caption@listtype
-         \@namedef{the\caption@listtype}{\@nameuse{the#1}}}%
+         \@namedef{the\caption@listtype}{\caption@the{#1}}}%
       \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
     \endgroup}%
     \caption@addsubcontentslines{#1}}
@@ -3805,7 +3806,7 @@
       \caption@add@contentsline
         {\csname ext@#1\endcsname}%
         {#1}%
-        {\caption@listformat{\@nameuse{p@#1}}{\@nameuse{the#1}}}%
+        {\caption@listformat{\caption@p{#1}}{\caption@the{#1}}}%
         {\ignorespaces #2}%
       \caption@chkfloat{#1}{#2}}}}
 %    \end{macrocode}
@@ -3867,12 +3868,29 @@
 % \begin{macro}{\caption@fnum}
 % \changes{v1.1}{2007/08/21}{This macro added}
 % \changes{v2.0}{2020/08/03}{The original definition will be stored in \cs{caption@original@fnum}}
+% \changes{v2.3}{2021/01/06}{Usage of \cs{thexxx} replaced by \cs{caption@the}}
 %   |\caption@fnum|\marg{float type}\\
 %   typesets the caption label; this acts as replacement for |\fnum@|\meta{float type}.
 %    \begin{macrocode}
 \newcommand*\caption@fnum[1]{%
   \expandafter\let\expandafter\caption@original@fnum\csname caption@fnum@#1\endcsname % for label format `original'
-  \caption@labelformat{\@nameuse{#1name}}{\@nameuse{the#1}}}
+  \caption@labelformat{\@nameuse{#1name}}{\caption@the{#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@p}
+% \changes{v2.3}{2021/01/06}{This macro added}
+% |\caption@p| is a simple wrapper macro for |\@nameuse{p@#1}|.
+%    \begin{macrocode}
+\newcommand*\caption@p[1]{\@nameuse{p@#1}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@the}
+% \changes{v2.3}{2021/01/06}{This macro added}
+% |\caption@the| is a simple wrapper macro for |\@nameuse{the#1}|.
+%    \begin{macrocode}
+\newcommand*\caption@the[1]{\@nameuse{the#1}}
 %    \end{macrocode}
 % \end{macro}
 %
