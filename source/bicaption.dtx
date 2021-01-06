@@ -32,12 +32,12 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{613}
+% \CheckSum{615}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2021/01/04 v1.5 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2021/01/06 v1.5 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -448,30 +448,27 @@
 % \medskip
 %
 % \DescribeMacro\captionmainlanguage
-% |\caption|\-|main|\-|lan|\-|guage| contains the main language, e.g. |english| or |german|.
-% If not set prior to loading \thispackage, \thispackage\ will try to obtain this setting from
-% the \package{babel} or \package{polyglossia} package.
+% |\caption|\-|main|\-|lan|\-|guage| contains the main language, for example
+% `french' or `german'.
+% If not set manually, \thispackage\ will try to obtain this setting from
+% the \package{babel} or \package{polyglossia} package after the preamble of
+% the document, i.e.~at |\begin{doc|\-|u|\-|ment}|.
 %
-% So if you are using either \package{babel} or \package{polyglossia}, and want to adopt
-% the main language setting from it, then just load \thispackage\ \emph{after} it,
-% and simply forget about the |\caption|\-|main|\-|lan|\-|guage| stuff.
+% So if you are using either \package{babel} or \package{polyglossia}, and want to inherit
+% the main language setting from it, then simply forget about the
+% |\caption|\-|main|\-|lan|\-|guage| stuff and skip the rest of the section.
 %
-% Otherwise one can either define |\caption|\-|main|\-|lan|\-|guage| prior to
-% loading \thispackage, e.g.:
+% \pagebreak[3]
+% Otherwise one can define |\caption|\-|main|\-|lan|\-|guage| manually, e.g.:
 % \begin{quote}
 %   |\newcommand\captionmainlanguage{french}|\\
-%   |\usepackage|\oarg{options}|{bicaption}|
+%   |\usepackage[lang=english]{bicaption}|
 % \end{quote}
-% Or one can specify the main language via |\caption|\-|setup| after loading \thispackage, e.g.:
-% \begin{quote}
-%   |\usepackage|\oarg{options}|{bicaption}|\\
-%   |\captionsetup[bi-first]{lang=french}|
-% \end{quote}
-% When not using the \package{babel} or \package{polyglossia} package both approaches
-% will have exactly the same effect.
-% But when using the \package{babel} or \package{polyglossia} package, and one want to
-% specify the main caption language manually, the first approach is preferable since
-% defining |\caption|\-|main|\-|lan|\-|guage| will suppress the automatic detection mechanism.
+%
+% \pagebreak[3]
+% Note: Prior to \version{1.5} |\caption|\-|main|\-|language| needed to be defined
+% \emph{before} loading \thispackage. Since \version{1.5} is could be defined either
+% before or after loading \thispackage.
 %
 % \medskip
 %
@@ -534,12 +531,12 @@
 % \begin{quote}
 %   |\documentclass[a4paper]{article}|\\
 %   ||\\
-%   |% Set "german" as main bi-caption language|\\
-%   |\newcommand\captionmainlanguage{german}|\\
-%   ||\\
 %   |% Load the bicaption package with 2nd language set to|\\
 %   |% "english"|\\
 %   |\usepackage[lang=english]{bicaption}|\\
+%   ||\\
+%   |% Set "german" as main bi-caption language|\\
+%   |\newcommand\captionmainlanguage{german}|\\
 %   ||\\
 %   |% Declare an own language switching mechanism|\\
 %   |% for bi-captions (instead of using babel)|\\
@@ -567,6 +564,18 @@
 %   |\end{figure}|\\
 %   ||\\
 %   |\end{document}|
+% \end{quote}
+%
+% \pagebreak[3]
+% \NEWfeature{v1.5}
+% Since \version{1.5} a warning is issued if the main language could neither be
+% detected automatically nor was it set explicitly by the user.
+% If you really don't want to set languages for bi-captions but are annoyed by
+% the warning you could trick the \package{bicaption} by defining a custom
+% dummy language-selection mechanism, e.g.:
+% \begin{quote}
+%   |\newcommand\captionmainlanguage{dummy}|\\
+%   |\renewcommand\selectcaptionlanguage[2]{}|\\
 % \end{quote}
 %
 % \medskip
@@ -1074,7 +1083,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{bicaption}[2021/01/04 v1.5 Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2021/01/06 v1.5a Bilingual Captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \package{caption} package we load it here.
@@ -1229,7 +1238,7 @@
   \caption@ifundefined\bicaption@language
     \bicaption@language@setupkeys
     \relax
-  \def\bicaption@language{#1}%
+  \edef\bicaption@language{#1}%
   \let\bicaption@language@setoptions\@empty}
 %    \end{macrocode}
 % Map |language=| to |lang=|.
@@ -1323,29 +1332,46 @@
 %    \end{macrocode}
 %
 % Set the language for the first caption.
+% (Since \version{1.5a} we do this |\At|\-|Begin|\-|Document| so
+% |\caption|\-|main|\-|language| could be defined \emph{after} loading the
+% \package{bicaption} package resp.~\package{babel} or \package{polyglossia}
+% could be loaded \emph{after} the \package{bicaption} package.)
 %    \begin{macrocode}
-\ifcsname captionmainlanguage\endcsname
-  \bicaption@InfoNoLine{%
-    main language is set to \captionmainlanguage}
-\else\ifcsname bbl@main@language\endcsname
-  \bicaption@InfoNoLine{%
-    babel found, main language is \bbl@main@language}
-  \let\captionmainlanguage\bbl@main@language
-\else\ifcsname xpg@main@language\endcsname
-  \bicaption@InfoNoLine{%
-    polyglossia found, main language is \xpg@main@language}
-  \let\captionmainlanguage\xpg@main@language
-\else
-  \bicaption@InfoNoLine{main language is not set}
-\fi\fi\fi
+\AtBeginDocument{%
+  \ifcsname captionmainlanguage\endcsname
+    \bicaption@InfoNoLine{%
+      Main language is set to \captionmainlanguage}%
+  \else
+    \bicaption@setmainlanguage
+  \fi
 %    \end{macrocode}
 %    \begin{macrocode}
-\ifcsname captionmainlanguage\endcsname
-  \edef\@tempa{%
-    \noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
-  \@tempa
-\fi
+  \ifcsname captionmainlanguage\endcsname
+    \captionsetup[bi-first]{lang=\captionmainlanguage}%
+  \else
+    \bicaption@Warning{Main language is not set}%
+  \fi}
 %    \end{macrocode}
+%
+% \begin{macro}{\bicaption@setmainlanguage}
+% \changes{v1.5a}{2011/08/31}{This macro added as encapsulation of setting \cs{captionmainlanguage}}
+% |\bicaption@setmainlanguage| is used to define
+% |\caption|\-|main|\-|language| if not already done.
+%    \begin{macrocode}
+\newcommand*\bicaption@setmainlanguage{%
+  \ifcsname bbl@main@language\endcsname
+    \bicaption@InfoNoLine{%
+      babel found, main language is \bbl@main@language}%
+    \let\captionmainlanguage\bbl@main@language
+  \else\ifcsname xpg@main@language\endcsname
+    \bicaption@InfoNoLine{%
+      polyglossia found, main language is \xpg@main@language}%
+    \let\captionmainlanguage\xpg@main@language
+  \fi\fi}
+\@onlypreamble\bicaption@setmainlanguage
+%    \end{macrocode}
+% \end{macro}
+%
 % We use |\caption@Process|\-|Options| here to add the options to the `|bi-second|' option
 % list instead of executing them immediately.
 %    \begin{macrocode}
@@ -1794,7 +1820,7 @@
 %
 % \begin{macro}{\caption@LT@setup}
 % \changes{v1.1}{2016/01/31}{Adaption to \package{longtable} package added}
-% \changes{v1.4}{2020/12/25}{Fallback code for \package{caption} package \version{v3.2} added}
+% \changes{v1.4}{2020/12/25}{Fallback code for \package{caption} package \version{3.2} added}
 % Execute the stuff defined by \cs{LT@bicaption} to prepare the typesetting
 % of the \package{longtable} bilingual caption.
 %    \begin{macrocode}

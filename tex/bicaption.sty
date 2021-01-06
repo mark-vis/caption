@@ -41,7 +41,7 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2011/07/13}
-\ProvidesPackage{bicaption}[2021/01/04 v1.5 Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2021/01/06 v1.5a Bilingual Captions (AR)]
 \RequirePackage{caption}[2011/11/10] % we need at least v3.2e
 \newcommand*\bicaption@Info[1]{%
   \PackageInfo{bicaption}{#1}}
@@ -98,7 +98,7 @@
   \caption@ifundefined\bicaption@language
     \bicaption@language@setupkeys
     \relax
-  \def\bicaption@language{#1}%
+  \edef\bicaption@language{#1}%
   \let\bicaption@language@setoptions\@empty}
 \let\KV@caption@language\KV@caption@lang
 \newcommand*\bicaption@language@keylist{}
@@ -131,25 +131,29 @@
 \providecommand*\selectcaptionlanguage[1]{%
   #1\select@language\selectlanguage}
 \caption@ExecuteOptions{caption}{bi-lang=0,bi-slc=1,bi-swap=0,bi-separator=default}
-\ifcsname captionmainlanguage\endcsname
-  \bicaption@InfoNoLine{%
-    main language is set to \captionmainlanguage}
-\else\ifcsname bbl@main@language\endcsname
-  \bicaption@InfoNoLine{%
-    babel found, main language is \bbl@main@language}
-  \let\captionmainlanguage\bbl@main@language
-\else\ifcsname xpg@main@language\endcsname
-  \bicaption@InfoNoLine{%
-    polyglossia found, main language is \xpg@main@language}
-  \let\captionmainlanguage\xpg@main@language
-\else
-  \bicaption@InfoNoLine{main language is not set}
-\fi\fi\fi
-\ifcsname captionmainlanguage\endcsname
-  \edef\@tempa{%
-    \noexpand\captionsetup[bi-first]{lang=\captionmainlanguage}}
-  \@tempa
-\fi
+\AtBeginDocument{%
+  \ifcsname captionmainlanguage\endcsname
+    \bicaption@InfoNoLine{%
+      Main language is set to \captionmainlanguage}%
+  \else
+    \bicaption@setmainlanguage
+  \fi
+  \ifcsname captionmainlanguage\endcsname
+    \captionsetup[bi-first]{lang=\captionmainlanguage}%
+  \else
+    \bicaption@Warning{Main language is not set}%
+  \fi}
+\newcommand*\bicaption@setmainlanguage{%
+  \ifcsname bbl@main@language\endcsname
+    \bicaption@InfoNoLine{%
+      babel found, main language is \bbl@main@language}%
+    \let\captionmainlanguage\bbl@main@language
+  \else\ifcsname xpg@main@language\endcsname
+    \bicaption@InfoNoLine{%
+      polyglossia found, main language is \xpg@main@language}%
+    \let\captionmainlanguage\xpg@main@language
+  \fi\fi}
+\@onlypreamble\bicaption@setmainlanguage
 \caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
 \let\bicaption@addcontentsline@ORI\caption@addcontentsline
