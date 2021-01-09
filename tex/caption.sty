@@ -47,9 +47,9 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
-\ProvidesPackage{caption}[2021/01/05 v3.6-dev Customizing captions (AR)]
-\RequirePackage{caption3}[2021/01/02] % needs v2.3 or newer
+\DeclareCurrentRelease{v3.6}{2021-01-09} % TODO: Insert CTAN release date of v3.6 here!
+\ProvidesPackage{caption}[2021/01/09 v3.6-dev Customizing captions (AR)]
+\RequirePackage{caption3}[2021/01/06] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -299,6 +299,7 @@
 \newcommand*\caption@settype{%
   \caption@initposition
   \caption@clrflags
+  \aftergroup\flushsubcaptionlistentries
   \caption@@settype}
 \newcommand*\caption@@settype{%
   \caption@teststar{\caption@@@settype{}}\@firstoftwo\@secondoftwo}
@@ -501,6 +502,7 @@
      #1{}{\caption@reset@currentlabel\caption@start}}%
     {\caption@Error{\noexpand\nextfloat outside float}}}
 \newcommand*\caption@@nextfloat[1]{%
+  \flushsubcaptionlistentries
   \caption@clrflags
   \ifx\caption@@@continuedfloat\@gobble
     % next continued float
@@ -510,7 +512,7 @@
   \@nameuse{donemaincaptiontrue}% Support of the memoir document class
   \caption@ifrefstepcounter\caption@@refstepcounter\caption@@refcounter}
 \newcommand*\caption@@refstepcounter[1]{%
-  \caption@prepare@stepcounter{ref}{#1}%
+  \caption@prepare@stepcounter{#1}%
   \caption@refstepcounter@{#1}}
 \newcommand*\caption@@refcounter[1]{%
   \let\caption@stepcounter@ORI\stepcounter
@@ -528,12 +530,12 @@
 \newcommand*\caption@stepcounter{%
   \caption@ifstepcounter\caption@@stepcounter\caption@@counter}
 \newcommand*\caption@@stepcounter[1]{%
-  \caption@prepare@stepcounter{}{#1}%
+  \caption@prepare@stepcounter{#1}%
   \caption@stepcounter@{#1}}
 \newcommand*\caption@@counter[1]{} % nothing to do
 \newcommand*\caption@stepcounter@{\stepcounter}
-\newcommand*\caption@prepare@stepcounter[1]{%
-  \caption@addsubcontentslines{#1stepcounter}%
+\newcommand*\caption@prepare@stepcounter{%
+  \caption@addsubcontentslines\relax
   \caption@reset@continuedfloat}
 \newcommand*\caption@ifrefstepcounter{%
   \caption@ifcounter
@@ -668,24 +670,13 @@
       \noexpand\caption@@@addcontentsline{#1}{#2}{#3}{#4}}}%
   \@tempa}
 \newcommand*\flushsubcaptionlistentries{%
-  \caption@addsubcontentslines{user}}
+  \caption@addsubcontentslines\relax}
 \renewcommand*\caption@addsubcontentslines[1]{%
-  \caption@Debug{\string\flushsubcaptionlistentries (#1)}%
+  \caption@Debug{\string\flushsubcaptionlistentries}%
   \begingroup
     \caption@subcontentslines
   \endgroup
   \caption@clearsubcontentslines}
-\AtBeginDocument{%
-  \caption@ifdefined\chapter{%
-    \let\caption@chapter@ORI\chapter
-    \def\chapter{%
-      \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}{}%
-  \caption@ifdefined\appendix{%
-    \let\caption@appendix@ORI\appendix
-    \def\appendix{%
-      \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}{}%
-  \caption@addsubcontentslines{AtEndDocument}%
-}
 \caption@IfBabelArabi{%
   \let\@makecaption\caption@makecaption
   \def\fnum@figure{\figurename\nobreakspace\thefigure}%
@@ -1132,7 +1123,7 @@
       \caption@LT@setup
       \caption@setautoposition{\ifcase\LT@rows t\else b\fi}%
       \caption@startrue#1\caption@starfalse
-      \caption@prepare@stepcounter{LT}\LTcaptype
+      \caption@prepare@stepcounter\LTcaptype
       \caption@begin\LTcaptype
         \caption@normalsize
         \vskip-\ht\strutbox

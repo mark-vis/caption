@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2793}
+% \CheckSum{2778}
 %
 % \iffalse
 %<*driver>
@@ -257,19 +257,19 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2021-01-01} % TODO: Insert CTAN release date of v3.6 here!
+\DeclareCurrentRelease{v3.6}{2021-01-09} % TODO: Insert CTAN release date of v3.6 here!
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2021/01/05 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2021/01/09 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 % Load a matching version of the \package{caption} kernel.
 %    \begin{macrocode}
-\RequirePackage{caption3}[2021/01/02] % needs v2.3 or newer
+\RequirePackage{caption3}[2021/01/06] % needs v2.3 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1016,6 +1016,7 @@
 % \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 % \changes{v3.5}{2020/08/24}{Definition method adapted to the \package{caption-light} package}
 % \changes{v3.6}{2021/01/02}{Usage of \cs{caption@initposition} added}
+% \changes{v3.6}{2021/01/09}{Usage of \cs{flushsubcaptionlistentries} added}
 %  Like |\captionsetup{type=xxx}|, but also works if |\caption|\-|setup| was redefined.
 %    \begin{macrocode}
 \def\setcaptiontype{%
@@ -1026,6 +1027,7 @@
 \newcommand*\caption@settype{%
   \caption@initposition
   \caption@clrflags
+  \aftergroup\flushsubcaptionlistentries
   \caption@@settype}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1540,6 +1542,7 @@
 %
 % \begin{macro}{\nextfloat}
 % \changes{v3.6}{2020/09/20}{This command added}
+% \changes{v3.6}{2021/01/09}{Usage of \cs{flushsubcaptionlistentries} added}
 % |\nextfloat| resets the flags (indicating that the next contents of the floating environment starts here),
 % and sets a new \package{hyperref} anchor.
 %    \begin{macrocode}
@@ -1555,6 +1558,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@nextfloat[1]{%
+  \flushsubcaptionlistentries
   \caption@clrflags
   \ifx\caption@@@continuedfloat\@gobble
     % next continued float
@@ -1573,6 +1577,7 @@
 % \changes{v3.5e}{2020/09/28}{Bugfix in re-definition of \cs{stepcounter}; uses \cs{edef} instead of \cs{def} now}
 % \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@ifrefstepcounter}}
 % \changes{v3.6}{2020/12/27}{\cs{caption@@@refstepcounter} renamed to \cs{caption@refstepcounter@}}
+% \changes{v3.6}{2021/01/09}{Adapted to current interface of \cs{caption@prepare@stepcounter}}
 % |\caption@refstepcounter|\marg{counter}\\
 % increments the float counter (using |\ref|\-|step|\-|counter|) and resets the continuation counter.
 %    \begin{macrocode}
@@ -1582,7 +1587,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@refstepcounter[1]{%
-  \caption@prepare@stepcounter{ref}{#1}%
+  \caption@prepare@stepcounter{#1}%
   \caption@refstepcounter@{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1608,6 +1613,7 @@
 % \changes{v3.6}{2020/09/20}{This macro added}
 % \changes{v3.6}{2020/12/27}{Handling of flags out-sourced to \cs{caption@ifstepcounter}}
 % \changes{v3.6}{2020/12/27}{\cs{caption@@@stepcounter} renamed to \cs{caption@stepcounter@}}
+% \changes{v3.6}{2021/01/09}{Adapted to current interface of \cs{caption@prepare@stepcounter}}
 % |\caption@stepcounter|\marg{counter}\\
 % increments the float counter (using |\step|\-|counter|) and resets the continuation counter.
 %    \begin{macrocode}
@@ -1616,7 +1622,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@stepcounter[1]{%
-  \caption@prepare@stepcounter{}{#1}%
+  \caption@prepare@stepcounter{#1}%
   \caption@stepcounter@{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1629,11 +1635,12 @@
 %
 % \begin{macro}{\caption@prepare@stepcounter}
 % \changes{v3.3}{2011/12/28}{This macro added}
-% |\caption@prepare@stepcounter|\marg{source hint}\marg{counter}
+% \changes{v3.6}{2021/01/09}{Argument \meta{source hint} dropped; adapted to current interface of \cs{caption@addsubcontentslines}}
+% |\caption@prepare@stepcounter|\marg{counter}
 % Dumps the cached list entries and resets the continuation counter.
 %    \begin{macrocode}
-\newcommand*\caption@prepare@stepcounter[1]{%
-  \caption@addsubcontentslines{#1stepcounter}%
+\newcommand*\caption@prepare@stepcounter{%
+  \caption@addsubcontentslines\relax
   \caption@reset@continuedfloat}
 %    \end{macrocode}
 % \end{macro}
@@ -2033,45 +2040,20 @@
 % \begin{macro}{\flushsubcaptionlistentries}
 % \changes{v3.3}{2012/01/15}{Renamed from \cs{caption@addsubcontentslines} to \cs{flushsubcaptionlistentries}}
 % \changes{v3.3}{2013/03/10}{Bugfix: Missing redefinition of \cs{caption@addsubcontentslines} added}
+% \changes{v3.6}{2021/01/09}{Patch of \cs{chapter} and \cs{appendix} dropped}
 % Writes pending sub-caption list entries.
+% (Note: We keep the parameter of |\caption@add|\-|sub|\-|contents|\-|lines| for compatibility reasons although it's not used anymore.)
 %    \begin{macrocode}
 \newcommand*\flushsubcaptionlistentries{%
-  \caption@addsubcontentslines{user}}
+  \caption@addsubcontentslines\relax}
 %    \end{macrocode}
 %    \begin{macrocode}
 \renewcommand*\caption@addsubcontentslines[1]{%
-  \caption@Debug{\string\flushsubcaptionlistentries (#1)}%
+  \caption@Debug{\string\flushsubcaptionlistentries}%
   \begingroup
     \caption@subcontentslines
   \endgroup
   \caption@clearsubcontentslines}
-%    \end{macrocode}
-% We need to patch \cs{chapter} otherwise a vertical gap will be inserted into
-% the list prior pending sub-caption list entries.
-% We do this |\At|\-|Begin|\-|Document| so packages like \package{newfloat}
-% will not complain about an unknown document class.
-%    \begin{macrocode}
-\AtBeginDocument{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \caption@ifdefined\chapter{%
-    \let\caption@chapter@ORI\chapter
-    \def\chapter{%
-      \caption@addsubcontentslines{chapter}\caption@chapter@ORI}}{}%
-%    \end{macrocode}
-% Same for \cs{appendix}.
-%    \begin{macrocode}
-  \caption@ifdefined\appendix{%
-    \let\caption@appendix@ORI\appendix
-    \def\appendix{%
-      \caption@addsubcontentslines{appendix}\caption@appendix@ORI}}{}%
-%    \end{macrocode}
-% Flush the list of pending sub-caption list entries at the end of the document.
-%    \begin{macrocode}
-  \caption@addsubcontentslines{AtEndDocument}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3453,6 +3435,7 @@
 % \changes{v3.0h}{2005/10/07}{\cs{caption@LT@make} introduced}
 % \changes{v3.3}{2016/02/01}{Support for \cs{bicaption} via \cs{caption@LT@setup} added}
 % \changes{v3.3a}{2019/04/02}{Work-around for problem with \package{floatrow} added}
+% \changes{v3.6}{2021/01/09}{Adapted to current interface of \cs{caption@prepare@stepcounter}}
 %  |\LT@makecaption|\marg{cmd}\marg{label}\marg{text}\par
 %  \smallskip
 %  The original definition:
@@ -3498,7 +3481,7 @@
       \caption@startrue#1\caption@starfalse
 %    \end{macrocode}
 %    \begin{macrocode}
-      \caption@prepare@stepcounter{LT}\LTcaptype
+      \caption@prepare@stepcounter\LTcaptype
 %    \end{macrocode}
 % \changes{v3.1}{2007/05/05}{\cs{caption@font@normal} added}
 %    \begin{macrocode}

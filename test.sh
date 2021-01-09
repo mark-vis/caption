@@ -39,7 +39,6 @@ disable issues/gitlab/issue_25.tex        # Doomed to fail: \newsubfloat + subca
 disable issues/gitlab/issue_29.tex        # Needs Culmus fonts to compile
 disable issues/gitlab/issue_35.tex        # Needs <whatever> to compile (greek & farsi)
 disable issues/gitlab/issue_65.tex        # Doomed to fail: frontiers document class + subcaption package
-disable issues/gitlab/issue_104.tex       # TODO: Fix this!
 disable unsorted                          # TODO
 
 disable --xelatex \
