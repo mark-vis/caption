@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3686}
+% \CheckSum{3698}
 %
 % \iffalse
 %<*driver>
@@ -259,12 +259,12 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-01-01} % TODO: Insert CTAN release date of v2.3 here!
+\DeclareCurrentRelease{v2.3}{2021-01-16} % TODO: Insert CTAN release date of v2.3 here!
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2021/01/06 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/01/16 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3924,6 +3924,7 @@
 % \changes{v1.6}{2013/05/01}{Usage of \cs{caption@box} added}
 % \changes{v1.7}{2016/01/31}{Adapted to the \package{bicaption} package}
 % \changes{v1.8f}{2019/12/18}{Usage of \cs{linewidth} replaced by \cs{hsize}}
+% \changes{v2.3}{2021/01/16}{Some code encapsulated as \cs{caption@make@leftmargin}, \cs{caption@make@parbox}, \cs{caption@make@indention}, and \cs{caption@make@rightmargin}}
 %   |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -3948,32 +3949,20 @@
 %   Typeset the left margin (option |margin=|)
 %    \begin{macrocode}
     \caption@calcmargin
-    \caption@tempdima\captionmargin
-    \ifdim\captionmargin@=\z@ \else
-      \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@\relax}%
-    \fi
-    \caption@ifhmode{\advance\caption@tempdima\caption@indent\relax}%
-    \hspace\caption@tempdima
+    \caption@make@leftmargin
 %    \end{macrocode}
 %   We actually use a |\vbox| of width |\captionwidth - \caption@indent|
 %   to typeset the caption.
 %   \Note{\cs{captionindent} is \emph{not} supported if the caption format
 %   was defined with \cs{DeclareCaptionFormat*}.}
 %    \begin{macrocode}
-    \caption@tempdima\captionwidth
-    \caption@ifhmode{\advance\caption@tempdima-\caption@indent\relax}%
-    \caption@parbox\caption@tempdima{%
+    \caption@make@parbox{%
 %    \end{macrocode}
 %   Typeset the indention (option |indention=|)\\
 %   {\small Bugfix 04-05-05:
 %    |\hskip-\caption@indent| replaced by |\ifdim\caption@indent=\z@|\ldots}
 %    \begin{macrocode}
-      \caption@ifhmode{%
-        \ifdim\caption@indent=\z@
-          \leavevmode
-        \else
-          \hskip-\caption@indent
-        \fi}%
+      \caption@make@indention
 %    \end{macrocode}
 %   Typeset the caption itself and close the |\caption@parbox|
 %    \begin{macrocode}
@@ -3981,11 +3970,7 @@
 %    \end{macrocode}
 %   Typeset the right margin (option |margin=|)
 %    \begin{macrocode}
-    \caption@tempdima\captionmargin
-    \ifdim\captionmargin@=\z@ \else
-      \caption@ifoddpage{\advance\caption@tempdima\captionmargin@\relax}{}%
-    \fi
-    \hspace\caption@tempdima
+    \caption@make@rightmargin
 %    \end{macrocode}
 %   Close the outer box |\caption@box|
 %    \begin{macrocode}
@@ -3995,7 +3980,37 @@
   \caption@endhook}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand\caption@@make@epilogue{%
+\newcommand*\caption@make@leftmargin{%
+  \caption@tempdima\captionmargin
+  \ifdim\captionmargin@=\z@ \else
+    \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@\relax}%
+  \fi
+  \caption@ifhmode{\advance\caption@tempdima\caption@indent\relax}%
+  \hspace\caption@tempdima}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@make@parbox{%
+  \caption@tempdima\captionwidth
+  \caption@ifhmode{\advance\caption@tempdima-\caption@indent\relax}%
+  \caption@parbox\caption@tempdima}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@make@indention{%
+  \caption@ifhmode{%
+    \ifdim\caption@indent=\z@
+      \leavevmode
+    \else
+      \hskip-\caption@indent
+    \fi}}
+\newcommand*\caption@make@rightmargin{%
+  \caption@tempdima\captionmargin
+  \ifdim\captionmargin@=\z@ \else
+    \caption@ifoddpage{\advance\caption@tempdima\captionmargin@\relax}{}%
+  \fi
+  \hspace\caption@tempdima}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@make@epilogue{%
   \global\caption@starfalse}
 %    \end{macrocode}
 % \end{macro}
