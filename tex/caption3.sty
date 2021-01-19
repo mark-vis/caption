@@ -46,8 +46,8 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-01-16} % TODO: Insert CTAN release date of v2.3 here!
-\ProvidesPackage{caption3}[2021/01/16 v2.3-dev caption3 kernel (AR)]
+\DeclareCurrentRelease{v2.3}{2021-01-17} % TODO: Insert CTAN release date of v2.3 here!
+\ProvidesPackage{caption3}[2021/01/17 v2.3-dev caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -500,26 +500,31 @@
     {\caption@requirepackage\caption@tempa{#1=#2}}%
     {}}
 \newcommand*\DeclareCaptionLength[1]{%
-  \expandafter\newdimen\csname caption#1\endcsname
-  \@namedef{caption@setdefault@#1}##1{%
-    \caption@setdefault@length{##1}}%
+  \expandafter\newdimen\csname caption@#1\endcsname
+  \@namedef{caption@setdefault@#1}{\caption@setdefault@length}%
   \SetCaptionDefault*{#1}}
 \@onlypreamble\DeclareCaptionLength
 \newcommand*\caption@setdefault@length[3]{%
-  \expandafter#1\csname caption#2@default\endcsname{#3}}
+  \expandafter#1\csname caption@#2@default\endcsname{#3}}
 \newcommand*\caption@setlength[2]{%
   \caption@ifdefault{#2}%
-    {\expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname}%
+    {\expandafter\let\expandafter\caption@tempa\csname caption@#1@default\endcsname}%
     {\def\caption@tempa{#2}}%
-  \expandafter\setlength\csname caption#1\endcsname\caption@tempa}
-\DeclareCaptionLength{margin}{0pt}
-\DeclareCaptionLength{margin@}{\the\captionmargin}
-\DeclareCaptionLength{width}{0pt}
+  \expandafter\setlength\csname caption@#1\endcsname\caption@tempa}
 \newdimen\caption@tempdima
-\DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
-\DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
-\DeclareCaptionOption{width}{\setcaptionwidth{#1}}
-\DeclareCaptionOption{width*}{\setcaptionwidth*{#1}}
+\newdimen\captionmargin
+\setlength\captionmargin{0pt}
+\newcommand\caption@setdefault@margin[3]{%
+  \caption@setdefault@length{#1}{left#2}{#3}%
+  \caption@setdefault@length{#1}{right#2}{#3}}
+\DeclareCaptionLength{leftmargin}{0pt}
+\DeclareCaptionLength{rightmargin}{0pt}
+\newdimen\caption@width
+\setlength\caption@width{0pt}
+\DeclareCaptionOption{margin}{\caption@setmargin{#1}}
+\DeclareCaptionOption{margin*}{\caption@setmargin*{#1}}
+\DeclareCaptionOption{width}{\caption@setwidth{#1}}
+\DeclareCaptionOption{width*}{\caption@setwidth*{#1}}
 \DeclareCaptionOption{calcmargin}{\caption@setcalcmargin{#1}}
 \DeclareCaptionOption{calcmargin*}{\caption@setcalcmargin*{#1}}
 \DeclareCaptionOption{calcwidth}{\caption@setcalcwidth{#1}}
@@ -529,28 +534,27 @@
 \caption@set@bool\caption@iftwoside{\if@twoside 1\else 0\fi}
 \DeclareCaptionOption{minmargin}{\caption@setoptcmd\caption@minmargin{#1}}
 \DeclareCaptionOption{maxmargin}{\caption@setoptcmd\caption@maxmargin{#1}}
-\newcommand*\setcaptionmargin{%
-  \caption@resetcalcmargin
-  \caption@setmargin}
 \newcommand*\caption@setmargin{%
-  \caption@teststar\caption@@setmargin\@gobble\@firstofone}
-\newcommand*\caption@@setmargin[2]{%
-  #1{\captionwidth\z@}%
-  \caption@@@setmargin#2,#2,\@nil}
-\def\caption@@@setmargin#1,#2,#3\@nil{%
-  \caption@setlength{margin}{#1}%
-  \caption@setlength{margin@}{#2}%
-  \addtolength\captionmargin@{-\captionmargin}}
-\newcommand*\setcaptionwidth{%
   \caption@resetcalcmargin
-  \caption@setwidth}
+  \caption@@setmargin}
+\newcommand*\caption@@setmargin{%
+  \caption@teststar\caption@@@setmargin\@gobble\@firstofone}
+\newcommand*\caption@@@setmargin[2]{%
+  #1{\caption@width\z@}%
+  \caption@@@@setmargin#2,#2,\@nil}
+\def\caption@@@@setmargin#1,#2,#3\@nil{%
+  \caption@setlength{leftmargin}{#1}%
+  \caption@setlength{rightmargin}{#2}}
 \newcommand*\caption@setwidth{%
-  \caption@teststar\caption@@setwidth\@gobble\@firstofone}
-\newcommand*\caption@@setwidth[2]{%
-  #1{\captionmargin\z@\captionmargin@\z@}%
-  \caption@setlength{width}{#2}}%
+  \caption@resetcalcmargin
+  \caption@@setwidth}
+\newcommand*\caption@@setwidth{%
+  \caption@teststar\caption@@@setwidth\@gobble\@firstofone}
+\newcommand*\caption@@@setwidth[2]{%
+  #1{\caption@leftmargin\z@\caption@rightmargin\z@}%
+  \setlength\caption@width{#2}}
 \newcommand*\caption@setcalcmargin{%
-  \caption@teststar{\caption@@setcalcmargin\caption@setmargin}%
+  \caption@teststar{\caption@@setcalcmargin\caption@@setmargin}%
     \@secondoftwo\@firstoftwo}
 \newcommand*\caption@@setcalcmargin[3]{%
   #2{\caption@resetcalcmargin
@@ -559,7 +563,7 @@
 \newcommand*\caption@resetcalcmargin{%
   \let\caption@calcmargin@hook\@empty}
 \newcommand*\caption@setcalcwidth{%
-  \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
+  \caption@teststar{\caption@@setcalcmargin\caption@@setwidth}%
     \@secondoftwo\@firstoftwo}
 \newcommand*\caption@thecounter{0}
 \newcommand*\caption@stepthecounter{%
@@ -596,17 +600,17 @@
   \caption@ifoddpage}
 \newcommand*\caption@setoptcmd[2]{%
   \caption@ifinlist{#2}{0,false,no,off}{\let#1\@undefined}{\def#1{#2}}}
-\DeclareCaptionLength{@indent}{0pt}
-\DeclareCaptionLength{@parindent}{0pt}
-\DeclareCaptionLength{@hangindent}{0pt}
+\DeclareCaptionLength{indent}{0pt}
+\DeclareCaptionLength{parindent}{0pt}
+\DeclareCaptionLength{hangindent}{0pt}
 \DeclareCaptionOption{indent}[\leftmargini]{% obsolete
-  \caption@setlength{@indent}{#1}}
+  \caption@setlength{indent}{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
-  \caption@setlength{@indent}{#1}}
+  \caption@setlength{indent}{#1}}
 \DeclareCaptionOption{parindent}{%
-  \caption@setlength{@parindent}{#1}}
+  \caption@setlength{parindent}{#1}}
 \DeclareCaptionOption{hangindent}{%
-  \caption@setlength{@hangindent}{#1}}
+  \caption@setlength{hangindent}{#1}}
 \DeclareCaptionOption{parskip}{%
   \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 \newcommand*\DeclareCaptionStyle[1]{%
@@ -1447,14 +1451,11 @@
   }%
   \caption@endhook}
 \newcommand*\caption@make@leftmargin{%
-  \caption@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@\relax}%
-  \fi
+  \caption@tempdima\caption@leftmargin
   \caption@ifhmode{\advance\caption@tempdima\caption@indent\relax}%
   \hspace\caption@tempdima}
 \newcommand*\caption@make@parbox{%
-  \caption@tempdima\captionwidth
+  \caption@tempdima\caption@width
   \caption@ifhmode{\advance\caption@tempdima-\caption@indent\relax}%
   \caption@parbox\caption@tempdima}
 \newcommand*\caption@make@indention{%
@@ -1465,51 +1466,62 @@
       \hskip-\caption@indent
     \fi}}
 \newcommand*\caption@make@rightmargin{%
-  \caption@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{\advance\caption@tempdima\captionmargin@\relax}{}%
-  \fi
-  \hspace\caption@tempdima}
+  \hspace\caption@rightmargin}
 \newcommand*\caption@@make@epilogue{%
   \global\caption@starfalse}
 \newcommand*\caption@calcmargin{%
   \caption@calcmargin@hook
-  \ifx\caption@maxmargin\@undefined \else
-    \ifdim\captionmargin>\caption@maxmargin\relax
-      \captionmargin\caption@maxmargin\relax
+  \ifdim\caption@width=\z@
+    \ifdim\captionmargin=\z@ \else
+      \caption@leftmargin\captionmargin
+      \caption@rightmargin\captionmargin
     \fi
-  \fi
-  \ifx\caption@minmargin\@undefined \else
-    \ifdim\captionmargin<\caption@minmargin\relax
-      \captionmargin\caption@minmargin\relax
+    \ifx\caption@maxmargin\@undefined \else
+      \ifdim\caption@leftmargin>\caption@maxmargin
+        \caption@leftmargin\caption@maxmargin
+      \fi
+      \ifdim\caption@rightmargin>\caption@maxmargin
+        \caption@rightmargin\caption@maxmargin
+      \fi
     \fi
-  \fi
-  \ifdim\captionwidth=\z@
-    \captionwidth\hsize\relax
-    \advance\captionwidth by -2\captionmargin\relax
-    \advance\captionwidth by -\captionmargin@\relax
+    \ifx\caption@minmargin\@undefined \else
+      \ifdim\caption@leftmargin<\caption@minmargin
+        \caption@leftmargin\caption@minmargin
+      \fi
+      \ifdim\caption@rightmargin<\caption@minmargin
+        \caption@rightmargin\caption@minmargin
+      \fi
+    \fi
+    \ifdim\caption@leftmargin=\caption@rightmargin \else
+      \caption@ifoddpage{}{%
+        \caption@tempdima\caption@leftmargin
+        \caption@leftmargin\caption@rightmargin
+        \caption@rightmargin\caption@tempdima}%
+    \fi
+    \caption@width\hsize
+    \advance\caption@width by -\caption@leftmargin\relax
+    \advance\caption@width by -\caption@rightmargin\relax
   \else
-    \captionmargin\hsize\relax
-    \advance\captionmargin by -\captionwidth\relax
-    \divide\captionmargin by 2\relax
-    \captionmargin@\z@\relax
+    \caption@leftmargin\hsize
+    \advance\caption@leftmargin by -\caption@width\relax
+    \divide\caption@leftmargin by 2\relax
+    \caption@rightmargin\caption@leftmargin
   \fi
   \caption@Debug{%
-    \string\hsize=\the\hsize,
-    \string\captionwidth=\the\captionwidth,\MessageBreak
-    \string\captionmargin=\the\captionmargin,
-    \string\captionmargin@=\the\captionmargin@}%
-}
+    hsize=\the\hsize,
+    width=\the\caption@width,\MessageBreak
+    leftmargin=\the\caption@leftmargin,
+    rightmargin=\the\caption@rightmargin}}
 \newcommand\caption@slc[4]{%
   \caption@Debug{Begin SLC}%
   \singlelinecaptiontrue
   \begingroup
   \caption@singleline
   \let\caption@justification\relax
-  \caption@calcmargin % calculate \captionwidth
+  \caption@calcmargin % calculate \caption@width
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-  \ifdim\wd\@tempboxa>\captionwidth
+  \ifdim\wd\@tempboxa>\caption@width
     \endgroup
     \singlelinecaptionfalse
     #4%

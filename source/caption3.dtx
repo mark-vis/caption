@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3698}
+% \CheckSum{3701}
 %
 % \iffalse
 %<*driver>
@@ -259,12 +259,12 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-01-16} % TODO: Insert CTAN release date of v2.3 here!
+\DeclareCurrentRelease{v2.3}{2021-01-17} % TODO: Insert CTAN release date of v2.3 here!
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2021/01/16 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/01/17 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1450,6 +1450,7 @@
 %
 % \begin{macro}{\DeclareCaptionLength}
 % \changes{v2.0}{2020/08/09}{This macro added}
+% \changes{v2.3}{2021/01/17}{Now defines \cs{caption@xxx} instead of \cs{captionxxx} as length}
 %   |\DeclareCaptionLength|\marg{name}\marg{default value}\\
 %   \begin{enumerate}
 %     \item Defines a new length (dimension)
@@ -1460,9 +1461,8 @@
 %   \end{enumerate}
 %    \begin{macrocode}
 \newcommand*\DeclareCaptionLength[1]{%
-  \expandafter\newdimen\csname caption#1\endcsname
-  \@namedef{caption@setdefault@#1}##1{%
-    \caption@setdefault@length{##1}}%
+  \expandafter\newdimen\csname caption@#1\endcsname
+  \@namedef{caption@setdefault@#1}{\caption@setdefault@length}%
   \SetCaptionDefault*{#1}}
 \@onlypreamble\DeclareCaptionLength
 %    \end{macrocode}
@@ -1470,59 +1470,94 @@
 %
 % \begin{macro}{\caption@setdefault@length}
 % \changes{v2.0}{2020/08/09}{This macro added}
+% \changes{v2.3}{2021/01/17}{Adapted to current implementation of \cs{DeclareCaptionLength}}
 %   |\caption@setdefault@length*|\marg{cmd}\marg{name}\marg{value}\\
 %   sets a default value for the given \meta{length}, either using |\def|
 %   (if the starred variant is used) or |\edef| (if the non-starred variant is
 %    used).
 %    \begin{macrocode}
 \newcommand*\caption@setdefault@length[3]{%
-  \expandafter#1\csname caption#2@default\endcsname{#3}}
+  \expandafter#1\csname caption@#2@default\endcsname{#3}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@setlength}
 % \changes{v2.0}{2020/08/09}{This macro added}
+% \changes{v2.3}{2021/01/17}{Adapted to current implementation of \cs{DeclareCaptionLength}}
 %   |\caption@setlength|\marg{name}\marg{value}\\
 %   sets a length to either the given \meta{value} or to the default value if
 %   \meta{value} is `default'.
 %    \begin{macrocode}
 \newcommand*\caption@setlength[2]{%
   \caption@ifdefault{#2}%
-    {\expandafter\let\expandafter\caption@tempa\csname caption#1@default\endcsname}%
+    {\expandafter\let\expandafter\caption@tempa\csname caption@#1@default\endcsname}%
     {\def\caption@tempa{#2}}%
-  \expandafter\setlength\csname caption#1\endcsname\caption@tempa}
+  \expandafter\setlength\csname caption@#1\endcsname\caption@tempa}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@tempdima}
+% |\caption@tempdima| will be used as temporary dimension register, similar to |\@tempdima|.
+%    \begin{macrocode}
+\newdimen\caption@tempdima
 %    \end{macrocode}
 % \end{macro}
 %
 % \section{Margin resp. width}
-% \changes{v1.0n}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
 % \changes{v1.0n}{2007/04/03}{Option `twoside' added}
 % \changes{v1.1}{2007/08/11}{Options `margin*', `minmargin', and `maxmargin' added}
 % \changes{v1.2}{2007/11/10}{Option `oneside' added}
 %
 % \begin{macro}{\captionmargin}
-% \begin{macro}{\captionwidth}
-%   |\captionmargin| and |\captionwidth| contain the extra margin
-%   resp. the total width used for captions. Please never set these values in
-%   a direct way, they are just accessible in user documents to provide
-%   compatibility to \version{1.x} of the \package{caption} package.\par
-%   Note that we can only set one value at a time, `margin' \emph{or} `width'.
-%   If |\caption|\-|width| is not zero we will take this value afterwards,
-%   otherwise |\caption|\-|margin| and |\caption|\-|margin@|.
+%   |\captionmargin| contains the extra margin used for captions (if different than |0pt|).
+%   It is just available for user documents to provide compatibility to \version{1.x} of
+%   the \package{caption} package where |\set|\-|length\caption|\-|margin{|\ldots|}| was
+%   the way how a caption margin was set.
 %    \begin{macrocode}
-\DeclareCaptionLength{margin}{0pt}
-\DeclareCaptionLength{margin@}{\the\captionmargin}
-\DeclareCaptionLength{width}{0pt}
-\newdimen\caption@tempdima
+\newdimen\captionmargin
+\setlength\captionmargin{0pt}
+%    \end{macrocode}
+% |\SetCaptionDefault{margin}{|\ldots|}| sets both default values,
+% i.e.~for the left and for the right margin.
+%    \begin{macrocode}
+\newcommand\caption@setdefault@margin[3]{%
+  \caption@setdefault@length{#1}{left#2}{#3}%
+  \caption@setdefault@length{#1}{right#2}{#3}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@leftmargin}
+% \changes{v1.0n}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
+% \changes{v2.3}{2021/01/17}{\cs{captionmargin@} replaced by \cs{caption@leftmargin} and \cs{caption@rightmargin}}
+% \begin{macro}{\caption@rightmargin}
+% \changes{v1.0n}{2007/04/01}{\cs{captionmarginx} renamed to \cs{captionmargin@}}
+% \changes{v2.3}{2021/01/17}{\cs{captionmargin@} replaced by \cs{caption@leftmargin} and \cs{caption@rightmargin}}
+%   |\caption@leftmargin| and |\caption@rightmargin| contain the extra margin used for captions.
+%   (These values will be used if the obsolete |\caption|\-|margin| is set to |0pt|.)
+%    \begin{macrocode}
+\DeclareCaptionLength{leftmargin}{0pt}
+\DeclareCaptionLength{rightmargin}{0pt}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
 %
+% \begin{macro}{\caption@width}
+% \changes{v2.3}{2021/01/17}{This dimension renamed from \cs{captionwidth} to \cs{caption@width}}
+%   |\caption@width| contains the total width used for captions.
+%   Note that we can only set one value at a time, `margin' \emph{or} `width'.
+%   If |\caption|\-|@width| is not zero we will take this value,
+%   otherwise |\caption|\-|@left|\-|margin| and |\caption|\-|@right|\-|margin|.
 %    \begin{macrocode}
-\DeclareCaptionOption{margin}{\setcaptionmargin{#1}}
-\DeclareCaptionOption{margin*}{\setcaptionmargin*{#1}}
-\DeclareCaptionOption{width}{\setcaptionwidth{#1}}
-\DeclareCaptionOption{width*}{\setcaptionwidth*{#1}}
+\newdimen\caption@width
+\setlength\caption@width{0pt}
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\DeclareCaptionOption{margin}{\caption@setmargin{#1}}
+\DeclareCaptionOption{margin*}{\caption@setmargin*{#1}}
+\DeclareCaptionOption{width}{\caption@setwidth{#1}}
+\DeclareCaptionOption{width*}{\caption@setwidth*{#1}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionOption{calcmargin}{\caption@setcalcmargin{#1}}
@@ -1540,71 +1575,69 @@
 \DeclareCaptionOption{maxmargin}{\caption@setoptcmd\caption@maxmargin{#1}}
 %    \end{macrocode}
 %
-% \begin{macro}{\setcaptionmargin}
+% \begin{macro}{\caption@setmargin}
 % \changes{v1.0f}{2005/10/24}{Renamed from \cs{caption@setmargin} to \cs{setcaptionmargin}}
 % \changes{v1.0f}{2005/10/24}{\cs{setcaptionmargin} enhanced so it can take left+right margin}
 % \changes{v1.1}{2007/08/11}{Starred variant added}
 % \changes{v1.1}{2007/08/12}{\cs{setlength}\cs{captionmargin} \& \cs{setlength}\cs{captionmargin@} swapped so `\texttt{margin*=}\cs{captionmargin}' works in singleline options}
 % \changes{v1.3}{2010/11/07}{Support for option \opt{calcmargin} added}
-%   |\setcaptionmargin*|\marg{amount}\\
+% \changes{v2.3}{2021/01/17}{Renamed from \cs{setcaptionmargin} to \cs{caption@setmargin}; sets \cs{caption@width} resp.~\cs{caption@leftmargin} and \cs{caption@rightmargin} now}
+%   |\caption@setmargin*|\marg{amount}\\
 %   sets the caption margin to the given \meta{amount}.
-%   Please never use this in user documents, it's just there to
-%   provide compatibility to the \package{caption2} package.
-%    \begin{macrocode}
-\newcommand*\setcaptionmargin{%
-  \caption@resetcalcmargin
-  \caption@setmargin}
-%    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setmargin{%
-  \caption@teststar\caption@@setmargin\@gobble\@firstofone}
+  \caption@resetcalcmargin
+  \caption@@setmargin}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@setmargin[2]{%
-  #1{\captionwidth\z@}%
-  \caption@@@setmargin#2,#2,\@nil}
+\newcommand*\caption@@setmargin{%
+  \caption@teststar\caption@@@setmargin\@gobble\@firstofone}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@@setmargin#1,#2,#3\@nil{%
-  \caption@setlength{margin}{#1}%
-  \caption@setlength{margin@}{#2}%
-  \addtolength\captionmargin@{-\captionmargin}}
+\newcommand*\caption@@@setmargin[2]{%
+  #1{\caption@width\z@}%
+  \caption@@@@setmargin#2,#2,\@nil}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@@@@setmargin#1,#2,#3\@nil{%
+  \caption@setlength{leftmargin}{#1}%
+  \caption@setlength{rightmargin}{#2}}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\setcaptionwidth}
+% \begin{macro}{\caption@setwidth}
 % \changes{v1.0f}{2005/10/24}{Renamed from \cs{caption@setwidth} to \cs{setcaptionwidth}}
 % \changes{v1.3}{2010/11/07}{Starred variant added}
 % \changes{v1.3}{2010/11/07}{Support for option \opt{calcwidth} added}
-%   |\setcaptionwidth*|\marg{amount}\\
+% \changes{v2.3}{2021/01/17}{Renamed from \cs{setcaptionwidth} to \cs{caption@setwidth}; sets \cs{caption@width} resp.~\cs{caption@leftmargin} and \cs{caption@rightmargin} now}
+%   |\caption@setwidth*|\marg{amount}\\
 %   sets the caption width to the given \meta{amount}.
-%   Please never use this in user documents, it's just there to
-%   provide compatibility to the \package{caption2} package.
-%    \begin{macrocode}
-\newcommand*\setcaptionwidth{%
-  \caption@resetcalcmargin
-  \caption@setwidth}
-%    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setwidth{%
-  \caption@teststar\caption@@setwidth\@gobble\@firstofone}
+  \caption@resetcalcmargin
+  \caption@@setwidth}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@@setwidth[2]{%
-  #1{\captionmargin\z@\captionmargin@\z@}%
-  \caption@setlength{width}{#2}}%
+\newcommand*\caption@@setwidth{%
+  \caption@teststar\caption@@@setwidth\@gobble\@firstofone}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@@setwidth[2]{%
+  #1{\caption@leftmargin\z@\caption@rightmargin\z@}%
+  \setlength\caption@width{#2}}
 %    \end{macrocode}
 % \end{macro}
 %
 % \begin{macro}{\caption@setcalcmargin}
 % \changes{v1.3}{2010/11/07}{This macro added}
+% \changes{v2.3}{2021/01/17}{Adapted to current implementation of \cs{caption@setmargin}}
 %   |\caption@setcalcmargin*|\marg{amount}\\
 %   sets the caption margin to the given \meta{amount}
 %   right before the caption will be typeset, i.e.\meta{amount} will
 %   not be evaluated immediately.
 %    \begin{macrocode}
 \newcommand*\caption@setcalcmargin{%
-  \caption@teststar{\caption@@setcalcmargin\caption@setmargin}%
+  \caption@teststar{\caption@@setcalcmargin\caption@@setmargin}%
     \@secondoftwo\@firstoftwo}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1627,13 +1660,14 @@
 %
 % \begin{macro}{\caption@setcalcwidth}
 % \changes{v1.3}{2010/11/07}{This macro added}
+% \changes{v2.3}{2021/01/17}{Adapted to current implementation of \cs{caption@setmargin}}
 %   |\caption@setcalcwidth*|\marg{amount}\\
 %   sets the caption width to the given \meta{amount}
 %   right before the caption will be typeset, i.e.\meta{amount} will
 %   not be evaluated immediately.
 %    \begin{macrocode}
 \newcommand*\caption@setcalcwidth{%
-  \caption@teststar{\caption@@setcalcmargin\caption@setwidth}%
+  \caption@teststar{\caption@@setcalcmargin\caption@@setwidth}%
     \@secondoftwo\@firstoftwo}
 %    \end{macrocode}
 % \end{macro}
@@ -1759,9 +1793,9 @@
 % \begin{macro}{\caption@hangindent}
 %   These are the indentions we support.
 %    \begin{macrocode}
-\DeclareCaptionLength{@indent}{0pt}
-\DeclareCaptionLength{@parindent}{0pt}
-\DeclareCaptionLength{@hangindent}{0pt}
+\DeclareCaptionLength{indent}{0pt}
+\DeclareCaptionLength{parindent}{0pt}
+\DeclareCaptionLength{hangindent}{0pt}
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -1772,13 +1806,13 @@
 % \changes{v1.0f}{2005/08/22}{Undocumented defaults for \opt{parindent=}, \opt{hangindent=}, and \opt{parskip=} removed}
 %    \begin{macrocode}
 \DeclareCaptionOption{indent}[\leftmargini]{% obsolete
-  \caption@setlength{@indent}{#1}}
+  \caption@setlength{indent}{#1}}
 \DeclareCaptionOption{indention}[\leftmargini]{%
-  \caption@setlength{@indent}{#1}}
+  \caption@setlength{indent}{#1}}
 \DeclareCaptionOption{parindent}{%
-  \caption@setlength{@parindent}{#1}}
+  \caption@setlength{parindent}{#1}}
 \DeclareCaptionOption{hangindent}{%
-  \caption@setlength{@hangindent}{#1}}
+  \caption@setlength{hangindent}{#1}}
 \DeclareCaptionOption{parskip}{%
   \l@addto@macro\caption@@par{\setlength\parskip{#1}}}
 %    \end{macrocode}
@@ -3951,7 +3985,7 @@
     \caption@calcmargin
     \caption@make@leftmargin
 %    \end{macrocode}
-%   We actually use a |\vbox| of width |\captionwidth - \caption@indent|
+%   We actually use a |\vbox| of width |\caption@width - \caption@indent|
 %   to typeset the caption.
 %   \Note{\cs{captionindent} is \emph{not} supported if the caption format
 %   was defined with \cs{DeclareCaptionFormat*}.}
@@ -3981,16 +4015,13 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@make@leftmargin{%
-  \caption@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{}{\advance\caption@tempdima\captionmargin@\relax}%
-  \fi
+  \caption@tempdima\caption@leftmargin
   \caption@ifhmode{\advance\caption@tempdima\caption@indent\relax}%
   \hspace\caption@tempdima}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@make@parbox{%
-  \caption@tempdima\captionwidth
+  \caption@tempdima\caption@width
   \caption@ifhmode{\advance\caption@tempdima-\caption@indent\relax}%
   \caption@parbox\caption@tempdima}
 %    \end{macrocode}
@@ -4003,11 +4034,7 @@
       \hskip-\caption@indent
     \fi}}
 \newcommand*\caption@make@rightmargin{%
-  \caption@tempdima\captionmargin
-  \ifdim\captionmargin@=\z@ \else
-    \caption@ifoddpage{\advance\caption@tempdima\captionmargin@\relax}{}%
-  \fi
-  \hspace\caption@tempdima}
+  \hspace\caption@rightmargin}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@make@epilogue{%
@@ -4021,47 +4048,70 @@
 % \changes{v1.1}{2006/05/13}{Check of \cs{@listdepth} removed (not necessary anymore), use \cs{linewidth} instead of \cs{hsize}}
 % \changes{v1.5}{2012/12/26}{max-margin stuff moved from \cs{caption@@make} to here}
 % \changes{v1.8f}{2019/12/18}{Usage of \cs{linewidth} replaced by \cs{hsize}}
+% \changes{v2.3}{2021/01/17}{Uses \cs{caption@width} resp.~\cs{caption@leftmargin} and \cs{caption@rightmargin} now}
 %   |\caption@calcmargin|\\
-%   calculates |\caption|\-|margin| and |\caption|\-|width|, so both contain
-%   valid values.
+%   calculates |\caption|\-|@left|\-|margin|, |\caption|\-|@width|, and |\caption|\-|@right|\-|margin|,
+%   so all three contain valid values afterwards.
 %    \begin{macrocode}
 \newcommand*\caption@calcmargin{%
   \caption@calcmargin@hook
+  \ifdim\caption@width=\z@
 %    \end{macrocode}
-%   Check margin, if |\caption@min|\-|margin| or |\caption@max|\-|margin| is set
+%   If |\caption|\-|margin| is set use this value instead of |\caption@left|\-|margin| and |\caption@right|\-|margin|
 %    \begin{macrocode}
-  \ifx\caption@maxmargin\@undefined \else
-    \ifdim\captionmargin>\caption@maxmargin\relax
-      \captionmargin\caption@maxmargin\relax
+    \ifdim\captionmargin=\z@ \else
+      \caption@leftmargin\captionmargin
+      \caption@rightmargin\captionmargin
     \fi
-  \fi
-  \ifx\caption@minmargin\@undefined \else
-    \ifdim\captionmargin<\caption@minmargin\relax
-      \captionmargin\caption@minmargin\relax
+%    \end{macrocode}
+%   Check the margin values if |\caption@min|\-|margin| or |\caption@max|\-|margin| is set
+%    \begin{macrocode}
+    \ifx\caption@maxmargin\@undefined \else
+      \ifdim\caption@leftmargin>\caption@maxmargin
+        \caption@leftmargin\caption@maxmargin
+      \fi
+      \ifdim\caption@rightmargin>\caption@maxmargin
+        \caption@rightmargin\caption@maxmargin
+      \fi
     \fi
-  \fi
+    \ifx\caption@minmargin\@undefined \else
+      \ifdim\caption@leftmargin<\caption@minmargin
+        \caption@leftmargin\caption@minmargin
+      \fi
+      \ifdim\caption@rightmargin<\caption@minmargin
+        \caption@rightmargin\caption@minmargin
+      \fi
+    \fi
+%    \end{macrocode}
+%  Check if the left and right margins needs to be swapped
+%    \begin{macrocode}
+    \ifdim\caption@leftmargin=\caption@rightmargin \else
+      \caption@ifoddpage{}{%
+        \caption@tempdima\caption@leftmargin
+        \caption@leftmargin\caption@rightmargin
+        \caption@rightmargin\caption@tempdima}%
+    \fi
+%    \end{macrocode}
+%  Set |\caption@width|
+%    \begin{macrocode}
+    \caption@width\hsize
+    \advance\caption@width by -\caption@leftmargin\relax
+    \advance\caption@width by -\caption@rightmargin\relax
 %    \end{macrocode}
 %    \begin{macrocode}
-  \ifdim\captionwidth=\z@
-    \captionwidth\hsize\relax
-    \advance\captionwidth by -2\captionmargin\relax
-    \advance\captionwidth by -\captionmargin@\relax
   \else
-    \captionmargin\hsize\relax
-    \advance\captionmargin by -\captionwidth\relax
-    \divide\captionmargin by 2\relax
-    \captionmargin@\z@\relax
+    \caption@leftmargin\hsize
+    \advance\caption@leftmargin by -\caption@width\relax
+    \divide\caption@leftmargin by 2\relax
+    \caption@rightmargin\caption@leftmargin
   \fi
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@Debug{%
-    \string\hsize=\the\hsize,
-    \string\captionwidth=\the\captionwidth,\MessageBreak
-    \string\captionmargin=\the\captionmargin,
-    \string\captionmargin@=\the\captionmargin@}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}
+    hsize=\the\hsize,
+    width=\the\caption@width,\MessageBreak
+    leftmargin=\the\caption@leftmargin,
+    rightmargin=\the\caption@rightmargin}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4082,10 +4132,10 @@
   \begingroup
   \caption@singleline
   \let\caption@justification\relax
-  \caption@calcmargin % calculate \captionwidth
+  \caption@calcmargin % calculate \caption@width
   \caption@prepareslc
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
-  \ifdim\wd\@tempboxa>\captionwidth
+  \ifdim\wd\@tempboxa>\caption@width
     \endgroup
     \singlelinecaptionfalse
     #4%
