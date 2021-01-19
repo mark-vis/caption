@@ -1,10 +1,11 @@
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{unittest}[2020/09/02 v0.1 Macros for unit-tests (AR)]
+\ProvidesPackage{unittest}[2021/01/19 v0.2 Macros for unit-tests (AR)]
 %
 \newcommand*\passed[1]{%
   \typeout{Test `#1' passed.}}
 \newcommand*\failed[1]{%
-  \PackageError{unittest}{Test `#1' failed}{}}
+  \GenericError{(unittest)\@spaces}{Test `#1' failed}{}{}}
+  % Note: We cannot use \PackageError here since it could be re-defined by the testerror environment
 %
 \newcommand*\testdefined[2]{%
   \@ifundefined{#2}\failed\passed{#1}}
@@ -34,6 +35,16 @@
   \expandafter\ifnum\csname c@#2\endcsname=#3\relax
     \expandafter\passed
   \else
+    \typeout{\expandafter\the\csname c@#2\endcsname <> #3}%
+    \expandafter\failed
+  \fi
+  {#1}}
+%
+\newcommand*\testlength[3]{%
+  \expandafter\ifdim\csname #2\endcsname=#3\relax
+    \expandafter\passed
+  \else
+    \typeout{\expandafter\the\csname #2\endcsname <> #3}%
     \expandafter\failed
   \fi
   {#1}}
