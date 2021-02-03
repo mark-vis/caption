@@ -3,7 +3,7 @@
 # Module: test-lib.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-29
+# Date:   2021-02-03
 
 # shellcheck disable=SC2155
 #   disables the warning "Declare and assign separately to avoid masking return values."
@@ -14,6 +14,7 @@ all=true                 # default: Target "all"
 disabled_pdflatex=()     # default: Compile all testcases (pdflatex engine)
 disabled_xelatex=()      # default: Compile all testcases (xelatex engine)
 disabled_lualatex=()     # default: Compile all testcases (lualatex engine)
+disabled_htlatex=()      # default: Compile all testcases (htlatex engine)
 exit_on_error=true       # default: Exit after error
 interactive=true         # default: Interactive mode
 output_file=""           # default: Don't generate report file
@@ -47,6 +48,7 @@ function main
       printf "      --pdflatex          uses pdflatex as LaTeX engine (default)\n"
       printf "      --xelatex           uses xelatex as LaTeX engine\n"
       printf "      --lualatex          uses lualatex as LaTeX engine\n"
+      printf "      --htlatex           uses htlatex as LaTeX engine\n"
       printf "      --dev               uses the current development version of LaTeX\n"
       printf "\n"
       exit 1
@@ -104,6 +106,9 @@ function main
     elif [[ $arg == "--lualatex" ]]
     then
       latex_engine="lualatex"
+    elif [[ $arg == "--htlatex" ]]
+    then
+      latex_engine="htlatex"
     elif [[ $arg == "--dev" ]]
     then
       latex_suffix="-dev"
@@ -370,6 +375,7 @@ function disable
   local pdflatex=false
   local xelatex=false
   local lualatex=false
+  local htlatex=false
 
   local arg
   for arg in "$@"
@@ -386,6 +392,10 @@ function disable
     then
       all=false
       lualatex=true
+    elif [[ $arg == "--htlatex" ]]
+    then
+      all=false
+      htlatex=true
     elif [[ ${arg:0:1} == "-" ]]
     then
       printf "*** Invalid option '%s'.\n" "$arg" >&2
@@ -405,6 +415,11 @@ function disable
       then
 #       printf "Disable lualatex: %s\n" "$arg"
         disabled_lualatex+=( "$arg" )
+      fi
+      if $all || $htlatex
+      then
+#       printf "Disable htlatex: %s\n" "$arg"
+        disabled_htlatex+=( "$arg" )
       fi
     fi
   done
@@ -427,6 +442,9 @@ function is_disabled
   elif [[ $latex_engine == "lualatex" ]]
   then
     disabled_cases=( "${disabled_lualatex[@]}" )
+  elif [[ $latex_engine == "htlatex" ]]
+  then
+    disabled_cases=( "${disabled_htlatex[@]}" )
   else
     printf "*** Unknown LaTeX engine '%s'.\n" "$latex_engine" >&2
     exit 1
