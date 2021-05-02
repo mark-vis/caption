@@ -5,7 +5,7 @@
 
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2020-12-21
+# Date:   2021-05-02
 
 source ./test-lib.sh
 
@@ -64,6 +64,12 @@ disable --pdflatex --lualatex \
 	test/floatrow/frsample04.tex \
 	test/floatrow/frsample10.tex \
 	test/floatrow/frsample11.tex
+
+# The 'tabu' package does not seem to work correctly anymore with LaTeX2e <2021-05-01> pre-release-2
+disable --dev \
+	test/longtable/newline_tabu.tex \
+	issues/sourceforge/ticket_52.tex \
+	issues/gitlab/issue_20.tex
 
 main "$@"
 

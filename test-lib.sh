@@ -3,7 +3,7 @@
 # Module: test-lib.sh
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2021-02-03
+# Date:   2021-05-02
 
 # shellcheck disable=SC2155
 #   disables the warning "Declare and assign separately to avoid masking return values."
@@ -15,6 +15,7 @@ disabled_pdflatex=()     # default: Compile all testcases (pdflatex engine)
 disabled_xelatex=()      # default: Compile all testcases (xelatex engine)
 disabled_lualatex=()     # default: Compile all testcases (lualatex engine)
 disabled_htlatex=()      # default: Compile all testcases (htlatex engine)
+disabled_dev=()          # default: Compile all testcases (xxx-dev engine)
 exit_on_error=true       # default: Exit after error
 interactive=true         # default: Interactive mode
 output_file=""           # default: Don't generate report file
@@ -376,6 +377,7 @@ function disable
   local xelatex=false
   local lualatex=false
   local htlatex=false
+  local dev=false
 
   local arg
   for arg in "$@"
@@ -396,30 +398,39 @@ function disable
     then
       all=false
       htlatex=true
+    elif [[ $arg == "--dev" ]]
+    then
+      dev=true
     elif [[ ${arg:0:1} == "-" ]]
     then
       printf "*** Invalid option '%s'.\n" "$arg" >&2
       exit 1
     else
-      if $all || $pdflatex
+      if $dev
       then
-#       printf "Disable pdflatex: %s\n" "$arg"
-        disabled_pdflatex+=( "$arg" )
-      fi
-      if $all || $xelatex
-      then
-#       printf "Disable xelatex: %s\n" "$arg"
-        disabled_xelatex+=( "$arg" )
-      fi
-      if $all || $lualatex
-      then
-#       printf "Disable lualatex: %s\n" "$arg"
-        disabled_lualatex+=( "$arg" )
-      fi
-      if $all || $htlatex
-      then
-#       printf "Disable htlatex: %s\n" "$arg"
-        disabled_htlatex+=( "$arg" )
+#       printf "Disable dev: %s\n" "$arg"
+        disabled_dev+=( "$arg" )
+      else
+        if $all || $pdflatex
+        then
+#         printf "Disable pdflatex: %s\n" "$arg"
+          disabled_pdflatex+=( "$arg" )
+        fi
+        if $all || $xelatex
+        then
+#         printf "Disable xelatex: %s\n" "$arg"
+          disabled_xelatex+=( "$arg" )
+        fi
+        if $all || $lualatex
+        then
+#         printf "Disable lualatex: %s\n" "$arg"
+          disabled_lualatex+=( "$arg" )
+        fi
+        if $all || $htlatex
+        then
+#         printf "Disable htlatex: %s\n" "$arg"
+          disabled_htlatex+=( "$arg" )
+        fi
       fi
     fi
   done
@@ -450,6 +461,15 @@ function is_disabled
     exit 1
   fi
 
+  if [[ $latex_suffix == "-dev" ]]
+  then
+    disabled_cases+=( "${disabled_dev[@]}" )
+  elif [[ $latex_suffix != "" ]]
+  then
+    printf "*** Unknown LaTeX suffix '%s'.\n" "$latex_suffix" >&2
+    exit 1
+  fi
+
   local d
   for d in "${disabled_cases[@]}"
   do
@@ -472,6 +492,8 @@ function is_disabled
       return 0
     fi
   done
+
+  # Directory resp. file is enabled
   return 1
 }
 
