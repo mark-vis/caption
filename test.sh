@@ -41,6 +41,9 @@ disable issues/gitlab/issue_35.tex        # Needs <whatever> to compile (greek &
 disable issues/gitlab/issue_65.tex        # Doomed to fail: frontiers document class + subcaption package
 disable unsorted                          # TODO
 
+disable --pdflatex \
+	issues/gitlab/issue_120.tex
+
 disable --xelatex \
 	source/caption-rus.tex \
 	issues/gitlab/issue_34.tex
