@@ -35,6 +35,7 @@ disable issues/sourceforge/ticket_40.tex  # Bug in catoptions
 disable issues/sourceforge/ticket_43.tex  # Intended to fail w/ error: subcaption + subfig
 disable issues/sourceforge/ticket_44.tex  # Intended to fail w/ error: \captionof{subfigure}
 disable issues/sourceforge/ticket_47.tex  # TODO: \DeclareCaptionListHook
+disable issues/gitlab/issue_20.tex        # Doomed to fail: Current LaTeX + longtabu
 disable issues/gitlab/issue_25.tex        # Doomed to fail: \newsubfloat + subcaption package
 disable issues/gitlab/issue_29.tex        # Needs Culmus fonts to compile
 disable issues/gitlab/issue_35.tex        # Needs <whatever> to compile (greek & farsi)

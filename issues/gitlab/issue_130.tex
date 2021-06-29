@@ -1,0 +1,67 @@
+% Issue: 130
+% Title: Wrong footnote numbering when caption package loaded.
+% Date:  Jun 22, 2021 8:51pm GMT+0200
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/130
+
+\newcommand\testcounter[2]{%
+  \edef\testa{\arabic{#1}}%
+  \edef\testb{#2}%
+  \ifx\testa\testb
+    \typeout{Test #1:#2 passed}%
+  \else
+    \typeout{*** Test #1:#2 failed}%
+    \show\testa
+  \fi}
+
+% I am using the perpage option of the footmisc package to reset the footnote counter on every page break.
+%
+% Additionally I use \footnotemark and \footnotetext to place a footnote inside a figure's caption.
+%
+% Here's my MWE:
+
+\documentclass{article}
+\usepackage[papersize={8cm,9cm},margin={1cm,2cm}]{geometry}
+
+\usepackage{caption}
+\usepackage[perpage]{footmisc}
+\usepackage{graphicx}
+
+\begin{document}
+  % First footnote on first page.\footnote{First footnote on first page}
+  % Second footnote on first page.\footnote{Second footnote on first page}
+  \newpage
+  \begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.25\textwidth]{example-image-a}
+    \caption{Example fig.\protect\footnotemark}
+  \end{figure}
+  \footnotetext{Figure foonote}
+  \testcounter{footnote}{1}
+  Footnote after fig.\footnote{Footnote after fig}
+  \testcounter{footnote}{2}
+  \newpage
+  Footnote on next page after fig.\footnote{Footnote on next page after fig}
+  \testcounter{footnote}{1}
+\end{document}
+
+If the page before the figure does not contain footnotes, the footnote counter starts at 2 and the footnotes on the follow up page are also off:
+
+[...]
+
+This can be solved by removing the caption package or by commenting out the two line after the document environment. However, my project relies on the caption package and I can't guarantee that there are footnotes before the figure.
+
+Now, is there a way to get the footnote numbering right with the caption package loaded and the footnote inside the caption?:
+
+[...]
+
+(In the above output the caption package was commented out.)
+
+The footmisc package's last release was 2011. So I do not expect to get help from its maintainer.
+
+I am using:
+
+    footmisc 2011/06/06 v5.5b
+    caption3 2020/10/21 v2.2e
+
+Thanks for your help!
+

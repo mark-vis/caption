@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3719}
+% \CheckSum{3745}
 %
 % \iffalse
 %<*driver>
@@ -259,12 +259,12 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-01-19} % TODO: Insert CTAN release date of v2.3 here!
+\DeclareCurrentRelease{v2.3}{2021-07-03}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2021/01/19 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2021/07/03 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2785,7 +2785,7 @@
 %
 % \begin{macro}{\DeclareCaptionPosition}
 % \changes{v2.0}{2020/07/26}{This macro added}
-% \changes{v2.3}{2021/01/02}{This macro renamed from \cs{caption@declare@position} to \cs{DeclareCaptionPosition} and rewritten}
+% \changes{v2.3}{2021/01/02}{This macro renamed from \cs{caption@declare@position} to \cs{DeclareCaptionPosition} and re-written}
 %   |\DeclareCaptionPosition|\marg{name}\marg{fallback-code}\marg{regular-code}\\
 %   declares a caption position setting of the given \meta{name}.
 %   The \meta{fallback-code} will be used when |\caption@iftop| is used before |\caption|
@@ -4195,7 +4195,7 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@prepareslc}
-% \changes{v1.0b}{2004/05/16}{Bugfix: Redefinition of \cs{label} \& \cs{@footnotetext} added}
+% \changes{v1.0b}{2004/05/16}{Redefinition of \cs{label} \& \cs{@footnotetext} added}
 % \changes{v1.0b}{2004/05/16}{Redefine \cs{stepcounter} instead of \cs{footnote(mark)}}
 % \changes{v1.0c}{2005/02/12}{\cs{let}\cs{caption@justification}\cs{relax} added}
 % \changes{v1.0f}{2005/07/09}{Support of \package{endnotes} package added}
@@ -4203,13 +4203,13 @@
 % \changes{v1.1}{2007/06/13}{Redefinition of \cs{(H@)refstepcounter} added}
 % \changes{v1.1}{2007/08/12}{Redefinition of \cs{label} improved}
 % \changes{v1.1c}{2007/10/06}{Definition of \cs{caption@l@stepcounter} added}
-% \changes{v1.3}{2011/07/07}{Bugfix 11-07-06: Redefinition of \cs{footnote} and \cs{footnotemark} added, redefinition of \cs{stepcounter} and \cs{refstepcounter} dropped}
-% \changes{v1.4a}{2011/10/22}{Redefinition of \cs{footnote} revised}
+% \changes{v1.3}{2011/07/07}{Redefinition of \cs{footnote} and \cs{footnotemark} added, redefinition of \cs{stepcounter} and \cs{refstepcounter} dropped}
 % \changes{v1.5}{2013/04/13}{Redefinition os \cs{glsunset} added}
 % \changes{v1.8}{2018/01/21}{Redefinition of \cs{endnote} added (thanks to Markus Kohm)}
 % \changes{v1.8}{2018/05/16}{Redefinition of \cs{acused} added}
 % \changes{v1.8}{2018/05/26}{Definition method changed so it can be pre-defined by other packages}
 % \changes{v1.8}{2018/05/27}{Redefinition of \cs{hypertarget} added}
+% \changes{v2.3}{2021/07/03}{Redefinition of \cs{footnote} and \cs{endnote} stuff revised}
 %   |\caption@prepareslc|\\
 %   re-defines anything which could disturb the single-line-check.
 %    \begin{macrocode}
@@ -4225,21 +4225,25 @@
 %     \item The footnote text will not be evaluated twice
 %   \end{enumerate}
 %    \begin{macrocode}
-  \let\caption@footnote@ORI\footnote
-  \def\footnote{\caption@withoptargs\caption@footnote}%
-  \let\caption@footnotemark@ORI\footnotemark
-  \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
-  \let\caption@footnotetext@ORI\@footnotetext
-  \let\@footnotetext\caption@gobble
+  \let\footnote\caption@footnote
+  \let\footnotemark\caption@footnotemark
+  \let\footnotetext\caption@footnotetext
+  \let\@footnotetext\@gobble
+%    \end{macrocode}
+% Adaption to the \package{hyperref} package
+%    \begin{macrocode}
+  \let\H@@footnotetext\@gobble
+  \let\H@@mpfootnotetext\@gobble
+  \caption@ifdefined\H@@footnotemark
+    {\let\@footnotemark\H@@footnotemark}%
+    {}%
 %    \end{macrocode}
 %   Same for \cs{endnote}
 %    \begin{macrocode}
-  \let\caption@endnote@ORI\endnote
-  \def\endnote{\caption@withoptargs\caption@endnote}%
-  \let\caption@endnotemark@ORI\endnotemark
-  \def\endnotemark{\caption@withoptargs\caption@endnotemark}%
-  \let\caption@endnotetext@ORI\@endnotetext
-  \let\@endnotetext\caption@gobble
+  \let\endnote\caption@endnote
+  \let\endnotemark\caption@endnotemark
+  \let\endnotetext\caption@endnotetext
+  \let\@endnotetext\@gobble
 %    \end{macrocode}
 %   Adaption to the \package{acronym} package\par
 %   See also \url{https://tex.stackexchange.com/questions/428788}
@@ -4260,28 +4264,106 @@
 %    \begin{macrocode}
 }
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@footnote}
+% \changes{v1.3}{2011/07/07}{This macro added}
+% \changes{v1.4a}{2011/10/22}{This macro revised}
+% \changes{v2.3}{2021/07/03}{This macro re-written}
+% The following code was taken from |base/ltfloat.dtx| but |\step|\-|counter|
+% is replaced by |\caption@l@step|\-|counter| so the footnote counter will
+% only be incremented temporarily for the single-line-check.
+% (In the past we had re-used the original code but with re-defined
+% |\step|\-|counter| but this has proofed as non-sufficient when
+% using footnote related packages like the \package{footmisc} package.
+% Now we might end up getting a wrong footnote marker, but this code has to
+% be sufficient for the single-line-check.))
 %    \begin{macrocode}
-\newcommand\caption@footnote[2]{%
-  \caption@footnotemark{#1}}
+\newcommand*\caption@footnote{%
+  \@ifnextchar[%]
+    \@xfootnote
+    {\caption@l@stepcounter\@mpfn
+     \protected@xdef\@thefnmark{\thempfn}%
+     \@footnotemark\@footnotetext}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@footnotemark}
+% \changes{v1.3}{2011/07/07}{This macro added}
+% \changes{v2.3}{2021/07/03}{This macro re-written}
+% The following code was taken from |base/ltfloat.dtx| but |\step|\-|counter|
+% is replaced by |\caption@l@step|\-|counter| so the footnote counter will
+% only be incremented temporarily for the single-line-check.
 %    \begin{macrocode}
-\newcommand\caption@footnotemark[1]{%
-  \begingroup
-    \let\stepcounter\caption@l@stepcounter
-    \caption@footnotemark@ORI#1\relax
-  \endgroup}
+\newcommand*\caption@footnotemark{%
+  \@ifnextchar[%]
+    \@xfootnotemark
+    {\caption@l@stepcounter{footnote}%
+     \protected@xdef\@thefnmark{\thefootnote}%
+     \@footnotemark}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@footnotetext}
+% \changes{v2.3}{2021/07/03}{This macro added}
+% The following code was taken from |base/ltfloat.dtx|.
 %    \begin{macrocode}
-\newcommand\caption@endnote[2]{%
-  \caption@endnotemark{#1}}
+\newcommand*\caption@footnotetext{%
+  \@ifnextchar[%]
+    \@xfootnotenext
+    {\protected@xdef\@thefnmark{\thempfn}%
+     \@footnotetext}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@endnote}
+% \changes{v1.8}{2018/01/21}{This macro added}
+% \changes{v2.3}{2021/07/03}{This macro re-written}
+% The following code was taken from |endnotes/endnotes.sty| but |\step|\-|counter|
+% is replaced by |\caption@l@step|\-|counter| so the footnote counter will
+% only be incremented temporarily for the single-line-check.
+% (In the past we had re-used the original code but with re-defined
+% |\step|\-|counter|.)
 %    \begin{macrocode}
-\newcommand\caption@endnotemark[1]{%
-  \begingroup
-    \let\stepcounter\caption@l@stepcounter
-    \caption@endnotemark@ORI#1\relax
-  \endgroup}
+\newcommand*\caption@endnote{%
+  \@ifnextchar[%]
+    \@xendnote
+    {\caption@l@stepcounter{endnote}%
+     \protected@xdef\@theenmark{\theendnote}%
+     \@endnotemark\@endnotetext}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@endnotemark}
+% \changes{v1.8}{2018/01/21}{This macro added}
+% \changes{v2.3}{2021/07/03}{This macro re-written}
+% The following code was taken from |endnotes/endnotes.sty| but |\step|\-|counter|
+% is replaced by |\caption@l@step|\-|counter| so the footnote counter will
+% only be incremented temporarily for the single-line-check.
+%    \begin{macrocode}
+\newcommand*\caption@endnotemark{%
+  \@ifnextchar[%]
+    \@xendnotemark
+    {\caption@l@stepcounter{endnote}%
+     \protected@xdef\@theenmark{\theendnote}%
+     \@endnotemark}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@endnotetext}
+% \changes{v2.3}{2021/07/03}{This macro added}
+% The following code was taken from |endnotes/endnotes.sty|.
+%    \begin{macrocode}
+\newcommand*\caption@endnotetext{%
+  \@ifnextchar[%]
+    \@xendnotenext
+    {\protected@xdef\@theenmark{\theendnote}%
+     \@endnotetext}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@l@stepcounter}
+% \changes{v1.3}{2011/07/07}{This macro added}
 %    \begin{macrocode}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}

@@ -46,8 +46,8 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-01-19} % TODO: Insert CTAN release date of v2.3 here!
-\ProvidesPackage{caption3}[2021/01/19 v2.3-dev caption3 kernel (AR)]
+\DeclareCurrentRelease{v2.3}{2021-07-03}
+\ProvidesPackage{caption3}[2021/07/03 v2.3-dev caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -1551,36 +1551,57 @@
 \g@addto@macro\caption@prepareslc{%
   \let\label\caption@gobble
   \let\hypertarget\@gobbletwo
-  \let\caption@footnote@ORI\footnote
-  \def\footnote{\caption@withoptargs\caption@footnote}%
-  \let\caption@footnotemark@ORI\footnotemark
-  \def\footnotemark{\caption@withoptargs\caption@footnotemark}%
-  \let\caption@footnotetext@ORI\@footnotetext
-  \let\@footnotetext\caption@gobble
-  \let\caption@endnote@ORI\endnote
-  \def\endnote{\caption@withoptargs\caption@endnote}%
-  \let\caption@endnotemark@ORI\endnotemark
-  \def\endnotemark{\caption@withoptargs\caption@endnotemark}%
-  \let\caption@endnotetext@ORI\@endnotetext
-  \let\@endnotetext\caption@gobble
+  \let\footnote\caption@footnote
+  \let\footnotemark\caption@footnotemark
+  \let\footnotetext\caption@footnotetext
+  \let\@footnotetext\@gobble
+  \let\H@@footnotetext\@gobble
+  \let\H@@mpfootnotetext\@gobble
+  \caption@ifdefined\H@@footnotemark
+    {\let\@footnotemark\H@@footnotemark}%
+    {}%
+  \let\endnote\caption@endnote
+  \let\endnotemark\caption@endnotemark
+  \let\endnotetext\caption@endnotetext
+  \let\@endnotetext\@gobble
   \let\acused\@gobble
   \let\AC@placelabel\@gobble
   \let\glsunset\@gobble
 }
-\newcommand\caption@footnote[2]{%
-  \caption@footnotemark{#1}}
-\newcommand\caption@footnotemark[1]{%
-  \begingroup
-    \let\stepcounter\caption@l@stepcounter
-    \caption@footnotemark@ORI#1\relax
-  \endgroup}
-\newcommand\caption@endnote[2]{%
-  \caption@endnotemark{#1}}
-\newcommand\caption@endnotemark[1]{%
-  \begingroup
-    \let\stepcounter\caption@l@stepcounter
-    \caption@endnotemark@ORI#1\relax
-  \endgroup}
+\newcommand*\caption@footnote{%
+  \@ifnextchar[%]
+    \@xfootnote
+    {\caption@l@stepcounter\@mpfn
+     \protected@xdef\@thefnmark{\thempfn}%
+     \@footnotemark\@footnotetext}}
+\newcommand*\caption@footnotemark{%
+  \@ifnextchar[%]
+    \@xfootnotemark
+    {\caption@l@stepcounter{footnote}%
+     \protected@xdef\@thefnmark{\thefootnote}%
+     \@footnotemark}}
+\newcommand*\caption@footnotetext{%
+  \@ifnextchar[%]
+    \@xfootnotenext
+    {\protected@xdef\@thefnmark{\thempfn}%
+     \@footnotetext}}
+\newcommand*\caption@endnote{%
+  \@ifnextchar[%]
+    \@xendnote
+    {\caption@l@stepcounter{endnote}%
+     \protected@xdef\@theenmark{\theendnote}%
+     \@endnotemark\@endnotetext}}
+\newcommand*\caption@endnotemark{%
+  \@ifnextchar[%]
+    \@xendnotemark
+    {\caption@l@stepcounter{endnote}%
+     \protected@xdef\@theenmark{\theendnote}%
+     \@endnotemark}}
+\newcommand*\caption@endnotetext{%
+  \@ifnextchar[%]
+    \@xendnotenext
+    {\protected@xdef\@theenmark{\theendnote}%
+     \@endnotetext}}
 \newcommand*\caption@l@stepcounter[1]{%
   \advance\csname c@#1\endcsname\@ne\relax}
 \newcommand*\caption@applyfont{%
