@@ -1,8 +1,8 @@
 The LaTeX keyfloat package
 Provides a key/value interface for generating floats.
 
-v2.01
-Copyright 2016-2019 Brian Dunn — www.BDTechConcepts.com
+v2.06
+Copyright 2016-2021 Brian Dunn — www.BDTechConcepts.com
 
 LaTeX Project Public License, version 1.3
 
