@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2803}
+% \CheckSum{2805}
 %
 % \iffalse
 %<*driver>
@@ -750,7 +750,8 @@
 % \changes{v3.0f}{2005/05/22}{Bugfix: \cs{ContinuedFloat} added}
 % \changes{v3.0f}{2005/06/13}{Support of \cs{caption*[]} removed}
 % \changes{v3.0l}{2007/01/19}{Minimal support of \textsf{combine} package added}
-% \changes{v3.1}{2007/02/04}{Re-written, does not save\&use original definition anymore}
+% \changes{v3.1}{2007/02/04}{Re-written, does not save \& use original definition anymore}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 %  Here comes our definition of |\caption| and |\caption*|.
 %  Beside the support of the starred variant this code was adapted to the
 %  various packages we support.
@@ -764,8 +765,16 @@
      \caption@star
        {\caption@refstepcounter\@captype}%
        {\caption@dblarg{\@caption\@captype}}}%
-    {\caption@Error{\noexpand\caption outside float}%
-     \caption@gobble}}
+    {\caption@outside@float\caption
+     \caption@withoptargs\@gobbletwo}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@outside@float}
+% \changes{v3.6}{2022/01/05}{This macro added}
+%    \begin{macrocode}
+\newcommand*\caption@outside@float[1]{%
+  \caption@Error{\string#1 outside float}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1028,6 +1037,7 @@
 % \begin{macro}{\setcaptionsubtype}
 % \changes{v3.2a}{2011/08/15}{This macro added}
 % \changes{v3.5d}{2020/09/28}{This macro revised}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 % Same, but sets the sub-type.
 %    \begin{macrocode}
 \newcommand\setcaptionsubtype{%
@@ -1041,7 +1051,7 @@
 \newcommand*\caption@@setsubtype[1]{%
   \caption@iftype
     {\caption@@@settype{sub}{#1}{sub\@captype}}%
-    {\caption@Error{\noexpand\setcaptionsubtype outside float}}}
+    {\caption@outside@float\setcaptionsubtype}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1281,6 +1291,7 @@
 %
 % \begin{macro}{\phantomcaption}
 % \changes{v3.2}{2010/10/31}{Bugfix 10-09-01b: This macro added}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 %  |\phantomcaption|\par
 %  increments the counter and generates an reference
 %  which could be used with |\label|, but does not typeset anything.
@@ -1288,7 +1299,7 @@
 \newcommand*\phantomcaption{%
   \caption@iftype
     {\caption@refstepcounter\@captype}%
-    {\caption@Error{\noexpand\phantomcaption outside float}}}
+    {\caption@outside@float\phantomcaption}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1300,6 +1311,7 @@
 % \changes{v3.1g}{2008/01/20}{Starred variant added}
 % \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 % \changes{v3.6}{2020/12/27}{With optional argument \cs{caption@refstepcounter@} is used instead of \cs{caption@refstepcounter}}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 %  |\captionlistentry|\oarg{float type}\marg{list entry}\\
 %  |\captionlistentry*|\oarg{float type}\marg{list entry}
 %    \begin{macrocode}
@@ -1320,7 +1332,7 @@
 \newcommand*\caption@@listentry[1]{%
   \caption@iftype
     {\caption@@@listentry{#1}{\@captype}{\caption@refstepcounter}}%
-    {\caption@Error{\noexpand\captionlistentry outside float}%
+    {\caption@outside@float\captionlistentry
      \@gobble}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1337,6 +1349,7 @@
 %
 % \begin{macro}{\captiontext}
 % \changes{v3.6}{2022/01/05}{This macro added}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 %  |\captiontext*|\oarg{number}\marg{text for caption}\par
 %  typesets the caption without incrementing the counter,
 %  without putting an entry into the list, and without skips.
@@ -1346,7 +1359,8 @@
 \newcommand*\captiontext{%
   \caption@iftype
     {\caption@text\@captype}%
-    {\caption@Error{\noexpand\captiontext outside float}}}
+    {\caption@outside@float\captiontext
+     \caption@withoptargs\@gobbletwo}}
 \newcommand*\caption@text[1]{%
   \caption@teststar{\caption@@text{#1}}\caption@@@make\caption@@make}
 \newcommand*\caption@@text[2]{%
@@ -1499,6 +1513,7 @@
 % \changes{v3.4}{2015/09/16}{Renamed from \cs{ContinuedFloat} to \cs{continuedfloat}}
 % \changes{v3.5f}{2020/10/06}{Usage of \cs{caption@restorecounters} removed}
 % \changes{v3.6}{2020/12/27}{Check of counter caption type out-sourced to \cs{caption@check@continuedfloat}}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 %  |\continuedfloat|\\
 %  |\continuedfloat*|\par
 %  This mainly sets the `continued float' flag, increments the continuation counter, and executes the given options.
@@ -1511,7 +1526,7 @@
   \caption@iftype
     {#1{\caption@@refstepcounter\@captype}{}%
      \caption@@continuedfloat\@captype}%
-    {\caption@Error{\noexpand\continuedfloat outside float}}}
+    {\caption@outside@float\continuedfloat}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@continuedfloat{%
@@ -1574,6 +1589,7 @@
 % \begin{macro}{\nextfloat}
 % \changes{v3.6}{2020/09/20}{This command added}
 % \changes{v3.6}{2021/01/09}{Usage of \cs{flushsubcaptionlistentries} added}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 % |\nextfloat| resets the flags (indicating that the next contents of the floating environment starts here),
 % and sets a new \package{hyperref} anchor.
 %    \begin{macrocode}
@@ -1585,7 +1601,7 @@
   \caption@iftype
     {\caption@@nextfloat\@captype
      #1{}{\caption@reset@currentlabel\caption@start}}%
-    {\caption@Error{\noexpand\nextfloat outside float}}}
+    {\caption@outside@float\nextfloat}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@nextfloat[1]{%
@@ -3366,6 +3382,7 @@
 % \changes{v3.3}{2016/01/31}{Support for \cs{bicaption} added}
 % \changes{v3.3}{2018/10/05}{Definition of \cs{captionlistentry} fixed}
 % \changes{v3.5}{2018/04/15}{Usage of \cs{caption@AtBeginLongtable} added}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@outside@float}}
 % We redefine |\LT@array| here to get |\captionsetup|\marg{options} working inside |longtable|s.
 % \Note{Since the \package{hyperref} package patches \cs{LT@array} as well
 %  and since this only works with the original definition of \cs{LT@array},
@@ -3428,7 +3445,7 @@
 %   }%
 %   \global\let\caption@setContinuedFloat\@empty
     \def\continuedfloat{\noalign{%
-      \caption@Error{\noexpand\continuedfloat outside float}}}%
+      \caption@outside@float\continuedfloat}}%
 %    \end{macrocode}
 % |\bicaption| for longtable:
 %    \begin{macrocode}
