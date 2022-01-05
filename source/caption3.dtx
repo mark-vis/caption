@@ -2,7 +2,7 @@
 % 
 % This is file `caption3.dtx'.
 % 
-% Copyright (C) 1994-2021 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{3757}
+% \CheckSum{3781}
 %
 % \iffalse
 %<*driver>
@@ -259,12 +259,12 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-12-01}
+\DeclareCurrentRelease{v2.3}{2022-01-05}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2021/11/20 v2.3-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022-01-05 v2.3-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3923,12 +3923,34 @@
 % \changes{v1.1}{2007/08/21}{This macro added}
 % \changes{v2.0}{2020/08/03}{The original definition will be stored in \cs{caption@original@fnum}}
 % \changes{v2.3}{2021/01/06}{Usage of \cs{thexxx} replaced by \cs{caption@the}}
+% \changes{v2.3}{2022/01/05}{Definition of \cs{caption@@fnum} added}
 %   |\caption@fnum|\marg{float type}\\
+%   |\caption@@fnum|\marg{float type}\marg{name}\marg{number}\\
 %   typesets the caption label; this acts as replacement for |\fnum@|\meta{float type}.
 %    \begin{macrocode}
 \newcommand*\caption@fnum[1]{%
+  \caption@@fnum{#1}{\@nameuse{#1name}}{\caption@the{#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@@fnum[1]{%
   \expandafter\let\expandafter\caption@original@fnum\csname caption@fnum@#1\endcsname % for label format `original'
-  \caption@labelformat{\@nameuse{#1name}}{\caption@the{#1}}}
+  \caption@labelformat}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setfnum}
+% \changes{v1.1}{2007/03/10}{This macro added}
+% \changes{v2.0}{2020/08/03}{Adapted to \package{caption3} v2.0}
+% \changes{v2.3}{2022/01/05}{Definition moved from package to kernel}
+%  |\caption@setfnum|\marg{type}\\
+%  stores the original definition of |\fnum@|\meta{type} in |\caption@fnum@|\meta{type}
+% and re-defines it according the caption label format set with |label|\-|format=|.
+%    \begin{macrocode}
+\newcommand*\caption@setfnum[1]{%
+  \@ifundefined{caption@fnum@#1}%
+    {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
+     \@namedef{fnum@#1}{\caption@fnum{#1}}}%
+    {}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3949,10 +3971,22 @@
 % \end{macro}
 %
 % \begin{macro}{\caption@make}
-%   |\caption@make|\marg{float name}\marg{ref.\ number}\marg{text}\\
+% \changes{v2.3}{2022/01/05}{Optional argument \meta{float type} added}
+%   |\caption@make|\oarg{float type}\marg{float name}\marg{ref.\ number}\marg{text}\\
 %   typesets the caption.
 %    \begin{macrocode}
-\newcommand\caption@make[2]{\caption@@make{\caption@labelformat{#1}{#2}}}
+\newcommand*\caption@make{%
+  \kernel@ifnextchar[%]
+    \caption@make@
+    {\caption@make@@\caption@labelformat}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@make@[#1]{%
+  \caption@make@@{\caption@@fnum{#1}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand\caption@make@@[3]{%
+  \caption@@make{#1{#2}{#3}}}
 %    \end{macrocode}
 % \end{macro}
 %

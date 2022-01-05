@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2021 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2776}
+% \CheckSum{2803}
 %
 % \iffalse
 %<*driver>
@@ -257,19 +257,19 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2021-06-30}
+\DeclareCurrentRelease{v3.6}{2022-01-05}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2021/06/30 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/01/05 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 % Load a matching version of the \package{caption} kernel.
 %    \begin{macrocode}
-\RequirePackage{caption3}[2021/06/30] % needs v2.3 or newer
+\RequirePackage{caption3}[2022/01/05] % needs v2.3 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -972,18 +972,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\phantomcaption}
-% \changes{v3.2}{2010/10/31}{Bugfix 10-09-01b: This macro added}
-%  |\phantomcaption|\par
-% Use this one for figures with subcaptions but without main caption.
-%    \begin{macrocode}
-\newcommand\phantomcaption{%
-  \caption@iftype
-    {\caption@refstepcounter\@captype}%
-    {\caption@Error{\noexpand\phantomcaption outside float}}}
-%    \end{macrocode}
-% \end{macro}
-%
 % \section{\cs{setcaptiontype} and \cs{setcaptionsubtype}}
 %
 % \changes{v3.0d}{2004/08/03}{Option \opt{type=} added}
@@ -1289,6 +1277,21 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \section{\cs{phantomcaption}}
+%
+% \begin{macro}{\phantomcaption}
+% \changes{v3.2}{2010/10/31}{Bugfix 10-09-01b: This macro added}
+%  |\phantomcaption|\par
+%  increments the counter and generates an reference
+%  which could be used with |\label|, but does not typeset anything.
+%    \begin{macrocode}
+\newcommand*\phantomcaption{%
+  \caption@iftype
+    {\caption@refstepcounter\@captype}%
+    {\caption@Error{\noexpand\phantomcaption outside float}}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \section{\cs{captionlistentry}}
 %
 % \begin{macro}{\captionlistentry}
@@ -1327,6 +1330,34 @@
       {#3{#2}\caption@makecurrent{#2}{#4}}%
     \caption@addcontentsline{#2}{#4}%
   \@esphack}
+%    \end{macrocode}
+% \end{macro}
+%
+% \section{\cs{captiontext}}
+%
+% \begin{macro}{\captiontext}
+% \changes{v3.6}{2022/01/05}{This macro added}
+%  |\captiontext*|\oarg{number}\marg{text for caption}\par
+%  typesets the caption without incrementing the counter,
+%  without putting an entry into the list, and without skips.
+%  The starred variant skips the single-line-check additionally
+%  and does not use a box or parbox or margin.
+%    \begin{macrocode}
+\newcommand*\captiontext{%
+  \caption@iftype
+    {\caption@text\@captype}%
+    {\caption@Error{\noexpand\captiontext outside float}}}
+\newcommand*\caption@text[1]{%
+  \caption@teststar{\caption@@text{#1}}\caption@@@make\caption@@make}
+\newcommand*\caption@@text[2]{%
+  \kernel@ifnextchar[%]
+    {\caption@@@text{#1}#2\@iden}%
+    {\caption@@@text{#1}#2\@gobble[0]}}
+\long\def\caption@@@text#1#2#3[#4]#5{%
+  \begingroup
+    #3{\csname c@#1\endcsname #4\relax}%
+    #2{\caption@fnum{#1}}{#5}%
+  \endgroup}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1804,21 +1835,6 @@
 % \changes{v3.0a}{2004/01/23}{Internal hooks \cs{caption@@begin} \& \cs{caption@@end} added}
 % \changes{v3.0h}{2005/10/06}{Internal hooks \cs{caption@@begin} \& \cs{caption@@end} removed}
 %
-% \begin{macro}{\caption@setfnum}
-% \changes{v3.1}{2007/03/10}{This macro added}
-% \changes{v3.5}{2020/08/03}{Adapted to \package{caption3} v2.0}
-%  |\caption@setfnum|\marg{type}\\
-%  stores the original definition of |\fnum@|\meta{type} in |\caption@fnum@|\meta{type}
-% and re-defines it according the caption label format set with |label|\-|format=|.
-%    \begin{macrocode}
-\newcommand*\caption@setfnum[1]{%
-  \@ifundefined{caption@fnum@#1}%
-    {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
-     \@namedef{fnum@#1}{\caption@fnum{#1}}}%
-    {}}
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\caption@normalsize}
 % \changes{v3.1}{2007/05/05}{This macro and its usage added}
 % \changes{v3.5}{2020/07/27}{Adapted to \package{caption3} v2.0}
@@ -1936,6 +1952,7 @@
     \let\@caption\caption@@caption
     \let\phantomcaption\caption@subphantom
     \let\captionlistentry\caption@sublistentry
+    \let\captiontext\caption@subtext
 %   \let\@captype\@subcaptype
     \let\caption@refstepcounter\caption@refstepcounter@
 %    \end{macrocode}
@@ -1998,6 +2015,16 @@
 %    \begin{macrocode}
 \newcommand*\@subcaptionlistentry[1]{%
   \@testopt{\caption@listentry{#1}}{\@subcaptype}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@subtext}
+% \changes{v3.2a}{2011/08/17}{This macro added}
+% Same as |\captiontext|, but for sub-captions.
+%    \begin{macrocode}
+\newcommand*\caption@subtext{%
+% \caption@checkgrouplevel{sub}\subcaptiontext
+  \caption@text\@subcaptype}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2269,9 +2296,9 @@
       \def\caption{%
         \def\caption{\caption@freeze@error\caption@gobble}%
         \@ifstar
-        {\caption@SC@caption*}%
-        {\let\@currentlabel\caption@SClabel
-         \caption@withoptargs\caption@SC@caption}}%
+          {\caption@SC@caption*}%
+          {\let\@currentlabel\caption@SClabel
+           \caption@withoptargs\caption@SC@caption}}%
       \long\def\caption@SC@caption##1##2{%
         \caption@@freeze{\caption##1{##2}}%
         \ignorespaces}%

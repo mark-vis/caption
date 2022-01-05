@@ -6,7 +6,7 @@
 %%
 %% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -46,8 +46,8 @@
 \DeclareRelease{v1.8} {2013-01-10}{caption3_2019-09-01.sty} % for caption v3.3
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
-\DeclareCurrentRelease{v2.3}{2021-12-01}
-\ProvidesPackage{caption3}[2021/11/20 v2.3-dev caption3 kernel (AR)]
+\DeclareCurrentRelease{v2.3}{2022-01-05}
+\ProvidesPackage{caption3}[2022-01-05 v2.3-dev caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -1441,11 +1441,25 @@
 \newcommand*\caption@belowskip{%
   \vskip\belowcaptionskip}
 \newcommand*\caption@fnum[1]{%
+  \caption@@fnum{#1}{\@nameuse{#1name}}{\caption@the{#1}}}
+\newcommand*\caption@@fnum[1]{%
   \expandafter\let\expandafter\caption@original@fnum\csname caption@fnum@#1\endcsname % for label format `original'
-  \caption@labelformat{\@nameuse{#1name}}{\caption@the{#1}}}
+  \caption@labelformat}
+\newcommand*\caption@setfnum[1]{%
+  \@ifundefined{caption@fnum@#1}%
+    {\expandafter\let\csname caption@fnum@#1\expandafter\endcsname\csname fnum@#1\endcsname
+     \@namedef{fnum@#1}{\caption@fnum{#1}}}%
+    {}}
 \newcommand*\caption@p[1]{\@nameuse{p@#1}}
 \newcommand*\caption@the[1]{\@nameuse{the#1}}
-\newcommand\caption@make[2]{\caption@@make{\caption@labelformat{#1}{#2}}}
+\newcommand*\caption@make{%
+  \kernel@ifnextchar[%]
+    \caption@make@
+    {\caption@make@@\caption@labelformat}}
+\def\caption@make@[#1]{%
+  \caption@make@@{\caption@@fnum{#1}}}
+\newcommand\caption@make@@[3]{%
+  \caption@@make{#1{#2}{#3}}}
 \newcommand\caption@@make[2]{%
   \begingroup
     \caption@@make@{#1}{#2}%
