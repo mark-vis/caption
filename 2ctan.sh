@@ -9,6 +9,7 @@
 # 2015-09-17: Revised, ctanupload commented out since currently-not-working
 # 2020-08-01: *.sto files added to distribution
 # 2020-12-22: release/* files added to distribution
+# 2022-01-05: Outdated documentation removed from distribution
 #
 # Needs on CentOS/Fedora: mmv perl-File-Copy-Recursive perl-HTML-FormatText* perl-WWW-Mechanize* perl-XML-TreeBuilder
 #
@@ -16,14 +17,15 @@ dist_dir=$(pwd)
 #
 rm -fr /tmp/caption
 mkdir /tmp/caption
-cp -a source/*.ins source/*.dtx source/*.tex source/*.eps /tmp/caption
+cp -a source/*.ins source/*.dtx source/*.eps /tmp/caption
 cp -a tex/*.sty tex/*.sto release/* /tmp/caption
 cp -a doc/*.pdf /tmp/caption
 cp -a README CHANGELOG SUMMARY /tmp/caption
 cd /tmp/caption
-ctanify caption.ins "*.tex=source/latex/caption" "*.eps=source/latex/caption" "*.sto=tex/latex/caption" README "CHANGELOG=doc/latex/caption" "SUMMARY=doc/latex/caption" *.pdf
+ctanify caption.ins "*.eps=source/latex/caption" "*.sto=tex/latex/caption" README "CHANGELOG=doc/latex/caption" "SUMMARY=doc/latex/caption" *.pdf
 #
-if [ $? -eq 0 ]; then
+if [ $? -eq 0 ]
+then
   cp -a /tmp/caption/caption.tar.gz $dist_dir/caption_$(date --rfc-3339=date).tar.gz
   cd $dist_dir
 
