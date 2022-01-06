@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{475}
+% \CheckSum{474}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2022/01/05 v1.5 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2022/01/06 v1.5-dev Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -448,11 +448,11 @@
 %   |\end{subfigure}|\\
 % \end{quote}
 % \item
-% The environment name must match the current floating environment,
+% The environment name should match the current floating environment,
 % i.e. inside a |figure| a |sub|\-|figure| should be used,
 % and inside a |table| a |sub|\-|table| should be used.
-% Using the wrong sub-type is not supported and
-% causes an error since \version{1.4} of the \pkg{subcaption} package.
+% Using the wrong sub-type will cause a warning
+% since \version{1.5} of the \pkg{subcaption} package.
 % \item
 % Hyperlinks targeted to this subfigure will jump to the beginning
 % of the subfigure, and not to the caption of the subfigure
@@ -1537,7 +1537,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2022/01/05 v1.5 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2022/01/06 v1.5-dev Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \pkg{caption} package we load it here.
@@ -1546,6 +1546,16 @@
 %    \end{macrocode}
 %
 % \subsection{Initial code}
+%
+% \begin{macro}{\subcaption@Warning}
+% \changes{v1.5}{2022/01/06}{This macro added}
+%   |\subcaption@Warning|\marg{message}\\
+%   issues an warning message (with code line indication).
+%    \begin{macrocode}
+\newcommand*\subcaption@Warning{%
+  \PackageWarning{subcaption}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\subcaption@Error}
 % \changes{v1.3h}{2020/09/28}{This macro added}
@@ -1706,6 +1716,7 @@
 % \changes{v1.2}{2016/02/21}{Optional argument values `B' and `T' added}
 % \changes{v1.3d}{2020/01/22}{Definition and usage of \cs{@subfloatboxreset} added}
 % \changes{v1.4d}{2022/01/04}{Test of environment name added, should match `sub\cs{@captype}'}
+% \changes{v1.5}{2022/01/06}{Test of environment name revised, results in a warning now instead of an error}
 % A sub-environment is a \env{minipage} with |\set|\-|caption|\-|sub|\-|type| as first contents line.
 %    \begin{macrocode}
 \newcommand*\subcaption@newenvironment[1]{%
@@ -1717,8 +1728,7 @@
        {\edef\caption@tempa{#1}%
         \edef\caption@tempb{sub\@captype}%
         \ifx\caption@tempa\caption@tempb \else
-%         \subcaption@Error{\string\begin{#1} outside \@gobblethree#1}%
-          \subcaption@Error{\string\begin{#1} inside \@captype}%
+          \subcaption@Warning{`\caption@tempa' is treated as `\caption@tempb'\MessageBreak}%
         \fi}%
        {\subcaption@Error{\string\begin{#1} outside float}}%
 %    \end{macrocode}
