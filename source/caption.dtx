@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2805}
+% \CheckSum{2813}
 %
 % \iffalse
 %<*driver>
@@ -72,7 +72,7 @@
   \let\subsectionautorefname\sectionautorefname
   \let\subsubsectionautorefname\sectionautorefname}
 %
-\usepackage[listof=0,hypcap=false]{caption}[2022/01/05]
+\usepackage[listof=false,hypcap=false]{caption}[2022/01/06]
 %
 \DeclareRobustCommand*\eTeX{\texorpdfstring
   {\leavevmode\hbox{$\varepsilon$}-\TeX}%
@@ -4563,12 +4563,12 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2022-01-05}
+\DeclareCurrentRelease{v3.6}{2022-01-06}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/01/05 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/01/06 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -5102,6 +5102,7 @@
 % \changes{v3.2d}{2011/10/21}{Adapted to the \textsf{memoir} document class}
 % \changes{v3.2f}{2012/01/14}{Usage of \cs{M@gettitle} moved to \cs{caption@prepareanchor}}
 % \changes{v3.3}{2013/01/06}{Adapted to the \textsf{nag} package}
+% \changes{v3.6}{2022/01/06}{Usage of \cs{caption@nobreak} added to improve \textsf{beamer} document class support}
 %  As above, our version has been adapted to the packages we support.
 %  Additionally our code is nested by |\caption@begin|\-|ex| \&
 %  |\caption@end| instead of |\begin|\-|group| \& |\end|\-|group|.
@@ -5119,6 +5120,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \par
+  \caption@nobreak
   \caption@beginex{#1}{#2}{#3}%
     \caption@setfloatcapt{%
       \caption@parboxrestore
@@ -5131,6 +5133,7 @@
       \fi
       \@makecaption{\csname fnum@#1\endcsname}%
                    {\ignorespaces\caption@makeanchor{#3}}\par
+      \caption@nobreak
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
 %    \end{macrocode}
@@ -5155,6 +5158,15 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@nobreak}
+% \changes{v3.6}{2022/01/06}{This macro added}
+% |\caption@nobreak| for use in places where |\@caption| resp.~|\beamer@makecaption| does |\nobreak|.
+% It's defined to do nothing unless the \cls{beamer} document class is used.
+%    \begin{macrocode}
+\newcommand*\caption@nobreak{}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@parboxrestore}
 % \changes{v3.1}{2007/03/03}{This macro and its usage added}
 % \changes{v3.1b}{2007/09/17}{Bugfix: Redefinition of CR added}
@@ -5169,6 +5181,7 @@
 %
 % \begin{macro}{\caption@makecaption}
 % \changes{v3.1i}{2008/05/06}{Usage of \cs{caption@rule} added}
+% \changes{v3.6}{2022/01/06}{Usage of \cs{caption@nobreak} added to improve \textsf{beamer} document class support}
 %  |\@makecaption|\marg{label}\marg{text}\par
 %  We do basically the same as the original code (from the standard
 %  \LaTeX\ document classes), but take care of the |position=| setting
@@ -5176,9 +5189,13 @@
 %  typeset the caption.
 %    \begin{macrocode}
 \long\def\caption@makecaption#1#2{%
+  \caption@nobreak
   \caption@make@above
+  \caption@nobreak
   \caption@@make{#1}{#2}%
-  \caption@make@below}
+  \caption@nobreak
+  \caption@make@below
+  \caption@nobreak}
 %    \end{macrocode}
 % \end{macro}
 %

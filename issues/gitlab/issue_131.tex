@@ -1,0 +1,115 @@
+% Issue: 131
+% Title: Beamer support seems to be broken
+% Date:  Aug 21, 2021 8:50am GMT+0200
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/131
+
+% Using https://www.overleaf.com/learn/latex/Positioning_images_and_tables#Multiple_images_in_one_figure
+% in a beamer document results in the following error message if the caption package is loaded:
+% "! You can't use `\unskip' in vertical mode."
+
+\errorcontextlines=9
+\PassOptionsToPackage{demo}{graphicx}
+\documentclass{beamer}
+\usepackage{subcaption}
+
+\begin{document}
+
+%\begin{frame}
+Praesent in sapien. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Duis fringilla tristique neque...
+
+\begin{figure}
+\centering
+
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=0.9\linewidth, height=2cm]{overleaf-logo}
+\caption{Caption1}
+\label{fig:subim1}
+\end{subfigure}
+\begin{subfigure}{0.45\textwidth}
+\includegraphics[width=0.9\linewidth, height=2cm]{mesh}
+\caption{Caption 2}
+\label{fig:subim2}
+\end{subfigure}
+
+%\tracingall
+\caption{Caption for this figure with two images}
+\label{fig:image2}
+\end{figure}
+
+Praesent blandit blandit mauris. Praesent lectus tellus, aliquet aliquam, luctus a, egestas a, turpis. Mauris lacinia lorem sit amet ipsum. Nunc quis urna dictum turpis accumsan semper.
+%\end{frame}
+
+\end{document}
+
+# Problem examination 2022-01-06:
+
+## Problematic code
+
+`beamerbasecolor.sty` re-defines `\reset@color`:
+
+    \def\reset@color{%
+      \beamer@lastskip=\lastskip%
+      \edef\beamer@lastskiptexta{\the\lastskip}%
+      \ifx\beamer@lastskiptexta\beamer@zeropt\else%
+        \ifvmode\unskip\fi%
+        \ifhmode\unskip\fi%
+      \fi%
+      ...}
+
+But `\unskip` does not work in outer vertical mode, resulting in the error above.
+
+## Call stack (error)
+
+    \caption (=\caption@caption)
+     -> \@caption (=\caption@@caption)
+        -> \caption@end
+           -> \endgroup
+              -> \reset@color (caused by \aftergroup\reset@color)
+
+## Call stack (\aftergroup\reset@color)
+
+    \caption (=\caption@caption)
+     -> \@caption (=\caption@@caption)
+         -> \caption@normalsize
+             -> \caption@font@normal
+                 -> \caption@font@normalcolor
+                     -> \normalcolor
+                         -> \color
+
+## Minimal document to reproduce the problem
+
+    \documentclass{beamer}
+    
+    \def\caption#1{%
+      \par
+      \begingroup
+        \normalcolor
+        % \@makecaption{\csname fnum@\@captype\endcsname}{\ignorespaces #1}\par
+        % ->
+        %   \vskip \abovecaptionskip
+        %   \caption@@make{\csname fnum@\@captype\endcsname}{\ignorespaces #1}%
+            \vskip \belowcaptionskip
+    %%%     \nobreak
+            \par
+        \typeout{******* before end-of-group}%
+      \endgroup
+      \typeout{******* after end-of-group}%
+    }
+    
+    \begin{document}
+    \begin{figure}
+    A
+    \caption{Caption 2}
+    \end{figure}
+    \end{document}
+
+## Further Analysis
+
+`\beamer@makecaption` (used by `\@caption`) have a `\nobreak` right after `\vskip \belowcaptionskip`.
+This seems to mask the problem.
+
+## Proposed solution
+
+The caption package could define and use `\caption@nobreak` which defaults to `\relax` and is re-defined to `\nobreak` if the beamer document class is used.
+
+(This would also improve compatibility with the beamer document class in general.)
