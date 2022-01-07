@@ -45,9 +45,9 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2022-01-06}
-\ProvidesPackage{caption}[2022/01/06 v3.6-dev Customizing captions (AR)]
-\RequirePackage{caption3}[2022/01/05] % needs v2.3 or newer
+\DeclareCurrentRelease{v3.6}{2022-01-07}
+\ProvidesPackage{caption}[2022/01/07 v3.6-dev Customizing captions (AR)]
+\RequirePackage{caption3}[2022/01/07] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
     Unknown document class (or package),\MessageBreak
@@ -215,9 +215,9 @@
      \caption@star
        {\caption@refstepcounter\@captype}%
        {\caption@dblarg{\@caption\@captype}}}%
-    {\caption@outside@float\caption
+    {\caption@OutsideFloat\caption
      \caption@withoptargs\@gobbletwo}}
-\newcommand*\caption@outside@float[1]{%
+\newcommand*\caption@OutsideFloat[1]{%
   \caption@Error{\string#1 outside float}}
 \newcommand*\caption@star[2]{%
   \@ifstar{\caption@startrue#2[]}{#1#2}}
@@ -306,16 +306,18 @@
   \caption@@settype}
 \newcommand*\caption@@settype{%
   \caption@teststar{\caption@@@settype{}}\@firstoftwo\@secondoftwo}
-\newcommand\setcaptionsubtype{%
+\newcommand*\setcaptionsubtype{%
   \caption@setsubtype}
-\newcommand\caption@setsubtype{% used by the floatrow package
+\newcommand*\caption@setsubtype{% used by the floatrow package
   \caption@teststar\caption@@setsubtype\@firstoftwo\@secondoftwo}
 \newcommand*\caption@@setsubtype[1]{%
   \caption@iftype
-    {\caption@@@settype{sub}{#1}{sub\@captype}}%
-    {\caption@outside@float\setcaptionsubtype}}
+    {\caption@ifsubtype
+       {\caption@Debug{subtype=\@subcaptype}}%
+       {\caption@@@settype{sub}{#1}{sub\@captype}}}%
+    {\caption@OutsideFloat\setcaptionsubtype}}
 \newcommand*\caption@@@settype[3]{%
-  \caption@Debug{#1type=#3}%
+  \caption@Debug{#1type:=#3}%
   \@nameuse{caption@check#1type}{#3}%
     {\caption@checkgrouplevel{#1}{%
        \captionsetup{#1type#2*\@empty=...}#2{ or
@@ -346,13 +348,14 @@
     \let\label\caption@xlabel
   \fi}
 \newcommand*\caption@iftype{\caption@ifdefined\@captype}
+\newcommand*\caption@ifsubtype{\caption@ifdefined\@subcaptype}
 \newcommand*\caption@checktype[1]{%
-  \caption@ifsubtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
+  \caption@ifdefined@subtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
     {\caption@Error{Should not be used with subtype `#1'}%
      \@gobble}%
     \@firstofone}
 \newcommand*\caption@checksubtype[1]{%
-  \caption@ifsubtype{#1}%
+  \caption@ifdefined@subtype{#1}%
     \@firstofone
     {\caption@ifin@list\sf@counterlist{#1}%
        {\caption@Warning{%
@@ -398,7 +401,7 @@
 \newcommand*\phantomcaption{%
   \caption@iftype
     {\caption@refstepcounter\@captype}%
-    {\caption@outside@float\phantomcaption}}
+    {\caption@OutsideFloat\phantomcaption}}
 \newcommand*\captionlistentry{%
   \caption@teststar\caption@listentry\@firstoftwo\@secondoftwo}
 \newcommand*\caption@listentry[1]{%
@@ -410,7 +413,7 @@
 \newcommand*\caption@@listentry[1]{%
   \caption@iftype
     {\caption@@@listentry{#1}{\@captype}{\caption@refstepcounter}}%
-    {\caption@outside@float\captionlistentry
+    {\caption@OutsideFloat\captionlistentry
      \@gobble}}
 \newcommand*\caption@@@listentry[4]{%
   \@bsphack
@@ -421,7 +424,7 @@
 \newcommand*\captiontext{%
   \caption@iftype
     {\caption@text\@captype}%
-    {\caption@outside@float\captiontext
+    {\caption@OutsideFloat\captiontext
      \caption@withoptargs\@gobbletwo}}
 \newcommand*\caption@text[1]{%
   \caption@teststar{\caption@@text{#1}}\caption@@@make\caption@@make}
@@ -498,7 +501,7 @@
   \caption@iftype
     {#1{\caption@@refstepcounter\@captype}{}%
      \caption@@continuedfloat\@captype}%
-    {\caption@outside@float\continuedfloat}}
+    {\caption@OutsideFloat\continuedfloat}}
 \newcommand*\caption@@continuedfloat{%
   \caption@clrflags
   \caption@set@continuedfloat
@@ -523,7 +526,7 @@
   \caption@iftype
     {\caption@@nextfloat\@captype
      #1{}{\caption@reset@currentlabel\caption@start}}%
-    {\caption@outside@float\nextfloat}}
+    {\caption@OutsideFloat\nextfloat}}
 \newcommand*\caption@@nextfloat[1]{%
   \flushsubcaptionlistentries
   \caption@clrflags
@@ -1131,7 +1134,7 @@
 %%      \let\Hy@LT@currentHlabel\@currentHlabel
 %%        \let\@currentHlabel\Hy@LT@currentHlabel
     \def\continuedfloat{\noalign{%
-      \caption@outside@float\continuedfloat}}%
+      \caption@OutsideFloat\continuedfloat}}%
     \let\bicaption\LT@bicaption
   }%
   \def\LT@capti@n{%
