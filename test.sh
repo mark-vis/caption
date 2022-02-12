@@ -5,24 +5,10 @@
 
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2022-01-04
+# Date:   2022-02-12
 
 source ./test-lib.sh
 
-disable test/babel/arabic-0.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-1.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-2.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-3.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-4.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-5.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/arabic-6.tex           # TODO (ae_almohanad_bold.pfb)
-disable test/babel/farsi-0.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-1.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-2.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-3.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-4.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-5.tex            # TODO (nazli.pfb)
-disable test/babel/farsi-6.tex            # TODO (nazli.pfb)
 disable test/babel/frenchle-0.tex         # TODO (frenchle.sty: -20b- the French language is undefined (ERROR!))
 disable test/babel/frenchle-1.tex         # TODO (frenchle.sty: -20b- the French language is undefined (ERROR!))
 disable test/babel/frenchle-2.tex         # TODO (frenchle.sty: -20b- the French language is undefined (ERROR!))
@@ -57,7 +43,6 @@ disable issues/sourceforge/ticket_43.tex  # Intended to fail w/ error: subcaptio
 disable issues/sourceforge/ticket_44.tex  # Intended to fail w/ error: \captionof{subfigure}
 disable issues/sourceforge/ticket_47.tex  # TODO: \DeclareCaptionListHook
 disable issues/sourceforge/ticket_52.tex  # Doomed to fail: Current LaTeX + tabu
-disable issues/github/issue_8.tex         # TODO: !pdfTeX error: pdflatex (file ae_almohanad_bold.pfb): cannot open Type 1 font file for reading (BUT: /home/axel/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes/ae_almohanad_bold.pfb DOES EXIST!)
 disable issues/gitlab/issue_20.tex        # Doomed to fail: Current LaTeX + longtabu
 disable issues/gitlab/issue_25.tex        # Doomed to fail: \newsubfloat + subcaption package
 disable issues/gitlab/issue_27.tex        # Doomed to fail: Current LaTeX + tabu
