@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2822}
+% \CheckSum{2832}
 %
 % \iffalse
 %<*driver>
@@ -4577,12 +4577,12 @@
 \DeclareRelease{v3.3}{2013-01-10}{caption_2019-09-01.sty}
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
-\DeclareCurrentRelease{v3.6}{2022-01-07}
+\DeclareCurrentRelease{v3.6}{2022-02-13}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/01/07 v3.6-dev Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/02/13 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -5188,9 +5188,19 @@
 % \changes{v3.2}{2010/11/07}{Support of option \opt{parboxrestore} added}
 % \changes{v3.5g}{2020/10/26}{New implementation; renamed from \cs{caption@boxrestore} to \cs{caption@parboxrestore}}
 % \changes{v3.6}{2021/01/02}{Always uses \cs{@parboxrestore} now}
-% |\caption@parboxrestore| simply expands to |\@par|\-|box|\-|restore|.
+% \changes{v3.6}{2022/02/13}{Hooks added}
+% |\caption@parboxrestore| simply expands to |\@par|\-|box|\-|restore|,
+% surrounded by `before' and `after' hooks.
 %    \begin{macrocode}
-\newcommand*\caption@parboxrestore{\@parboxrestore}
+\newcommand*\caption@parboxrestore{%
+  \caption@before@parboxrestore
+  \caption@@parboxrestore
+  \caption@after@parboxrestore}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@before@parboxrestore{}
+\newcommand*\caption@@parboxrestore{\@parboxrestore}
+\newcommand*\caption@after@parboxrestore{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6774,11 +6784,13 @@
 %
 % \begin{macro}{\caption@set@adjustwidth}
 % \changes{v3.4k}{2020/05/30}{This macro definition added}
+% \changes{v3.6}{2022/02/13}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@before@parboxrestore}}
 % Store the values of \cs{hsize} and \cs{linewidth}.
 %    \begin{macrocode}
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
-    \caption@adjustwidth@linewidth\linewidth}%
+    \caption@adjustwidth@linewidth\linewidth
+    \l@addto@macro\caption@before@parboxrestore\caption@test@adjustwidth}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\caption@patch@changepage[1]{%
@@ -6804,9 +6816,6 @@
         \hsize=\linewidth
       \fi
     \fi}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \AtBeginCaption{\caption@test@adjustwidth}%
 %    \end{macrocode}
 % \end{macro}
 %
