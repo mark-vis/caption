@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2022/01/06 v3.6 Implementation of the caption package]
+\ProvidesFile{caption.drv}[2022/02/15 v3.6 The caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -44,6 +44,7 @@
 \setlength\parindent{0pt}
 \setlength\parskip{\smallskipamount}
 \setlength\leftmargini{2em}% default = 2.5em
+\renewcommand\partname{Part}
 %
 \usepackage{ifpdf}
 \ifpdf
@@ -65,6 +66,20 @@
 %</driver>
 % \fi
 %
+% \DeclareRobustCommand*\eTeX{\leavevmode\hbox{$\varepsilon$}-\TeX}
+% \DeclareRobustCommand*\KOMAScript{\textsf{K\kern.05em O\kern.05em M\kern.05em A\kern.1em-\kern.1em Script}}
+%
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% \makeatletter
+% \newcommand*\NEWfeature{\NEW{New feature}}
+% \newcommand*\NEW[1]{\@ifstar{\NEWi{#1}{\vskip2pt}}{\NEWi{#1}{}}}
+% \newcommand*\NEWi[3]{\MARGINSYM{#2\footnotesize#1\\#3}}
+% \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
+% \makeatother
+%
 % \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 % \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
@@ -76,14 +91,489 @@
 % \newcommand*\issue[1]{GitLab issue~\##1}
 % \newcommand*\version[2][]{v$#2$}
 %
-% \DeclareRobustCommand*\eTeX{\leavevmode\hbox{$\varepsilon$}-\TeX}
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
 %
-% I. Basics
-% II. Use cases
-% III. Reference
+% \makeatletter
+% \newcommand\example{\@ifstar
+%   {\@example{belowskip=\abovecaptionskip}}%
+%   {\@example{}}}
+% \def\@example#1{%
+%   \@testopt{\@@example{#1}}{figure}}
+% \long\def\@@example#1[#2]#3#4{%
+%   \begingroup
+%     \setcaptiontype*{#2}%
+%     \captionsetup{#1,size=small,margin={\leftmargini,10pt},#3}%
+%     \caption[]{#4}%
+%   \endgroup}
+% \makeatother
+%
+% \newcommand\exampletext{%
+%   White sand beaches. The pink smoothness of the conch shell. A sea abundant
+%   with possibilities. Duty-free shops filled with Europe's finest gifts and
+%   perfumes. Play your favorite game of golf amidst the tropical greens on one
+%   of the many championship courses.}
 %
 % \iffalse
-% --------------------------------------------------------------------------- %
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% \GetFileInfo{caption.drv}
+% \let\docdate\filedate
+% \let\docversion\fileversion
+% \GetFileInfo{caption.sty}
+%
+% \title{Customizing captions of floating environments%^^A
+%         \texorpdfstring{\thanks{%^^A
+%          This package has version number \docversion.}}%^^A
+%        {}}
+% \author{Axel Sommerfeldt\\
+%         \url{https://gitlab.com/axelsommerfeldt/caption}}
+% \date{\docdate}
+% \maketitle
+%
+% \begin{abstract}
+% The \pkg{caption} package offers customization of captions
+% in floating environments such |figure| and |table| and cooperates with
+% many other packages.
+% \par\smallskip
+% \textit{Please note:} Many document classes already have build-in options and
+% commands for customizing captions.
+% If these possibilities are sufficient for you, then there is usually no need for
+% you to use this package at all.
+% \end{abstract}
+%
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% \section*{Introduction}
+%
+% Within the standard \LaTeX\ document classes captions haven't received the
+% attention they deserve. Simply typeset as an ordinary paragraph there is no
+% remarkable visual difference from the rest of the text, like here:
+%
+% \example*{size=normalsize,margin=0pt}{\exampletext}
+%
+% There should be possibilities to change this; for example, it would be nice
+% to make the text of the caption a little bit smaller as the normal
+% text, add an extra margin, typeset the caption label with the same font
+% family and shape as your headings etc. Just like this one:
+%
+% \example*{size=small,margin=10pt,labelfont=bf,labelsep=endash}{\exampletext}
+%
+% You can do this easily with this package as there are many ready-to-use
+% caption formatting options, but you are free to define your very own stuff, too.
+%
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% \clearpage
+% \section*{About this documentation}
+%
+% Surely you have already noted that this package documentation is actually quite long.
+% But please don't worry, you don't have to read all of it.
+% To help you guide through this documentation it is divided into four parts:
+%
+% \begin{enumerate}
+% \item The basics     -- Reading this part is strongly recommended for all users.
+% \item Use cases      -- Hopefully you'll find your own use case here, so you only need to read
+%                         the corresponding section.
+% \item Reference      -- If you have questions left, you'll hopefully find the answers here.
+%                         This part gives you an in-depth look into every package option, command,
+%                         and environment offered by this package.
+% \item Special topics -- Here you'll find topics which are usually of no interest for the common
+%                         user, for example how to adapt this package to own document classes.
+% \end{enumerate}
+%
+% \section*{State of this package}
+%
+% I consider the state of this package as ``stable'', i.e.~no new features will be added in the future,
+% and it will not be (partly) re-written using \LaTeX3 syntax either.
+% But it will be still maintained, known bugs will be fixed (if possible without too much effort),
+% the documentation will be improved (if necessary), and issues on GitLab will be processed.
+%
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% \clearpage
+% \tableofcontents
+%
+% \iffalse
+% =============================================================================================== %
+% \fi
+%
+% \clearpage
+% \part{The basics}
+%
+% \section{Loading this package}
+%
+% \pagebreak[3]
+% Insert
+% \begin{quote}
+%   |\usepackage|\oarg{options}|{caption}|
+% \end{quote}
+% into the preamble of your document, i.e.~the part of your document
+% between |\document|\-|class| and |\begin{doc|\-|u|\-|ment}|.
+% The given options control how your captions will look like, e.g.:
+% \begin{quote}
+%   |\usepackage[margin=10pt,font=small,labelfont=bf,|\\
+%   |            labelsep=endash]{caption}|
+% \end{quote}
+% would result in captions looking like the second one in the introduction.
+%
+% \pagebreak[3]
+% \DescribeMacro{\captionsetup}
+% Settings could be changed later on with the command
+% \begin{quote}
+%   |\captionsetup|\marg{options}\quad.
+% \end{quote}
+% So
+% \begin{quote}
+%   |\usepackage[margin=10pt,font=small,labelfont=bf]{caption}|
+% \end{quote}
+% and
+% \begin{quote}
+%   |\usepackage{caption}|\\
+%   |\captionsetup{margin=10pt,font=small,labelfont=bf}|
+% \end{quote}
+% are equal in their results.
+%
+% \section{Option scope}
+%
+% \pagebreak[3]
+% Options are divided into
+% \begin{itemize}
+% \item Global options -- Options in the document preamble or later on within the document text
+%                         (outside of any \LaTeX\ environment) will change settings globally.
+% \item Context-specific options -- Using |\captionsetup|\oarg{context}\marg{options} settings
+%                         could be changed for a specific context, for example
+%                         |\captionsetup[figure]|\marg{options} will setup options which
+%                         are applied at the beginning of each |figure| environment,
+%                         overriding global ones.
+% \item Local options --  Options given within any \LaTeX\ environment are applied immediately
+%                         (like global options) but their scope is limited to the current environment.
+%                         They override both, global and context-specific options.
+% \end{itemize}
+%
+% \pagebreak[3]
+% For example the document
+% \begin{quote}
+%   |\documentclass[a4paper]{article}|\\
+%   |\usepackage[margin=10pt]{caption}|\\
+%   |\captionsetup[figure]{font=it}|\\
+%   |\begin{document}|\\
+%   |\begin{figure}|\\
+%   \ldots\\
+%   |\captionsetup{margin=20pt}|\\
+%   |\caption{A figure}|\\
+%   |\end{figure}|\\
+%   |\begin{table}|\\
+%   |\caption{A table}|\\
+%   \ldots\\
+%   |\end{table}|\\
+%   |\end{document}|
+% \end{quote}
+% will typeset the caption ``A figure'' using the settings |margin=20pt| and |font=it|,
+% and the caption ``A table'' using the settings |margin=10pt|.
+%
+% \pagebreak[3]
+% Context-specific options are additive, e.g.:
+% \begin{quote}
+%   |\captionsetup[figure]{labelfont=bf}|\\
+%   |\captionsetup[figure]{textfont=it}|
+% \end{quote}
+% is identical to
+% \begin{quote}
+%   |\captionsetup[figure]{labelfont=bf,textfont=it}|
+% \end{quote}
+%
+% \pagebreak[3]
+% To find out about other contexts please read the section about the use case you are interested in.
+% For example there are special contexts for captions typesetted using the \pkg{sidecap}~\cite{sidecap}
+% package, so you are able to change settings for these captions only.
+% You could also define and use your own ones: Settings specified with
+% \begin{quote}
+%   |\captionsetup|\oarg{context}\marg{options}
+% \end{quote}
+% are not applied but stored for the given \meta{context}. They could be applied later on manually with
+% \begin{quote}
+%   |\captionsetup{options=|\meta{context}|}|
+% \end{quote}
+%
+% \section{Compatibility}
+%
+% Unfortunately the \LaTeX\ code used for typesetting captions differs greatly between different
+% document classes. To make things even worse, many packages (like \pkg{float}~\cite{float})
+% are not using the standard command |\@make|\-|caption| (used by |\caption| internally)
+% but their very own caption typesetting code instead.
+% For this reason the compatibility of this package is limited to those document classes and
+% packages it is adapted to.
+%
+% \pagebreak[3]
+% If the \pkg{caption} package has trouble identifing the document class used, it will issue a
+% warning:
+% \begin{quote}
+%   \small
+%   |Package caption Warning: Unknown document class (or package),|\\
+%   |(caption)                standard defaults will be used.|\\
+%   |See the caption package documentation for explanation.|
+% \end{quote}
+% The usage of this package is \emph{not} recommended in this case, and could cause either
+% problems or lead to \LaTeX\ compile errors.
+%
+% The \pkg{caption} package also tries to detect the default settings used for captions by the
+% detected document class.
+% As consequence the look-and-feel of figure or table captions should not alter when loading the
+% \pkg{caption} package without options.
+%
+% But if it does this is another sign that the \pkg{caption} package is incompatible to either
+% the document class you use or a package which alters the behaviour of caption of which the
+% \pkg{caption} package is unaware off.
+% In this case the usage of this package is \emph{not} recommended, too.
+%
+% \subsection{Document classes}
+%
+% \pagebreak[3]
+% The \pkg{caption} package is adapted to the following document classes:
+% \begin{itemize}
+% \item The standard document classes \cls{article}, \cls{report}, \cls{book},
+%       and document classes derived from them
+% \item ... (TODO)
+% \end{itemize}
+%
+% \pagebreak[3]
+% The \pkg{caption} package is known to be \emph{incompatible} to the following document classes:
+% \begin{quote}
+%   \cls{tufte}, ... (TODO)
+% \end{quote}
+%
+% \subsection{Packages}
+%
+% \pagebreak[3]
+% The \pkg{caption} package is adapted to the following packages:
+% \begin{quote}
+%   \pkg{float}, ... (TODO)
+% \end{quote}
+%
+% \pagebreak[3]
+% The \pkg{caption} package is known to be \emph{incompatible} to the following packages:
+% \begin{quote}
+%   \pkg{caption2}, \pkg{captcont}, \pkg{catoptions}, \pkg{ccaption}, \pkg{ftcap}, \pkg{nonfloat}, and \pkg{topcapt}.
+% \end{quote}
+%
+% \iffalse
+% =============================================================================================== %
+% \fi
+%
+% \clearpage
+% \part{Use cases}
+%
+% \iffalse
+% ----------------------------------------------------------------------------------------------- %
+% \fi
+%
+% ... (TODO)
+%
+% \iffalse
+% =============================================================================================== %
+% \fi
+%
+% \clearpage
+% \part{Reference}
+%%
+% ... (TODO)
+%
+% \iffalse
+% =============================================================================================== %
+% \fi
+%
+% \clearpage
+% \part{Special topics}
+%
+% \section{Commands for document class authors}
+%
+% A document class could simply load the \pkg{caption} package instead
+% of defining an own variant of |\@make|\-|caption|. However if the author decides
+% not to do this -- for whatever reason -- there is a second option:
+%
+% \NEWfeature{v3.5}
+% If a document class defines |\caption@document|\-|class|, an adaption to the
+% \pkg{caption} package will be loaded as |caption-|\meta{documentclass}|.sto|
+% if the \pkg{caption3} kernel is loaded.
+% The goal of this adaption file is changing the default settings of the
+% \pkg{caption} package so simply loading it (without any package options)
+% will not make any harm to the look at feel of the captions.
+% This gives end-users the opportunity to fine-tune certain aspects of the
+% appearance of captions by adding package options, without unwanted
+% side-effects on other aspects of the appearance.
+%
+% In both cases the command |\Set|\-|Caption|\-|Default|
+% could be used to adapt the \pkg{caption} package default values:
+%
+% \DescribeMacro{\SetCaptionDefault}
+% The command
+% \begin{quote}
+%   |\SetCaptionDefault*|\marg{option}\marg{default value}
+% \end{quote}
+% changes the default value for the option \meta{option}, for example:
+% \begin{quote}
+%   |\SetCaptionDefault{format}{hang}|\\
+%   |\SetCaptionDefault{justification}{raggedright}|\\
+%   |\DeclareCaptionLabelSeparator{silly}{ +++ }|\\
+%   |\SetCaptionDefault{labelseparator}{silly}|
+% \end{quote}
+% This command is available for the options
+%   |box|,
+%   |font|,
+%   |format|,
+%   |justification|,
+%   |label|\-|font|,
+%   |label|\-|format|,
+%   |label|\-|separator|,
+%   |list|\-|format|,
+%   |margin|,
+%   |parbox|,
+%   |position|,
+%   |single|\-|line|\-|check|,
+%   |text|\-|font|,
+%   |text|\-|format|, and
+%   |width|.
+%
+% The starred variant only makes a difference when setting the default length
+% of either |margin| or |width|, in this case it will use |\def| internally
+% instead of |\edef| to store the value so the actual margin will be calculated
+% when used (and not when set).
+%
+% \DescribeMacro{\SetCaptionFallback}
+% The command
+% \begin{quote}
+%   |\SetCaptionFallback|\marg{option}\marg{fallback value}
+% \end{quote}
+% changes the fallback value for the option \meta{option}, for example:
+% \begin{quote}
+%   |\SetCaptionFallback{labelformat}{simple}|
+% \end{quote}
+% Currently only the pre-defined label format `original' uses a fallback
+% value when |\fnum@|\meta{environment} is not defined for the current (floating)
+% environment.
+%
+% \DescribeMacro{\AtCaptionPackage}
+% The adaption file will be loaded when the \pkg{caption} kernel |caption3.sty|
+% will be loaded so the given adaptions will be done for the \pkg{floatrow}
+% and \pkg{subfig} packages even if the \pkg{caption} package isn't loaded.
+%
+% But some adaptions have to be done for the \pkg{caption} package,
+% and for this reason the hook
+% \begin{quote}|\AtCaptionPackage|\marg{code}\end{quote}
+% is offered to authors of adaption files.
+% The \meta{code} inside the hook will be executed right before the given package
+% options will be evaluated.
+%
+% For example the adaption file for the \KOMAScript\ document classes
+% uses |\At|\-|Begin|\-|Caption| to re-define the \pkg{caption} package
+% options |figure|\-|position| and |table|\-|position| to issue a warning
+% that using these options have little effect here.
+%
+% \DescribeMacro{\AfterCaptionPackage}
+% The additional hook
+% \begin{quote}|\AfterCaptionPackage|\marg{code}\end{quote}
+% is offered to authors of adaption files as well.
+% The \meta{code} inside the hook will be executed at the very end of the
+% \pkg{caption} package.
+%
+% \section{Commands for babel language package authors}
+%
+% \NEWfeature{v3.5}
+% \DescribeMacro{\caption@switchdefault}
+% If the \pkg{caption3} kernel package is loaded, the command
+% \begin{quote}|\caption@switchdefault|\marg{option}\marg{code with \#1}\marg{new value}\end{quote}
+% is available which saves the old default value of the given option using
+% \meta{code} and sets the new default value afterwards.
+%
+% \DescribeMacro{\caption@restoredefault}
+% The command
+% \begin{quote}|\caption@restoredefault|\marg{option}\marg{old value}\end{quote}
+% restores the old default value which was stored in \meta{old value} before.
+%
+% Example:
+% \begin{quote}
+%   |\DeclareCaptionLabelSeparator{french}{|\ldots|}|\\
+%   |\addto\extrasfrench{%|\\
+%   |  \caption@switchdefault{labelseparator}{\babel@save #1}{french}}|\\
+%   |% Note: \caption@restoredefault isn't needed here|
+% \end{quote}
+%
+% Another example:
+% \begin{quote}
+%   |\caption@switchdefault{font}{\let\original@captionfont#1}{it}%|\\
+%   \ldots\\
+%   |\caption@restoredefault{font}{\original@captionfont}%|\\
+% \end{quote}
+%
+% Since boths commands are defined with |\def| inside the \pkg{caption3}
+% kernel, they could be pre-defined with
+% \begin{quote}
+%   |\providecommand\caption@switchdefault[3]{}|\\
+%   |\providecommand\caption@restoredefault[2]{}|
+% \end{quote}
+% inside the babel language package so their existence doesn't need to be tested
+% prior use.
+%
+% Additionally babel language packages should not re-define |\@make|\-|caption|
+% if the \pkg{caption} package is loaded, i.e.~if |\caption@makecaption| is
+% defined. (Unfortunately one cannot use the \LaTeX{} kernel command
+% |\@if|\-|package|\-|loaded{caption}| here since it's only available in the
+% document preamble.)
+%
+% Please note that code like
+% \begin{quote}
+%   |\addto\extraswhatever{%|\\
+%   |  \@ifundefined{caption@makecaption}{%|\\
+%   |    \babel@save\@makecaption|\\
+%   |    \let\@makecaption\my@makecaption|\\
+%   |  }{%|\\
+%   |    \caption@switchdefault{|\ldots|}{\babel@save #1}{|\ldots|}%|\\
+%   |  }}|
+% \end{quote}
+% would be wrong since it mixes up the presence of the \pkg{caption3} kernel
+% and the \pkg{caption} package.
+% If the \pkg{caption3} kernel is loaded this does not mean that the
+% \pkg{caption} package is loaded, too, and the latter one re-defines
+% |\caption|, |\@caption|, and |\@make|\-|caption| while the \pkg{caption3}
+% kernel does not re-define any of them, instead it only provides (default) values
+% for the \pkg{caption}, \pkg{floatrow}, and \pkg{subfig} package.
+%
+% Currently there is build-in support for the following babel language options:
+% |arabic|, |farsi|, |french|, |hungarian|, |latvian|, and |magyar|.
+% This support could be deactivated by defining
+% \begin{quote}
+%   |\def\caption@ifbabel@|\meta{package}|{false}|
+% \end{quote}
+% where \meta{package} is either |arabi|, |french|, |frenchle|, |hungarian|,
+% or |latvian|.
+%
+% \iffalse
+% =============================================================================================== %
+% \fi
+%
+% \StopEventually{%^^A
+% \clearpage
+% \begin{thebibliography}{99}
+%
+%   \bibitem{TLC2}
+%   Frank Mittelbach and Michel Goossens:\\
+%   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},\\
+%   \newblock Addison-Wesley, 2004.
+%
+% \end{thebibliography}
+% }
+%
+% \iffalse
+% =============================================================================================== %
 % \fi
 %
 % \DoNotIndex{\\,\_,\ ,\@@par}
@@ -131,7 +621,7 @@
 % \DoNotIndex{\PassOptionsToPackage,\ProcessOptions,\ProvidesPackage}
 %
 % \iffalse
-% --------------------------------------------------------------------------- %
+% ----------------------------------------------------------------------------------------------- %
 % \fi
 %
 % \setlength{\parskip}{0pt plus 1pt}
@@ -148,17 +638,17 @@
 % \changes{v3.0d}{2004/11/28}{Split into two packages: \pkg{caption} \& \pkg{caption3}}
 %
 % \iffalse
-% --------------------------------------------------------------------------- %
+% ----------------------------------------------------------------------------------------------- %
 % \fi
 %
 % \clearpage
-% \section{The implementation}
+% \part{The implementation}
 %
 % \iffalse
 %<*package>
 % \fi
 %
-% \subsection{Introduction}
+% \section{Introduction}
 %
 % This package consists of two parts -- the kernel
 % (|caption3.sty|) and the main package (|caption.sty|).
@@ -177,7 +667,7 @@
 % \LaTeXe\ or packages, and the caption stuff offered by the
 % \pkg{caption3} kernel.
 %
-% \subsection{Identification}
+% \section{Identification}
 %
 % We need at least \LaTeX2e\ version 1994/12/01.
 %    \begin{macrocode}
@@ -208,14 +698,14 @@
 \ProvidesPackage{caption}[2022/02/13 v3.6-dev Customizing captions (AR)]
 %    \end{macrocode}
 %
-% \subsection{Loading the kernel}
+% \section{Loading the kernel}
 %
 % Load a matching version of the \pkg{caption} kernel.
 %    \begin{macrocode}
 \RequirePackage{caption3}[2022/01/07] % needs v2.3 or newer
 %    \end{macrocode}
 %
-% \subsection{Check against unknown document classes}
+% \section{Check against unknown document classes}
 %
 %    \begin{macrocode}
 \caption@ifbool{documentclass}{}{%
@@ -224,7 +714,7 @@
     standard defaults will be used}}
 %    \end{macrocode}
 %
-% \subsection{Check against incompatible packages}
+% \section{Check against incompatible packages}
 %
 % \changes{v3.0p}{2007/04/06}{Check against obsolete \pkg{caption2} package added}
 %    \begin{macrocode}
@@ -265,7 +755,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Positioning}
+% \section{Positioning}
 %
 %    \begin{macrocode}
 \DeclareCaptionPosition{auto}{#2}{%
@@ -307,7 +797,7 @@
 %   A different solution would be setting the |\space|\-|factor| to something
 %   not much less than 1000 (for example 994) in |\caption@start| and
 %   checking this value here by |\ifnum\space|\-|factor=994|.
-%   (It's implemented in the \pkg{threeparttable} package\cite{threeparttable} this way.)
+%   (It's implemented in the \pkg{threeparttable} package~\cite{threeparttable} this way.)
 %
 %   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
 %   typeset the caption within a simple |\vbox| this does not seem to be a good one.
@@ -336,9 +826,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Declaration of options}
+% \section{Declaration of options}
 %
-% \subsubsection{Miscellaneous options}
+% \subsection{Miscellaneous options}
 %
 %    \begin{macrocode}
 \DeclareCaptionOption*{config}[caption]{%
@@ -403,7 +893,7 @@
   }}}
 %    \end{macrocode}
 %
-% \subsubsection{caption v1.x compatibility options}
+% \subsection{caption v1.x compatibility options}
 %
 %    \begin{macrocode}
 \DeclareCaptionOptionNoValue*{normal}{%
@@ -448,7 +938,7 @@
 \DeclareCaptionOptionNoValue*{ruled}{\caption@setbool{ruled}{1}}
 %    \end{macrocode}
 %
-% \subsubsection{caption2 v2.x compatibility options}
+% \subsection{caption2 v2.x compatibility options}
 % \changes{v3.0h}{2005/07/08}{caption2 \version{2.x} compatibility options added}
 % \changes{v3.1}{2007/09/01}{caption2 v2.x compatibility options revised}
 % \changes{v3.1d}{2007/10/24}{Bugfix 07-10-24 in caption v2.x$ compatibility options}
@@ -468,7 +958,7 @@
   \caption@WarningNoLine{Obsolete option `ignoreLTcapwidth' ignored}}
 %    \end{macrocode}
 %
-% \subsubsection{Obsolete caption v3.0 options}
+% \subsection{Obsolete caption v3.0 options}
 % \changes{v3.1}{2007/05/07}{Package option \opt{caption} marked as obsolete,
 %        gives error now}
 %
@@ -482,7 +972,7 @@
       and do *not* load the caption package anymore}}}
 %    \end{macrocode}
 %
-% \subsubsection{fltpage package support options}
+% \subsection{fltpage package support options}
 %
 % \changes{v3.1}{2007/09/01}{Options `FPlist' \& `FPref' added}
 % With these options is controlled where the list-of entry and |\ref| resp.
@@ -505,7 +995,7 @@
 \captionsetup{FPlist=caption,FPref=figure}
 %    \end{macrocode}
 %
-% \subsubsection{hyperref package support options}
+% \subsection{hyperref package support options}
 %
 % \changes{v3.1}{2007/06/21}{Options `hypcap' \& `hypcapspace' added}
 % With |hypcap=off| one can turn the \pkg{hypcap} support off
@@ -518,7 +1008,7 @@
 \captionsetup{hypcap=1,hypcapspace=.5\baselineskip}
 %    \end{macrocode}
 %
-% \subsection{Document class support}
+% \section{Document class support}
 %
 % Execute the code declared with |\At|\-|Caption|\-|Package|.
 % We do this right before processing the options so stuff done with
@@ -530,7 +1020,7 @@
 \let\AtCaptionPackage\@firstofone
 %    \end{macrocode}
 %
-% \subsection{Processing of options}
+% \section{Processing of options}
 %
 % \changes{v3.0m}{2007/03/04}{Verbose option added}
 % \changes{v3.1}{2007/07/02}{Verbose option removed from package}
@@ -541,7 +1031,7 @@
 \caption@ProcessOptions*{caption}
 %    \end{macrocode}
 %
-% \subsection{\cs{caption}, \cs{@caption}, and \cs{@makecaption}}
+% \section{\cs{caption}, \cs{@caption}, and \cs{@makecaption}}
 %
 % \begin{macro}{\caption@flags}
 % \changes{v3.3}{2018/08/08}{This counter and associated macros added}
@@ -952,7 +1442,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{setcaptiontype} and \cs{setcaptionsubtype}}
+% \section{\cs{setcaptiontype} and \cs{setcaptionsubtype}}
 %
 % \changes{v3.0d}{2004/08/03}{Option \opt{type=} added}
 % \changes{v3.1}{2007/06/25}{Option \opt{type*=} added}
@@ -1138,7 +1628,7 @@
 % |\caption@checktype|\marg{type}\marg{code}\par
 % is used by |\caption@settype| and should either expand the code or issue an error
 % if the given type is not a proper type, i.e. it is a sub-type instead (either defined by
-% |\DeclareCaptionSubType| or |\newsubfloat|\cite{subfig}).
+% |\DeclareCaptionSubType| or |\newsubfloat|~\cite{subfig}).
 %    \begin{macrocode}
 \newcommand*\caption@checktype[1]{%
   \caption@ifdefined@subtype{#1}\@firstoftwo{\caption@ifin@list\sf@counterlist{#1}}%
@@ -1154,9 +1644,9 @@
 % |\caption@checksubtype|\marg{type}\marg{code}\par
 % is used by |\caption@settype| and should either expand the code or issue an error
 % if the given type is not a proper sub-type, i.e. not defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
-% Since the |sub|\-|float|\-|row| environment offered by the \pkg{floatrow} package\cite{floatrow}
+% Since the |sub|\-|float|\-|row| environment offered by the \pkg{floatrow} package~\cite{floatrow}
 % is using |\caption|\-|setup{sub|\-|type}| even if the sub-type was defined by |\new|\-|sub|\-|float|
-% offered by \pkg{subfig}\cite{subfig}, we take a more relaxed view of things here and allow
+% offered by \pkg{subfig}~\cite{subfig}, we take a more relaxed view of things here and allow
 % those sub-types as well (but not without warning since we do not support this).
 %    \begin{macrocode}
 \newcommand*\caption@checksubtype[1]{%
@@ -1270,7 +1760,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{phantomcaption}}
+% \section{\cs{phantomcaption}}
 %
 % \begin{macro}{\phantomcaption}
 % \changes{v3.2}{2010/10/31}{Bugfix 10-09-01b: This macro added}
@@ -1286,7 +1776,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{captionlistentry}}
+% \section{\cs{captionlistentry}}
 %
 % \begin{macro}{\captionlistentry}
 % \changes{v3.1}{2007/07/28}{This macro added}
@@ -1328,7 +1818,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{captiontext}}
+% \section{\cs{captiontext}}
 %
 % \begin{macro}{\captiontext}
 % \changes{v3.6}{2022/01/05}{This macro added}
@@ -1358,7 +1848,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{captionbox}}
+% \section{\cs{captionbox}}
 %
 % \begin{macro}{\captionbox}
 % \changes{v3.2}{2010/12/17}{This macro added}
@@ -1429,7 +1919,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{\cs{continuedfloat}}
+% \section{\cs{continuedfloat}}
 %
 % \begin{macro}{\c@continuedfloat}
 % \changes{v3.4}{2015/09/16}{Counter renamed from \cs{ContinuedFloat} to \cs{continuedfloat}}
@@ -1597,7 +2087,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Internal helpers}
+% \section{Internal helpers}
 %
 % \begin{macro}{\caption@refstepcounter}
 % \changes{v3.1}{2007/07/28}{This macro added}
@@ -1891,7 +2381,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Support for sub-captions}
+% \section{Support for sub-captions}
 % \changes{v3.1f}{2007/11/16}{Support for sub-captions added}
 %
 % \begin{macro}{\caption@subtypehook}
@@ -2083,9 +2573,9 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{Babel package support}
+% \section{Babel package support}
 %
-% \subsubsection{The arabic \& farsi babel option}
+% \subsection{The arabic \& farsi babel option}
 % \changes{v3.5}{2020/08/02}{\pkg{arabic} babel support addded}
 %
 %    \begin{macrocode}
@@ -2105,7 +2595,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The frenchle \& frenchpro package}
+% \subsection{The frenchle \& frenchpro package}
 % \changes{v3.0h}{2005/10/03}{\pkg{frenchle/pro} package support added}
 % \changes{v3.5}{2020/08/01}{\pkg{frenchle/pro} package support updated}
 %
@@ -2141,7 +2631,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The hungarian \& magyar babel option}
+% \subsection{The hungarian \& magyar babel option}
 % \changes{v3.2}{2009/03/29}{\pkg{magyar} babel support added}
 % \changes{v3.3}{2018/08/26}{\pkg{magyar} babel support revised}
 % \changes{v3.5}{2020/08/02}{\pkg{magyar} babel support updated}
@@ -2170,7 +2660,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The latvian babel option}
+% \subsection{The latvian babel option}
 % \changes{v3.5}{2020/08/02}{\pkg{latvian} babel support updated}
 %
 %    \begin{macrocode}
@@ -2188,7 +2678,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsection{Package support}
+% \section{Package support}
 % \changes{v3.1}{2007/04/11}{Package options `float', `longtable' etc.~are not supported anymore, removed}
 %
 % \begin{macro}{\caption@IfPackageLoaded}
@@ -2376,7 +2866,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsubsection{The changepage package}
+% \subsection{The changepage package}
 % \changes{v3.4k}{2020/05/30}{Patch of the \pkg{changepage} package added}
 %
 %    \begin{macrocode}
@@ -2446,7 +2936,7 @@
   }{}%
 %    \end{macrocode}
 %
-% \subsubsection{The chkfloat package}
+% \subsection{The chkfloat package}
 % \changes{v3.3}{2018/09/06}{Support of the \pkg{chkfloat} package added}
 %
 %    \begin{macrocode}
@@ -2471,7 +2961,7 @@
   }{}%
 %    \end{macrocode}
 %
-% \subsubsection{The float package}
+% \subsection{The float package}
 % \changes{v3.0f}{2005/05/31}{\pkg{float} package support rewritten and improved}
 % \iffalse
 % (This is a more straight-ahead implementation, but it only works with \version{1.3}
@@ -2702,7 +3192,7 @@
 \caption@undefbool{ruled}
 %    \end{macrocode}
 %
-% \subsubsection{The floatflt package}
+% \subsection{The floatflt package}
 % \changes{v3.1}{2007/06/10}{Support of the \pkg{floatflt} package added}
 %
 %    \begin{macrocode}
@@ -2753,7 +3243,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The fltpage package}
+% \subsection{The fltpage package}
 % \changes{v3.1}{2007/07/22}{Support of the \pkg{fltpage} package added}
 %
 %    \begin{macrocode}
@@ -2903,7 +3393,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection{The hyperref package}
+% \subsection{The hyperref package}
 % \changes{v3.0f}{2005/06/11}{Support of the \pkg{hyperref} package added}
 % \changes{v3.1}{2007/03/09}{Usage of \cs{hyper@makecurrent} instead of
 %   \cs{theHfigure} as indicator for \pkg{hyperref} package}
@@ -3067,7 +3557,7 @@
 % \changes{v3.1g}{2008/03/16}{Warning about TeX mode replaced with debug info}
 % |\caption@startanchor|\marg{Href}
 % sets a \pkg{hyperref} anchor inside |\caption@start|.\par
-% This code was taken from the \pkg{hypcap} package\cite{hypcap} and adapted.
+% This code was taken from the \pkg{hypcap} package~\cite{hypcap} and adapted.
 % \Note{Since \cs{hyper@@anchor}\marg{Href}\csmarg{\string\relax} can cause
 % a change from vertical mode to horizontal mode (design flaw in
 % \pkg{hyperref} package!?), and since the workaround
@@ -3177,7 +3667,7 @@
   }}{}
 %    \end{macrocode}
 %
-% \subsubsection{The hypcap package}
+% \subsection{The hypcap package}
 % \changes{v3.0f}{2005/06/22}{Support of the \pkg{hypcap} package added}
 % \changes{v3.0l}{2007/02/20}{Adapted to \pkg{hypcap} \version{1.6}}
 % \changes{v3.1e}{2007/11/04}{\pkg{hypcap} support adapted to \pkg{hyperref} \version{6.77}}
@@ -3220,7 +3710,7 @@
   \fi}{}
 %    \end{macrocode}
 %
-% \subsubsection{The listings package}
+% \subsection{The listings package}
 % \changes{v3.0b}{2004/05/16}{Support of the \pkg{listings} package added}
 %
 %    \begin{macrocode}
@@ -3330,7 +3820,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The longtable package}
+% \subsection{The longtable package}
 %
 % \begin{macro}{\LTcaptype}
 % \changes{v3.1}{2007/07/06}{This macro and its support added}
@@ -3620,7 +4110,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsubsection{The picinpar package}
+% \subsection{The picinpar package}
 % \changes{v3.1}{2007/06/13}{Support of the \pkg{picinpar} package added}
 %
 %    \begin{macrocode}
@@ -3706,7 +4196,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The picins package}
+% \subsection{The picins package}
 % \changes{v3.0j}{2006/01/26}{Support of the \pkg{picins} package added}
 %
 % \begin{macro}{\piccaptiontype}
@@ -3842,7 +4332,7 @@
 }
 %    \end{macrocode}
 %
-% \subsubsection{The rotating package}
+% \subsection{The rotating package}
 %
 %    \begin{macrocode}
 \caption@IfPackageLoaded{rotating}[1995/08/22 v2.10]{%
@@ -3907,7 +4397,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The sidecap package}
+% \subsection{The sidecap package}
 %
 %    \begin{macrocode}
 \caption@IfPackageLoaded{sidecap}[2003/06/06 v1.6f]{%
@@ -4006,7 +4496,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The subfigure package}
+% \subsection{The subfigure package}
 % \changes{v3.1}{2007/04/06}{subfigure package support added}
 %
 %    \begin{macrocode}
@@ -4044,7 +4534,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The supertabular and xtab packages}
+% \subsection{The supertabular and xtab packages}
 %
 %    \begin{macrocode}
 \caption@IfPackageLoaded{supertabular}[2002/07/19 v4.1e]{%
@@ -4185,7 +4675,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The threeparttable package}
+% \subsection{The threeparttable package}
 % \changes{v3.1}{2007/05/08}{Support of the \pkg{threeparttable} package added}
 %
 %    \begin{macrocode}
@@ -4255,7 +4745,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsubsection{The wrapfig package}
+% \subsection{The wrapfig package}
 % \changes{v3.1}{2007/05/05}{Support of the \pkg{wrapfig} package added}
 % \changes{v3.2d}{2011/11/02}{Support of the \pkg{wrapfig} package rewritten}
 %
@@ -4329,7 +4819,7 @@
 }{}
 %    \end{macrocode}
 %
-% \subsection{Debug stuff}
+% \section{Debug stuff}
 %
 % \begin{macro}{\caption@checkcounter}
 % \changes{v3.6}{2020/12/28}{This macro added}
@@ -4367,7 +4857,7 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \subsection{That's all Folks!}
+% \section{That's all Folks!}
 %
 % Execute the code declared with |\After|\-|Caption|\-|Package|.
 %
@@ -4382,7 +4872,7 @@
 % \fi
 %
 % \iffalse
-% --------------------------------------------------------------------------- %
+% ----------------------------------------------------------------------------------------------- %
 % \fi
 %
 % \clearpage
