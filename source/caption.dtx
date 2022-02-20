@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2830}
+% \CheckSum{2869}
 %
 % \iffalse
 %<*driver>
@@ -5745,6 +5745,65 @@
   \endgroup}
 %    \end{macrocode}
 % \end{macro}
+%
+% \subsection{The \env{captiongroup} environment}
+%
+% \begin{environment}{captiongroup}
+% \changes{v3.6}{2022/02/20}{This environment definition added}
+% \env{captiongroup} is simply an environment containing |\set|\-|caption|\-|type|, that's all.
+% A starred variant of this environment is available, too, which uses |\set|\-|caption|\-|type*|.
+%    \begin{macrocode}
+\newenvironment{captiongroup}{\setcaptiontype}{}
+\newenvironment{captiongroup*}{\setcaptiontype*}{}
+%    \end{macrocode}
+% \end{environment}
+%
+% \subsubsection{The \env{captionblock} environment}
+%
+% \begin{macro}{\caption@minipage}
+% \changes{v3.6}{2022/02/20}{This macro definition added}
+% This is a \env{minipage} with |\set|\-|caption|\-|type| as first contents line.
+%    \begin{macrocode}
+\newcommand*\caption@minipage{%
+  \@testopt\caption@iminipage b}
+%    \end{macrocode}
+% We pass all other optional arguments using the generic helper macro
+% |\caption@with|\-|opt|\-|args| offered by the \pkg{caption} kernel).
+%    \begin{macrocode}
+\def\caption@iminipage[#1]{%
+  \caption@withoptargs{\caption@iiminipage{#1}}}
+%    \end{macrocode}
+% `B' and `T' will add a |\vspace{0pt}|, all other values (and additional
+% optional arguments) will be passed unseen to the |minipage| environment.
+%    \begin{macrocode}
+\newcommand*\caption@iiminipage[3]{%
+  \let\caption@endminipage@hook\@empty
+  \if#1B%
+    \minipage[b]#2{#3}%
+    \def\caption@endminipage@hook{\vspace{0pt}}%
+  \else\if#1T%
+    \minipage[t]#2{#3}%
+    \vspace{0pt}%
+  \else
+    \minipage[#1]#2{#3}%
+  \fi\fi
+  \@floatboxreset
+  \setcaptiontype}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@endminipage{%
+  \caption@endminipage@hook
+  \endminipage}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{environment}{captionblock}
+% \changes{v3.6}{2022/02/20}{This environment definition added}
+% \env{captionblock} is a \env{minipage} with |\set|\-|caption|\-|type| as first contents line.
+%    \begin{macrocode}
+\newenvironment{captionblock}{\caption@minipage}{\caption@endminipage}
+%    \end{macrocode}
+% \end{environment}
 %
 % \subsection{\cs{captionbox}}
 %
