@@ -18,7 +18,7 @@
 
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{keyfloat}
-    [2021/06/29 v2.06 Key/value interface for floats and subfloats.]
+    [2022/01/10 v2.07 Key/value interface for floats and subfloats.]
 
 
 
@@ -351,10 +351,20 @@
 \newcommand{\KFLT@frame}[1]
 {%
     \ifbool{KFLT@ft}%
-        {\KFLTtightframe{#1}}%
+        {%
+            {%
+                \hfuzz=\linewidth%
+                \KFLTtightframe{#1}%
+            }%
+        }%
         {% not tightframe
             \ifbool{KFLT@f}%
-                {\KFLTlooseframe{#1}}%
+                {%
+                    {%
+                        \hfuzz=\linewidth%
+                        \KFLTlooseframe{#1}%
+                    }%
+                }%
                 {#1}% no frame
         }% not looseframe
 }
@@ -742,7 +752,9 @@
 \NewDocumentCommand{\KFLT@boxkeys}{+m m}
 {%
     \KFLT@defaults%
-    \renewcommand{\KFLT@type}{#2}%
+    \ifbool{KFLT@inkeysubfloats}%
+        {\renewcommand{\KFLT@type}{\@captype}}%
+        {\renewcommand{\KFLT@type}{#2}}%
     \edef\next{\noexpand\setkeys{KFLT@keys}{\KFLT@sharedkeys}}%
     \next%
     \setkeys{KFLT@keys}{#1}%
@@ -1293,7 +1305,6 @@
 {%
     \KFLT@endsubfloats{#1}{#2}%
 }
-
 \NewDocumentEnvironment{keysubfloats}{s O{tbp} m m +m O{}}
     {\KFLT@keysubfloats{#1}{#2}{#3}{#4}{#5}{#6}}
     {\endKFLT@keysubfloats}
