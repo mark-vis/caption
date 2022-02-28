@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2840}
+% \CheckSum{2836}
 %
 % \iffalse
 %<*driver>
@@ -4593,7 +4593,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/02/28 v3.6a Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/03/01 v3.6b Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -5140,19 +5140,9 @@
 % \changes{v3.2}{2010/11/07}{Support of option \opt{parboxrestore} added}
 % \changes{v3.5g}{2020/10/26}{New implementation; renamed from \cs{caption@boxrestore} to \cs{caption@parboxrestore}}
 % \changes{v3.6}{2021/01/02}{Always uses \cs{@parboxrestore} now}
-% \changes{v3.6}{2022/02/13}{Hooks added}
-% |\caption@parboxrestore| simply expands to |\@par|\-|box|\-|restore|,
-% surrounded by `before' and `after' hooks.
+% |\caption@parboxrestore| simply expands to |\@par|\-|box|\-|restore|.
 %    \begin{macrocode}
-\newcommand*\caption@parboxrestore{%
-  \caption@before@parboxrestore
-  \caption@@parboxrestore
-  \caption@after@parboxrestore}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@before@parboxrestore{}
-\newcommand*\caption@@parboxrestore{\@parboxrestore}
-\newcommand*\caption@after@parboxrestore{}
+\newcommand*\caption@parboxrestore{\@parboxrestore}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6205,19 +6195,23 @@
 % \changes{v3.0l}{2007/02/04}{Takes now 3 args instead of 2, check for empty heading added}
 % \changes{v3.1}{2007/07/01}{Makes lst-entry now instead of redefining \cs{addcontentsline}}
 % \changes{v3.2}{2010/10/26}{Bugfix 09-05-15: Setting of \cs{lst@@caption} added}
+% \changes{v3.5h}{2022/03/01}{Hook added, setting of \cs{lst@@caption} removed}
 %  |\caption@beginex|\marg{type}\marg{list entry}\marg{heading}\par
 %  performs the same tasks as |\caption@begin| and additionally:
 %  \begin{enumerate}
-%  \item[4.] Set |\lst@@caption|, so |\fnum@lstlisting| will include a numbering.
+%  \item[4.] Apply the hook |\caption@beginex@hook|
 %  \item[5.] Make an entry in the list-of-whatever.
 %  \item[6.] Set |\caption@ifempty| according argument \meta{heading}.
 % \end{enumerate}
 %    \begin{macrocode}
 \newcommand\caption@beginex[3]{%
   \caption@begin{#1}%
-  \let\lst@@caption\relax
+  \caption@beginex@hook
   \caption@addcontentsline{#1}{#2}%
   \caption@ifempty{#3}{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@beginex@hook{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6806,13 +6800,13 @@
 %
 % \begin{macro}{\caption@set@adjustwidth}
 % \changes{v3.4k}{2020/05/30}{This macro definition added}
-% \changes{v3.6}{2022/02/13}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@before@parboxrestore}}
+% \changes{v3.5h}{2022/03/01}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@beginex@hook}}
 % Store the values of \cs{hsize} and \cs{linewidth}.
 %    \begin{macrocode}
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
     \caption@adjustwidth@linewidth\linewidth
-    \l@addto@macro\caption@before@parboxrestore\caption@test@adjustwidth}%
+    \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\caption@patch@changepage[1]{%
@@ -7723,7 +7717,17 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\lst@@caption}
+% \changes{v3.1}{2007/03/03}{This macro added}
 % \changes{v3.1a}{2007/07/13}{Bugfix 07-09-13: \cs{lst@@caption} will not be re-defined anymore}
+% \changes{v3.2}{2010/10/26}{Bugfix 09-05-15: Setting of \cs{lst@@caption} added to \cs{caption@beginex}}
+% \changes{v3.5h}{2022/03/01}{Re-definition of \cs{lst@@caption} moved from \cs{caption@beginex} to \cs{caption@beginex@hook}}
+% We define |\lst@@caption| to non-|\@empty|, so |\fnum@lst|\-|listing| will
+% include a numbering.
+%    \begin{macrocode}
+  \l@addto@macro\caption@beginex@hook{\let\lst@@caption\relax}%
+%    \end{macrocode}
+% \end{macro}
 %
 %    \begin{macrocode}
 }{}

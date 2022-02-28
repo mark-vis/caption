@@ -46,7 +46,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2022-02-20}
-\ProvidesPackage{caption}[2022/02/28 v3.6a Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/03/01 v3.6b Customizing captions (AR)]
 \RequirePackage{caption3}[2022/01/07] % needs v2.3 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -236,13 +236,7 @@
   \M@gettitle{#2}}
 \providecommand\M@gettitle[1]{}
 \newcommand*\caption@nobreak{}
-\newcommand*\caption@parboxrestore{%
-  \caption@before@parboxrestore
-  \caption@@parboxrestore
-  \caption@after@parboxrestore}
-\newcommand*\caption@before@parboxrestore{}
-\newcommand*\caption@@parboxrestore{\@parboxrestore}
-\newcommand*\caption@after@parboxrestore{}
+\newcommand*\caption@parboxrestore{\@parboxrestore}
 \long\def\caption@makecaption#1#2{%
   \caption@nobreak
   \caption@make@above
@@ -619,9 +613,10 @@
     \caption@setfnum{#1}}
 \newcommand\caption@beginex[3]{%
   \caption@begin{#1}%
-  \let\lst@@caption\relax
+  \caption@beginex@hook
   \caption@addcontentsline{#1}{#2}%
   \caption@ifempty{#3}{}}
+\newcommand*\caption@beginex@hook{}
 \newcommand*\caption@end{%
   \endgroup}
 \newcommand*\caption@normalsize{%
@@ -845,7 +840,7 @@
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
     \caption@adjustwidth@linewidth\linewidth
-    \l@addto@macro\caption@before@parboxrestore\caption@test@adjustwidth}%
+    \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
   \providecommand*\caption@patch@changepage[1]{%
     \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
     \expandafter\renewcommand\csname #1\endcsname[2]{%
@@ -1126,6 +1121,7 @@
   \def\lst@makecaption{\caption@starfalse\@makecaption}%
   \def\lst@maketitle{\caption@startrue\@makecaption\@empty}%
   \providecommand*\ext@lstlisting{lol}%
+  \l@addto@macro\caption@beginex@hook{\let\lst@@caption\relax}%
 }{}
 \providecommand*\LTcaptype{table}
 \providecommand*\caption@LT@array{}
