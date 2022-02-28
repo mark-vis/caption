@@ -45,7 +45,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2022-02-20}                    % for caption v3.6
-\ProvidesPackage{caption3}[2022/01/07 v2.3 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022/02/28 v2.3a caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -1013,7 +1013,9 @@
 \DeclareCaptionPosition{bottom}{#2}{#2}
 \def\caption@position@b{\caption@position@bottom}
 \def\caption@position@below{\caption@position@bottom}
-\SetCaptionDefault{position}{bottom}
+\DeclareCaptionPosition{auto}{#2}{\caption@autoposition{#1}{#2}}
+\def\caption@position@a{\caption@position@auto} % needed by floatrow package, \flrow@cappos
+\SetCaptionDefault{position}{auto}
 \newcommand*\caption@initposition{%
   \let\caption@@iftop\@undefined}
 \newcommand*\caption@iftop{%
@@ -1026,6 +1028,23 @@
     \caption@position % defines \caption@fallback@position and \caption@regular@position
     #1{\let\caption@@iftop\@firstoftwo}{\let\caption@@iftop\@secondoftwo}%
   \fi}
+\newcommand*\caption@setautoposition[1]{%
+  \renewcommand*\caption@position@auto{%
+    \@nameuse{caption@position@#1}}}
+\newcommand*\caption@autoposition[2]{%
+  \ifvmode
+    \edef\caption@tempa{\the\prevdepth}%
+    \caption@Debug{\string\prevdepth=\caption@tempa}%
+    \ifdim\prevdepth>-\p@
+      #2% position=bottom
+    \else
+      #1% position=top
+    \fi
+  \else
+    #2% position=bottom
+  \fi}
+\newcommand*\DeclareCaptionAutoPosition{%
+  \renewcommand*\caption@autoposition[2]}%
 \newcommand*\caption@beginhook{}
 \newcommand*\caption@endhook{}
 \newcommand*\AtBeginCaption{\l@addto@macro\caption@beginhook}

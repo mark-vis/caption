@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3781}
+% \CheckSum{3814}
 %
 % \iffalse
 %<*driver>
@@ -264,7 +264,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2022/01/07 v2.3 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022/02/28 v2.3a caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -2838,12 +2838,15 @@
 \def\caption@position@b{\caption@position@bottom}
 \def\caption@position@below{\caption@position@bottom}
 %    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionPosition{auto}{#2}{\caption@autoposition{#1}{#2}}
+\def\caption@position@a{\caption@position@auto} % needed by floatrow package, \flrow@cappos
+%    \end{macrocode}
 %
 % \changes{v1.1}{2007/05/08}{Default position changed from `bottom' to `auto'}
-% \changes{v1.3}{2021/01/02}{Default position changed back from `auto' to `bottom'}
-% `default' usually maps to `bottom'.
+% `default' usually maps to `auto'.
 %    \begin{macrocode}
-\SetCaptionDefault{position}{bottom}
+\SetCaptionDefault{position}{auto}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@initposition}
@@ -2893,6 +2896,63 @@
     \caption@position % defines \caption@fallback@position and \caption@regular@position
     #1{\let\caption@@iftop\@firstoftwo}{\let\caption@@iftop\@secondoftwo}%
   \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setautoposition}
+% \changes{v1.1}{2007/06/10}{This macro added}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/03}{Adapted to current implementation of `auto'}
+%   |\caption@setautoposition|\marg{position}\\
+%   replaces the above algorithm by a different one (or a fixed position setting).
+%    \begin{macrocode}
+\newcommand*\caption@setautoposition[1]{%
+  \renewcommand*\caption@position@auto{%
+    \@nameuse{caption@position@#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@autoposition}
+% \changes{v1.0a}{2004/01/23}{\cs{ifvmode} added}
+% \changes{v1.0b}{2004/05/16}{Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/05}{Adapted to current implementation of `auto'; \cs{ifvmode} moved into definition of `auto'}
+% \changes{v2.3a}{2022/02/28}{\cs{ifvmode} moved back into this macro}
+%   We try to guess the current position of the caption by checking |\prev|\-|depth|.
+%
+%   A different solution would be setting the |\space|\-|factor| to something
+%   not much less than 1000 (for example 994) in |\caption@start| and
+%   checking this value here by |\ifnum\space|\-|factor=994|.
+%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)
+%
+%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
+%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
+%    \begin{macrocode}
+\newcommand*\caption@autoposition[2]{%
+  \ifvmode
+    \edef\caption@tempa{\the\prevdepth}%
+    \caption@Debug{\string\prevdepth=\caption@tempa}%
+    \ifdim\prevdepth>-\p@
+      #2% position=bottom
+    \else
+      #1% position=top
+    \fi
+  \else
+    #2% position=bottom
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionAutoPosition}
+% \changes{v2.3}{2021/01/05}{This macro added}
+% |\DeclareCaptionAutoPosition|\marg{code with \#1 and \#2}\\
+% replaces the inner algorithm of |position=auto| with a custom one.
+% If \#1 is applied the skip will be typeset below the caption
+% (like |position=t|), if \#2 is applied the skip will by typeset
+% above the caption (like |position=b|).
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionAutoPosition{%
+  \renewcommand*\caption@autoposition[2]}%
 %    \end{macrocode}
 % \end{macro}
 %
