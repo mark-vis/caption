@@ -45,7 +45,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2022-02-20}                    % for caption v3.6
-\ProvidesPackage{caption3}[2022/04/06 v2.3c caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022/04/06 v2.4-dev caption3 kernel (AR)]
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
 \providecommand\l@addto@macro[2]{%
@@ -1761,7 +1761,7 @@
   \caption@teststar\caption@declaresubtype\@firstoftwo\@secondoftwo}
 \@onlypreamble\DeclareCaptionSubType
 \newcommand*\caption@declaresubtype[1]{%
-  \@testopt{\caption@@declaresubtype{#1}}{alph}}
+  \@testopt{\caption@@declaresubtype#1}{alph}}
 \@onlypreamble\caption@declaresubtype
 \def\caption@@declaresubtype#1[#2]#3{%
   \@ifundefined{c@#3}%
@@ -1770,17 +1770,20 @@
 \@onlypreamble\caption@@declaresubtype
 \newcommand*\caption@@@declaresubtype[4]{%
   \caption@ifdefined@subtype{#4}%
-    {\caption@Debug{Modify subtype `#4'}}%
-    {\caption@Debug{New subtype `#4'}%
-     \newcounter{#4}[{#3}]%
-     \@namedef{ext@#4}{\csname ext@#3\endcsname}%
-     \caption@declaresublistentry{#3}%
-     \caption@l@addto@list\caption@subtypelist{#4}%
-     \caption@subtype@hook{#4}%
-     \caption@ifdefined\contentsuse{%
-       \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
-     \@namedef{#4name}{}%
-     \@namedef{#4autorefname}{\csname #3autorefname\endcsname}}%
+    {\caption@Info{Modify subtype `#4'}}%
+    {\caption@Info{New subtype `#4'}%
+     \@ifundefined{c@#4}%
+       {\newcounter{#4}[#3]%
+        \@namedef{#4name}{}%
+        \@namedef{#4autorefname}{\csname #3autorefname\endcsname}%
+        \@namedef{ext@#4}{\csname ext@#3\endcsname}%
+        \caption@declaresublistentry{#3}%
+        \caption@ifdefined\contentsuse{%
+          \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
+        \caption@l@addto@list\caption@subtypelist{#4}%
+        \caption@subtype@hook{#4}}%
+       {\caption@subtypesource\caption@subtype@source{#4}%
+        \caption@Error{The counter `#4' was already defined by\MessageBreak\caption@subtype@source}}}%
   #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
     {\@namedef{p@#4}{}%
      \@namedef{the#4}{\csname the#3\endcsname.\@nameuse{#2}{#4}}}%
@@ -1833,6 +1836,12 @@
 \newcommand*\caption@subtypelist{}
 \newcommand*\caption@ifdefined@subtype{%
   \caption@ifin@list\caption@subtypelist}
+\newcommand*\caption@subtypesource[2]{%
+  \caption@ifdefined@subtype{#2}%
+    {\def#1{\noexpand\DeclareCaptionSubType (offered by the caption package)}}%
+    {\caption@ifin@list\sf@counterlist{#2}%
+       {\def#1{\noexpand\newsubfloat (offered by the subfig package)}}%
+       {\def#1{an unknown document class or package}}}}
 \newcommand*\ForEachCaptionSubType{%
   \@ifstar
     {\caption@foreach@subtype\@gobble}%

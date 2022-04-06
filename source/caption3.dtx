@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{3813}
+% \CheckSum{3831}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2021/01/02 v2.3 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2021/01/02 v2.4 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -79,6 +79,7 @@
 % \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
 % \let\class\puresf \let\package\puresf
+% \let\cls\puresf \let\pkg\puresf
 % \let\env\purett \let\opt\purett
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
@@ -264,7 +265,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2022/04/06 v2.3c caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022/04/06 v2.4-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -4754,6 +4755,7 @@
 % \changes{v1.13}{2020/07/29}{Usage of \cs{caption@subtype@hook} added}
 % \changes{v1.13}{2020/07/29}{We don't re-use existing counters anymore (This was a bad idea anyway)}
 % \changes{v1.13b}{2022/04/06}{We don't re-use existing counters anymore (Part 2)}
+% \changes{v2.4}{2022/04/06}{If a counter is already defined the counter source will be included in the resulting error message}
 %   |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\\
 %   The starred variant provides the numbering format
 %   \meta{type}|.|\meta{subtype} while the non-starred variant simply uses
@@ -4765,7 +4767,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@declaresubtype[1]{%
-  \@testopt{\caption@@declaresubtype{#1}}{alph}}
+  \@testopt{\caption@@declaresubtype#1}{alph}}
 \@onlypreamble\caption@declaresubtype
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -4783,22 +4785,29 @@
 %   If not, define the counter and list entry.
 %    \begin{macrocode}
   \caption@ifdefined@subtype{#4}%
-    {\caption@Debug{Modify subtype `#4'}}%
-    {\caption@Debug{New subtype `#4'}%
-     \newcounter{#4}[{#3}]%
-     \@namedef{ext@#4}{\csname ext@#3\endcsname}%
-     \caption@declaresublistentry{#3}%
-     \caption@l@addto@list\caption@subtypelist{#4}%
-     \caption@subtype@hook{#4}%
+    {\caption@Info{Modify subtype `#4'}}%
+    {\caption@Info{New subtype `#4'}%
+     \@ifundefined{c@#4}%
+       {\newcounter{#4}[#3]%
+        \@namedef{#4name}{}%
+        \@namedef{#4autorefname}{\csname #3autorefname\endcsname}%
+%    \end{macrocode}
+%    \begin{macrocode}
+        \@namedef{ext@#4}{\csname ext@#3\endcsname}%
+        \caption@declaresublistentry{#3}%
 %    \end{macrocode}
 %   Support of \package{titletoc} package
 %    \begin{macrocode}
-     \caption@ifdefined\contentsuse{%
-       \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
+        \caption@ifdefined\contentsuse{%
+          \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
-     \@namedef{#4name}{}%
-     \@namedef{#4autorefname}{\csname #3autorefname\endcsname}}%
+        \caption@l@addto@list\caption@subtypelist{#4}%
+        \caption@subtype@hook{#4}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+       {\caption@subtypesource\caption@subtype@source{#4}%
+        \caption@Error{The counter `#4' was already defined by\MessageBreak\caption@subtype@source}}}%
 %    \end{macrocode}
 %    \begin{macrocode}
   #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
@@ -4887,6 +4896,21 @@
 %    \begin{macrocode}
 \newcommand*\caption@ifdefined@subtype{%
   \caption@ifin@list\caption@subtypelist}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@subtypesource}
+% \changes{v2.4}{2022/04/06}{This macro definition added}
+% |\caption@subtypesource|\marg{cmd}\marg{sub-type}\\
+% is used by |\Declare|\-|Caption|\-|Sub|\-|Type| to indicate what command and package
+% has defined the given sub-type.
+%    \begin{macrocode}
+\newcommand*\caption@subtypesource[2]{%
+  \caption@ifdefined@subtype{#2}%
+    {\def#1{\noexpand\DeclareCaptionSubType (offered by the caption package)}}%
+    {\caption@ifin@list\sf@counterlist{#2}%
+       {\def#1{\noexpand\newsubfloat (offered by the subfig package)}}%
+       {\def#1{an unknown document class or package}}}}
 %    \end{macrocode}
 % \end{macro}
 %
