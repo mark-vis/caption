@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2836}
+% \CheckSum{2831}
 %
 % \iffalse
 %<*driver>
@@ -4593,14 +4593,14 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/03/01 v3.6b Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/04/06 v3.6c Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
 %
 % Load a matching version of the \package{caption} kernel.
 %    \begin{macrocode}
-\RequirePackage{caption3}[2022/01/07] % needs v2.3 or newer
+\RequirePackage{caption3}[2022/04/06] % needs v2.4 or newer
 %    \end{macrocode}
 %
 % \subsection{Check against unknown document classes}
@@ -5481,26 +5481,20 @@
 % \begin{macro}{\caption@checksubtype}
 % \changes{v3.4g}{2020/01/02}{This macro definition added}
 % \changes{v3.4m}{2020/07/29}{Check of \cs{sf@counterlist} from \package{subfig} package added}
+% \changes{v3.6c}{2022/04/06}{Check of \cs{sf@counterlist} from \package{subfig} package removed}
+% \changes{v3.6c}{2022/04/06}{Usage of \cs{caption@subtypesource} added}
 % |\caption@checksubtype|\marg{type}\marg{code}\par
 % is used by |\caption@settype| and should either expand the code or issue an error
 % if the given type is not a proper sub-type, i.e. not defined by |\Declare|\-|Caption|\-|Sub|\-|Type|.
-% Since the |sub|\-|float|\-|row| environment offered by the \package{floatrow} package\cite{floatrow}
-% is using |\caption|\-|setup{sub|\-|type}| even if the sub-type was defined by |\new|\-|sub|\-|float|
-% offered by \package{subfig}\cite{subfig}, we take a more relaxed view of things here and allow
-% those sub-types as well (but not without warning since we do not support this).
 %    \begin{macrocode}
 \newcommand*\caption@checksubtype[1]{%
   \caption@ifdefined@subtype{#1}%
     \@firstofone
-    {\caption@ifin@list\sf@counterlist{#1}%
-       {\caption@Warning{%
-          \noexpand\setcaptionsubtype without \string\DeclareCaptionSubType.\MessageBreak
-          This is not designed to work; you could try replacing\MessageBreak
-          the `subfig' package with `subcaption' to resolve\MessageBreak
-          this problem which occurred}%
-        \@firstofone}%
-       {\caption@Error{Undefined subtype `#1'}%
-        \@gobble}}}
+    {\@ifundefined{c@#1}%
+       {\caption@Error{Undefined counter `#1'}}%
+       {\caption@subtypesource\caption@subtype@source{#1}%
+        \caption@Error{The counter `#1' was defined by\MessageBreak\caption@subtype@source}}%
+     \@gobble}}
 %    \end{macrocode}
 % \end{macro}
 %
