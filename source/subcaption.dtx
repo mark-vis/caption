@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{468}
+% \CheckSum{477}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2022/02/20 v1.5 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2022/04/16 v1.5 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -401,13 +401,13 @@
 % \end{quote}
 % \endgroup
 %
-% The default value for \meta{outer-pos} is `b' and the default value for \meta{inner-pos} is `s'.
-% (Note that the default value for \meta{outer-pos} has changed from `c' to `b' in version $1.5$ of \thispackage.)
+% The default value for \meta{outer-pos} is either `b' (if no main caption was typeset so far) or `t' (if a main caption was already typeset),
+% and the default value for \meta{inner-pos} is `s'.
 %
 % \NEWfeature{v1.2}
 % Beside the \meta{outer-pos} values of `c', `t', and `b', \thispackage\ also offers the
-% values `T' and `B' additionally which align the |sub|\-|figure| at the
-% very top resp.~bottom. (In contrast `t' and `b' align the |sub|\-|figure| at the
+% values `T' and `B' additionally which align the contents at the
+% very top resp.~bottom. (In contrast `t' and `b' align the contents at the
 % top resp.~bottom \textit{baseline}.)
 %
 % \bigskip
@@ -493,6 +493,8 @@
 %
 % So if in doubt, or when writing own \LaTeX\ commands which should work in every floating environment,
 % using |sub|\-|caption|\-|block| is the correct choice.
+%
+% (Note that the default value for \meta{outer-pos} has changed from `c' to either `b' or `t' in version $1.5$ of \thispackage.)
 %
 % \smallskip
 %
@@ -1783,7 +1785,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2022/01/07 v1.5 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2022/04/16 v1.5a Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \pkg{caption} package we load it here.
@@ -1908,11 +1910,14 @@
 % \changes{v1.3d}{2020/01/22}{Definition and usage of \cs{@subfloatboxreset} added}
 % \changes{v1.5}{2022/01/07}{This macro definition out-sourced from \cs{subcaption@newminipage}}
 % \changes{v1.5}{2022/01/07}{Usage of \cs{@ifnextchar} replaced by \cs{@testopt}}
-% \changes{v1.5}{2022/01/07}{Default value of \meta{outer-pos} changes from `c' to `b'}
+% \changes{v1.5}{2022/01/07}{Default value of \meta{outer-pos} changed from `c' to `b'}
+% \changes{v1.5a}{2022/04/16}{Default value of \meta{outer-pos} changed from `b' to either `b' or `t'}
 % This is a \env{minipage} with |\set|\-|caption|\-|sub|\-|type| as first contents line.
 %    \begin{macrocode}
 \newcommand*\subcaption@minipage{%
-  \@testopt\subcaption@iminipage b}
+  \kernel@ifnextchar[%]
+    \subcaption@iminipage
+    {\caption@ifcaption{\subcaption@iminipage[t]}{\subcaption@iminipage[b]}}}
 %    \end{macrocode}
 % We pass all other optional arguments using the generic helper macro
 % |\caption@with|\-|opt|\-|args| offered by the \pkg{caption} kernel).
@@ -1946,6 +1951,10 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \providecommand*\@subfloatboxreset{}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@ifcaption{\caption@ifflag2} % caption >= v3.3 < v3.6
+\providecommand*\caption@ifflag[1]{\@secondoftwo}    % caption < v3.3
 %    \end{macrocode}
 % \end{macro}
 %
