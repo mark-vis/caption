@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{476}
+% \CheckSum{492}
 %
 % \iffalse
 %<*driver>
@@ -2393,34 +2393,50 @@
 % \changes{v1.4}{2020/12/24}{Usage of \cs{caption@getlabel} replaced by \cs{subcaption@getlabel}}
 % \changes{v1.4a}{2020/12/26}{Clearance of \cs{caption@thelabel} replaced by \cs{subcaption@clrlabel}}
 % \changes{v1.5}{2022/01/07}{Usage of \cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
-% \changes{v1.5}{2022/01/07}{Overwrites the definition defined by the \pkg{memoir} document class}
+% \changes{v1.5}{2022/01/07}{Overwrites the definition done by the \cls{memoir} document class}
+% \changes{v1.6}{2022/04/16}{Emulates the definition done by the \cls{memoir} document class}
 %  |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}\par
 %  If \meta{sub-caption} is given, we map this to |\sub|\-|caption|\-|box|
 %  but transfer the |\label| from \meta{body} to \meta{sub-caption}.
 %  If not, we do the same as |\sub|\-|caption|\-|box| does, but use |\phantom|\-|caption| instead of |\caption|.
 %  In both cases we do a |\ignore|\-|spaces| at the end since the original implementation of |\sub|\-|float| does this, too.
 %    \begin{macrocode}
-\@ifclassloaded{memoir}{\let\subfloat\undefined\let\endsubfloat\undefined}{}
-%    \end{macrocode}
-%    \begin{macrocode}
 \caption@AtBeginDocument{%
-  \providecommand*\subfloat{%
-    \kernel@ifnextchar[%]
-      \subcaption@subfloat
-      \subcaption@subfloat@}}
+  \begingroup
+    \newenvironment{subcaption@memoir@subfloat}{}{}%
+    \ifx\subfloat\subcaption@memoir@subfloat
+      \endgroup
+      % "subfloat" = empty environment, defined by memoir
+      \renewcommand*\subfloat{%
+        \def\subcaption@currenvir{subfloat}%
+        \ifx\@currenvir\subcaption@currenvir
+          % emulate (empty) subfloat environment
+        \else
+          \expandafter\subcaption@subfloat
+        \fi}%
+    \else
+      \endgroup
+      \providecommand*\subfloat{\subcaption@subfloat}%
+    \fi}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\subcaption@subfloat[#1]{%
+\newcommand*\subcaption@subfloat{%
   \kernel@ifnextchar[%]
-    {\subcaption@@subfloat{#1}}%
-    {\subcaption@@@subfloat\subcaptionbox{#1}}}
+    \subcaption@@subfloat
+    \subcaption@subfloat@}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\subcaption@@subfloat#1[#2]{%
-  \subcaption@@@subfloat{\subcaptionbox[{#1}]}{#2}}
+\long\def\subcaption@@subfloat[#1]{%
+  \kernel@ifnextchar[%]
+    {\subcaption@@@subfloat{#1}}%
+    {\subcaption@@subfloat@\subcaptionbox{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\long\def\subcaption@@@subfloat#1#2#3{%
+\long\def\subcaption@@@subfloat#1[#2]{%
+  \subcaption@@subfloat@{\subcaptionbox[{#1}]}{#2}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\subcaption@@subfloat@#1#2#3{%
   \subcaption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \subcaption@clrlabel

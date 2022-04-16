@@ -251,19 +251,34 @@
 \subcaption@newabbreviation\phantomsubcaption\phantomcaption\relax
 \subcaption@newabbreviation\subcaptionlistentry\captionlistentry\caption@gobble
 \subcaption@newabbreviation\subcaptiontext\captiontext\caption@gobble
-\@ifclassloaded{memoir}{\let\subfloat\undefined\let\endsubfloat\undefined}{}
 \caption@AtBeginDocument{%
-  \providecommand*\subfloat{%
-    \kernel@ifnextchar[%]
-      \subcaption@subfloat
-      \subcaption@subfloat@}}
-\long\def\subcaption@subfloat[#1]{%
+  \begingroup
+    \newenvironment{subcaption@memoir@subfloat}{}{}%
+    \ifx\subfloat\subcaption@memoir@subfloat
+      \endgroup
+      % "subfloat" = empty environment, defined by memoir
+      \renewcommand*\subfloat{%
+        \def\subcaption@currenvir{subfloat}%
+        \ifx\@currenvir\subcaption@currenvir
+          % emulate (empty) subfloat environment
+        \else
+          \expandafter\subcaption@subfloat
+        \fi}%
+    \else
+      \endgroup
+      \providecommand*\subfloat{\subcaption@subfloat}%
+    \fi}
+\newcommand*\subcaption@subfloat{%
   \kernel@ifnextchar[%]
-    {\subcaption@@subfloat{#1}}%
-    {\subcaption@@@subfloat\subcaptionbox{#1}}}
-\long\def\subcaption@@subfloat#1[#2]{%
-  \subcaption@@@subfloat{\subcaptionbox[{#1}]}{#2}}
-\long\def\subcaption@@@subfloat#1#2#3{%
+    \subcaption@@subfloat
+    \subcaption@subfloat@}
+\long\def\subcaption@@subfloat[#1]{%
+  \kernel@ifnextchar[%]
+    {\subcaption@@@subfloat{#1}}%
+    {\subcaption@@subfloat@\subcaptionbox{#1}}}
+\long\def\subcaption@@@subfloat#1[#2]{%
+  \subcaption@@subfloat@{\subcaptionbox[{#1}]}{#2}}
+\long\def\subcaption@@subfloat@#1#2#3{%
   \subcaption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \subcaption@clrlabel
