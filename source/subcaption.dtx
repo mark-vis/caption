@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{477}
+% \CheckSum{476}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2022/04/16 v1.5 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2022/04/16 v1.6 Adds a sub-caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -67,7 +67,7 @@
 \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
-\let\pkg\puresf
+\let\cls\puresf \let\pkg\puresf
 \let\env\purett \let\opt\purett
 %
 \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
@@ -148,11 +148,6 @@
 % This package demonstrates its usage by offering a high-level user interface additionally.
 % \end{background*}
 % 
-% \bigskip
-% \INFO
-% \emph{Please note:}
-% This package is incompatible with the \pkg{subfigure} and \pkg{subfig} packages.
-%
 % \clearpage
 % \setcounter{tocdepth}{2}
 % \tableofcontents
@@ -1599,6 +1594,51 @@
 % --------------------------------------------------------------------------- %
 % \fi
 %
+% \section{Other packages with similar offerings}
+% \label{sec:otherpackages}
+%
+% The \pkg{subcaption} package is not the only one defining sub-figure counters and offering commands or environments to typeset sub-figures.
+% The most established are:
+% \begin{itemize}
+% \item The \cls{memoir} document class
+% \item The \pkg{subfigure} package
+% \item Its successor, the \pkg{subfig} package
+% \end{itemize}
+%
+% \NEWfeature{v1.6}
+% Prior subcaption version $1.6$ an error message was issued if the `subfigure' or `subtable' counter was already defined by any of them.
+% Since subcaption version $1.6$ the `subfigure' and `subtable' counters will only be defined by the \pkg{subcaption} package if they are not defined yet,
+% but the usage of any of the commands or environments described in this document will result in an error message ``The counter sub\ldots was defined by \ldots''
+% if the corresponding counter was not defined by the \pkg{subcaption} package.
+% Equally the commands or environments offered by the above document classes or packages should not be used with counters defined by the \pkg{subcaption} package,
+% this will result in either \LaTeX\ errors or unwanted behaviour.
+%
+% So the rule of thumb is:
+% If the counter `subfigure' or `subtable' is defined by document class or package \textit{xyz},
+% then the corresponding commands and environments offered by the document class or package \textit{xyz} should be used.
+%
+% \pagebreak[3]
+% An example document:
+% \begin{quote}
+%   |\documentclass{memoir}|\\
+%   |\newsubfloat{table}      % defines the `subtable' counter|\\
+%   |\usepackage{subcaption}  % defines the `subfigure' counter|\\
+%   |\begin{document}|\\
+%   |\begin{figure}|\\
+%   |\subcaptionbox{...}{...} % <- This is fine|\\
+%   |\caption{...}|\\
+%   |\end{figure}|\\
+%   |\begin{table}|\\
+%   |\caption{...}|\\
+%   |\subcaptionbox{...}{...} % <- This results in an error, \subtop should be used instead|\\
+%   |\end{table}|\\
+%   |\end{document}|\\
+% \end{quote}
+%
+% \iffalse
+% --------------------------------------------------------------------------- %
+% \fi
+%
 % \PageBreak
 % \section{Beyond this package}
 % \label{keyfloat}\label{floatrow}
@@ -1785,7 +1825,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2022/04/16 v1.5a Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2022/04/16 v1.6-dev Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \pkg{caption} package we load it here.
@@ -1794,6 +1834,16 @@
 %    \end{macrocode}
 %
 % \subsection{Initial code}
+%
+% \begin{macro}{\subcaption@Info}
+% \changes{v1.6}{2022/04/07}{This macro added}
+%   |\subcaption@Info|\marg{message}\\
+%   issues an info message (with code line indication).
+%    \begin{macrocode}
+\newcommand*\subcaption@Info{%
+  \PackageInfo{subcaption}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\subcaption@Warning}
 % \changes{v1.5}{2022/01/06}{This macro added}
@@ -1827,41 +1877,6 @@
 %    \begin{macrocode}
 \newcommand*\subcaption@OutsideFloat[1]{%
   \subcaption@Error{\string#1 outside float}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\subcaption@CheckCompatibility}
-% \changes{v1.1}{2011/09/01}{Compatibility error added}
-% \changes{v1.1}{2016/05/22}{The presence of \pkg{subfigure} or \pkg{subfig} will be checked \cs{AtBeginDocument}, too}
-% \changes{v1.3g}{2020/08/01}{Error text adapted to \pkg{caption} package~\version{4.0}}
-% \changes{v1.4}{2020/12/22}{Adapted to fallback concept}
-% Since we are incompatible to them an error message will be issued when
-% the \pkg{subfigure} or \pkg{subfig} package is loaded.
-%    \begin{macrocode}
-\newcommand*\subcaption@CheckCompatibility{%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \@ifpackageloaded{subfigure}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfigure package}%
-    \endinput}{}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \@ifpackageloaded{subfig}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfig package}%
-    \endinput}{}%
-%    \end{macrocode}
-%    \begin{macrocode}
-}
-%    \end{macrocode}
-%    \begin{macrocode}
-\subcaption@CheckCompatibility
-\caption@AtBeginDocument{%
-  \subcaption@CheckCompatibility
-  \let\subcaption@CheckCompatibility\@undefined}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2259,16 +2274,32 @@
 \let\caption@setkeys@ORI\@undefined
 %    \end{macrocode}
 %
+% \begin{macro}{\subcaption@DeclareType}
+% \changes{v1.6}{2022/04/07}{This macro added}
+%   |\subcaption@DeclareType|\marg{type}\\
+%   defines the sub-counter via |\Declare|\-|Caption|\-|Sub|\-|Type| offered by the \pkg{caption} package.
+%    \begin{macrocode}
+\newcommand*\subcaption@DeclareType[1]{%
+  \@ifundefined{c@sub#1}%
+    {\DeclareCaptionSubType{#1}}%
+    {\caption@subtypesource\caption@subtype@source{sub#1}%
+     \subcaption@Info{The counter `sub#1' was already defined by\MessageBreak\caption@subtype@source}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\providecommand*\caption@subtypesource[2]{\def#1{a different package}} % caption3 v2.4
+%    \end{macrocode}
+% \end{macro}
+%
 % We call |\Declare|\-|Caption|\-|Sub|\-|Type| for |figure| and |table|,
 % and each floating environment declared with |\Declare|\-|Floating|\-|Environment| here.
 %    \begin{macrocode}
 \@ifundefined{ForEachCaptionType}      % caption3 v1.13
   {\@ifundefined{caption@ForEachType}  % caption3 v1.4a
-     {\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}%
-      \@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}%
-      \caption@For{typelist}{\DeclareCaptionSubType{#1}}}
-     {\caption@ForEachType{\DeclareCaptionSubType{#1}}}}
-  {\ForEachCaptionType{\DeclareCaptionSubType{#1}}}
+     {\@ifundefined{c@figure}{}{\subcaption@DeclareType{figure}}%
+      \@ifundefined{c@table}{}{\subcaption@DeclareType{table}}%
+      \caption@For{typelist}{\subcaption@DeclareType{#1}}}
+     {\caption@ForEachType{\subcaption@DeclareType{#1}}}}
+  {\ForEachCaptionType{\subcaption@DeclareType{#1}}}
 %    \end{macrocode}
 %
 % \subsection{Bonus material}

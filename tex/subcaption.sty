@@ -39,8 +39,10 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2007/12/06}
-\ProvidesPackage{subcaption}[2022/04/16 v1.5a Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2022/04/16 v1.6-dev Sub-captions (AR)]
 \RequirePackage{caption}[2010/01/09] % we need at least v3.1m
+\newcommand*\subcaption@Info{%
+  \PackageInfo{subcaption}}
 \newcommand*\subcaption@Warning{%
   \PackageWarning{subcaption}}
 \newcommand*\subcaption@Error[1]{%
@@ -51,22 +53,6 @@
   section about errors.\MessageBreak\@ehc}
 \newcommand*\subcaption@OutsideFloat[1]{%
   \subcaption@Error{\string#1 outside float}}
-\newcommand*\subcaption@CheckCompatibility{%
-  \@ifpackageloaded{subfigure}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfigure package}%
-    \endinput}{}%
-  \@ifpackageloaded{subfig}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfig package}%
-    \endinput}{}%
-}
-\subcaption@CheckCompatibility
-\caption@AtBeginDocument{%
-  \subcaption@CheckCompatibility
-  \let\subcaption@CheckCompatibility\@undefined}
 \providecommand\setcaptionsubtype{%
   \caption@iftype
     {\@ifstar{\captionsetup{subtype*}}{\captionsetup{subtype}}}%
@@ -236,13 +222,19 @@
 \caption@ProcessOptions*{subcaption}
 \let\caption@setkeys\caption@setkeys@ORI
 \let\caption@setkeys@ORI\@undefined
+\newcommand*\subcaption@DeclareType[1]{%
+  \@ifundefined{c@sub#1}%
+    {\DeclareCaptionSubType{#1}}%
+    {\caption@subtypesource\caption@subtype@source{sub#1}%
+     \subcaption@Info{The counter `sub#1' was already defined by\MessageBreak\caption@subtype@source}}}
+\providecommand*\caption@subtypesource[2]{\def#1{a different package}} % caption3 v2.4
 \@ifundefined{ForEachCaptionType}      % caption3 v1.13
   {\@ifundefined{caption@ForEachType}  % caption3 v1.4a
-     {\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}%
-      \@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}%
-      \caption@For{typelist}{\DeclareCaptionSubType{#1}}}
-     {\caption@ForEachType{\DeclareCaptionSubType{#1}}}}
-  {\ForEachCaptionType{\DeclareCaptionSubType{#1}}}
+     {\@ifundefined{c@figure}{}{\subcaption@DeclareType{figure}}%
+      \@ifundefined{c@table}{}{\subcaption@DeclareType{table}}%
+      \caption@For{typelist}{\subcaption@DeclareType{#1}}}
+     {\caption@ForEachType{\subcaption@DeclareType{#1}}}}
+  {\ForEachCaptionType{\subcaption@DeclareType{#1}}}
 \newcommand*\subcaption@newabbreviation[3]{%
   \newcommand*{#1}{%
     \caption@iftype
