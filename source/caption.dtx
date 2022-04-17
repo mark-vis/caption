@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2851}
+% \CheckSum{2868}
 %
 % \iffalse
 %<*driver>
@@ -4307,7 +4307,6 @@
 % \hline
 %   |\caption@kernel@addcontentsline| & \package{floatrow} \\
 %   |\caption@settype|                & \package{newfloat} \\
-%   |\caption@setsubtype|             & \package{floatrow} \\
 %   |\caption@xlabel|                 & \package{cleveref} \\
 % \end{tabular}\end{quote}
 %
@@ -4593,7 +4592,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/04/17 v3.6d Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/04/17 v3.6e Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -5245,6 +5244,7 @@
 \def\caption@xfloat#1[#2]{%
   \caption@ORI@xfloat{#1}[#2]%
   \caption@settype{#1}%
+  \caption@setanchor
   \caption@xfloat@hook}
 %    \end{macrocode}
 % Hook, could be extended with |\g@addto@macro\caption@x|\-|float@hook{|\ldots|}|.
@@ -5300,98 +5300,73 @@
 %
 % \begin{macro}{\setcaptiontype}
 % \changes{v3.2}{2010/10/24}{This macro added}
-% \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 % \changes{v3.5}{2020/08/24}{Definition method adapted to the \package{caption-light} package}
-% \changes{v3.6}{2021/01/02}{Usage of \cs{caption@initposition} added}
-% \changes{v3.6}{2021/01/09}{Usage of \cs{flushsubcaptionlistentries} added}
 % \changes{v3.6}{2022/02/20}{Optional argument added}
-%  Like |\captionsetup{type=xxx}|, but also works if |\caption|\-|setup| was redefined.
+% \changes{v3.6e}{2022/04/17}{Re-written, task sequence corrected}
+%  |\setcaptiontype*|\oarg{additional options}\marg{type}\\
+%  Like |\captionsetup{type=|\meta{type}|}|, but also works if |\caption|\-|setup| was redefined.
+%  The non-starred version sets a \package{hyperref} anchor additionally
+%  (if |hypcap=|\-|true| and the \package{hypcap} package is not loaded).
 %    \begin{macrocode}
 \def\setcaptiontype{%
-  \caption@parboxrestore@light
-  \caption@settype}
+  \caption@teststar\@setcaptiontype\@gobble\@iden}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@settype{%
-  \caption@initposition
-  \caption@clrflags
-  \aftergroup\flushsubcaptionlistentries
-  \caption@@settype}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@@settype{%
-  \caption@teststar\caption@@settype@\@firstoftwo\@secondoftwo}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@@settype@[1]{%
+\newcommand*\@setcaptiontype[1]{%
   \@ifnextchar[%]
-    {\caption@@settype@@{#1}}%
-    {\caption@@@settype{}{#1}}}
+    {\@setcaptiontype@#1}%
+    {\@@setcaptiontype#1\relax}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@@settype@@#1[#2]#3{%
-  \caption@@@settype{}{#1}{#3}%
-  \caption@setoptions{#2}}
+\def\@setcaptiontype@#1[#2]{%
+  \@@setcaptiontype{#1}{\caption@setoptions{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\@@setcaptiontype[3]{%
+  \caption@settype{#3}#2%
+  \caption@parboxrestore@light
+  #1\caption@setanchor}
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\setcaptionsubtype}
-% \changes{v3.2a}{2011/08/15}{This macro added}
-% \changes{v3.5d}{2020/09/28}{This macro revised}
-% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@OutsideFloat}}
-% \changes{v3.6}{2022/01/07}{Multiple use is suppressed now by checking \cs{caption@ifsubtype}}
-% Same, but sets the sub-type.
-%    \begin{macrocode}
-\newcommand*\setcaptionsubtype{%
-  \caption@setsubtype}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@setsubtype{% used by the floatrow package
-  \caption@teststar\caption@@setsubtype\@firstoftwo\@secondoftwo}
-%    \end{macrocode}
-%    \begin{macrocode}
-\newcommand*\caption@@setsubtype[1]{%
-  \caption@iftype
-    {\caption@ifsubtype
-       {\caption@Debug{subtype=\@subcaptype}}%
-       {\caption@@@settype{sub}{#1}{sub\@captype}}}%
-    {\caption@OutsideFloat\setcaptionsubtype}}
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\caption@@@settype}
+% \begin{macro}{\caption@settype}
 % \changes{v3.1}{2007/05/09}{This macro added}
 % \changes{v3.1b}{2007/09/22}{Usage of \cs{caption@xlabel} added}
 % \changes{v3.1d}{2007/10/23}{Error message for \cs{caption@checkgrouplevel} revised}
-% \changes{v3.1f}{2007/11/16}{\cs{caption@setsubtype} added}
 % \changes{v3.1f}{2007/12/03}{Crappy \cs{caption@iftypewarning} replaced}
 % \changes{v3.1g}{2008/01/12}{Usage of \cs{ifcaptionsetup@star} added}
 % \changes{v3.2}{2010/10/26}{Error message moved from here to \cs{caption@refstepcounter}}
 % \changes{v3.3}{2011/12/28}{Resetting of \cs{ifcaption@caption} and \cs{ifcaption@subcaption} added}
 % \changes{v3.4e}{2020/01/02}{Checks added to prevent misuse regading subtypes}
+% \changes{v3.4e}{2020/01/02}{Check added if the subtype is defined}
 % \changes{v3.5d}{2020/09/28}{This macro revised}
 % \changes{v3.6}{2020/12/27}{Some code out-sourced to \cs{caption@reset@currentlabel}}
-%  |\caption@settype*|\marg{type}\par
+% \changes{v3.6}{2021/01/02}{Usage of \cs{caption@initposition} added}
+% \changes{v3.6}{2021/01/09}{Usage of \cs{flushsubcaptionlistentries} added}
+% \changes{v3.6e}{2022/04/17}{Starred variant and optional argument removed}
+%  |\caption@settype|\marg{type}\\
 %  sets |\@captype| and executes the options associated with it
 %  (using |\caption@set|\-|options|).
 %  Furthermore we check |\current|\-|group|\-|level| (if avail), and
 %  use the macro |\caption@|(|sub|)|type|\-|hook| (which will be used by our
 %  \package{float} package support).\par
-%  The non-starred version sets a \package{hyperref} anchor additionally
-%  (if |hypcap=|\-|true| and the \package{hypcap} package is not loaded).
 %    \begin{macrocode}
-\newcommand*\caption@@@settype[3]{%
-% #1 = "" or "sub"
-% #2 = \@firstoftwo in star form, \@secondoftwo otherwise
-% #3 = <type>, e.g.: "figure" or "subfigure"
-  \caption@Debug{#1type:=#3}%
-  \@nameuse{caption@check#1type}{#3}%
-    {\caption@checkgrouplevel{#1}{%
-       \captionsetup{#1type#2*\@empty=...}#2{ or
-                     \@backslashchar#1captionof}{}}%
+\newcommand*\caption@settype{%
+  \caption@initposition
+  \caption@clrflags
+  \aftergroup\flushsubcaptionlistentries
+  \caption@@settype{}}
 %    \end{macrocode}
 %    \begin{macrocode}
-     \edef\caption@tempa{#3}%
+\newcommand*\caption@@settype[2]{%
+% #1 = "" or "sub"
+% #2 = <type>, e.g.: "figure" or "subfigure"
+  \caption@Debug{#1type:=#2}%
+  \@nameuse{caption@check#1type}{#2}%
+    {\caption@checkgrouplevel{#1}{\setcaption#1type}%
+%    \end{macrocode}
+%    \begin{macrocode}
+     \edef\caption@tempa{#2}%
      \expandafter\ifx\csname @#1captype\endcsname\caption@tempa \else
        \ifcaptionsetup@star\else\@nameuse{caption@#1type@warning}\fi
      \fi
@@ -5401,17 +5376,40 @@
      \@nameuse{caption@#1typehook}%
 %    \end{macrocode}
 %    \begin{macrocode}
-     \caption@setoptions{#3}%
+     \caption@setoptions{#2}%
      \ifx\caption@opt\relax
        \@nameundef{caption@#1type@warning}%
      \else
        \@namedef{caption@#1type@warning}{\caption@Warning{%
          The #1type was already set to
          `\csname @#1captype\endcsname'\MessageBreak}}%
-     \fi
+     \fi}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\setcaptionsubtype}
+% \changes{v3.2a}{2011/08/15}{This macro added}
+% \changes{v3.5d}{2020/09/28}{This macro revised}
+% \changes{v3.6}{2022/01/05}{Usage of \cs{caption@Error} replaced by \cs{caption@OutsideFloat}}
+% \changes{v3.6}{2022/01/07}{Multiple use is suppressed now by checking \cs{caption@ifsubtype}}
+% \changes{v3.6e}{2022/04/17}{Re-written}
+%  |\setcaptionsubtype*|\\
+%  Like |\captionsetup{subtype}|, but also works if |\caption|\-|setup| was redefined.
+%  Sets |\@sub|\-|cap|\-|type| and executes the options associated with it.
+%  The non-starred version sets a \package{hyperref} anchor additionally
+%  (if |hypcap=|\-|true| and the \package{hypcap} package is not loaded).
+%    \begin{macrocode}
+\newcommand*\setcaptionsubtype{%
+  \caption@teststar\@setcaptionsubtype\@gobble\@iden}
 %    \end{macrocode}
 %    \begin{macrocode}
-     #2{}{\caption@reset@currentlabel\caption@start}}}
+\newcommand*\@setcaptionsubtype[1]{%
+  \caption@iftype
+    {\caption@ifsubtype
+       {\caption@Debug{type=\@captype, subtype=\@subcaptype}}%
+       {\caption@@settype{sub}{sub\@captype}%
+        #1\caption@setanchor}}%
+    {\caption@OutsideFloat\setcaptionsubtype}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -5426,6 +5424,17 @@
   \let\par\@@par
   \parindent\z@ \parskip\z@skip
   \sloppy}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setanchor}
+% \changes{v3.6e}{2022/04/17}{Code extracted from \cs{caption@settype}}
+%  |\caption@setanchor|\\
+%  sets a \pkg{hyperref} anchor.
+%    \begin{macrocode}
+\newcommand*\caption@setanchor{%
+  \caption@reset@currentlabel
+  \caption@start}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -6324,14 +6333,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 % redefine \setcaptiontype
-    \def\caption@settype{\caption@withoptargs\caption@sub@settype}%
-    \def\caption@sub@settype##1##2{%
-      \edef\caption@tempa{##2}%
-      \ifx\caption@tempa\@captype
-%%%     \caption@setsubtype##1\relax
-      \else
-        \caption@Error{##2 inside \@subcaptype}%
-      \fi}%
+    \renewcommand*\caption@settype[1]{%
+      \caption@Error{##1 inside \@subcaptype}}%
 %    \end{macrocode}
 %    \begin{macrocode}
 % redefine \caption
@@ -6620,7 +6623,7 @@
 %  Used by the \package{fltpage} \& \package{sidecap} package support.
 %    \begin{macrocode}
     \newcommand*\caption@freezetype[1]{%
-      \caption@settype*{#1}%
+      \caption@settype{#1}%
       \captionsetup*[sub]{hypcap=true}% Note: This is just a (q&d) workaround!
       \caption@freeze}%
 %    \end{macrocode}
@@ -6709,7 +6712,7 @@
 % Prevent resetting the caption flags
 %    \begin{macrocode}
     \newcommand*\caption@prepare@defrost{%
-      \let\caption@settype\caption@@settype}
+      \def\caption@settype{\caption@@settype{}}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -7112,7 +7115,8 @@
   \newcommand*\caption@floatflt[1]{%
     \caption@settype{#1}%
     \caption@clearmargin
-    \caption@setoptions{floating#1}}%
+    \caption@setoptions{floating#1}%
+    \caption@setanchor}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -7125,6 +7129,18 @@
 %    \begin{macrocode}
 \caption@IfPackageLoaded{floatrow}[2008/08/02 v0.3b]{%
 %    \end{macrocode}
+%
+% \begin{macro}{\captionlabel}
+% \changes{v3.6e}{2022/04/17}{This macro re-definition added}
+% The original definition of |\caption|\-|label| uses the internal macro
+% |\caption@set|\-|sub|\-|type| which does not exist anymore and needs to
+% be replaced by |\set|\-|caption|\-|sub|\-|type|.
+%    \begin{macrocode}
+  \renewcommand\captionlabel[1]{{\def\FR@tmp{\@captype}\ifnum\floatbox@depth>\@ne
+       \def\FR@tmp{sub\@captype}\setcaptionsubtype*\stepcounter{\FR@tmp}\fi
+   \caption@@@make{\caption@fnum\FR@tmp}{#1}}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{environment}{subfloatrow}
 % \changes{v3.6d}{2022/04/17}{This environment re-definition added}
@@ -7991,7 +8007,7 @@
 % \changes{v3.6}{2021/01/17}{Adapted to current implementation of \cs{caption@setwidth}}
 %    \begin{macrocode}
   \newcommand*\caption@LT@settype[1]{%
-    \caption@settype*{#1}%
+    \caption@settype{#1}%
 %    \end{macrocode}
 %  If |\LTcapwidth| is not set to its default value |4in| we assume
 %  that it shall overwrite our own setting.
@@ -8084,7 +8100,8 @@
     \let\@makecaption\caption@@make
     \caption@setautoposition b%
     \caption@settype{#1}%
-    \caption@clearmargin}%
+    \caption@clearmargin
+    \caption@setanchor}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -8217,6 +8234,7 @@
 %     \fi
       \caption@setoptions{parpic}%
       \caption@setautoposition b%
+      \caption@setanchor
 %    \end{macrocode}
 %    \begin{macrocode}
       \expandafter\expandafter\expandafter\caption@ORI
@@ -8521,7 +8539,7 @@
 %  \end{verbatim}%^^A
 %    \begin{macrocode}
   \long\def\ST@caption#1[#2]#3{\par%
-    \caption@settype*{#1}%
+    \caption@settype{#1}%
     \caption@setoptions{supertabular}%
 %    \end{macrocode}
 %  The |position=| setting will be overwritten by the
@@ -8590,7 +8608,7 @@
 %  \end{verbatim}%^^A
 %    \begin{macrocode}
   \long\def\ST@caption#1[#2]#3{\par%
-    \caption@settype*{#1}%
+    \caption@settype{#1}%
     \caption@setoptions{xtabular}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -8621,29 +8639,44 @@
 %
 % \begin{macro}{\threeparttable}
 % \changes{v3.3}{2016/01/31}{Bugfix: \cs{@captype} will be used if already defined}
+% \changes{v3.6e}{2022/04/17}{Main code outsourced to \cs{caption@setthreeparttable}}
 % Unfortunately |\@captype| is not set when |\TPT@common| will be used,
 % so we have to redefine |\threeparttable| and |\measuredfigure| instead.
 %    \begin{macrocode}
   \let\caption@ORI@threeparttable\threeparttable
   \renewcommand*\threeparttable{%
-    \caption@settype{\@ifundefined{@captype}{table}{\@captype}}%
-%%% \caption@setposition{auto}% ?
-    \caption@clearmargin
-    \caption@setoptions{threeparttable}%
+    \caption@setthreeparttabletype{threepart}{table}%
     \caption@ORI@threeparttable}%
 %    \end{macrocode}
 % \end{macro}
+%
 % \begin{macro}{\measuredfigure}
 % \changes{v3.3}{2016/01/31}{Bugfix: \cs{@captype} will be used if already defined}
+% \changes{v3.6e}{2022/04/17}{Main code outsourced to \cs{caption@setthreeparttable}}
 %  Same here\ldots
 %    \begin{macrocode}
   \let\caption@ORI@measuredfigure\measuredfigure
   \renewcommand*\measuredfigure{%
-    \caption@settype{\@ifundefined{@captype}{figure}{\@captype}}%
+    \caption@setthreeparttabletype{measured}{figure}%
+    \caption@ORI@measuredfigure}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setthreeparttabletype}
+% \changes{v3.6e}{2022/04/17}{Extracted from \cs{threeparttable} and \cs{measuredfigure}}
+% \changes{v3.6e}{2022/04/17}{Support for usage inside \env{subtable} resp.~\env{subfigure} added}
+%  |\caption@setthreeparttabletype|\marg{threepart type}\marg{main type}
+%    \begin{macrocode}
+  \newcommand*\caption@setthreeparttabletype[2]{%
+    \caption@ifsubtype
+      {\def\caption@threeparttabletype{#1sub#2}%
+       \let\caption@setanchor\relax}%
+      {\caption@settype{\@ifundefined{@captype}{#2}{\@captype}}%
+       \def\caption@threeparttabletype{#1#2}}%
 %%% \caption@setposition{auto}% ?
     \caption@clearmargin
-    \caption@setoptions{measuredfigure}%
-    \caption@ORI@measuredfigure}%
+    \caption@setoptions\caption@threeparttabletype
+    \caption@setanchor}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -8748,7 +8781,8 @@
     \caption@settype{#1}%
     \caption@clearmargin
 %%% \caption@setoptions{wrap}%
-    \caption@setoptions{wrap#1}}%
+    \caption@setoptions{wrap#1}%
+    \caption@setanchor}%
 %    \end{macrocode}
 % \end{macro}
 %
