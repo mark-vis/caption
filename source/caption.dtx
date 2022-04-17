@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2831}
+% \CheckSum{2851}
 %
 % \iffalse
 %<*driver>
@@ -4593,7 +4593,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/04/06 v3.6c Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/04/17 v3.6d Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -6296,6 +6296,7 @@
 % \changes{v3.4f}{2020/01/03}{Redefinition of \cs{@caption} added since it was redefined by the \env{threeparttable} environment}
 % \changes{v3.5}{2020/07/27}{Adapted to \package{caption3} v2.0}
 % \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@stepcounter}}
+% \changes{v3.6d}{2022/04/17}{Usage of \cs{if@subfloatrow} removed in favour of a re-definition of \env{subfloatrow*}}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \package{floatrow} package intact.)
@@ -6344,29 +6345,8 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 % restore \@makecaption
-    \if@subfloatrow
-      \caption@Debug{Keeping \string\@makecaption}%
-    \else
-      \let\@makecaption\caption@makecaption
-    \fi
+    \let\@makecaption\caption@makecaption
   \fi}%
-%    \end{macrocode}
-% \end{macro}
-%
-% \begin{macro}{\if@subfloatrow}
-% \changes{v3.2c}{2011/09/30}{This macro added}
-% This macro tests if we are inside an |sub|\-|float|\-|row| or |sub|\-|float|\-|row*| environment.
-%    \begin{macrocode}
-\caption@AtBeginDocument{%
-  \caption@ifundefined\@subfloatrowtrue
-   {\newif\if@subfloatrow
-    \caption@ifundefined\subfloatrow
-    {}%
-    {\caption@Debug{Patching subfloatrow environment}%
-     \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
-     \g@addto@macro\killfloatstyle{%
-       \ifx\c@FRobj\c@FRsobj\@subfloatrowtrue\fi}}}%
-   {\caption@Debug{\string\if@subfloatrow is already defined}}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -7135,6 +7115,56 @@
     \caption@setoptions{floating#1}}%
 %    \end{macrocode}
 % \end{macro}
+%
+%    \begin{macrocode}
+}{}
+%    \end{macrocode}
+%
+% \subsubsection{The floatrow package}
+%
+%    \begin{macrocode}
+\caption@IfPackageLoaded{floatrow}[2008/08/02 v0.3b]{%
+%    \end{macrocode}
+%
+% \begin{environment}{subfloatrow}
+% \changes{v3.6d}{2022/04/17}{This environment re-definition added}
+% The original definition of the environment |sub|\-|float|\-|row|
+% uses |\caption|\-|setup{sub|\-|type}| to switch caption commands
+% like |\caption| to their counterparts offered by the \pkg{subcaption}
+% package.
+% Since \pkg{caption} \version{3.6} this does not work in coorparation
+% with the \pkg{subfig} package anymore, and therefore we replace it
+% with a hook which could be filled by the \pkg{subcaption} package.
+%    \begin{macrocode}
+  \renewenvironment{subfloatrow}{\capsubrowsettings
+    \caption@subfloatrow@hook % as replacement for \captionsetup{subtype}
+    \@nameuse{subfloatrow*}}{\@nameuse{endsubfloatrow*}}
+%    \end{macrocode}
+%    \begin{macrocode}
+  \providecommand*\caption@subfloatrow@hook{}
+%    \end{macrocode}
+% \end{environment}
+%
+% \begin{environment}{subfloatrow*}
+% \changes{v3.6d}{2022/04/17}{This environment re-definition added}
+% Some packages (like the \pkg{float} and \pkg{floatrow} package) re-define
+% |\@make|\-|caption| for special handling of the main caption.
+% Since this usually does not work fine with sub-captions, the command
+% |\set|\-|caption|\-|sub|\-|type| will restore the definition
+% of |\@make|\-|caption|. But this is not desired here, and therefore
+% we make sure that |\flrow@make|\-|caption| will be used for sub-captions,
+% too.
+%    \begin{macrocode}
+  \renewenvironment{subfloatrow*}[1][2]{\let\flrow@to\empty
+    \let\Xhsize\sXhsize%\let\Zhsize\sZhsize
+    \FR@ifunloc{\let\FR@ifcountH\@firstoftwo}\let\c@FRobj\c@FRsobj
+    \def\FRleftmargin{}\def\FRrightmargin{}\let\floatrowsep\subfloatrowsep
+    \floatrow[#1]\killfloatstyle
+    \let\caption@makecaption\flrow@makecaption}% <- This line added
+    {\ifdim\lastskip>\z@\unskip\fi
+     \@ifundefined{adjustsubfloats}\relax\adjustsubfloats\endfloatrow}
+%    \end{macrocode}
+% \end{environment}
 %
 %    \begin{macrocode}
 }{}

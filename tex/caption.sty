@@ -46,7 +46,7 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareCurrentRelease{v3.6}{2022-02-20}
-\ProvidesPackage{caption}[2022/04/06 v3.6c Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/04/17 v3.6d Customizing captions (AR)]
 \RequirePackage{caption3}[2022/04/06] % needs v2.4 or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -658,22 +658,8 @@
     \let\captionlistentry\caption@sublistentry
     \let\captiontext\caption@subtext
     \let\caption@refstepcounter\caption@refstepcounter@
-    \if@subfloatrow
-      \caption@Debug{Keeping \string\@makecaption}%
-    \else
-      \let\@makecaption\caption@makecaption
-    \fi
+    \let\@makecaption\caption@makecaption
   \fi}%
-\caption@AtBeginDocument{%
-  \caption@ifundefined\@subfloatrowtrue
-   {\newif\if@subfloatrow
-    \caption@ifundefined\subfloatrow
-    {}%
-    {\caption@Debug{Patching subfloatrow environment}%
-     \g@addto@macro\capsubrowsettings{\@subfloatrowtrue}%
-     \g@addto@macro\killfloatstyle{%
-       \ifx\c@FRobj\c@FRsobj\@subfloatrowtrue\fi}}}%
-   {\caption@Debug{\string\if@subfloatrow is already defined}}}%
 \newcommand*\caption@subcaption{%
   \caption@checkgrouplevel{sub}\subcaption
   \caption@star
@@ -930,6 +916,20 @@
     \caption@settype{#1}%
     \caption@clearmargin
     \caption@setoptions{floating#1}}%
+}{}
+\caption@IfPackageLoaded{floatrow}[2008/08/02 v0.3b]{%
+  \renewenvironment{subfloatrow}{\capsubrowsettings
+    \caption@subfloatrow@hook % as replacement for \captionsetup{subtype}
+    \@nameuse{subfloatrow*}}{\@nameuse{endsubfloatrow*}}
+  \providecommand*\caption@subfloatrow@hook{}
+  \renewenvironment{subfloatrow*}[1][2]{\let\flrow@to\empty
+    \let\Xhsize\sXhsize%\let\Zhsize\sZhsize
+    \FR@ifunloc{\let\FR@ifcountH\@firstoftwo}\let\c@FRobj\c@FRsobj
+    \def\FRleftmargin{}\def\FRrightmargin{}\let\floatrowsep\subfloatrowsep
+    \floatrow[#1]\killfloatstyle
+    \let\caption@makecaption\flrow@makecaption}% <- This line added
+    {\ifdim\lastskip>\z@\unskip\fi
+     \@ifundefined{adjustsubfloats}\relax\adjustsubfloats\endfloatrow}
 }{}
 \caption@IfPackageLoaded{fltpage}[1998/10/29 v.0.3]{%
   \caption@setbool{needfreeze}{1}%
