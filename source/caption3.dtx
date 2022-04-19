@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3835}
+% \CheckSum{3823}
 %
 % \iffalse
 %<*driver>
@@ -825,15 +825,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\ifcaptionsetup@star}
-% \changes{v1.2a}{2008/01/12}{This macro added}
-%   If the starred form of |\caption|\-|setup| is used, this will be set to |true|.
-%   (It will be reset to |false| at the end of |\caption@set|\-|keys|.)
-%    \begin{macrocode}
-\newif\ifcaptionsetup@star
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\captionsetup}
 % \changes{v1.0a}{2004/01/17}{Bugfix: Missing \% added}
 % \changes{v1.1}{2007/07/22}{Starred-variant added}
@@ -844,6 +835,7 @@
 % \changes{v1.8h}{2020/01/03}{Syntax check of saved options added}
 % \changes{v2.3b}{2022/03/17}{Usage of \cs{captionsetup} inside \cs{caption@setup@options@@} replaced by \cs{caption@setup@options@}}
 % \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
+% \changes{v2.4}{2022/04/18}{Usage of \cs{ifcaptionsetup@star} removed}
 %   |\captionsetup*|\oarg{type}\marg{keyval-list of options}\\
 %   applies the given list of options.
 %   If the optional argument `type' is specified, we simply save or append
@@ -857,32 +849,32 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\@captionsetup[1]{%
-  \captionsetup@startrue#1\captionsetup@starfalse
   \kernel@ifnextchar[%]
-    \caption@setup@options\caption@setup}
+    {\caption@setup@options#1}%
+    {\caption@setup}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setup{%
   \caption@setkeys{caption}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@setup@options[#1]{%
+\def\caption@setup@options#1[#2]{%
   \kernel@ifnextchar[%]
     {\caption@stepthecounter
-     \@expandtwoargs\caption@setup@options@@{#1}{@\caption@thecounter}}%
-    {\caption@setup@options@{#1}}}
+     \@expandtwoargs\caption@setup@options@@{#2}{@\caption@thecounter}#1}%
+    {\caption@setup@options@#1{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@setup@options@@#1#2[#3]#4{%
-  \caption@declare@option{#2}[]{\caption@setup@options@{#3}{#4}}%
-  \caption@setup@options@{#1}{#2}}
+\def\caption@setup@options@@#1#2#3[#4]#5{%
+  \caption@declare@option{#2}[]{\caption@setup@options@\@gobble{#4}{#5}}%
+  \caption@setup@options@#3{#1}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@setup@options@[2]{%
+\newcommand*\caption@setup@options@[3]{%
   \@bsphack
-    \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
-    \caption@checkoptions{#2}%
-    \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
+    #1{\caption@addtooptlist{#2}}%
+    \caption@checkoptions{#3}%
+    \expandafter\caption@l@addto@list\csname caption@opt@#2\endcsname{#3}%
   \@esphack}
 %    \end{macrocode}
 % \end{macro}
@@ -1086,6 +1078,7 @@
 % \changes{v1.2a}{2008/01/12}{\cs{captionsetup@starfalse} added}
 % \changes{v1.2d}{2009/09/30}{Bugfix 09-09-29: Missing error handler will be defined automatically}
 % \changes{v1.4}{2011/08/24}{Redefinition of \cs{XKV@err} added}
+% \changes{v2.4}{2022/04/18}{\cs{captionsetup@starfalse} removed}
 %   |\caption@setkeys|\oarg{package}\marg{family}\marg{key-values}\\
 %   expands to |\setkeys|\marg{family}\marg{key-values},
 %   but lets the error messages not refer to the \package{keyval} package
@@ -1121,9 +1114,6 @@
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
   \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
   \expandafter\let\expandafter\XKV@err\csname ORI@XKV@err\caption@keydepth\endcsname
-%    \end{macrocode}
-%    \begin{macrocode}
-  \ifx\caption@keydepth\@empty \captionsetup@starfalse \fi
 %    \end{macrocode}
 %    \begin{macrocode}
   \@esphack}

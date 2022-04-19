@@ -235,28 +235,27 @@
     \KV@err{No value allowed for #1}%
     \expandafter\@gobble
   \fi}
-\newif\ifcaptionsetup@star
 \newcommand*\captionsetup{%
   \caption@teststar@\@captionsetup\@gobble\@firstofone}
 \newcommand*\@captionsetup[1]{%
-  \captionsetup@startrue#1\captionsetup@starfalse
   \kernel@ifnextchar[%]
-    \caption@setup@options\caption@setup}
+    {\caption@setup@options#1}%
+    {\caption@setup}}
 \newcommand*\caption@setup{%
   \caption@setkeys{caption}}
-\def\caption@setup@options[#1]{%
+\def\caption@setup@options#1[#2]{%
   \kernel@ifnextchar[%]
     {\caption@stepthecounter
-     \@expandtwoargs\caption@setup@options@@{#1}{@\caption@thecounter}}%
-    {\caption@setup@options@{#1}}}
-\def\caption@setup@options@@#1#2[#3]#4{%
-  \caption@declare@option{#2}[]{\caption@setup@options@{#3}{#4}}%
-  \caption@setup@options@{#1}{#2}}
-\newcommand*\caption@setup@options@[2]{%
+     \@expandtwoargs\caption@setup@options@@{#2}{@\caption@thecounter}#1}%
+    {\caption@setup@options@#1{#2}}}
+\def\caption@setup@options@@#1#2#3[#4]#5{%
+  \caption@declare@option{#2}[]{\caption@setup@options@\@gobble{#4}{#5}}%
+  \caption@setup@options@#3{#1}{#2}}
+\newcommand*\caption@setup@options@[3]{%
   \@bsphack
-    \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
-    \caption@checkoptions{#2}%
-    \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
+    #1{\caption@addtooptlist{#2}}%
+    \caption@checkoptions{#3}%
+    \expandafter\caption@l@addto@list\csname caption@opt@#2\endcsname{#3}%
   \@esphack}
 \newcommand*\caption@checkoptions[1]{%
   \begingroup
@@ -364,7 +363,6 @@
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
   \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
   \expandafter\let\expandafter\XKV@err\csname ORI@XKV@err\caption@keydepth\endcsname
-  \ifx\caption@keydepth\@empty \captionsetup@starfalse \fi
   \@esphack}
 \let\caption@keydepth\@empty
 \newcommand*\caption@ExecuteOptions[2]{%
