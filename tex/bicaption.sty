@@ -39,7 +39,7 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2011/07/13}
-\ProvidesPackage{bicaption}[2022/04/18 v1.5c Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2022/04/18 v1.6-dev Bilingual Captions (AR)]
 \RequirePackage{caption}[2011/11/10] % we need at least v3.2e
 \newcommand*\bicaption@Info[1]{%
   \PackageInfo{bicaption}{#1}}
@@ -138,7 +138,7 @@
     \bicaption@setmainlanguage
   \fi
   \ifcsname captionmainlanguage\endcsname
-    \captionsetup[bi-first]{lang=\captionmainlanguage}%
+    \captionsetup*[bi-first]{lang=\captionmainlanguage}%
   \else
     \ifcsname bicaption@language@value\endcsname % option "lang=" was used
       \expandafter\bicaption@Warning
@@ -158,7 +158,7 @@
     \let\captionmainlanguage\xpg@main@language
   \fi\fi}
 \@onlypreamble\bicaption@setmainlanguage
-\caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
+\caption@SetupOptions{bicaption}{\captionsetup*[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
 \let\bicaption@addcontentsline@ORI\caption@addcontentsline
 \renewcommand*\caption@addcontentsline[2]{%
@@ -236,6 +236,18 @@
   {\newcommand\bicaption@slc[2]{\caption@@slc{#1}{#2}{\captionwidth}}}
 \providecommand*\caption@setsinglelinecheck{%
   \caption@set@bool\caption@ifslc}
+\newcommand*\bicaptionsetup{%
+  \caption@teststar\@bicaptionsetup*{}}
+\newcommand*\@bicaptionsetup[1]{%
+  \kernel@ifnextchar[%]
+    {\bicaption@setup@options{#1}}%
+    {\bicaption@setup*}}
+\def\bicaption@setup@options#1[#2]{%
+  \bicaption@setup{#1[#2]}}
+\newcommand*\bicaption@setup[2]{%
+  \bicaption@@setup#1[bi-first]{#2}%
+  \bicaption@@setup#1[bi-second]}
+\let\bicaption@@setup\captionsetup
 \newcommand\bicaption{\@bicaption\caption}
 \newcommand\bicaptionbox{\@bicaption\captionbox}
 \newcommand\bisubcaption{\@bicaption\subcaption}
@@ -255,9 +267,9 @@
 \long\def\@@@@bicaption#1#2[#3]#4{%
   \bicaption@getlabel{#2}%
   \bicaption@ifswap
-    {\bicaption@setup{#1}{#2}%
+    {\bicaption@set{#1}{#2}%
      \bicaption@cmd[{#3}]{#4}}%
-    {\bicaption@setup{#3}{#4}%
+    {\bicaption@set{#3}{#4}%
      \bicaption@cmd[{#1}]{#2}}}
 \long\def\bicaption@star#1[#2]{#1*}
 \@ifundefined{caption@getlabel}{%
@@ -300,7 +312,7 @@
 }{%
   \newcommand*\bicaption@clrlabel{\caption@clrlabel}           %  caption3 >= v2.3
 }
-\newcommand\bicaption@setup[2]{%
+\newcommand\bicaption@set[2]{%
   \def\bicaption@lentry{#1}%
   \def\bicaption@text{\ignorespaces #2}}
 \newcommand*\bicaption@clear{%
@@ -329,14 +341,14 @@
   \lst@Key{caption1}\relax{%
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
-        {\bicaption@setup{##1}{##2}}%
+        {\bicaption@set{##1}{##2}}%
         {\def\lst@@caption{##1}\def\lst@caption{##2}}}%
     \let\lst@title\@empty}%
   \lst@Key{caption2}\relax{%
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
         {\def\lst@@caption{##1}\def\lst@caption{##2}}%
-        {\bicaption@setup{##1}{##2}}}%
+        {\bicaption@set{##1}{##2}}}%
     \let\lst@title\@empty}%
   \lst@AddToHookExe{TextStyle}{%
     \bicaption@clear}%
@@ -358,8 +370,8 @@
     \bicaption@LT@setup}%
   \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
-      {\bicaption@setup{#1}{#2}}%
-      {\bicaption@setup{#3}{#4}}}%
+      {\bicaption@set{#1}{#2}}%
+      {\bicaption@set{#3}{#4}}}%
   \bicaption@ifswap
     {\egroup\bicaption@cmd[{#3}]{#4}}%
     {\egroup\bicaption@cmd[{#1}]{#2}}}

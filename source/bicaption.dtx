@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{626}
+% \CheckSum{645}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2022/04/18 v1.5 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2022/04/18 v1.6 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -897,8 +897,7 @@
 % \end{quote}
 %
 % \pagebreak[3]
-% \captionsetup[bi-first]{lang=german}
-% \captionsetup[bi-second]{lang=english,font=it}
+% \bicaptionsetup{lang=german}{lang=english,font=it}
 % \captionsetup[sub]{format=hang,list=on}
 %
 % \iffalse
@@ -1132,7 +1131,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{bicaption}[2022/04/18 v1.5c Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2022/04/18 v1.6-dev Bilingual Captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \package{caption} package we load it here.
@@ -1397,7 +1396,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \ifcsname captionmainlanguage\endcsname
-    \captionsetup[bi-first]{lang=\captionmainlanguage}%
+    \captionsetup*[bi-first]{lang=\captionmainlanguage}%
   \else
     \ifcsname bicaption@language@value\endcsname % option "lang=" was used
       \expandafter\bicaption@Warning
@@ -1430,7 +1429,7 @@
 % We use |\caption@Process|\-|Options| here to add the options to the `|bi-second|' option
 % list instead of executing them immediately.
 %    \begin{macrocode}
-\caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
+\caption@SetupOptions{bicaption}{\captionsetup*[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
 %    \end{macrocode}
 %
@@ -1596,6 +1595,36 @@
 % \pagebreak[3]
 % \subsubsection{The \cs{bicaption} commands}
 %
+% \begin{macro}{\bicaptionsetup}
+% \changes{v1.6}{2022/04/18}{This macro added}
+% |\bicaptionsetup*|\oarg{type}\marg{keyval-list of options 1}\marg{keyval-list of options 2}\\
+% applies the given list of options.
+%    \begin{macrocode}
+\newcommand*\bicaptionsetup{%
+  \caption@teststar\@bicaptionsetup*{}} 
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\@bicaptionsetup[1]{%
+  \kernel@ifnextchar[%]
+    {\bicaption@setup@options{#1}}%
+    {\bicaption@setup*}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\bicaption@setup@options#1[#2]{%
+  \bicaption@setup{#1[#2]}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\bicaption@setup[2]{%
+  \bicaption@@setup#1[bi-first]{#2}%
+  \bicaption@@setup#1[bi-second]}
+%    \end{macrocode}
+% We need to use the original definition of |\caption|\-|setup| here,
+% even if we are inside a |long|\-|table| environment or similar.
+%    \begin{macrocode}
+\let\bicaption@@setup\captionsetup
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\bicaption}
 % |\bicaption*|\oarg{list entry \#1}\marg{text \#1}\oarg{list entry \#2}\marg{text \#2}
 %    \begin{macrocode}
@@ -1654,9 +1683,9 @@
 \long\def\@@@@bicaption#1#2[#3]#4{%
   \bicaption@getlabel{#2}%
   \bicaption@ifswap
-    {\bicaption@setup{#1}{#2}%
+    {\bicaption@set{#1}{#2}%
      \bicaption@cmd[{#3}]{#4}}%
-    {\bicaption@setup{#3}{#4}%
+    {\bicaption@set{#3}{#4}%
      \bicaption@cmd[{#1}]{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1749,12 +1778,13 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\bicaption@setup}
-% |\bicaption@setup|\marg{list-entry}\marg{text}\\
+% \begin{macro}{\bicaption@set}
+% \changes{v1.6}{2022/04/18}{This macro renamed from \cs{bicaption@setup} to \cs{bicaption@set}}
+% |\bicaption@set|\marg{list-entry}\marg{text}\\
 % initiates the bilingual caption typesetting by storing the extra texts into
 % |\bi|\-|caption@l|\-|entry| and |\bi|\-|caption@text|.
 %    \begin{macrocode}
-\newcommand\bicaption@setup[2]{%
+\newcommand\bicaption@set[2]{%
   \def\bicaption@lentry{#1}%
   \def\bicaption@text{\ignorespaces #2}}
 %    \end{macrocode}
@@ -1762,7 +1792,7 @@
 %
 % \begin{macro}{\bicaption@clear}
 % |\bicaption@clear|\\
-% clears the stuff stored by |\bicaption@setup|.
+% clears the stuff stored by |\bicaption@set|.
 %    \begin{macrocode}
 \newcommand*\bicaption@clear{%
   \let\bicaption@lentry\@undefined
@@ -1812,7 +1842,7 @@
   \lst@Key{caption1}\relax{%
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
-        {\bicaption@setup{##1}{##2}}%
+        {\bicaption@set{##1}{##2}}%
         {\def\lst@@caption{##1}\def\lst@caption{##2}}}%
     \let\lst@title\@empty}%
 %    \end{macrocode}
@@ -1821,7 +1851,7 @@
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
         {\def\lst@@caption{##1}\def\lst@caption{##2}}%
-        {\bicaption@setup{##1}{##2}}}%
+        {\bicaption@set{##1}{##2}}}%
     \let\lst@title\@empty}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1862,8 +1892,8 @@
     \bicaption@LT@setup}%
   \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
-      {\bicaption@setup{#1}{#2}}%
-      {\bicaption@setup{#3}{#4}}}%
+      {\bicaption@set{#1}{#2}}%
+      {\bicaption@set{#3}{#4}}}%
   \bicaption@ifswap
     {\egroup\bicaption@cmd[{#3}]{#4}}%
     {\egroup\bicaption@cmd[{#1}]{#2}}}
