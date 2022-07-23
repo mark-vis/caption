@@ -1,0 +1,64 @@
+% Issue: 151
+% Title: Re-add \caption@ifcompatibility macro
+% Date:  Jun 23, 2022 8:50pm GMT+0200
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/151
+
+% Hello Axel,
+%
+% I am by no measure an expert in LaTeX, but I am getting an error described below.
+%
+% I have some Tex code as follows from pandoc-fignos
+
+    \documentclass{article}
+    \usepackage{hyperref}
+
+    %% pandoc-fignos: required package
+    \usepackage{cleveref}
+
+    %%%% pandoc-fignos: required package
+    \usepackage{caption}
+
+    %% pandoc-fignos: change cref names
+    \crefname{figure}{Figure}{figs.}
+
+    %% pandoc-fignos: environment to disable figure caption prefixes
+    \makeatletter
+    \newcounter{figno}
+    \newenvironment{fignos:no-prefix-figure-caption}{
+      \caption@ifcompatibility{}{
+        \let\oldthefigure\thefigure
+        \let\oldtheHfigure\theHfigure
+        \renewcommand{\thefigure}{figno:\thefigno}
+        \renewcommand{\theHfigure}{figno:\thefigno}
+        \stepcounter{figno}
+        \captionsetup{labelformat=empty}
+      }
+    }{
+      \caption@ifcompatibility{}{
+        \captionsetup{labelformat=default}
+        \let\thefigure\oldthefigure
+        \let\theHfigure\oldtheHfigure
+        \addtocounter{figure}{-1}
+      }
+    }
+    \makeatother
+
+    \begin{document}
+    \begin{fignos:no-prefix-figure-caption}
+    ...
+    \end{fignos:no-prefix-figure-caption}
+    \end{document}
+
+% And I am getting this error:
+% Error producing PDF.
+% ! Undefined control sequence.
+% \fignos:no-prefix-figure-caption ...compatibility
+%                                                   {}{ \let \oldthefigure \th...
+% l.281 \begin{fignos:no-prefix-figure-caption}
+%
+%  I highlighted the offending line above.
+%
+%  This used to work and I think it started failing in a recent update to caption in MiKTeX.
+%
+%  Any advice?
+
