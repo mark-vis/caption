@@ -52,7 +52,8 @@ disable issues/gitlab/issue_65.tex        # Doomed to fail: frontiers document c
 disable unsorted                          # TODO
 
 disable --pdflatex \
-	issues/gitlab/issue_120.tex
+	issues/gitlab/issue_120.tex \
+	issues/gitlab/issue_152.tex
 
 disable --xelatex \
 	source/caption-rus.tex \

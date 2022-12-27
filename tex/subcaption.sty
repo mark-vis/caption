@@ -39,8 +39,10 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2007/12/06}
-\ProvidesPackage{subcaption}[2022/01/07 v1.5 Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2022/04/17 v1.6-dev Sub-captions (AR)]
 \RequirePackage{caption}[2010/01/09] % we need at least v3.1m
+\newcommand*\subcaption@Info{%
+  \PackageInfo{subcaption}}
 \newcommand*\subcaption@Warning{%
   \PackageWarning{subcaption}}
 \newcommand*\subcaption@Error[1]{%
@@ -51,22 +53,6 @@
   section about errors.\MessageBreak\@ehc}
 \newcommand*\subcaption@OutsideFloat[1]{%
   \subcaption@Error{\string#1 outside float}}
-\newcommand*\subcaption@CheckCompatibility{%
-  \@ifpackageloaded{subfigure}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfigure package}%
-    \endinput}{}%
-  \@ifpackageloaded{subfig}{%
-    \subcaption@Error
-      {This package can't be used in cooperation\MessageBreak
-       with the subfig package}%
-    \endinput}{}%
-}
-\subcaption@CheckCompatibility
-\caption@AtBeginDocument{%
-  \subcaption@CheckCompatibility
-  \let\subcaption@CheckCompatibility\@undefined}
 \providecommand\setcaptionsubtype{%
   \caption@iftype
     {\@ifstar{\captionsetup{subtype*}}{\captionsetup{subtype}}}%
@@ -82,7 +68,9 @@
      {\subcaption@OutsideFloat{subcaptiongroup*}}}
   {}
 \newcommand*\subcaption@minipage{%
-  \@testopt\subcaption@iminipage b}
+  \kernel@ifnextchar[%]
+    \subcaption@iminipage
+    {\caption@ifcaption{\subcaption@iminipage[t]}{\subcaption@iminipage[b]}}}
 \def\subcaption@iminipage[#1]{%
   \def\subcaption@tempa{\subcaption@iiminipage{#1}}%
   \caption@withoptargs\subcaption@tempa}
@@ -103,6 +91,8 @@
   \subcaption@endminipage@hook
   \endminipage}
 \providecommand*\@subfloatboxreset{}
+\providecommand*\caption@ifcaption{\caption@ifflag2} % caption >= v3.3 < v3.6
+\providecommand*\caption@ifflag[1]{\@secondoftwo}    % caption < v3.3
 \newenvironment{subcaptionblock}{\subcaption@minipage}{\subcaption@endminipage}
 \newcommand*\subcaption@newminipage[1]{%
   \newenvironment{#1}{\subcaption@minipage@{#1}}{\subcaption@endminipage}}
@@ -232,13 +222,19 @@
 \caption@ProcessOptions*{subcaption}
 \let\caption@setkeys\caption@setkeys@ORI
 \let\caption@setkeys@ORI\@undefined
+\newcommand*\subcaption@DeclareType[1]{%
+  \@ifundefined{c@sub#1}%
+    {\DeclareCaptionSubType{#1}}%
+    {\caption@subtypesource\caption@subtype@source{sub#1}%
+     \subcaption@Info{The counter `sub#1' was already defined by\MessageBreak\caption@subtype@source}}}
+\providecommand*\caption@subtypesource[2]{\def#1{a different package}} % caption3 v2.4
 \@ifundefined{ForEachCaptionType}      % caption3 v1.13
   {\@ifundefined{caption@ForEachType}  % caption3 v1.4a
-     {\@ifundefined{c@figure}{}{\DeclareCaptionSubType{figure}}%
-      \@ifundefined{c@table}{}{\DeclareCaptionSubType{table}}%
-      \caption@For{typelist}{\DeclareCaptionSubType{#1}}}
-     {\caption@ForEachType{\DeclareCaptionSubType{#1}}}}
-  {\ForEachCaptionType{\DeclareCaptionSubType{#1}}}
+     {\@ifundefined{c@figure}{}{\subcaption@DeclareType{figure}}%
+      \@ifundefined{c@table}{}{\subcaption@DeclareType{table}}%
+      \caption@For{typelist}{\subcaption@DeclareType{#1}}}
+     {\caption@ForEachType{\subcaption@DeclareType{#1}}}}
+  {\ForEachCaptionType{\subcaption@DeclareType{#1}}}
 \newcommand*\subcaption@newabbreviation[3]{%
   \newcommand*{#1}{%
     \caption@iftype
@@ -255,19 +251,40 @@
 \subcaption@newabbreviation\phantomsubcaption\phantomcaption\relax
 \subcaption@newabbreviation\subcaptionlistentry\captionlistentry\caption@gobble
 \subcaption@newabbreviation\subcaptiontext\captiontext\caption@gobble
-\@ifclassloaded{memoir}{\let\subfloat\undefined\let\endsubfloat\undefined}{}
+\providecommand*\caption@subfloatrow@hook{} % caption < v3.7
+\g@addto@macro\caption@subfloatrow@hook{%
+  \let\caption\subcaption
+  \let\phantomcaption\phantomsubcaption
+  \let\captionlistentry\subcaptionlistentry
+  \let\captiontext\subcaptiontext}
 \caption@AtBeginDocument{%
-  \providecommand*\subfloat{%
-    \kernel@ifnextchar[%]
-      \subcaption@subfloat
-      \subcaption@subfloat@}}
-\long\def\subcaption@subfloat[#1]{%
+  \begingroup
+    \newenvironment{subcaption@memoir@subfloat}{}{}%
+    \ifx\subfloat\subcaption@memoir@subfloat
+      \endgroup
+      % "subfloat" = empty environment, defined by memoir
+      \renewcommand*\subfloat{%
+        \def\subcaption@currenvir{subfloat}%
+        \ifx\@currenvir\subcaption@currenvir
+          % emulate (empty) subfloat environment
+        \else
+          \expandafter\subcaption@subfloat
+        \fi}%
+    \else
+      \endgroup
+      \providecommand*\subfloat{\subcaption@subfloat}%
+    \fi}
+\newcommand*\subcaption@subfloat{%
   \kernel@ifnextchar[%]
-    {\subcaption@@subfloat{#1}}%
-    {\subcaption@@@subfloat\subcaptionbox{#1}}}
-\long\def\subcaption@@subfloat#1[#2]{%
-  \subcaption@@@subfloat{\subcaptionbox[{#1}]}{#2}}
-\long\def\subcaption@@@subfloat#1#2#3{%
+    \subcaption@@subfloat
+    \subcaption@subfloat@}
+\long\def\subcaption@@subfloat[#1]{%
+  \kernel@ifnextchar[%]
+    {\subcaption@@@subfloat{#1}}%
+    {\subcaption@@subfloat@\subcaptionbox{#1}}}
+\long\def\subcaption@@@subfloat#1[#2]{%
+  \subcaption@@subfloat@{\subcaptionbox[{#1}]}{#2}}
+\long\def\subcaption@@subfloat@#1#2#3{%
   \subcaption@getlabel{#3}%
   #1{#2\caption@thelabel}{\let\label\caption@gobble#3}%
   \subcaption@clrlabel

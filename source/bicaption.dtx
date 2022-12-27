@@ -2,7 +2,7 @@
 % 
 % This is file `bicaption.dtx'.
 % 
-% Copyright (C) 2010-2021 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2010-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2022/01/07 v1.5 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2022/04/18 v1.5 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -224,7 +224,7 @@
 % To limit |bi|, |bi-first|, or |bi-second| options to specific environments one can use
 % multiple optional arguments for |\caption|\-|setup|, e.g.:
 % \begin{quote}
-%   |\captionsetup[figure][bi-first]|\oarg{options}
+%   |\captionsetup[figure][bi-first]|\marg{options}
 % \end{quote}
 % will limit the settings to the first heading of |figure| environments only.
 % Please note that the environment name (|figure|, |table|, \ldots) has to be specified
@@ -269,9 +269,14 @@
 %   making the first language the second one and vice versa. (The default is |false|.)
 %
 %   \item[bi-separator=]
-%   \begin{quote}|\captionsetup{bi-separator=|\meta{name}|}|\end{quote}
 %   \NEWfeature{v1.3}
-%   will select a separator between first and second bilingual caption.
+%   The vertical distance between the first and second bilingual caption is usually
+%   determined by the \TeX\ skips set by |\normal|\-|size| which is applied right
+%   before both captions get typesetted.
+%   (This behaviour is inherited from the original \LaTeX\ code for |\caption| which
+%   applies |\normal|\-|size| right before |\@make|\-|caption|, too.)
+%   \begin{quote}|\captionsetup{bi-separator=|\meta{name}|}|\end{quote}
+%   will select an additional separator between first and second bilingual caption.
 %   You could choose one of the following: `none' (which is the default one
 %   and could also be addressed as `default'), `smallskip', `medskip',
 %   `largeskip', or a self-defined one using
@@ -291,7 +296,15 @@
 %     |\DeclareBiCaptionSeparator{3pt}{\vspace{3pt}}|\\
 %     |\captionsetup{bi-separator=3pt}|
 %   \end{quote}
-%   will put |3pt| vertical space between the two bilingual captions.
+%   will place |3pt| extra vertical space between the two bilingual captions.
+%   \par\medskip
+%   \textit{Note:} In contrast to the original \LaTeX\ code for |\caption| the
+%   \package{caption} package does not apply |\normal|\-|size| directly
+%   but will apply the caption font definition |normal|\-|size| instead
+%   (which is usually defined as |\normal|\-|size|).
+%   Therefore the vertical space between both captions
+%   could also be influenced by redefining it, e.g.:
+%   |\Declare|\-|Caption|\-|Font{normal|\-|size}{|\ldots|}|
 % \end{Options}
 %
 % \section{The \cs{bicaption} commands}
@@ -988,7 +1001,7 @@
 % \fi
 %
 % \StopEventually{%^^A
-% \begin{thebibliography}{99}
+% \begin{thebibliography}{9}
 %
 %   \bibitem{caption}
 %   Axel Sommerfeldt:\\
@@ -1014,6 +1027,11 @@
 %        {\emph{The subcaption package}},\\
 %   2022/01/07
 %
+%   \bibitem{TLC2}
+%   Frank Mittelbach and Michel Goossens:\\
+%   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},\\
+%   \newblock Addison-Wesley, 2004.
+%
 % \end{thebibliography}
 % }
 %
@@ -1027,7 +1045,7 @@
 % \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
-% \DoNotIndex{\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
+% \DoNotIndex{\if@minipage,\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
 % \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
 % \DoNotIndex{\@removeelement,\@restorepar,\@secondoftwo,\@setpar}
@@ -1114,7 +1132,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{bicaption}[2021/05/02 v1.5b Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2022/04/18 v1.5c Bilingual Captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \package{caption} package we load it here.
@@ -1754,6 +1772,7 @@
 %
 % \begin{macro}{\caption@freeze}
 % \changes{v1.0}{2011/08/31}{Redefinition of \cs{caption@freeze} added}
+% \changes{v1.5c}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % To make |\bicaption| work inside |SCfigure| and |FPfigure| environments we need to add
 % |\bi|\-|caption| to |\caption@freeze|.
 %    \begin{macrocode}
@@ -1764,7 +1783,7 @@
       \def\bicaption{%
         \caption@withoptargs\caption@SC@bicaption}%
       \long\def\caption@SC@bicaption#1#2{%
-        \@ifnextchar[%]
+        \kernel@ifnextchar[%]
           {\caption@SC@bi@caption{#1}{#2}}%
           {\caption@SC@bi@caption@{#1}{#2}}}%
       \long\def\caption@SC@bi@caption#1#2[#3]#4{%
@@ -1874,25 +1893,6 @@
 }
 %    \end{macrocode}
 % \end{macro}
-%
-% \begin{thebibliography}{9}
-%   \bibitem{TLC2}
-%   Frank Mittelbach and Michel Goossens:\\
-%   \newblock {\em The {\LaTeX} Companion (2nd.~Ed.)},\\
-%   \newblock Addison-Wesley, 2004.
-%
-%   \bibitem{listings}
-%   Carsten Heinz \& Brooks Moses:\\
-%   \href{http://www.ctan.org/pkg/listings}%
-%        {\emph{The Listings Package}},\\
-%   2007/02/22
-%
-%   \bibitem{longtable}
-%   David Carlisle:\\
-%   \href{http://www.ctan.org/pkg/longtable}%
-%        {\emph{The longtable package}},\\
-%   2004/02/01
-% \end{thebibliography}
 %
 % \iffalse
 %</package>

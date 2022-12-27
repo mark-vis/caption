@@ -36,7 +36,7 @@
 %%   caption-thesis.sto, bicaption.sty, ltcaption.sty, subcaption.sty.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/10/26 v3.5g Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/07/10 v3.5i Customizing captions (AR)]
 \RequirePackage{caption3}[=2020/10/06] % needs v2.2b or newer
 \caption@ifbool{documentclass}{}{%
   \caption@WarningNoLine{%
@@ -231,6 +231,8 @@
                    {\ignorespaces\caption@makeanchor{#3}}\par
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
+\newcommand*\caption@before@parboxrestore{}
+\newcommand*\caption@after@parboxrestore{}
 \providecommand\memcaptioninfo[4]{}
 \newcommand*\caption@prepareanchor[2]{%
   \caption@makecurrent{#1}{#2}%
@@ -544,9 +546,10 @@
     \caption@setfnum{#1}}
 \newcommand\caption@beginex[3]{%
   \caption@begin{#1}%
-  \let\lst@@caption\relax
+  \caption@beginex@hook
   \caption@addcontentsline{#1}{#2}%
   \caption@ifempty{#3}{}}
+\newcommand*\caption@beginex@hook{}
 \newcommand*\caption@end{%
   \endgroup}
 \newcommand*\caption@setfnum[1]{%
@@ -787,7 +790,8 @@
   \newdimen\caption@adjustwidth@linewidth
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
-    \caption@adjustwidth@linewidth\linewidth}%
+    \caption@adjustwidth@linewidth\linewidth
+    \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
   \providecommand*\caption@patch@changepage[1]{%
     \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
     \expandafter\renewcommand\csname #1\endcsname[2]{%
@@ -802,7 +806,6 @@
         \hsize=\linewidth
       \fi
     \fi}%
-  \AtBeginCaption{\caption@test@adjustwidth}%
   }{}%
 \caption@IfPackageLoaded{chkfloat}[2012/08/19 v0.1]{%
   \caption@ifdefined\chkfloat@addcontentsline{%
@@ -1065,6 +1068,7 @@
   \def\lst@makecaption{\caption@starfalse\@makecaption}%
   \def\lst@maketitle{\caption@startrue\@makecaption\@empty}%
   \providecommand*\ext@lstlisting{lol}%
+  \l@addto@macro\caption@beginex@hook{\let\lst@@caption\relax}%
 }{}
 \providecommand*\LTcaptype{table}
 \providecommand*\caption@LT@array{}
@@ -1240,7 +1244,8 @@
     \caption@ORI@SC@zfloat{#1}{#2}{#3}[#4]%
     \SC@RestoreCommands
     \caption@freezetype{#2}%
-    \let\SC@label\label}%
+    \let\SC@label\label
+    \ignorespaces}%
   \providecommand*\SC@RestoreCommands{%
     \let\caption=\SC@orig@caption \let\label=\SC@orig@label}%
   \let\caption@ORI@endSC@FLOAT\endSC@FLOAT

@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{3781}
+% \CheckSum{3823}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2021/01/02 v2.3 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2021/01/02 v2.4 Implementation of the caption kernel]
 \hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -79,6 +79,7 @@
 % \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
 % \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
 % \let\class\puresf \let\package\puresf
+% \let\cls\puresf \let\pkg\puresf
 % \let\env\purett \let\opt\purett
 %
 % \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
@@ -179,7 +180,7 @@
 % \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
-% \DoNotIndex{\if@minipage\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
+% \DoNotIndex{\if@minipage,\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
 % \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@minipagefalse,\@minipagetrue}
 % \DoNotIndex{\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
@@ -264,10 +265,18 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2022/01/07 v2.3 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2022/04/18 v2.4-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
+%
+% \begin{macro}{\kernel@ifnextchar}
+% \changes{v1.1f}{2007/12/06}{Bugfix 07-12-06: This macro definition added (\cs{kernel@ifnextchar} was introduced in \LaTeXe\ 2004/01/23)}
+% \changes{v2.4}{2022/04/18}{This macro moved from package to kernel}
+%    \begin{macrocode}
+\@ifundefined{kernel@ifnextchar}{\let\kernel@ifnextchar\@ifnextchar}{}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\@nameundef}
 %   |\@nameundef|\marg{command name}\\
@@ -572,6 +581,7 @@
 % \begin{macro}{\caption@withoptargs}
 % \changes{v1.1}{2007/08/12}{This macro added}
 % \changes{v1.5}{2012/04/09}{This macro revised}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 %   |\caption@withoptargs|\marg{cmd}\\
 %   collects a star and all optional arguments, and expands \meta{cmd}
 %   afterwards with the collected stuff as first argument.
@@ -583,7 +593,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@@withoptargs#1{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     {\caption@@@withoptargs{#1}}%
     {\caption@@@@withoptargs{#1}}}
 %    \end{macrocode}
@@ -815,15 +825,6 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\ifcaptionsetup@star}
-% \changes{v1.2a}{2008/01/12}{This macro added}
-%   If the starred form of |\caption|\-|setup| is used, this will be set to |true|.
-%   (It will be reset to |false| at the end of |\caption@set|\-|keys|.)
-%    \begin{macrocode}
-\newif\ifcaptionsetup@star
-%    \end{macrocode}
-% \end{macro}
-%
 % \begin{macro}{\captionsetup}
 % \changes{v1.0a}{2004/01/17}{Bugfix: Missing \% added}
 % \changes{v1.1}{2007/07/22}{Starred-variant added}
@@ -832,7 +833,10 @@
 % \changes{v1.2a}{2008/01/12}{\cs{ifcaptionsetup@star} will be set now}
 % \changes{v1.5}{2012/04/09}{Support of multiple optional arguments added}
 % \changes{v1.8h}{2020/01/03}{Syntax check of saved options added}
-%   |\captionsetup*|\oarg{type}\ldots\marg{keyval-list of options}\\
+% \changes{v2.3b}{2022/03/17}{Usage of \cs{captionsetup} inside \cs{caption@setup@options@@} replaced by \cs{caption@setup@options@}}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
+% \changes{v2.4}{2022/04/18}{Usage of \cs{ifcaptionsetup@star} removed}
+%   |\captionsetup*|\oarg{type}\marg{keyval-list of options}\\
 %   applies the given list of options.
 %   If the optional argument `type' is specified, we simply save or append
 %   the option list, otherwise we `execute' it with |\set|\-|keys|.
@@ -845,32 +849,32 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\@captionsetup[1]{%
-  \captionsetup@startrue#1\captionsetup@starfalse
-  \@ifnextchar[%]
-    \caption@setup@options\caption@setup}
+  \kernel@ifnextchar[%]
+    {\caption@setup@options#1}%
+    {\caption@setup}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@setup{\caption@setkeys{caption}}
+\newcommand*\caption@setup{%
+  \caption@setkeys{caption}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\def\caption@setup@options[#1]{%
-  \@ifnextchar[%]
+\def\caption@setup@options#1[#2]{%
+  \kernel@ifnextchar[%]
     {\caption@stepthecounter
-     \caption@withoptargs{\@expandtwoargs
-       \caption@setup@options@i{#1}{@\caption@thecounter}}}%
-    {\caption@setup@options@{#1}}}
+     \@expandtwoargs\caption@setup@options@@{#2}{@\caption@thecounter}#1}%
+    {\caption@setup@options@#1{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@setup@options@i[4]{%
-  \caption@declare@option{#2}[]{\captionsetup#3{#4}}%
-  \caption@setup@options@{#1}{#2}}
+\def\caption@setup@options@@#1#2#3[#4]#5{%
+  \caption@declare@option{#2}[]{\caption@setup@options@\@gobble{#4}{#5}}%
+  \caption@setup@options@#3{#1}{#2}}
 %    \end{macrocode}
 %    \begin{macrocode}
-\newcommand*\caption@setup@options@[2]{%
+\newcommand*\caption@setup@options@[3]{%
   \@bsphack
-    \ifcaptionsetup@star\captionsetup@starfalse\else\caption@addtooptlist{#1}\fi
-    \caption@checkoptions{#2}%
-    \expandafter\caption@l@addto@list\csname caption@opt@#1\endcsname{#2}%
+    #1{\caption@addtooptlist{#2}}%
+    \caption@checkoptions{#3}%
+    \expandafter\caption@l@addto@list\csname caption@opt@#2\endcsname{#3}%
   \@esphack}
 %    \end{macrocode}
 % \end{macro}
@@ -1074,6 +1078,7 @@
 % \changes{v1.2a}{2008/01/12}{\cs{captionsetup@starfalse} added}
 % \changes{v1.2d}{2009/09/30}{Bugfix 09-09-29: Missing error handler will be defined automatically}
 % \changes{v1.4}{2011/08/24}{Redefinition of \cs{XKV@err} added}
+% \changes{v2.4}{2022/04/18}{\cs{captionsetup@starfalse} removed}
 %   |\caption@setkeys|\oarg{package}\marg{family}\marg{key-values}\\
 %   expands to |\setkeys|\marg{family}\marg{key-values},
 %   but lets the error messages not refer to the \package{keyval} package
@@ -1109,9 +1114,6 @@
   \expandafter\let\expandafter\KV@err\csname ORI@KV@err\caption@keydepth\endcsname
   \expandafter\let\expandafter\KV@errx\csname ORI@KV@errx\caption@keydepth\endcsname
   \expandafter\let\expandafter\XKV@err\csname ORI@XKV@err\caption@keydepth\endcsname
-%    \end{macrocode}
-%    \begin{macrocode}
-  \ifx\caption@keydepth\@empty \captionsetup@starfalse \fi
 %    \end{macrocode}
 %    \begin{macrocode}
   \@esphack}
@@ -1407,6 +1409,7 @@
 %
 % \begin{macro}{\caption@decl@package}
 % \changes{v2.0}{2020/07/26}{This macro added}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 %   |\caption@decl@package|\marg{option}\marg{cmd}\oarg{package}\marg{name}\ldots\\
 %   Helper command to declare a caption package option value which is dependent
 %   on the existence of a specific package, for example the |font| value
@@ -1414,7 +1417,7 @@
 %   package.
 %    \begin{macrocode}
 \newcommand*\caption@decl@package[2]{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     {\caption@declare@package{#1}{#2}}%
     {\caption@declarepackage{#1}{#2}}}
 \@onlypreamble\caption@decl@package
@@ -2280,7 +2283,7 @@
 % \begin{quote}
 %   |\renewcommand\fnum@figure[1]{\ignorespaces}|\quad
 % \end{quote}
-% (taken from \url{http://compgroups.net/comp.text.tex/figure-without-caption/1915079}).
+% (taken from \url{https://comp.text.tex.narkive.com/XkJnYryR/figure-without-caption}).
 %
 % We emulate the behaviour of |\@make|\-|caption| of the base document classes
 % \class{article}, \class{report}, and \class{book} in this regard (in |\caption@@@make|)
@@ -2838,12 +2841,15 @@
 \def\caption@position@b{\caption@position@bottom}
 \def\caption@position@below{\caption@position@bottom}
 %    \end{macrocode}
+%    \begin{macrocode}
+\DeclareCaptionPosition{auto}{#2}{\caption@autoposition{#1}{#2}}
+\def\caption@position@a{\caption@position@auto} % needed by floatrow package, \flrow@cappos
+%    \end{macrocode}
 %
 % \changes{v1.1}{2007/05/08}{Default position changed from `bottom' to `auto'}
-% \changes{v1.3}{2021/01/02}{Default position changed back from `auto' to `bottom'}
-% `default' usually maps to `bottom'.
+% `default' usually maps to `auto'.
 %    \begin{macrocode}
-\SetCaptionDefault{position}{bottom}
+\SetCaptionDefault{position}{auto}
 %    \end{macrocode}
 %
 % \begin{macro}{\caption@initposition}
@@ -2893,6 +2899,63 @@
     \caption@position % defines \caption@fallback@position and \caption@regular@position
     #1{\let\caption@@iftop\@firstoftwo}{\let\caption@@iftop\@secondoftwo}%
   \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setautoposition}
+% \changes{v1.1}{2007/06/10}{This macro added}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/03}{Adapted to current implementation of `auto'}
+%   |\caption@setautoposition|\marg{position}\\
+%   replaces the above algorithm by a different one (or a fixed position setting).
+%    \begin{macrocode}
+\newcommand*\caption@setautoposition[1]{%
+  \renewcommand*\caption@position@auto{%
+    \@nameuse{caption@position@#1}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@autoposition}
+% \changes{v1.0a}{2004/01/23}{\cs{ifvmode} added}
+% \changes{v1.0b}{2004/05/16}{Split into \cs{caption@fixposition} & \cs{caption@autoposition}}
+% \changes{v2.0}{2020/07/27}{Adapted to current implementation of `auto'}
+% \changes{v2.3}{2021/01/05}{Adapted to current implementation of `auto'; \cs{ifvmode} moved into definition of `auto'}
+% \changes{v2.3a}{2022/02/28}{\cs{ifvmode} moved back into this macro}
+%   We try to guess the current position of the caption by checking |\prev|\-|depth|.
+%
+%   A different solution would be setting the |\space|\-|factor| to something
+%   not much less than 1000 (for example 994) in |\caption@start| and
+%   checking this value here by |\ifnum\space|\-|factor=994|.
+%   (It's implemented in the \package{threeparttable} package\cite{threeparttable} this way.)
+%
+%   Another idea would be checking |\@if|\-|mini|\-|page|, but since some packages
+%   typeset the caption within a simple |\vbox| this does not seem to be a good one.
+%    \begin{macrocode}
+\newcommand*\caption@autoposition[2]{%
+  \ifvmode
+    \edef\caption@tempa{\the\prevdepth}%
+    \caption@Debug{\string\prevdepth=\caption@tempa}%
+    \ifdim\prevdepth>-\p@
+      #2% position=bottom
+    \else
+      #1% position=top
+    \fi
+  \else
+    #2% position=bottom
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\DeclareCaptionAutoPosition}
+% \changes{v2.3}{2021/01/05}{This macro added}
+% |\DeclareCaptionAutoPosition|\marg{code with \#1 and \#2}\\
+% replaces the inner algorithm of |position=auto| with a custom one.
+% If \#1 is applied the skip will be typeset below the caption
+% (like |position=t|), if \#2 is applied the skip will by typeset
+% above the caption (like |position=b|).
+%    \begin{macrocode}
+\newcommand*\DeclareCaptionAutoPosition{%
+  \renewcommand*\caption@autoposition[2]}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4326,6 +4389,7 @@
 % \changes{v1.3}{2011/07/07}{This macro added}
 % \changes{v1.4a}{2011/10/22}{This macro revised}
 % \changes{v2.3}{2021/07/03}{This macro re-written}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |base/ltfloat.dtx| but |\step|\-|counter|
 % is replaced by |\caption@l@step|\-|counter| so the footnote counter will
 % only be incremented temporarily for the single-line-check.
@@ -4336,7 +4400,7 @@
 % be sufficient for the single-line-check.))
 %    \begin{macrocode}
 \newcommand*\caption@footnote{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xfootnote
     {\caption@l@stepcounter\@mpfn
      \protected@xdef\@thefnmark{\thempfn}%
@@ -4347,12 +4411,13 @@
 % \begin{macro}{\caption@footnotemark}
 % \changes{v1.3}{2011/07/07}{This macro added}
 % \changes{v2.3}{2021/07/03}{This macro re-written}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |base/ltfloat.dtx| but |\step|\-|counter|
 % is replaced by |\caption@l@step|\-|counter| so the footnote counter will
 % only be incremented temporarily for the single-line-check.
 %    \begin{macrocode}
 \newcommand*\caption@footnotemark{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xfootnotemark
     {\caption@l@stepcounter{footnote}%
      \protected@xdef\@thefnmark{\thefootnote}%
@@ -4362,10 +4427,11 @@
 %
 % \begin{macro}{\caption@footnotetext}
 % \changes{v2.3}{2021/07/03}{This macro added}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |base/ltfloat.dtx|.
 %    \begin{macrocode}
 \newcommand*\caption@footnotetext{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xfootnotenext
     {\protected@xdef\@thefnmark{\thempfn}%
      \@footnotetext}}
@@ -4375,6 +4441,7 @@
 % \begin{macro}{\caption@endnote}
 % \changes{v1.8}{2018/01/21}{This macro added}
 % \changes{v2.3}{2021/07/03}{This macro re-written}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |endnotes/endnotes.sty| but |\step|\-|counter|
 % is replaced by |\caption@l@step|\-|counter| so the footnote counter will
 % only be incremented temporarily for the single-line-check.
@@ -4382,7 +4449,7 @@
 % |\step|\-|counter|.)
 %    \begin{macrocode}
 \newcommand*\caption@endnote{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xendnote
     {\caption@l@stepcounter{endnote}%
      \protected@xdef\@theenmark{\theendnote}%
@@ -4393,12 +4460,13 @@
 % \begin{macro}{\caption@endnotemark}
 % \changes{v1.8}{2018/01/21}{This macro added}
 % \changes{v2.3}{2021/07/03}{This macro re-written}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |endnotes/endnotes.sty| but |\step|\-|counter|
 % is replaced by |\caption@l@step|\-|counter| so the footnote counter will
 % only be incremented temporarily for the single-line-check.
 %    \begin{macrocode}
 \newcommand*\caption@endnotemark{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xendnotemark
     {\caption@l@stepcounter{endnote}%
      \protected@xdef\@theenmark{\theendnote}%
@@ -4408,10 +4476,11 @@
 %
 % \begin{macro}{\caption@endnotetext}
 % \changes{v2.3}{2021/07/03}{This macro added}
+% \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % The following code was taken from |endnotes/endnotes.sty|.
 %    \begin{macrocode}
 \newcommand*\caption@endnotetext{%
-  \@ifnextchar[%]
+  \kernel@ifnextchar[%]
     \@xendnotenext
     {\protected@xdef\@theenmark{\theendnote}%
      \@endnotetext}}
@@ -4692,6 +4761,8 @@
 % \changes{v1.13}{2020/07/28}{Uses \cs{caption@l@addto@list} instead of \cs{@cons} now}
 % \changes{v1.13}{2020/07/29}{Usage of \cs{caption@subtype@hook} added}
 % \changes{v1.13}{2020/07/29}{We don't re-use existing counters anymore (This was a bad idea anyway)}
+% \changes{v1.13b}{2022/04/06}{We don't re-use existing counters anymore (Part 2)}
+% \changes{v2.4}{2022/04/06}{If a counter is already defined the counter source will be included in the resulting error message}
 %   |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\\
 %   The starred variant provides the numbering format
 %   \meta{type}|.|\meta{subtype} while the non-starred variant simply uses
@@ -4703,7 +4774,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@declaresubtype[1]{%
-  \@testopt{\caption@@declaresubtype{#1}}{alph}}
+  \@testopt{\caption@@declaresubtype#1}{alph}}
 \@onlypreamble\caption@declaresubtype
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -4721,28 +4792,37 @@
 %   If not, define the counter and list entry.
 %    \begin{macrocode}
   \caption@ifdefined@subtype{#4}%
-    {\caption@Debug{Modify subtype `#4'}}%
-    {\caption@Debug{New subtype `#4'}%
-     \newcounter{#4}[{#3}]%
-     \@namedef{ext@#4}{\csname ext@#3\endcsname}%
-     \caption@declaresublistentry{#3}%
-     \caption@l@addto@list\caption@subtypelist{#4}%
-     \caption@subtype@hook{#4}}%
+    {\caption@Info{Modify subtype `#4'}}%
+    {\caption@Info{New subtype `#4'}%
+     \@ifundefined{c@#4}%
+       {\newcounter{#4}[#3]%
+        \@namedef{#4name}{}%
+        \@namedef{#4autorefname}{\csname #3autorefname\endcsname}%
+%    \end{macrocode}
+%    \begin{macrocode}
+        \@namedef{ext@#4}{\csname ext@#3\endcsname}%
+        \caption@declaresublistentry{#3}%
 %    \end{macrocode}
 %   Support of \package{titletoc} package
 %    \begin{macrocode}
-    \caption@ifdefined\contentsuse{%
-      \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
+        \caption@ifdefined\contentsuse{%
+          \contentsuse{#4}{\csname ext@#4\endcsname}}{}%
 %    \end{macrocode}
 %    \begin{macrocode}
-    \@namedef{#4name}{}%
-    \@namedef{#4autorefname}{\csname #3autorefname\endcsname}%
-    #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
+        \caption@l@addto@list\caption@subtypelist{#4}%
+        \caption@subtype@hook{#4}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+       {\caption@subtypesource\caption@subtype@source{#4}%
+        \caption@Error{The counter `#4' was already defined by\MessageBreak\caption@subtype@source}}}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  #1% is \@firstoftwo in star form, and \@secondoftwo otherwise
     {\@namedef{p@#4}{}%
      \@namedef{the#4}{\csname the#3\endcsname.\@nameuse{#2}{#4}}}%
     {\@namedef{p@#4}{\csname the#3\endcsname}%
      \@namedef{the#4}{\@nameuse{#2}{#4}}}%
-    \@namedef{theH#4}{\csname theH#3\endcsname.\arabic{#4}}}
+  \@namedef{theH#4}{\csname theH#3\endcsname.\arabic{#4}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \@onlypreamble\caption@@@declaresubtype
@@ -4823,6 +4903,21 @@
 %    \begin{macrocode}
 \newcommand*\caption@ifdefined@subtype{%
   \caption@ifin@list\caption@subtypelist}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@subtypesource}
+% \changes{v2.4}{2022/04/06}{This macro definition added}
+% |\caption@subtypesource|\marg{cmd}\marg{sub-type}\\
+% is used by |\Declare|\-|Caption|\-|Sub|\-|Type| to indicate what command and package
+% has defined the given sub-type.
+%    \begin{macrocode}
+\newcommand*\caption@subtypesource[2]{%
+  \caption@ifdefined@subtype{#2}%
+    {\def#1{\noexpand\DeclareCaptionSubType (offered by the caption package)}}%
+    {\caption@ifin@list\sf@counterlist{#2}%
+       {\def#1{\noexpand\newsubfloat (offered by the subfig package)}}%
+       {\def#1{an unknown document class or package}}}}
 %    \end{macrocode}
 % \end{macro}
 %

@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2020 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -32,7 +32,7 @@
 %   caption-deu.tex, caption-eng.tex, caption-rus.tex.
 % 
 % \fi
-% \CheckSum{2692}
+% \CheckSum{2703}
 %
 % \iffalse
 %<*driver>
@@ -174,7 +174,7 @@
 % \DoNotIndex{\@ehc,\@ehd,\@empty,\@esphack,\@expandtwoargs}
 % \DoNotIndex{\@for,\@firstofone,\@firstoftwo}
 % \DoNotIndex{\@gobble,\@gobblefour,\@gobbletwo,\@hangfrom}
-% \DoNotIndex{\if@minipage\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
+% \DoNotIndex{\if@minipage,\@ifnextchar,\@ifpackagelater,\@ifpackageloaded}
 % \DoNotIndex{\@ifstar,\@ifundefined,\@latex@error,\@minipagefalse,\@minipagetrue}
 % \DoNotIndex{\@namedef,\@nameuse}
 % \DoNotIndex{\@onlypreamble,\@parboxrestore,\@plus,\@ptionlist}
@@ -241,7 +241,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesPackage{caption}[2020/10/26 v3.5g Customizing captions (AR)]
+\ProvidesPackage{caption}[2022/07/10 v3.5i Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -767,6 +767,10 @@
                    {\ignorespaces\caption@makeanchor{#3}}\par
       \caption@if@minipage\@minipagetrue\@minipagefalse}%
   \caption@end}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@before@parboxrestore{}
+\newcommand*\caption@after@parboxrestore{}
 %    \end{macrocode}
 % \class{memoir} document class stuff:
 %    \begin{macrocode}
@@ -1610,19 +1614,23 @@
 % \changes{v3.0l}{2007/02/04}{Takes now 3 args instead of 2, check for empty heading added}
 % \changes{v3.1}{2007/07/01}{Makes lst-entry now instead of redefining \cs{addcontentsline}}
 % \changes{v3.2}{2010/10/26}{Bugfix 09-05-15: Setting of \cs{lst@@caption} added}
+% \changes{v3.5h}{2022/03/01}{Hook added, setting of \cs{lst@@caption} removed}
 %  |\caption@beginex|\marg{type}\marg{list entry}\marg{heading}\par
 %  performs the same tasks as |\caption@begin| and additionally:
 %  \begin{enumerate}
-%  \item[4.] Set |\lst@@caption|, so |\fnum@lstlisting| will include a numbering.
+%  \item[4.] Apply the hook |\caption@beginex@hook|
 %  \item[5.] Make an entry in the list-of-whatever.
 %  \item[6.] Set |\caption@ifempty| according argument \meta{heading}.
 % \end{enumerate}
 %    \begin{macrocode}
 \newcommand\caption@beginex[3]{%
   \caption@begin{#1}%
-  \let\lst@@caption\relax
+  \caption@beginex@hook
   \caption@addcontentsline{#1}{#2}%
   \caption@ifempty{#3}{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@beginex@hook{}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2243,11 +2251,13 @@
 %
 % \begin{macro}{\caption@set@adjustwidth}
 % \changes{v3.4k}{2020/05/30}{This macro and its usage added}
+% \changes{v3.5h}{2022/03/01}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@beginex@hook}}
 % Store the values of \cs{hsize} and \cs{linewidth}.
 %    \begin{macrocode}
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
-    \caption@adjustwidth@linewidth\linewidth}%
+    \caption@adjustwidth@linewidth\linewidth
+    \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\caption@patch@changepage[1]{%
@@ -2273,9 +2283,6 @@
         \hsize=\linewidth
       \fi
     \fi}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \AtBeginCaption{\caption@test@adjustwidth}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3154,7 +3161,17 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\lst@@caption}
+% \changes{v3.1}{2007/03/03}{This macro added}
 % \changes{v3.1a}{2007/07/13}{Bugfix 07-09-13: \cs{lst@@caption} will not be re-defined anymore}
+% \changes{v3.2}{2010/10/26}{Bugfix 09-05-15: Setting of \cs{lst@@caption} added to \cs{caption@beginex}}
+% \changes{v3.5h}{2022/03/01}{Re-definition of \cs{lst@@caption} moved from \cs{caption@beginex} to \cs{caption@beginex@hook}}
+% We define |\lst@@caption| to non-|\@empty|, so |\fnum@lst|\-|listing| will
+% include a numbering.
+%    \begin{macrocode}
+  \l@addto@macro\caption@beginex@hook{\let\lst@@caption\relax}%
+%    \end{macrocode}
+% \end{macro}
 %
 %    \begin{macrocode}
 }{}
@@ -3745,6 +3762,7 @@
 % \changes{v3.1c}{2007/10/06}{\cs{caption} will be saved \& restored now}
 % \changes{v3.2a}{2011/08/17}{Bugfix: Uses \cs{caption@freeze} instead of \cs{caption@freeze*} now}
 % \changes{v3.3}{2013/05/01}{Usage of \cs{caption@freeze} replaced by \cs{caption@freezetype}}
+% \changes{v3.5i}{2022/07/10}{\cs{ignorespaces} appended}
 %  This macro will be called at the start of the environment, here is a good
 %  opportunity to do some adaptations to |\caption| and |\captionsetup|.
 %    \begin{macrocode}
@@ -3758,7 +3776,7 @@
     \SC@RestoreCommands
 %    \end{macrocode}
 %  Since the sidecap package uses our |\caption| code outside the
-%  environment the regular |\captionsetup| will not work.
+%  environment the regular |\caption|\-|setup| will not work.
 %  So we need a special version here which saves the given argument list
 %  which will be executed later on.
 %  Furthermore we need to make |\caption*| work.
@@ -3768,7 +3786,12 @@
 % The sidecap package uses |\ifx\label\SC@label| to test if it is just inside a
 % |SC|\-|figure| or not. So we redefine |\SC@label| here so this test will still work.
 %    \begin{macrocode}
-    \let\SC@label\label}%
+    \let\SC@label\label
+%    \end{macrocode}
+% Since the original definition of |\SC@zfloat| ends with |\begin{lrbox}| which ends with |\ignore|\-|spaces|,
+% we do have to end our re-definition of |\SC@zfloat| with |\ignore|\-|spaces| as well.
+%    \begin{macrocode}
+    \ignorespaces}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\SC@RestoreCommands{%
