@@ -1,0 +1,73 @@
+% Issue: 158
+% Title: add support for algorithm environment in bicaption package
+% Date:  Feb 17, 2023 8:47am GMT+0100
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/158
+
+% We hope to have bilingual captions for algorithm environment (provided by the algorithm package). For example, use the \captionsetup command:
+%
+% \captionsetup[algorithm][bi-first]{  % Chinese caption
+%     subrefformat=parens,
+%     labelsep=Twospace,
+%     font=CapFont,
+%     skip=1bp,
+%     name=算法  % Chinese characters meaning "algorithm"
+% }
+% \captionsetup[algorithm][bi-second]{  % English caption
+%     subrefformat=parens,
+%     labelsep=Twospace,
+%     font=CapFont,
+%     skip=1bp,
+%     name=Algo.
+% }
+%
+% Now the \bicaption{示例算法}{Example} looks like this:
+%
+% ---------------------------------------------------------------
+% Algorithm 1 示例算法    -> should be "算法 1 示例算法"
+% Algorithm 1 Example    -> should be "Algo. 1 Example"
+% ---------------------------------------------------------------
+
+\documentclass{report}
+\usepackage{algorithm,bicaption,subcaption}
+\DeclareCaptionFont{CapFont}{\large}
+\DeclareCaptionLabelSeparator{Twospace}{  }
+
+% Check: "name=..." should set \fname@<type> as well:
+\makeatletter
+\newcommand\checkfloatname[1]{%
+  \edef\@tempa{\@nameuse{fname@\@captype}}%
+  \edef\@tempb{#1}%
+  \ifx\@tempa\@tempb
+    \typeout{OK: \@tempa\space == \@tempb}%
+  \else
+    \typeout{******* NOT OK: \@tempa\space != \@tempb}%
+    \PackageError{caption}{NOT OK: \@tempa\space != \@tempb}{}%
+  \fi}
+\g@addto@macro\caption@prepare@optioncheck{%
+  \let\checkfloatname\@gobble}
+\makeatother
+\DeclareCaptionOption{checkname}{\checkfloatname{#1}}
+
+\captionsetup[algorithm][bi-first]{  % Chinese caption
+    subrefformat=parens,
+    labelsep=Twospace,
+    font=CapFont,
+    skip=1bp,
+    name=CH-Algo.,  % Chinese characters meaning "algorithm"
+    checkname=CH-Algo.
+}
+\captionsetup[algorithm][bi-second]{  % English caption
+    subrefformat=parens,
+    labelsep=Twospace,
+    font=CapFont,
+    skip=1bp,
+    name=Algo.,
+    checkname=Algo.
+}
+\begin{document}
+\begin{algorithm}
+\bicaption{CH-Example}{Example}
+Some text...
+\end{algorithm}
+\end{document}
+

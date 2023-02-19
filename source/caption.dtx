@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2866}
+% \CheckSum{2870}
 %
 % \iffalse
 %<*driver>
@@ -4592,7 +4592,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/07/03 v3.6h Customizing captions (AR)]
+\ProvidesPackage{caption}[2023/02/19 v3.6i Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -6956,27 +6956,39 @@
 % \begin{macro}{\caption@float@setname}
 % \changes{v3.1}{2007/07/08}{float package hook added}
 % \changes{v3.4b}{2019/12/16}{Renamed from \cs{caption@typehook} to \cs{caption@float@setname}}
+% \changes{v3.6i}{2023/02/19}{Uses \cs{def} instead of \cs{let} now}
 %  \LaTeX\ and almost every other packages use
 %    |\|\meta{type}|name|
 %  to provide a macro for the type resp.~environment name -- for example
-%  the command |\figurename| will usually contain the name of the floating
+%  the command |\figure|\-|name| will usually contain the name of the floating
 %  environment |figure|:
 %  \begin{quote}
 %    |\newcommand\figurename{Figure}|
 %  \end{quote}
 %  But the \package{float} package doesn't follow this common naming
 %  convention:
-%  For floats defined with |\newfloat| it uses |\fname@|\meta{type} instead,
-%  which breaks with our code (and with |\autoref| and some other things as
+%  For floats defined with |\new|\-|float| it uses |\fname@|\meta{type} instead,
+%  which breaks with our code (and with |\auto|\-|ref| and some other things as
 %  well).
 %  So we have to map the \package{float} package name to the common one here.\par
 %  \Note{If the float was not defined with \cs{newfloat} but with
 %  \cs{restylefloat} instead, \cs{fname@}\meta{type} is not defined.}
 %    \begin{macrocode}
   \newcommand*\caption@float@setname[1]{%
-    \expandafter\ifx\csname #1name\endcsname\relax
-      \expandafter\let\csname #1name\expandafter\endcsname\csname fname@#1\endcsname
+    \expandafter\ifx\csname #1name\endcsname\relax % either undefined or \relax
+      \@namedef{#1name}{\@nameuse{fname@#1}}%
     \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setname}
+% \changes{v3.6i}{2023/02/19}{Re-definition of \cs{caption@setname} added to \pkg{float} package support}
+% Same problem as in |\caption@float@set|\-|name|, but other direction:
+% If the option |name=| is used, we should set |\fname@|\meta{type}, too.
+%    \begin{macrocode}
+  \renewcommand*\caption@setname[2]{%
+    \@ifundefined{fname@#1}{}{\caption@ifdefined\floatname\floatname\@gobbletwo{#1}{#2}}%
+    \@namedef{#1name}{#2}}%
 %    \end{macrocode}
 % \end{macro}
 %
