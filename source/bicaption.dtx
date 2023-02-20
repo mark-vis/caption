@@ -2,7 +2,7 @@
 % 
 % This is file `bicaption.dtx'.
 % 
-% Copyright (C) 2010-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2010-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{626}
+% \CheckSum{642}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{bicaption.drv}[2022/04/18 v1.5 Adds a bilingual caption feature to the caption package]
+\ProvidesFile{bicaption.drv}[2023/02/19 v1.6 Adds a bilingual caption feature to the caption package]
 \hbadness=9999 \newcount\hbadness \hfuzz=74pt % Make TeX shut up.
 %\errorcontextlines=3
 %
@@ -62,8 +62,8 @@
 \ifpdf\usepackage{hypdestopt}\fi
 \hypersetup{pdfkeywords={LaTeX, package, bicaption},pdfstartpage={},pdfstartview={}}
 %
-\usepackage{bicaption}[2016/03/27]
-\usepackage{subcaption}[2016/02/21]
+\usepackage{bicaption}[2023/02/19]
+\usepackage{subcaption}[2023/02/19]
 %
 \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
 \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
@@ -143,8 +143,7 @@
 %   |\usepackage|\oarg{options}|{bicaption}|\quad.
 % \end{quote}
 % The options for \thispackage\ are the same ones as for the \package{caption}
-% package and specify settings which are used for the second language
-% \emph{additionally}.
+% package and specify settings which are used for the second language \emph{additionally}.
 % In fact
 % \begin{quote}
 %   |\usepackage|\oarg{options}|{bicaption}|
@@ -152,44 +151,41 @@
 % is identical to
 % \begin{quote}
 %   |\usepackage{bicaption}|\\
-%   |\captionsetup[bi-second]|\marg{options}\quad.
+%   |\bicaptionsetup{}|\marg{options}\quad.
 % \end{quote}
 %
 % When used with the \package{babel} or \package{polyglossia} package, the
 % \package{bicaption} package should be loaded \emph{after} it, so the main
 % language will be set automatically. See \autoref{sec:babel} for details.
 %
+% \pagebreak[3]
 % \section{Setting options}
 % \label{sec:options}
 %
-% \DescribeMacro\captionsetup
-% The command
-% \begin{quote}
-%   |\captionsetup[bi]|\marg{options}
-% \end{quote}
-% does setup options which will be used for bilanguage captions \emph{additionally}
-% to the ones which are setup for the specific floating environment.
+% \DescribeMacro\bicaptionsetup
+% \NEWfeature*{v1.6}
+% The |\bicaptionsetup| command sets options specifically for bilingual captions.
 %
 % \begin{quote}
-%   |\captionsetup[bi-first]|\marg{options}
+%   |\bicaptionsetup|\marg{options for 1st language}\marg{options for 2nd language}
 % \end{quote}
-% does setup options which will be used for the \emph{first} heading
-% of the bilanguage captions \emph{additionally}
-% to the ones which are setup for the specific floating environment
-% and the ones which are setup by |\captionsetup[bi]{|\ldots|}|.
+% sets options which will be used for the first resp.\ second heading
+% of the bilingual captions \emph{additionally} to the ones which are setup for the
+% specific floating environment.
 %
+% \medskip
+%
+% To limit bilingual options to specific environments one can use
+% an optional argument for |\bi|\-|caption|\-|setup|, e.g.:
 % \begin{quote}
-%   |\captionsetup[bi-second]|\marg{options}
+%   |\bicaptionsetup[figure]{|\ldots|}{|\ldots|}|
 % \end{quote}
-% does setup options which will be used for the \emph{second} heading
-% of the bilanguage captions \emph{additionally}
-% to the ones which are setup for the specific floating environment
-% and the ones which are setup by |\captionsetup[bi]{|\ldots|}|.
+% will limit the settings to the bilingual headings of |figure| environments only.
 %
 % \bigskip
 %
 % Options specified with |\use|\-|package[|\ldots|]{bi|\-|cap|\-|tion}| and
-% |\cap|\-|tion|\-|setup[bi|\ldots|]{|\ldots|}| will override the ones specified by
+% |\bi|\-|cap|\-|tion|\-|setup{|\ldots|}{|\ldots|}| will override the ones specified by
 % |\cap|\-|tion|\-|setup{|\ldots|}| and |\cap|\-|tion|\-|setup[fig|\-|ure]{|\ldots|}|
 % (same for `table'). So finally we have the following order how
 % settings for bilingual captions are applied:
@@ -200,12 +196,10 @@
 %  {\small(|\captionsetup[figure|\emph{ -or- }|table]{|\ldots|}|)}
 % \item Local settings
 %  {\small(|\captionsetup{|\ldots|}| inside |figure| or |table| environment)}
-% \item Custom `bi' settings
-%  {\small(|\captionsetup[bi]{|\ldots|}|)}
-% \item Custom `bi-first' resp.~`bi-second' settings
-%  {\small(|\usepackage[|\ldots|]{bicaption}| and
-%          |\caption|\-|setup[bi-first]{|\ldots|}|
-%    resp.~|\caption|\-|setup[bi-second]{|\ldots|}|)}
+% \item Custom bilingual settings
+%  {\small(|\usepackage[|\ldots|]{bicaption}| and |\bicaptionsetup{|\ldots|}{|\ldots|}|)}
+% \item Environmental bilingual settings
+%  {\small(|\bicaptionsetup[figure|\emph{ -or- }|table]{|\ldots|}{|\ldots|}|)}
 % \end{enumerate}
 % An example:
 % \begin{quote}
@@ -219,17 +213,29 @@
 %   |labelsep=quad,indention=10pt,position=top,labelfont=bf|~.
 % \end{quote}
 %
-% \bigskip
-%
-% To limit |bi|, |bi-first|, or |bi-second| options to specific environments one can use
-% multiple optional arguments for |\caption|\-|setup|, e.g.:
+% \begin{background}
+% Internally the |\bi|\-|caption|\-|setup| uses the |\caption|\-|setup| command, i.e.
 % \begin{quote}
-%   |\captionsetup[figure][bi-first]|\marg{options}
+%   |\bicaptionsetup|\marg{options for 1st language}\marg{options for 2nd language}
 % \end{quote}
-% will limit the settings to the first heading of |figure| environments only.
-% Please note that the environment name (|figure|, |table|, \ldots) has to be specified
-% as first optional argument while the bilingual selection (|bi|, |bi-first|, or |bi-second|)
-% as second one.
+% is identical to
+% \begin{quote}
+%   |\captionsetup[bi-first]|\marg{options for 1st language}\\
+%   |\captionsetup[bi-second]|\marg{options for 2nd language}
+% \end{quote}
+% and
+% \begin{quote}
+%   |\bicaptionsetup[figure]{|\ldots|}{|\ldots|}|
+% \end{quote}
+% is identical to
+% \begin{quote}
+%   |\captionsetup[figure][bi-first]{|\ldots|}|\\
+%   |\captionsetup[figure][bi-second]{|\ldots|}| \quad .
+% \end{quote}
+% Prior to \version{1.6} of this package this was the way options had to be specified.
+% This still works (and will continue to work in the future), but is not recommended,
+% |\bi|\-|caption|\-|setup| should be used instead.
+% \end{background}
 %
 % \section{Additional options}
 % \label{sec:additional-options}
@@ -307,6 +313,12 @@
 %   |\Declare|\-|Caption|\-|Font{normal|\-|size}{|\ldots|}|
 % \end{Options}
 %
+% \emph{Important:}
+% All options starting with `bi-' must be applied using |\caption|\-|setup| and
+% \emph{NOT} using |\bi|\-|caption|\-|setup|.
+% This is because they do not alter the setting of the caption for the 1st or 2nd language specifically,
+% but instead alter the behaviour how bilingual captions are set in general.
+%
 % \section{The \cs{bicaption} commands}
 % \label{sec:bicaption}
 %
@@ -318,6 +330,8 @@
 %   |\bicaption*|\marg{heading \#1}\marg{heading \#2}
 % \end{quote}
 % The |\label| should be placed either after this command, or inside the first heading.
+%
+% \medskip
 %
 % \DescribeMacro\bicaptionbox
 % Bilingual caption boxes will be typeset by
@@ -600,7 +614,7 @@
 % For internal implementation reasons the selection of language will be done delayed,
 % i.e.~not done immediately at |lang=|\meta{language}. So if you do
 % \begin{quote}
-%   |\captionsetup[bi-second]{lang=ngerman,labelsep=quad}|
+%   |\bicaptionsetup{}{lang=ngerman,labelsep=quad}|
 % \end{quote}
 % the language |ngerman| will only be stored internally, and the label separator will
 % be set to |quad| afterwards. Some time later, right before the caption is actually
@@ -609,7 +623,7 @@
 % Usually this is no problem, but think of options which will be overwritten by the
 % language selection, or options which act on the language currently set, for example
 % \begin{quote}
-%   |\captionsetup[bi-second]{lang=ngerman,name=Bild}|\quad.
+%   |\bicaptionsetup{}{lang=ngerman,name=Bild}|\quad.
 % \end{quote}
 % |lang=ngerman| changes the environment name to ``Abbildung'', and |name=Bild|
 % changes the environment name to ``Bild''. One would expect that the name is
@@ -629,7 +643,7 @@
 % will be done by \thispackage\ automatically, since the environment name will usually
 % be overwritten by a language selection. So actually
 % \begin{quote}
-%   |\captionsetup[bi-second]{lang=ngerman,name=Bild}|
+%   |\bicaptionsetup{}{lang=ngerman,name=Bild}|
 % \end{quote}
 % will give the expected result, i.e. the environment name is typeset as ``Bild''.
 %
@@ -897,8 +911,7 @@
 % \end{quote}
 %
 % \pagebreak[3]
-% \captionsetup[bi-first]{lang=german}
-% \captionsetup[bi-second]{lang=english,font=it}
+% \bicaptionsetup{lang=german}{lang=english,font=it}
 % \captionsetup[sub]{format=hang,list=on}
 %
 % \iffalse
@@ -1132,7 +1145,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{bicaption}[2022/04/18 v1.5c Bilingual Captions (AR)]
+\ProvidesPackage{bicaption}[2023/02/19 v1.6-dev Bilingual Captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \package{caption} package we load it here.
@@ -1397,7 +1410,7 @@
 %    \end{macrocode}
 %    \begin{macrocode}
   \ifcsname captionmainlanguage\endcsname
-    \captionsetup[bi-first]{lang=\captionmainlanguage}%
+    \captionsetup*[bi-first]{lang=\captionmainlanguage}%
   \else
     \ifcsname bicaption@language@value\endcsname % option "lang=" was used
       \expandafter\bicaption@Warning
@@ -1430,7 +1443,7 @@
 % We use |\caption@Process|\-|Options| here to add the options to the `|bi-second|' option
 % list instead of executing them immediately.
 %    \begin{macrocode}
-\caption@SetupOptions{bicaption}{\captionsetup[bi-second]{#2}}%
+\caption@SetupOptions{bicaption}{\captionsetup*[bi-second]{#2}}%
 \caption@ProcessOptions*{bicaption}
 %    \end{macrocode}
 %
@@ -1596,6 +1609,31 @@
 % \pagebreak[3]
 % \subsubsection{The \cs{bicaption} commands}
 %
+% \begin{macro}{\bicaptionsetup}
+% \changes{v1.6}{2022/04/18}{This macro added}
+% |\bicaptionsetup*|\oarg{type}\marg{keyval-list of options 1}\marg{keyval-list of options 2}\\
+% applies the given list of options.
+%    \begin{macrocode}
+\newcommand*\bicaptionsetup{%
+  \caption@teststar\@bicaptionsetup*{}} 
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\@bicaptionsetup[1]{%
+  \kernel@ifnextchar[%]
+    {\bicaption@setup@options{#1}}%
+    {\bicaption@setup*}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\bicaption@setup@options#1[#2]{%
+  \bicaption@setup{#1[{#2}]}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\bicaption@setup[2]{%
+  \captionsetup#1[bi-first]{#2}%
+  \captionsetup#1[bi-second]}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\bicaption}
 % |\bicaption*|\oarg{list entry \#1}\marg{text \#1}\oarg{list entry \#2}\marg{text \#2}
 %    \begin{macrocode}
@@ -1654,9 +1692,9 @@
 \long\def\@@@@bicaption#1#2[#3]#4{%
   \bicaption@getlabel{#2}%
   \bicaption@ifswap
-    {\bicaption@setup{#1}{#2}%
+    {\bicaption@set{#1}{#2}%
      \bicaption@cmd[{#3}]{#4}}%
-    {\bicaption@setup{#3}{#4}%
+    {\bicaption@set{#3}{#4}%
      \bicaption@cmd[{#1}]{#2}}}
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1749,12 +1787,13 @@
 %    \end{macrocode}
 % \end{macro}
 %
-% \begin{macro}{\bicaption@setup}
-% |\bicaption@setup|\marg{list-entry}\marg{text}\\
+% \begin{macro}{\bicaption@set}
+% \changes{v1.6}{2022/04/18}{This macro renamed from \cs{bicaption@setup} to \cs{bicaption@set}}
+% |\bicaption@set|\marg{list-entry}\marg{text}\\
 % initiates the bilingual caption typesetting by storing the extra texts into
 % |\bi|\-|caption@l|\-|entry| and |\bi|\-|caption@text|.
 %    \begin{macrocode}
-\newcommand\bicaption@setup[2]{%
+\newcommand\bicaption@set[2]{%
   \def\bicaption@lentry{#1}%
   \def\bicaption@text{\ignorespaces #2}}
 %    \end{macrocode}
@@ -1762,7 +1801,7 @@
 %
 % \begin{macro}{\bicaption@clear}
 % |\bicaption@clear|\\
-% clears the stuff stored by |\bicaption@setup|.
+% clears the stuff stored by |\bicaption@set|.
 %    \begin{macrocode}
 \newcommand*\bicaption@clear{%
   \let\bicaption@lentry\@undefined
@@ -1812,7 +1851,7 @@
   \lst@Key{caption1}\relax{%
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
-        {\bicaption@setup{##1}{##2}}%
+        {\bicaption@set{##1}{##2}}%
         {\def\lst@@caption{##1}\def\lst@caption{##2}}}%
     \let\lst@title\@empty}%
 %    \end{macrocode}
@@ -1821,7 +1860,7 @@
     \lstKV@OptArg[{#1}]{#1}{%
       \bicaption@ifswap
         {\def\lst@@caption{##1}\def\lst@caption{##2}}%
-        {\bicaption@setup{##1}{##2}}}%
+        {\bicaption@set{##1}{##2}}}%
     \let\lst@title\@empty}%
 %    \end{macrocode}
 %    \begin{macrocode}
@@ -1862,8 +1901,8 @@
     \bicaption@LT@setup}%
   \gdef\bicaption@LT@setup{%
     \bicaption@ifswap
-      {\bicaption@setup{#1}{#2}}%
-      {\bicaption@setup{#3}{#4}}}%
+      {\bicaption@set{#1}{#2}}%
+      {\bicaption@set{#3}{#4}}}%
   \bicaption@ifswap
     {\egroup\bicaption@cmd[{#3}]{#4}}%
     {\egroup\bicaption@cmd[{#1}]{#2}}}
