@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2871}
+% \CheckSum{2920}
 %
 % \iffalse
 %<*driver>
@@ -4592,7 +4592,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2023/02/19 v3.6i Customizing captions (AR)]
+\ProvidesPackage{caption}[2023/03/12 v3.6j Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \subsection{Loading the kernel}
@@ -6755,47 +6755,45 @@
 \caption@IfPackageLoaded{changepage}[2008/07/23 memoir-v3.7k]{%
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@patch@adjustwidth}
+% \changes{v3.4k}{2020/05/30}{This macro definition added}
+% \changes{v3.6j}{2023/03/12}{\cs{ignorespaces} added to environment re-definition}
 % Both environments, \env{adjustwidth} and \env{adjustwidth*}, are starting a \env{list} \cs{item}.
 % But \cs{hsize} isn't set properly inside a \env{list} item, and therefore \cs{@makecaption}
 % (offered by document classes) doesn't work properly when used inside \env{adjustwidth}.
-% Therefore we try to detect the situation ``Are we inside a adjustwidth environment?''
+% Therefore we try to detect the situation ``Are we inside a \env{adjustwidth} environment?''
 % inside \cs{@makecaption} and fix this. (Sigh!)
-%
-% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
-% not be done within a \cs{parbox} within a adjustwidth environment for example,
-% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
-% against the stored values instead. If they are equal we are (hopefully) quite save
-% to assume that we are now inside a plain \env{adjustwidth} environment and therefore need
-% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
-%
-% \begin{macro}{\caption@adjustwidth@hsize}
-% \begin{macro}{\caption@adjustwidth@linewidth}
 %    \begin{macrocode}
-  \newdimen\caption@adjustwidth@hsize
-  \newdimen\caption@adjustwidth@linewidth
+  \providecommand*\caption@patch@adjustwidth[1]{%
+    \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\renewcommand\csname #1\endcsname[2]{%
+      \@nameuse{caption@#1}{##1}{##2}%
+      \caption@set@adjustwidth
+      \ignorespaces}}%
+  \caption@patch@adjustwidth{adjustwidth}%
+  \caption@patch@adjustwidth{adjustwidth*}%
+  \let\caption@patch@adjustwidth\relax
 %    \end{macrocode}
-% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@set@adjustwidth}
 % \changes{v3.4k}{2020/05/30}{This macro definition added}
 % \changes{v3.5h}{2022/03/01}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@beginex@hook}}
-% Store the values of \cs{hsize} and \cs{linewidth}.
+% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
+% not be done within a \cs{parbox} within a \env{adjustwidth} environment for example,
+% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
+% against the stored values instead. If they are equal we are (hopefully) quite save
+% to assume that we are now inside a plain \env{adjustwidth} environment and therefore need
+% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
+%    \begin{macrocode}
+  \newdimen\caption@adjustwidth@hsize
+  \newdimen\caption@adjustwidth@linewidth
+%    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
     \caption@adjustwidth@linewidth\linewidth
     \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \providecommand*\caption@patch@changepage[1]{%
-    \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
-    \expandafter\renewcommand\csname #1\endcsname[2]{%
-      \@nameuse{caption@#1}{##1}{##2}%
-      \caption@set@adjustwidth}}%
-  \caption@patch@changepage{adjustwidth}%
-  \caption@patch@changepage{adjustwidth*}%
-  \let\caption@patch@changepage\relax
 %    \end{macrocode}
 % \end{macro}
 %
@@ -8365,6 +8363,82 @@
 %
 %    \begin{macrocode}
 }{}
+%    \end{macrocode}
+%
+% \subsubsection{The scrextend package}
+% \changes{v3.6j}{2023/03/12}{Patch of the \package{scrextend} package added}
+%
+% \begin{macro}{\caption@IfKomaPackageLoaded}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+%    \begin{macrocode}
+\caption@ifdefined\scr@caption{%
+  \long\def\caption@IfKomaPackageLoaded#1[#2]#3#4{%
+    \caption@InfoNoLine{KOMA-Script #1 package detected}
+    #3}}{%
+  \let\caption@IfKomaPackageLoaded\caption@IfPackageLoaded
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@IfKomaPackageLoaded{scrextend}[2002/07/01 v3.0]{%
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@patch@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% Both environments, \env{addmargin} and \env{addmargin*}, are starting a \env{list} \cs{item}.
+% But \cs{hsize} isn't set properly inside a \env{list} item, and therefore \cs{@makecaption}
+% (offered by document classes) doesn't work properly when used inside \env{addmargin}.
+% Therefore we try to detect the situation ``Are we inside a \env{addmargin} environment?''
+% inside \cs{@makecaption} and fix this. (Sigh!)
+%    \begin{macrocode}
+  \let\caption@addmargin@env\@addmargin
+  \renewcommand*\@addmargin{%
+    \@testopt\caption@@addmargin\@tempa}%
+  \def\caption@@addmargin[#1]#2{%
+    \caption@addmargin@env[{#1}]{#2}%
+    \caption@set@addmargin
+    \ignorespaces}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@set@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
+% not be done within a \cs{parbox} within a \env{addmargin} environment for example,
+% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
+% against the stored values instead. If they are equal we are (hopefully) quite save
+% to assume that we are now inside a plain \env{addmargin} environment and therefore need
+% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
+%    \begin{macrocode}
+  \newdimen\caption@addmargin@hsize
+  \newdimen\caption@addmargin@linewidth
+%    \end{macrocode}
+%    \begin{macrocode}
+  \providecommand*\caption@set@addmargin{%
+    \caption@addmargin@hsize\hsize
+    \caption@addmargin@linewidth\linewidth
+    \l@addto@macro\caption@beginex@hook\caption@test@addmargin}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@test@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% Test if the values of \cs{hsize} and \cs{linewidth} are identical to
+% the ones stored in the \env{addmargin} environment.
+% If yes, set \cs{hsize} to the correct value.
+%    \begin{macrocode}
+  \providecommand\caption@test@addmargin{%
+    \ifdim\hsize=\caption@addmargin@hsize
+      \ifdim\linewidth=\caption@addmargin@linewidth
+        \hsize=\linewidth
+      \fi
+    \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+  }{}%
 %    \end{macrocode}
 %
 % \subsubsection{The sidecap package}

@@ -1,0 +1,57 @@
+% Issue: 161
+% Title: KOMA-Script's addmargin environment in combination with caption command
+% Date:  Mar 11, 2023 7:01pm GMT+0100
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/161
+% SX:    https://tex.stackexchange.com/questions/678676/koma-scripts-addmargin-environment-in-combination-with-caption-command
+
+% I want to use KOMA-Script's addmargin environment (oneside document only) to sometimes write stuff using the full width of my document, which is divided into 2/3rd text area and 1/3rd margin.
+%
+% This works... until I realized the caption command doesn't take the whole width as I want, see (my current code (only the necessary parts I think)):
+%
+\documentclass[fontsize=12pt,twoside=false,paper=a4,DIV=15,BCOR=0mm,twocolumn=false,footinclude=true,headinclude=true,mpinclude=false]{scrreprt}% KOMAScript
+\AfterCalculatingTypearea{%
+    %% Margin
+    \addtolength{\evensidemargin}{-\marginparwidth}%
+    \addtolength{\textwidth}{\marginparwidth}%
+    \setlength{\marginparwidth}{.333\textwidth}%
+    \addtolength{\textwidth}{-\marginparwidth}%
+    \addtolength{\evensidemargin}{\marginparwidth}%
+}\recalctypearea%
+
+
+\newlength{\overhang}%
+\setlength{\overhang}{\marginparwidth}%
+\addtolength{\overhang}{\marginparsep}%
+\newenvironment{fullwidth}{%
+    \begin{addmargin}[0em]{-\overhang}%
+}{%
+    \end{addmargin}%
+}%
+
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage[list=off]{caption} % "list=off" added since \lipsum is fragile in old implementations
+
+\usepackage{float}
+\usepackage{showframe}
+\usepackage{lipsum}
+\begin{document}
+    %% Works as intended
+    \lipsum[1]
+    \begin{fullwidth}
+        \lipsum[1]
+    \end{fullwidth}
+    %% Problem with caption
+    \newpage
+    \begin{figure}[H]\centering
+        \includegraphics[width=0.5\linewidth]{example-image-a}
+        \caption{This caption is centered as it should be. \lipsum[1]}
+    \end{figure}
+    \begin{figure}[H]
+        \begin{fullwidth}\centering
+            \includegraphics[width=0.5\linewidth]{example-image-a}
+            \caption{The image is centered, but the caption is NOT ugh... \lipsum[1]}
+        \end{fullwidth}
+    \end{figure}
+\end{document}
+
