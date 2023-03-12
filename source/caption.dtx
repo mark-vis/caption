@@ -2,7 +2,7 @@
 % 
 % This is file `caption.dtx'.
 % 
-% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -31,32 +31,16 @@
 % 
 % \fi
 %
-% \CheckSum{2866}
+% \CheckSum{2920}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
 \ProvidesFile{caption.drv}[2022/03/27 v3.6 The caption package]
-\hbadness=9999 \newcount\hbadness \hfuzz=100pt % Make TeX shut up.
 %\errorcontextlines=3
 %
-\documentclass{ltxdoc}
-\setlength\parindent{0pt}
-\setlength\parskip{\smallskipamount}
-\setlength\leftmargini{2em}% default = 2.5em
-\renewcommand\partname{Part}
-%
-\usepackage{ifpdf}
-\ifpdf
-  \usepackage{mathptmx,courier}
-  \usepackage[scaled=0.90]{helvet}
-  \addtolength\marginparwidth{15pt}
-\fi
-%
-\usepackage{hypdoc}
-\ifpdf\usepackage{hypdestopt}\fi
-\hypersetup{pdfkeywords={LaTeX, package, caption},pdfstartpage={},pdfstartview={}}
-\hypersetup{breaklinks=true}
+\documentclass{captiondoc}
+\hypersetup{pdfkeywords={LaTeX, package, caption}}
 %
 \usepackage[listof=false,hypcap=false]{caption}[2022/01/06]
 %
@@ -65,31 +49,6 @@
 \end{document}
 %</driver>
 % \fi
-%
-% \DeclareRobustCommand*\eTeX{\leavevmode\hbox{$\varepsilon$}-\TeX}
-% \DeclareRobustCommand*\KOMAScript{\textsf{K\kern.05em O\kern.05em M\kern.05em A\kern.1em-\kern.1em Script}}
-%
-% \iffalse
-% ----------------------------------------------------------------------------------------------- %
-% \fi
-%
-% \makeatletter
-% \newcommand*\NEWfeature{\NEW{New feature}}
-% \newcommand*\NEW[1]{\@ifstar{\NEWi{#1}{\vskip2pt}}{\NEWi{#1}{}}}
-% \newcommand*\NEWi[3]{\MARGINSYM{#2\footnotesize#1\\#3}}
-% \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
-% \makeatother
-%
-% \newcommand*\purerm[1]{{\upshape\mdseries\rmfamily #1}}
-% \newcommand*\puresf[1]{{\upshape\mdseries\sffamily #1}}
-% \newcommand*\purett[1]{{\upshape\mdseries\ttfamily #1}}
-% \let\cls\puresf \let\pkg\puresf
-% \let\env\purett \let\opt\purett
-%
-% \newcommand*\csmarg[1]{\texttt{\char`\{#1\char`\}}}
-% \newcommand*\csoarg[1]{\texttt{\char`\[#1\char`\]}}
-% \newcommand*\issue[1]{GitLab issue~\##1}
-% \newcommand*\version[2][]{v$#2$}
 %
 % \iffalse
 % ----------------------------------------------------------------------------------------------- %
@@ -1016,7 +975,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2022/07/03 v3.6h Customizing captions (AR)]
+\ProvidesPackage{caption}[2023/03/12 v3.6j Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -3179,47 +3138,45 @@
 \caption@IfPackageLoaded{changepage}[2008/07/23 memoir-v3.7k]{%
 %    \end{macrocode}
 %
+% \begin{macro}{\caption@patch@adjustwidth}
+% \changes{v3.4k}{2020/05/30}{This macro definition added}
+% \changes{v3.6j}{2023/03/12}{\cs{ignorespaces} added to environment re-definition}
 % Both environments, \env{adjustwidth} and \env{adjustwidth*}, are starting a \env{list} \cs{item}.
 % But \cs{hsize} isn't set properly inside a \env{list} item, and therefore \cs{@makecaption}
 % (offered by document classes) doesn't work properly when used inside \env{adjustwidth}.
-% Therefore we try to detect the situation ``Are we inside a adjustwidth environment?''
+% Therefore we try to detect the situation ``Are we inside a \env{adjustwidth} environment?''
 % inside \cs{@makecaption} and fix this. (Sigh!)
-%
-% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
-% not be done within a \cs{parbox} within a adjustwidth environment for example,
-% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
-% against the stored values instead. If they are equal we are (hopefully) quite save
-% to assume that we are now inside a plain \env{adjustwidth} environment and therefore need
-% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
-%
-% \begin{macro}{\caption@adjustwidth@hsize}
-% \begin{macro}{\caption@adjustwidth@linewidth}
 %    \begin{macrocode}
-  \newdimen\caption@adjustwidth@hsize
-  \newdimen\caption@adjustwidth@linewidth
+  \providecommand*\caption@patch@adjustwidth[1]{%
+    \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\renewcommand\csname #1\endcsname[2]{%
+      \@nameuse{caption@#1}{##1}{##2}%
+      \caption@set@adjustwidth
+      \ignorespaces}}%
+  \caption@patch@adjustwidth{adjustwidth}%
+  \caption@patch@adjustwidth{adjustwidth*}%
+  \let\caption@patch@adjustwidth\relax
 %    \end{macrocode}
-% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@set@adjustwidth}
 % \changes{v3.4k}{2020/05/30}{This macro definition added}
 % \changes{v3.5h}{2022/03/01}{Usage of \cs{AtBeginCaption} replaced by \cs{l@addto@macro}\cs{caption@beginex@hook}}
-% Store the values of \cs{hsize} and \cs{linewidth}.
+% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
+% not be done within a \cs{parbox} within a \env{adjustwidth} environment for example,
+% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
+% against the stored values instead. If they are equal we are (hopefully) quite save
+% to assume that we are now inside a plain \env{adjustwidth} environment and therefore need
+% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
+%    \begin{macrocode}
+  \newdimen\caption@adjustwidth@hsize
+  \newdimen\caption@adjustwidth@linewidth
+%    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\caption@set@adjustwidth{%
     \caption@adjustwidth@hsize\hsize
     \caption@adjustwidth@linewidth\linewidth
     \l@addto@macro\caption@beginex@hook\caption@test@adjustwidth}%
-%    \end{macrocode}
-%    \begin{macrocode}
-  \providecommand*\caption@patch@changepage[1]{%
-    \expandafter\let\csname caption@#1\expandafter\endcsname\csname #1\endcsname
-    \expandafter\renewcommand\csname #1\endcsname[2]{%
-      \@nameuse{caption@#1}{##1}{##2}%
-      \caption@set@adjustwidth}}%
-  \caption@patch@changepage{adjustwidth}%
-  \caption@patch@changepage{adjustwidth*}%
-  \let\caption@patch@changepage\relax
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3380,27 +3337,39 @@
 % \begin{macro}{\caption@float@setname}
 % \changes{v3.1}{2007/07/08}{float package hook added}
 % \changes{v3.4b}{2019/12/16}{Renamed from \cs{caption@typehook} to \cs{caption@float@setname}}
+% \changes{v3.6i}{2023/02/19}{Uses \cs{def} instead of \cs{let} now}
 %  \LaTeX\ and almost every other packages use
 %    |\|\meta{type}|name|
 %  to provide a macro for the type resp.~environment name -- for example
-%  the command |\figurename| will usually contain the name of the floating
+%  the command |\figure|\-|name| will usually contain the name of the floating
 %  environment |figure|:
 %  \begin{quote}
 %    |\newcommand\figurename{Figure}|
 %  \end{quote}
 %  But the \pkg{float} package doesn't follow this common naming
 %  convention:
-%  For floats defined with |\newfloat| it uses |\fname@|\meta{type} instead,
-%  which breaks with our code (and with |\autoref| and some other things as
+%  For floats defined with |\new|\-|float| it uses |\fname@|\meta{type} instead,
+%  which breaks with our code (and with |\auto|\-|ref| and some other things as
 %  well).
 %  So we have to map the \pkg{float} package name to the common one here.\par
 %  \Note{If the float was not defined with \cs{newfloat} but with
 %  \cs{restylefloat} instead, \cs{fname@}\meta{type} is not defined.}
 %    \begin{macrocode}
   \newcommand*\caption@float@setname[1]{%
-    \expandafter\ifx\csname #1name\endcsname\relax
-      \expandafter\let\csname #1name\expandafter\endcsname\csname fname@#1\endcsname
+    \expandafter\ifx\csname #1name\endcsname\relax % either undefined or \relax
+      \@namedef{#1name}{\@nameuse{fname@#1}}%
     \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@setname}
+% \changes{v3.6i}{2023/02/19}{Re-definition of \cs{caption@setname} added to \pkg{float} package support}
+% Same problem as in |\caption@float@set|\-|name|, but other direction:
+% If the option |name=| is used, we should set |\fname@|\meta{type}, too.
+%    \begin{macrocode}
+  \renewcommand*\caption@setname[2]{%
+    \@ifundefined{fname@#1}{}{\caption@ifdefined\floatname\floatname\@gobbletwo{#1}{#2}}%
+    \@namedef{#1name}{#2}}%
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4779,6 +4748,82 @@
 }{}
 %    \end{macrocode}
 %
+% \subsection{The scrextend package}
+% \changes{v3.6j}{2023/03/12}{Patch of the \pkg{scrextend} package added}
+%
+% \begin{macro}{\caption@IfKomaPackageLoaded}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+%    \begin{macrocode}
+\caption@ifdefined\scr@caption{%
+  \long\def\caption@IfKomaPackageLoaded#1[#2]#3#4{%
+    \caption@InfoNoLine{KOMA-Script #1 package detected}
+    #3}}{%
+  \let\caption@IfKomaPackageLoaded\caption@IfPackageLoaded
+  }
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+\caption@IfKomaPackageLoaded{scrextend}[2002/07/01 v3.0]{%
+%    \end{macrocode}
+%
+% \begin{macro}{\caption@patch@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% Both environments, \env{addmargin} and \env{addmargin*}, are starting a \env{list} \cs{item}.
+% But \cs{hsize} isn't set properly inside a \env{list} item, and therefore \cs{@makecaption}
+% (offered by document classes) doesn't work properly when used inside \env{addmargin}.
+% Therefore we try to detect the situation ``Are we inside a \env{addmargin} environment?''
+% inside \cs{@makecaption} and fix this. (Sigh!)
+%    \begin{macrocode}
+  \let\caption@addmargin@env\@addmargin
+  \renewcommand*\@addmargin{%
+    \@testopt\caption@@addmargin\@tempa}%
+  \def\caption@@addmargin[#1]#2{%
+    \caption@addmargin@env[{#1}]{#2}%
+    \caption@set@addmargin
+    \ignorespaces}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@set@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% We cannot simply set and test a flag here since our adjustment to \cs{hsize} should
+% not be done within a \cs{parbox} within a \env{addmargin} environment for example,
+% and therefore we store \cs{hsize} and \cs{linewidth}, and test \cs{hsize} and \cs{linewidth}
+% against the stored values instead. If they are equal we are (hopefully) quite save
+% to assume that we are now inside a plain \env{addmargin} environment and therefore need
+% to fix \cs{hsize} before typesetting the caption. (Deep sigh!)
+%    \begin{macrocode}
+  \newdimen\caption@addmargin@hsize
+  \newdimen\caption@addmargin@linewidth
+%    \end{macrocode}
+%    \begin{macrocode}
+  \providecommand*\caption@set@addmargin{%
+    \caption@addmargin@hsize\hsize
+    \caption@addmargin@linewidth\linewidth
+    \l@addto@macro\caption@beginex@hook\caption@test@addmargin}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@test@addmargin}
+% \changes{v3.6j}{2023/03/12}{This macro definition added}
+% Test if the values of \cs{hsize} and \cs{linewidth} are identical to
+% the ones stored in the \env{addmargin} environment.
+% If yes, set \cs{hsize} to the correct value.
+%    \begin{macrocode}
+  \providecommand\caption@test@addmargin{%
+    \ifdim\hsize=\caption@addmargin@hsize
+      \ifdim\linewidth=\caption@addmargin@linewidth
+        \hsize=\linewidth
+      \fi
+    \fi}%
+%    \end{macrocode}
+% \end{macro}
+%
+%    \begin{macrocode}
+  }{}%
+%    \end{macrocode}
+%
 % \subsection{The sidecap package}
 %
 %    \begin{macrocode}
@@ -4792,6 +4837,7 @@
 % \changes{v3.1c}{2007/10/06}{\cs{caption} will be saved \& restored now}
 % \changes{v3.2a}{2011/08/17}{Bugfix: Uses \cs{caption@freeze} instead of \cs{caption@freeze*} now}
 % \changes{v3.3}{2013/05/01}{Usage of \cs{caption@freeze} replaced by \cs{caption@freezetype}}
+% \changes{v3.6i}{2022/07/10}{\cs{ignorespaces} appended}
 %  This macro will be called at the start of the environment, here is a good
 %  opportunity to do some adaptations to |\caption| and |\captionsetup|.
 %    \begin{macrocode}
@@ -4805,7 +4851,7 @@
     \SC@RestoreCommands
 %    \end{macrocode}
 %  Since the sidecap package uses our |\caption| code outside the
-%  environment the regular |\captionsetup| will not work.
+%  environment the regular |\caption|\-|setup| will not work.
 %  So we need a special version here which saves the given argument list
 %  which will be executed later on.
 %  Furthermore we need to make |\caption*| work.
@@ -4815,7 +4861,12 @@
 % The sidecap package uses |\ifx\label\SC@label| to test if it is just inside a
 % |SC|\-|figure| or not. So we redefine |\SC@label| here so this test will still work.
 %    \begin{macrocode}
-    \let\SC@label\label}%
+    \let\SC@label\label
+%    \end{macrocode}
+% Since the original definition of |\SC@zfloat| ends with |\begin{lrbox}| which ends with |\ignore|\-|spaces|,
+% we do have to end our re-definition of |\SC@zfloat| with |\ignore|\-|spaces| as well.
+%    \begin{macrocode}
+    \ignorespaces}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \providecommand*\SC@RestoreCommands{%

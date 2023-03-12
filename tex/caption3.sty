@@ -6,7 +6,7 @@
 %%
 %% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -45,7 +45,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2022-02-20}                    % for caption v3.6
-\ProvidesPackage{caption3}[2022/04/18 v2.4-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2023/03/12 v2.4 caption3 kernel (AR)]
 \@ifundefined{kernel@ifnextchar}{\let\kernel@ifnextchar\@ifnextchar}{}
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
@@ -576,7 +576,8 @@
 \newcommand*\caption@stepthecounter{%
   \@tempcnta\caption@thecounter
   \advance\@tempcnta\@ne\relax
-  \xdef\caption@thecounter{\the\@tempcnta}}
+  \xdef\caption@thecounter{\the\@tempcnta}%
+  \global\let\caption@ifoddpage\caption@ifoddpage@}
 \newcommand*\caption@newlabel{\@newl@bel{caption@r}}
 \newcommand*\caption@thepage{\the\c@page}
 \newcommand*\caption@label[1]{%
@@ -590,20 +591,20 @@
 \newcommand*\caption@pageref[1]{%
   \expandafter\ifx\csname caption@r@#1\endcsname\relax
     \G@refundefinedtrue % => 'There are undefined references.'
-    \@latex@warning{Reference `#1' on page \thepage \space undefined}%
+    \@latex@warning{Reference `caption@#1' on page \thepage \space undefined}%
   \else
     \expandafter\let\expandafter\caption@thepage\csname caption@r@#1\endcsname
   \fi}
-\newcommand*\caption@ifoddpage{%
+\newcommand*\caption@ifoddpage@{%
   \caption@iftwoside{%
     \caption@label\caption@thecounter
     \caption@pageref\caption@thecounter
     \ifodd\caption@thepage
-      \let\caption@ifoddpage\@firstoftwo
+      \global\let\caption@ifoddpage\@firstoftwo
     \else
-      \let\caption@ifoddpage\@secondoftwo
+      \global\let\caption@ifoddpage\@secondoftwo
     \fi
-  }{\let\caption@ifoddpage\@firstoftwo}%
+  }{\global\let\caption@ifoddpage\@firstoftwo}%
   \caption@ifoddpage}
 \newcommand*\caption@setoptcmd[2]{%
   \caption@ifinlist{#2}{0,false,no,off}{\let#1\@undefined}{\def#1{#2}}}
