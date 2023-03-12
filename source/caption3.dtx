@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3823}
+% \CheckSum{3830}
 %
 % \iffalse
 %<*driver>
@@ -265,7 +265,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2022/04/18 v2.4-dev caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2023/03/12 v2.4-dev caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -1692,6 +1692,7 @@
 % \changes{v1.0n}{2007/04/03}{This counter added}
 % \changes{v1.1e}{2007/10/28}{Renamed from \cs{caption@counter} to \cs{caption@thecounter}; \cs{caption@stepcounter} added}
 % \changes{v1.5}{2012/04/09}{\cs{caption@stepcounter} renamed to \cs{caption@stepthecounter}}
+% \changes{v2.4}{2023/03/12}{Definition of \cs{caption@ifoddpage} added to \cs{caption@stepthecounter}}
 %   Internal counter.
 %   At the moment it will be used inside |\caption@if|\-|odd|\-|page| only.
 %    \begin{macrocode}
@@ -1701,7 +1702,8 @@
 \newcommand*\caption@stepthecounter{%
   \@tempcnta\caption@thecounter
   \advance\@tempcnta\@ne\relax
-  \xdef\caption@thecounter{\the\@tempcnta}}
+  \xdef\caption@thecounter{\the\@tempcnta}%
+  \global\let\caption@ifoddpage\caption@ifoddpage@}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1748,7 +1750,8 @@
 %
 % \begin{macro}{\caption@pageref}
 % \changes{v1.1}{2007/09/01}{This macro added}
-% \changes{v1.2d}{2009/10/09}{Uses \cs{@latex@warning} instead of \cs{caption@Warning} now}
+% \changes{v1.2d}{2009/10/09}{Uses \cs{@latex@warning} instead of \cs{caption@Warning}}
+% \changes{v2.4}{2023/03/12}{The warning refers to \texttt{caption@NUM} instead of \texttt{NUM}}
 %   |\caption@pageref|\marg{name}\\
 %   This command is a modified version of |\page|\-|ref| from \LaTeX2e.
 %   It will be used inside |\caption@if|\-|odd|\-|page| and |\FP@help|\-|Note|.
@@ -1756,7 +1759,7 @@
 \newcommand*\caption@pageref[1]{%
   \expandafter\ifx\csname caption@r@#1\endcsname\relax
     \G@refundefinedtrue % => 'There are undefined references.'
-    \@latex@warning{Reference `#1' on page \thepage \space undefined}%
+    \@latex@warning{Reference `caption@#1' on page \thepage \space undefined}%
   \else
     \expandafter\let\expandafter\caption@thepage\csname caption@r@#1\endcsname
   \fi}
@@ -1766,24 +1769,25 @@
 % \begin{macro}{\caption@ifoddpage}
 % \changes{v1.0n}{2007/04/03}{This macro added}
 % \changes{v1.1e}{2007/10/28}{Incrementation of counter moved to \cs{caption@@make}}
+% \changes{v2.4}{2023/03/12}{Multiple use for the same counter will be handled correctly}
 %   Currently this macro uses an own label\ldots ref mechanism,
 %   but an alternative implementation method would use the
 %   \package{refcount} package\cite{refcount} and
 %   |\ifodd\get|\-|page|\-|ref|\-|number{|\ldots|}|.
 %   Maybe we will change that in a later release.
-%   \Note{This macro re-defines itself so the \texttt{.aux} file will
-%     only be used once per group.}
+%   \Note{This macro re-defines itself so the \texttt{.aux} file will only be used once per group.
+%         This re-definition will be reset in \cs{caption@stepthecounter}.}
 %    \begin{macrocode}
-\newcommand*\caption@ifoddpage{%
+\newcommand*\caption@ifoddpage@{%
   \caption@iftwoside{%
     \caption@label\caption@thecounter
     \caption@pageref\caption@thecounter
     \ifodd\caption@thepage
-      \let\caption@ifoddpage\@firstoftwo
+      \global\let\caption@ifoddpage\@firstoftwo
     \else
-      \let\caption@ifoddpage\@secondoftwo
+      \global\let\caption@ifoddpage\@secondoftwo
     \fi
-  }{\let\caption@ifoddpage\@firstoftwo}%
+  }{\global\let\caption@ifoddpage\@firstoftwo}%
 %    \end{macrocode}
 %    \begin{macrocode}
   \caption@ifoddpage}
