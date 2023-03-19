@@ -49,6 +49,7 @@
 \def\@longref#1#2{#1{#2}: \textit{\nameref{#2}}}
 
 \newcommand*\See[1]{\nopagebreak{\small (See #1)}}
+\newcommand*\SeeAlso[1]{\nopagebreak{\small (See also #1)}}
 
 \newenvironment{Options}[1]%
   {\list{}{\renewcommand\makelabel[1]{\texttt{##1}\hfil}%

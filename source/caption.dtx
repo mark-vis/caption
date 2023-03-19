@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2022/03/27 v3.6 The caption package]
+\ProvidesFile{caption.drv}[2023/03/19 v3.6 The caption package]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -132,7 +132,7 @@
 % \clearpage
 % \section*{About this documentation}
 %
-% Surely you have already noted that this package documentation is actually quite long.
+% Surely you have already noted that this documentation is actually quite long.
 % But please don't worry, you don't have to read all of it.
 % To help you guide through this documentation it is divided into four parts:
 %
@@ -158,7 +158,7 @@
 %
 % If you may have found a bug or an incompatibility where there should be no one please don't
 % hesitate to either open an issue at \url{https://gitlab.com/axelsommerfeldt/caption/-/issues}
-% or send me an e-mail to \url{mailto:axel.sommerfeldt@f-m.fm}.
+% or send me an e-mail to \href{mailto:axel.sommerfeldt@f-m.fm}{\texttt{axel.sommerfeldt@f-m.fm}}.
 %
 % \iffalse
 % ----------------------------------------------------------------------------------------------- %
@@ -208,6 +208,7 @@
 % are equal in their results.
 %
 % \section{Option scope}
+% \label{optionscope}
 %
 % \pagebreak[3]
 % Options are divided into
@@ -217,11 +218,11 @@
 % \item Context-specific options -- Using |\captionsetup|\oarg{context}\marg{options} settings
 %                         could be changed for a specific context, for example
 %                         |\captionsetup[figure]|\marg{options} will setup options which
-%                         are applied at the beginning of each |figure| environment,
+%                         are applied \emph{at the beginning} of each |figure| environment,
 %                         overriding global ones.
 % \item Local options --  Options given within any \LaTeX\ environment are applied immediately
 %                         (like global options) but their scope is limited to the current environment.
-%                         They override both, global and context-specific options.
+%                         They override both, global and (usually) context-specific options.
 % \end{itemize}
 %
 % \pagebreak[3]
@@ -232,13 +233,14 @@
 %   |\captionsetup[figure]{font=it}|\\
 %   |\begin{document}|\\
 %   |\begin{figure}|\\
-%   \ldots\\
-%   |\captionsetup{margin=20pt}|\\
-%   |\caption{A figure}|\\
+%   |  |\ldots\\
+%   |  \captionsetup{margin=20pt}|\\
+%   |  |\ldots\\
+%   |  \caption{A figure}|\\
 %   |\end{figure}|\\
 %   |\begin{table}|\\
-%   |\caption{A table}|\\
-%   \ldots\\
+%   |  \caption{A table}|\\
+%   |  |\ldots\\
 %   |\end{table}|\\
 %   |\end{document}|
 % \end{quote}
@@ -264,10 +266,12 @@
 % \begin{quote}
 %   |\captionsetup|\oarg{context}\marg{options}
 % \end{quote}
-% are not applied but stored for the given \meta{context}. They could be applied later on manually with
+% are not applied immediately but stored for the given \meta{context} instead.
+% They could be applied later on manually with
 % \begin{quote}
-%   |\captionsetup{options=|\meta{context}|}|
+%   |\captionsetup{options=|\meta{context}|}|\quad,
 % \end{quote}
+% for example in own macros (defined via |\new|\-|command|) or environments (defined via |\new|\-|environment|).
 %
 % \section{Compatibility}
 %
@@ -312,17 +316,23 @@
 % \subsection{Document classes}
 %
 % \pagebreak[3]
-% The \pkg{caption} package is adapted to the following document classes:
+% The \pkg{caption} package is adapted to the following document classes (and document classes derived from them):
 % \begin{itemize}
-% \item The standard document classes \cls{article}, \cls{report}, \cls{book},
-%       and document classes derived from them
-% \item ... (TODO)
+% \item The standard document classes \cls{article}, \cls{report}, \cls{book}
+% \item The \AmS\ document classes \cls{amsart}, \cls{amsbook}, and \cls{alsproc}
+% \item The \cls{beamer} class for producing presentations and slides
+% \item The \cls{elsarticle} class for articles for submission to Elsevier journals
+% \item The \KOMAScript\ document classes \cls{scrarticle}, \cls{scrreport}, and \cls{scrbook.cls}
+% \item The \cls{memoir} document class for typesetting poetry, fiction, non-fiction, and mathematical works
+% \item The \NTG\ document classes \cls{artikel}, \cls{rapport}, and \cls{boek}
+% \item The \SmF\ document classes \cls{smfart} and \cls{smfbook}
+% \item The \cls{thesis} document class from CTAN
 % \end{itemize}
 %
 % \pagebreak[3]
 % The \pkg{caption} package is known to be \emph{incompatible} to the following document classes:
 % \begin{quote}
-%   \cls{tufte}, ... (TODO)
+%   \cls{revtex} and \cls{tufte}
 % \end{quote}
 %
 % \subsection{Packages}
@@ -330,7 +340,16 @@
 % \pagebreak[3]
 % The \pkg{caption} package is adapted to the following packages:
 % \begin{quote}
-%   \pkg{float}, ... (TODO)
+%   \pkg{changepage}, \pkg{chkfloat}, \pkg{float}, \pkg{floatflt}, \pkg{fltpage}, \pkg{hyperref},
+%   \pkg{listings}, \pkg{longtable}, \pkg{picinpar}, \pkg{picins}, \pkg{rotating},
+%   \pkg{scrextend}, \pkg{sidecap}, \pkg{subfigure}, \pkg{supertabular},
+%   \pkg{threeparttable}, \pkg{wrapfig}, and \pkg{xtab}
+% \end{quote}
+%
+% \pagebreak[3]
+% The following packages are adapted to the \pkg{caption} package, and therefore compatible as well:
+% \begin{quote}
+%   \pkg{floatrow}, \pkg{keyfloat}, and \pkg{subfig}
 % \end{quote}
 %
 % \pagebreak[3]
@@ -338,6 +357,23 @@
 % \begin{quote}
 %   \pkg{caption2}, \pkg{captcont}, \pkg{catoptions}, \pkg{ccaption}, \pkg{ftcap}, \pkg{nonfloat}, and \pkg{topcapt}.
 % \end{quote}
+% Apart from the \pkg{catoptions} package (which re-defines |\use|\-|package| in an incompatible way) they offer
+% features which are colliding with features offered by this package:
+% \begin{itemize}
+%   \item \pkg{caption2} is obsolete, please use this package instead.
+%   \item \pkg{captcont} is marked as obsolete by its author and the usage of |\capt|\-|cont| could be replaced by the usage of |\continued|\-|float|.
+%   \item \pkg{ccaption} offers similar features to this package.
+%   \item \pkg{ftcap} could be replaced by |\usepackage[...,table|\-|position=t]{caption}| or |\caption|\-|setup{table|\-|position=t}| in the document preamble.
+%   \item \pkg{nonfloat} offers the commands |\fig|\-|caption| and |\tab|\-|caption| which could be replaced by |\set|\-|caption|\-|type{figure}| or |\set|\-|caption|\-|type{table}| and the usage of the regular |\caption| command.
+%   \item \pkg{topcapt} offers the command |\top|\-|caption| which could be replaced by regular |\caption| and the usage of the \pkg{caption} package option |table|\-|position=t|.
+% \end{itemize}
+%
+% \pagebreak[3]
+% The \pkg{caption} package includes the features offered by the following packages:
+% \begin{quote}
+%   \pkg{hypcap}
+% \end{quote}
+% Loading one of them deactivates the matching feature in this package.
 %
 % \iffalse
 % =============================================================================================== %
@@ -358,6 +394,9 @@
 % \section{hyperref anchors}
 % \section{Bilingual captions -> bicaption}
 % \section{Captions for sub-figures or sub-tables -> subcaption}
+% \section{Suppressing the entry to the List of Figures/Tables}
+% \section{Defining an own floating environment -> newfloat}
+% \section{Defining an own non-floating environment -> newfloat + renewcommand w/ \setcaptiontype}
 % \fi
 %
 % \iffalse
@@ -373,71 +412,30 @@
 % \clearpage
 % \part{Reference}
 %
-% ... (TODO)
+% \section{Options}
+% \label{options}
+%
+% Unless noted otherwise all options are available to packages which load the \pkg{caption} kernel package called \pkg{caption3},
+% for example the \pkg{caption} package, the \pkg{floatrow} package, and the \pkg{subfig} package (even when loaded with option |caption=false|).
+%
+% \subsection{options}
+% \label{options:options}
+%
+% \begin{quote}
+%   |\captionsetup{options=|\meta{context}|}|
+% \end{quote}
+% applies options which were collected previously by |\caption|\-|setup|\oarg{context}\marg{options}.
+%
+% \pagebreak[3]
+% An example:
+% \begin{quote}
+%   |\captionsetup[myenvironment]{font=it}| % store "font=it" \\
+%   \ldots\\
+%   |\captionsetup{options=myenvironment}|  % apply "font=it" later on
+% \end{quote}
+% \SeeAlso{\longref{optionscope}}
 %
 % \begin{verbatim}
-% Commands (caption3):
-% \DeclareCaptionOption
-% \DeclareCaptionOptionNoValue
-% \captionsetup
-% \IfCaptionOptionCheck
-% \clearcaptionsetup
-% \showcaptionsetup
-% \SetCaptionDefault
-% \SetCaptionFallback
-% \DeclareCaptionLength
-% \DeclareCaptionStyle
-% \DeclareCaptionSinglelinecheck
-% \DeclareCaptionBox
-% \DeclareCaptionFormat
-% \DeclareCaptionLabelFormat
-% \DeclareCaptionLabelSeparator
-% \captionnewline
-% \DeclareCaptionTextFormat
-% \DeclareCaptionFont
-% \DeclareCaptionJustification
-% \centerfirst
-% \centerlast
-% \abovecaptionskip
-% \belowcaptionskip
-% \DeclareCaptionPosition
-% \AtBeginCaption
-% \AtEndCaption
-% \DeclareCaptionListFormat
-% \AtCaptionPackage
-% \AfterCaptionPackage
-% \ifsinglelinecaption
-% \AtCaptionSingleLineCheck
-% \DeclareCaptionType
-% \ForEachCaptionType
-% \DeclareCaptionSubType
-% \ForEachCaptionSubType
-%
-% Commands (caption):
-% \DeclareCaptionAutoPosition
-% \setcaptiontype
-% \setcaptionsubtype
-% \captionof
-% \phantomcaption
-% \captionlistentry
-% \captiontext
-% \captionbox
-% \continuedfloat
-% \nextfloat
-% \flushsubcaptionlistentries
-% \capstart
-% \LTcaptype
-% \piccaptiontype
-%
-% Counters (caption):
-% continuedfloat
-%
-% Environments (caption):
-% captiongroup
-% captionblock
-%
-% Options (caption3):
-% options
 % margin
 % margin*
 % width
@@ -505,39 +503,41 @@
 % without
 % lofdepth
 % lotdepth
+% \end{verbatim}
 %
+% \begin{verbatim}
 % Options (caption):
 % config
 % list-entry
 % @minipage
 % compatibility
-% normal
-% isu
-% hang
-% center
-% centerlast
-% scriptsize
-% footnotesize
-% small
-% normalsize
-% large
-% Large
-% up
-% it
-% sl
-% sc
-% md
-% bf
-% rm
-% sf
-% tt
-% nooneline
-% ruled
-% flushleft
-% flushright
-% oneline
-% ignoreLTcapwidth
-% caption
+% normal -> caption v1.x
+% isu -> caption v1.x
+% hang -> caption v1.x
+% center -> caption v1.x
+% centerlast -> caption v1.x
+% scriptsize -> caption v1.x
+% footnotesize -> caption v1.x
+% small -> caption v1.x
+% normalsize -> caption v1.x
+% large -> caption v1.x
+% Large -> caption v1.x
+% up -> caption v1.x
+% it -> caption v1.x
+% sl -> caption v1.x
+% sc -> caption v1.x
+% md -> caption v1.x
+% bf -> caption v1.x
+% rm -> caption v1.x
+% sf -> caption v1.x
+% tt -> caption v1.x
+% nooneline -> caption v2.x
+% ruled -> caption v2.x
+% flushleft -> caption v2.x
+% flushright -> caption v2.x
+% oneline -> caption v2.x
+% ignoreLTcapwidth -> caption v2.x
+% caption -> ???
 % FPlist
 % FPref
 % hypcap
@@ -546,6 +546,74 @@
 % type*
 % subtype
 % subtype*
+% \end{verbatim}
+%
+% \begin{verbatim}
+% Commands (caption3):
+% \DeclareCaptionOption
+% \DeclareCaptionOptionNoValue
+% \captionsetup
+% \IfCaptionOptionCheck
+% \clearcaptionsetup
+% \showcaptionsetup
+% \SetCaptionDefault
+% \SetCaptionFallback
+% \DeclareCaptionLength
+% \DeclareCaptionStyle
+% \DeclareCaptionSinglelinecheck
+% \DeclareCaptionBox
+% \DeclareCaptionFormat
+% \DeclareCaptionLabelFormat
+% \DeclareCaptionLabelSeparator
+% \captionnewline
+% \DeclareCaptionTextFormat
+% \DeclareCaptionFont
+% \DeclareCaptionJustification
+% \centerfirst
+% \centerlast
+% \abovecaptionskip
+% \belowcaptionskip
+% \DeclareCaptionPosition
+% \AtBeginCaption
+% \AtEndCaption
+% \DeclareCaptionListFormat
+% \AtCaptionPackage
+% \AfterCaptionPackage
+% \ifsinglelinecaption
+% \AtCaptionSingleLineCheck
+% \DeclareCaptionType
+% \ForEachCaptionType
+% \DeclareCaptionSubType
+% \ForEachCaptionSubType
+% \end{verbatim}
+%
+% \begin{verbatim}
+% Commands (caption):
+% \DeclareCaptionAutoPosition
+% \setcaptiontype
+% \setcaptionsubtype
+% \captionof
+% \phantomcaption
+% \captionlistentry
+% \captiontext
+% \captionbox
+% \continuedfloat
+% \nextfloat
+% \flushsubcaptionlistentries
+% \capstart
+% \LTcaptype
+% \piccaptiontype
+% \end{verbatim}
+%
+% \begin{verbatim}
+% Counters (caption):
+% continuedfloat
+% \end{verbatim}
+%
+% \begin{verbatim}
+% Environments (caption):
+% captiongroup
+% captionblock
 % \end{verbatim}
 %
 % \iffalse
