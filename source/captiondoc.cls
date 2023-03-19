@@ -41,11 +41,14 @@
 \newcommand*\@NEW[3]{\MARGINSYM{#2\footnotesize#1\\#3}}
 \newcommand*\MARGINSYM[1]{\hskip 1sp \marginpar{\raggedleft\textcolor{blue}{{#1}}}}
 
+\newcommand*\LineBreak{\linebreak[3]}
 \newcommand*\PageBreak{\pagebreak[3]}
 
-\def\Ref{\@ifstar{\@Ref\ref}{\@Ref\autoref}}
-\def\@Ref#1#2{#1{#2}: \textit{\nameref{#2}}}
-\def\See#1{\nopagebreak{\small (See #1)}}
+\newcommand*\longref{\@ifstar{\@longref\ref}{\@longref\autoref}}
+\newcommand*\Longref{\@ifstar{\@longref\Ref}{\@longref\Autoref}}
+\def\@longref#1#2{#1{#2}: \textit{\nameref{#2}}}
+
+\newcommand*\See[1]{\nopagebreak{\small (See #1)}}
 
 \newenvironment{Options}[1]%
   {\list{}{\renewcommand\makelabel[1]{\texttt{##1}\hfil}%
