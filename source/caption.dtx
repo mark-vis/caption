@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2023/03/19 v3.6 The caption package]
+\ProvidesFile{caption.drv}[2023/07/10 v3.6 The caption package]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -913,7 +913,7 @@
 % (And the vast majority of \LaTeX\ packages isn't maintained anymore and therefore would either stop working correctly or has to be maintained by the \LaTeX\ team itself to make it work again.)
 %
 % \item
-% The LaTeX implementation for captions have an odd counter handling, i.e. not the figure resp. table environment increases the counter but |\caption| does.
+% The LaTeX implementation for captions have an odd counter handling, i.e. not the figure or table environment increases the counter but |\caption| does.
 % This is already a source of user confusion (since |\label| has to be placed after |\caption|, or sometimes only used inside |\caption| will give the correct outcome),
 % and the confusion and user frustrations grows when using other environents which behaves differently (like |long|\-|table| offered by the \pkg{longtable} package),
 % but this problem really shines brightly when using sub-captions additionally. (See section ``Numbering'' in the \pkg{subcaption} package documentation.)
@@ -1062,7 +1062,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2023/03/14 v3.6k Customizing captions (AR)]
+\ProvidesPackage{caption}[2023/03/22 v3.6l Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -1287,7 +1287,7 @@
 % \subsection{fltpage package support options}
 %
 % \changes{v3.1}{2007/09/01}{Options `FPlist' \& `FPref' added}
-% With these options is controlled where the list-of entry and |\ref| resp.
+% With these options is controlled where the list-of entry and |\ref| or
 % |\pageref| or |\autoref| will link to.
 % Defaults are |FPlist=caption| and |FPref=figure| which is inconsistent,
 % but compatible to the usual behaviour of the \pkg{fltpage} package.
@@ -1600,7 +1600,7 @@
 %
 % \begin{macro}{\caption@nobreak}
 % \changes{v3.6}{2022/01/06}{This macro added}
-% |\caption@nobreak| for use in places where |\@caption| resp.~|\beamer@makecaption| does |\nobreak|.
+% |\caption@nobreak| for use in places where |\@caption| or |\beamer@makecaption| does |\nobreak|.
 % It's defined to do nothing unless the \cls{beamer} document class is used.
 %    \begin{macrocode}
 \newcommand*\caption@nobreak{}
@@ -1644,7 +1644,7 @@
 % \changes{v3.3a}{2019/04/02}{This macro added}
 % |\caption@make@above|\\
 % |\caption@make@below|\par
-% Typesets the stuff above resp.~below the caption, depending on |\caption@iftop|.
+% Typesets the stuff above or below the caption, depending on |\caption@iftop|.
 %    \begin{macrocode}
 \newcommand*\caption@make@above{%
   \caption@iftop
@@ -1687,7 +1687,7 @@
   \let\@xfloat\caption@xfloat
 %    \end{macrocode}
 %   We redefine |\@xdbl|\-|float|, too, so special options for |figure*|
-%   resp.~|table*| will be applied here.
+%   or |table*| will be applied here.
 %    \begin{macrocode}
   \let\caption@ORI@xdblfloat\@xdblfloat
   \let\@xdblfloat\caption@xdblfloat
@@ -2763,6 +2763,25 @@
 % \section{Support for sub-captions}
 % \changes{v3.1f}{2007/11/16}{Support for sub-captions added}
 %
+% \begin{macro}{\subcaptionsetup}
+% \changes{v3.6l}{2023/03/22}{This macro definition moved from \pkg{subcaption} package to here}
+% |\subcaptionsetup*|\oarg{environment}\marg{options}
+% is an abbreviation for |\caption|\-|setup*[sub|\meta{environment}|]|\marg{options},
+% especially |\sub|\-|caption|\-|setup|\marg{options} sets options valid for all sub-captions.
+%    \begin{macrocode}
+\newcommand*\subcaptionsetup{%
+  \caption@teststar\@subcaptionsetup*{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\@subcaptionsetup[1]{%
+  \@testopt{\captionsetup@sub{#1}}{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\captionsetup@sub#1[#2]#3{%
+  \captionsetup#1[sub#2]{#3}}
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@subtypehook}
 % \changes{v3.1g}{2008/03/20}{Redefinition of \cs{caption@setlist} added}
 % \changes{v3.1k}{2009/10/09}{Bugfix 09-08-12b: \cs{@makecaption} will now be restored here, too}
@@ -2936,7 +2955,7 @@
 %    \end{macrocode}
 %
 % The \pkg{arabicore} package re-defines |\@make|\-|caption|, |\fnum@figure|, and |\fnum@table|
-% incompatible to the \pkg{caption} package, therefore we have to restore our resp.~the original definitions here.
+% incompatible to the \pkg{caption} package, therefore we have to restore our or the original definitions here.
 %
 %    \begin{macrocode}
   \let\@makecaption\caption@makecaption
@@ -3428,7 +3447,7 @@
 % \changes{v3.6i}{2023/02/19}{Uses \cs{def} instead of \cs{let} now}
 %  \LaTeX\ and almost every other packages use
 %    |\|\meta{type}|name|
-%  to provide a macro for the type resp.~environment name -- for example
+%  to provide a macro for the type or environment name -- for example
 %  the command |\figure|\-|name| will usually contain the name of the floating
 %  environment |figure|:
 %  \begin{quote}
@@ -3508,7 +3527,7 @@
 % \begin{macro}{\float@ifcaption}
 % \changes{v3.1}{2007/06/23}{This macro added}
 % |\float@ifcaption|\marg{type}\marg{if-clause}\marg{else-clause}\par
-%  Here we determine if the user has used |\newfloat| resp.~|\restylefloat|,
+%  Here we determine if the user has used |\newfloat| or |\restylefloat|,
 %  or |\restylefloat*|.
 %  This is quite easy: If |\@float@c@|\meta{captype} is the same as
 %  |\float@caption|, the user has used |\newfloat| or |\restylefloat|,
@@ -4162,7 +4181,7 @@
   \let\caption@ORI@lst@MakeCaption\lst@MakeCaption
   \renewcommand*\lst@MakeCaption[1]{% #1 is `t' or `b'
 %    \end{macrocode}
-% This macro is always called twice by the \pkg{listings} package (with `t' resp. `b' as parameter),
+% This macro is always called twice by the \pkg{listings} package (with `t' or `b' as parameter),
 % therefore we need an extra group here.
 %    \begin{macrocode}
     \begingroup
@@ -4222,7 +4241,7 @@
 %
 % \begin{macro}{\lst@makecaption}
 % \begin{macro}{\lst@maketitle}
-% Wrapper macros for typesetting the |caption=| resp. |title=| value.
+% Wrapper macros for typesetting the |caption=| or |title=| value.
 %    \begin{macrocode}
   \def\lst@makecaption{\caption@starfalse\@makecaption}%
   \def\lst@maketitle{\caption@startrue\@makecaption\@empty}%
@@ -5027,7 +5046,7 @@
 % \begin{macro}{\sf@ifpositiontop}
 % \changes{v3.1a}{2007/09/15}{Bugfix 07-09-15: Check for \cs{@captype} added}
 %  If the \pkg{subfigure} package is loaded, we map |\sf@ifpositiontop|
-%  to |\iffiguretopcap| resp. |\iftabletopcap|, so the \pkg{subfigure}
+%  to |\iffiguretopcap| or |\iftabletopcap|, so the \pkg{subfigure}
 %  \version{2.1} options \opt{figbotcap} etc. will still work.
 %    \begin{macrocode}
   \def\sf@ifpositiontop{%
@@ -5230,7 +5249,7 @@
 %
 % \begin{macro}{\caption@setthreeparttabletype}
 % \changes{v3.6e}{2022/04/17}{Extracted from \cs{threeparttable} and \cs{measuredfigure}}
-% \changes{v3.6e}{2022/04/17}{Support for usage inside \env{subtable} resp.~\env{subfigure} added}
+% \changes{v3.6e}{2022/04/17}{Support for usage inside \env{subtable} or \env{subfigure} added}
 %  |\caption@setthreeparttabletype|\marg{threepart type}\marg{main type}
 %    \begin{macrocode}
   \newcommand*\caption@setthreeparttabletype[2]{%
