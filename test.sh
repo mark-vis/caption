@@ -5,9 +5,17 @@
 
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2022-02-12
+# Date:   2023-07-27
 
 source ./test-lib.sh
+
+# Work-around for MikTeX "!pdfTeX error: pdflatex (file ae_almohanad_bold.pfb): cannot open Type 1 font file for reading" (issues/github/issue_8.tex)
+if [[ ! -d $HOME/.miktex/texmfs/install/fonts/type1/arabi/arabeyes && -d $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes ]]
+then
+	mkdir -p $HOME/.miktex/texmfs/install/fonts/type1/arabi
+	cp -vr $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes $HOME/.miktex/texmfs/install/fonts/type1/arabi/
+	miktex fndb refresh
+fi
 
 disable test/babel/frenchle-0.tex         # TODO (frenchle.sty: -20b- the French language is undefined (ERROR!))
 disable test/babel/frenchle-1.tex         # TODO (frenchle.sty: -20b- the French language is undefined (ERROR!))
