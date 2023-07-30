@@ -1,3 +1,40 @@
+%%
+%% This is file `captiondoc.cls',
+%% a common document class for all caption package bundle documentations.
+%%
+%% There is no need to distribute this file in tex/latex/caption since
+%% it's of no use for the end-user, it's only needed to compile the package
+%% documentations.
+%%
+%% Copyright (C) 2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%%
+%% https://gitlab.com/axelsommerfeldt/caption
+%%
+%% --------------------------------------------------------------------------
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%   http://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2003/12/01 or later.
+%%
+%% This work has the LPPL maintenance status "maintained".
+%%
+%% This Current Maintainer of this work is Axel Sommerfeldt.
+%%
+%% This work consists of the files
+%%   caption.ins, caption.dtx, caption-light.dtx, caption2.dtx, caption3.dtx,
+%%   caption-ams-smf.dtx, caption-beamer.dtx, caption-elsarticle.dtx,
+%%   caption-koma.dtx, caption-memoir.dtx, caption-ntg.dtx,
+%%   caption-thesis.dtx, bicaption.dtx, ltcaption.dtx, subcaption.dtx,
+%% the derived files
+%%   caption.sty, caption-light.sty, caption2.sty, caption3.sty,
+%%   caption-ams-smf.sto, caption-beamer.sto, caption-elsarticle.sto,
+%%   caption-koma.sto, caption-memoir.sto, caption-ntg.sto,
+%%   caption-thesis.sto, bicaption.sty, ltcaption.sty, subcaption.sty.
+
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{captiondoc}[2022/12/27 Document class used by caption documentation]
 

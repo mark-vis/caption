@@ -10,6 +10,7 @@
 # 2020-08-01: *.sto files added to distribution
 # 2022-01-05: Outdated documentation removed from distribution
 # 2022-02-20: Fallback sources added to distribution
+# 2023-07-30: captiondoc.cls added to source files
 #
 # Needs on CentOS/Fedora: mmv perl-File-Copy-Recursive perl-HTML-FormatText* perl-WWW-Mechanize* perl-XML-TreeBuilder
 #
@@ -20,13 +21,15 @@ dist_dir=$(pwd)
 #
 rm -fr /tmp/caption
 mkdir /tmp/caption
-cp -a source/*.ins source/*.dtx source/*.eps source/fallback /tmp/caption
+cp -a source/*.ins source/*.dtx source/*.cls source/*.eps source/fallback /tmp/caption
 cp -a tex/*.sty tex/*.sto /tmp/caption
 cp -a doc/*.pdf /tmp/caption
 cp -a README CHANGELOG SUMMARY /tmp/caption
 cd /tmp/caption
 # shellcheck disable=SC2035
-if ctanify caption.ins "*.eps=source/latex/caption" \
+if ctanify caption.ins \
+        "*.cls=source/latex/caption" \
+        "*.eps=source/latex/caption" \
 	"fallback/v1/*.dtx=source/latex/caption/fallback/v1" \
 	"fallback/v2.0/*.dtx=source/latex/caption/fallback/v2.0" \
 	"fallback/v2.1/*.dtx=source/latex/caption/fallback/v2.1" \
