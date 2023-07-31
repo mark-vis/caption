@@ -1,0 +1,37 @@
+% Issue: 169
+% Title: \NR@strip@period (done by nameref package) does not work correctly
+% Date:  Jul 28, 2023 5:41pm GMT+0200
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/169
+
+% ...since we add \relax at the end of the optional \caption parameter.
+%
+% Therefore we need a different method to distinguish \caption{} from \caption[]{}.
+
+\documentclass{article}
+\usepackage{caption,nameref}
+
+\makeatletter
+\let\newlabel@ORI\newlabel
+\renewcommand\newlabel[2]{%
+  \my@newlabel{#1}#2\@nil
+  \newlabel@ORI{#1}{#2}}
+\long\def\my@newlabel#1#2#3#4#5\@nil{%
+  \global\@namedef{my#1}{#4}}
+\makeatother
+
+\begin{document}
+
+\begin{figure}
+\caption{test.}
+\label{test}
+\end{figure}
+
+\ifx\mytest\undefined \else
+  \def\tempa{test}
+  \ifx\tempa\mytest \else
+    \PackageError{caption}{Name reference is `\mytest' but should be `test'}{}
+  \fi
+\fi
+
+\end{document}
+

@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3865}
+% \CheckSum{3853}
 %
 % \iffalse
 %<*driver>
@@ -232,7 +232,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2023/07/28 v2.4c caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2023/07/31 v2.4d caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -583,6 +583,20 @@
 %    \begin{macrocode}
 \DeclareRobustCommand*\caption@gobble{%
   \caption@withoptargs\@gobbletwo}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@iftokens}
+% \changes{v2.4d}{2023/07/31}{This macro added}
+%   |\caption@iftokens|\marg{arg}\marg{yes-code}\marg{no-code}\\
+%   This helper command checks if the given argument contains one or more tokens, i.e. is not empty.
+%    \begin{macrocode}
+\newcommand\caption@iftokens[1]{%
+  \if\relax\detokenize{#1}\relax
+    \expandafter\@secondoftwo
+  \else
+    \expandafter\@firstoftwo
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -1553,6 +1567,7 @@
 % \changes{v1.3}{2010/11/07}{Support for option \opt{calcmargin} added}
 % \changes{v2.3}{2021/01/17}{Renamed from \cs{setcaptionmargin} to \cs{caption@setmargin}; sets \cs{caption@width} or \cs{caption@leftmargin} and \cs{caption@rightmargin} now}
 % \changes{v2.3}{2021/01/19}{Only the left or right margin can be set by leaving the other value blank}
+% \changes{v2.4d}{2023/07/31}{Check for \cs{@empty} argument replaced by \cs{caption@iftokens}}
 %   |\caption@setmargin*|\marg{amount}\\
 %   sets the caption margin to the given \meta{amount}.
 %    \begin{macrocode}
@@ -1571,20 +1586,14 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@@@@setmargin#1,#2,#3\@nil{%
-  \def\caption@tempa{#1#2}%
-  \ifx\caption@tempa\@empty
-    \caption@Error{Missing number}%
-  \else
-    \caption@@@@@setmargin{left}{#1}%
-    \caption@@@@@setmargin{right}{#2}%
-  \fi}
+  \caption@iftokens{#1#2}%
+    {\caption@@@@@setmargin{left}{#1}%
+     \caption@@@@@setmargin{right}{#2}}%
+    {\caption@Error{Missing number}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@@@@setmargin[2]{%
-  \def\caption@tempa{#2}%
-  \ifx\caption@tempa\@empty \else
-    \caption@setlength{#1margin}{#2}%
-  \fi}
+  \caption@iftokens{#2}{\caption@setlength{#1margin}{#2}}{}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2307,17 +2316,13 @@
 % \changes{v1.4}{2011/10/05}{Pre-defined text format `empty' added}
 % \changes{v1.7}{2015/09/16}{The text format `empty' now takes care of the \cs{label}}
 % \changes{v2.3}{2020/12/26}{Clearance of \cs{caption@thelabel} replaced by \cs{caption@clrlabel}}
+% \changes{v2.4d}{2023/07/31}{Check for \cs{@empty} argument replaced by \cs{caption@iftokens}}
 %    \begin{macrocode}
 \DeclareCaptionTextFormat{empty}{%
   \caption@get@label#1\caption@makeanchor{}\@nil
   \caption@thelabel\caption@clrlabel}
 \long\def\caption@get@label#1\caption@makeanchor#2#3\@nil{%
-  \def\caption@tempa{#2}%
-  \ifx\caption@tempa\@empty
-    \caption@getlabel{#1}%
-  \else
-    \caption@getlabel{#2}%
-  \fi}
+  \caption@iftokens{#2}{\caption@getlabel{#2}}{\caption@getlabel{#1}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \DeclareCaptionTextFormat{simple}{#1}
@@ -4757,6 +4762,7 @@
 % \changes{v1.13}{2020/07/29}{We don't re-use existing counters anymore (This was a bad idea anyway)}
 % \changes{v1.13b}{2022/04/06}{We don't re-use existing counters anymore (Part 2)}
 % \changes{v2.4}{2022/04/06}{If a counter is already defined the counter source will be included in the resulting error message}
+% \changes{v2.4d}{2023/07/31}{Check for \cs{@empty} argument replaced by \cs{caption@iftokens}}
 %   |\DeclareCaptionSubType*|\oarg{numbering scheme}\marg{type}\\
 %   The starred variant provides the numbering format
 %   \meta{type}|.|\meta{subtype} while the non-starred variant simply uses
@@ -4839,15 +4845,12 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@@@declaresublistentry#1\@dottedtocline#2\caption@nil#3{%
-  \def\@tempa{#1}%
 %   Does \l@(sub)subsection start with \@dottedtocline?
-  \ifx\@tempa\@empty
-%   Yes
-    \caption@@@@declaresublistentry{#3}#2\caption@nil
-  \else
+  \caption@iftokens{#1}%
 %   No
-    \caption@@@@declaresublistentry{#3}@{3.8em}{3.2em}\caption@nil
-  \fi}
+    {\caption@@@@declaresublistentry{#3}@{3.8em}{3.2em}\caption@nil}%
+%   Yes
+    {\caption@@@@declaresublistentry{#3}#2\caption@nil}}
 \@onlypreamble\caption@@@declaresublistentry
 %    \end{macrocode}
 %    \begin{macrocode}
