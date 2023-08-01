@@ -5,31 +5,65 @@
 
 % ...since we add \relax at the end of the optional \caption parameter.
 %
+% Consequence: \caption{This is a test.}\label{test}..\nameref{test} expands to "This is a test.\relax" instead of "This is a test" (without period).
+
 % Therefore we need a different method to distinguish \caption{} from \caption[]{}.
 
 \documentclass{article}
 \usepackage{caption,nameref}
 
 \makeatletter
+
+\newcommand*\mytext{This is a test}
+
 \let\newlabel@ORI\newlabel
 \renewcommand\newlabel[2]{%
   \my@newlabel{#1}#2\@nil
   \newlabel@ORI{#1}{#2}}
 \long\def\my@newlabel#1#2#3#4#5\@nil{%
   \global\@namedef{my#1}{#4}}
+
+\newif\ifmycontentsline
+\let\addcontentsline@ORI\addcontentsline
+\renewcommand\addcontentsline[3]{%
+  \edef\caption@tempa{#2}%
+  \def\caption@tempb{figure}%
+  \ifx\caption@tempa\caption@tempb
+    \global\mycontentslinetrue
+  \fi
+  \addcontentsline@ORI{#1}{#2}{#3}}
+
 \makeatother
 
 \begin{document}
+\listoffigures
 
 \begin{figure}
-\caption{test.}
+
+\expandafter\caption\expandafter{\mytext.}
 \label{test}
+
+\mycontentslinefalse
+\caption{}
+\ifmycontentsline
+  % ok
+\else
+  \PackageError{caption}{This caption should have produced an entry in LoF}{}
+\fi
+
+\mycontentslinefalse
+\caption[]{}
+\ifmycontentsline
+  \PackageError{caption}{This caption should have not produced an entry in LoF}{}
+\else
+  % ok
+\fi
+
 \end{figure}
 
 \ifx\mytest\undefined \else
-  \def\tempa{test}
-  \ifx\tempa\mytest \else
-    \PackageError{caption}{Name reference is `\mytest' but should be `test'}{}
+  \ifx\mytest\mytext \else
+    \PackageError{caption}{Name reference is `\mytest'\MessageBreak but should be `\mytext'}{}
   \fi
 \fi
 
