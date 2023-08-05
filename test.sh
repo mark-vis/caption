@@ -5,7 +5,7 @@
 
 # Author: Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 # URL:    https://gitlab.com/axelsommerfeldt/caption
-# Date:   2023-07-27
+# Date:   2023-08-05
 
 source ./test-lib.sh
 
@@ -13,7 +13,17 @@ source ./test-lib.sh
 if [[ ! -d $HOME/.miktex/texmfs/install/fonts/type1/arabi/arabeyes && -d $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes ]]
 then
 	mkdir -p $HOME/.miktex/texmfs/install/fonts/type1/arabi
+#	ln -s ../../../source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes $HOME/.miktex/texmfs/install/fonts/type1/arabi/
 	cp -vr $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/arabeyes $HOME/.miktex/texmfs/install/fonts/type1/arabi/
+	miktex fndb refresh
+fi
+
+# Work-around for MikTeX "!pdfTeX error: pdflatex (file nazli.pfb): cannot open Type 1 font file for reading" (test/babel/farsi-*.tex)
+if [[ ! -d $HOME/.miktex/texmfs/install/fonts/type1/arabi/farsiweb && -d $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/farsiweb ]]
+then
+	mkdir -p $HOME/.miktex/texmfs/install/fonts/type1/arabi
+#	ln -s ../../../source/arabi/arabi/texmf/fonts/type1/arabi/farsiweb $HOME/.miktex/texmfs/install/fonts/type1/arabi/
+	cp -vr $HOME/.miktex/texmfs/install/source/arabi/arabi/texmf/fonts/type1/arabi/farsiweb $HOME/.miktex/texmfs/install/fonts/type1/arabi/
 	miktex fndb refresh
 fi
 
