@@ -13,19 +13,21 @@
 # 2023-07-30: captiondoc.cls added to source files
 #
 # Needs on CentOS/Fedora: mmv perl-File-Copy-Recursive perl-HTML-FormatText* perl-WWW-Mechanize* perl-XML-TreeBuilder
-#
+
 set -e
 dist_dir=$(pwd)
-#
+temp_dir="/tmp/caption"
+
 ./test.sh clean
-#
-rm -fr /tmp/caption
-mkdir /tmp/caption
-cp -a source/*.ins source/*.dtx source/*.cls source/*.eps source/fallback /tmp/caption
-cp -a tex/*.sty tex/*.sto /tmp/caption
-cp -a doc/*.pdf /tmp/caption
-cp -a README CHANGELOG SUMMARY /tmp/caption
-cd /tmp/caption
+
+rm -fr "$temp_dir"
+mkdir "$temp_dir"
+cp -a source/*.ins source/*.dtx source/*.cls source/*.eps source/fallback "$temp_dir"
+cp -a tex/*.sty tex/*.sto "$temp_dir"
+cp -a doc/*.pdf "$temp_dir"
+cp -a README CHANGELOG SUMMARY "$temp_dir"
+cd "$temp_dir"
+
 # shellcheck disable=SC2035
 if ctanify caption.ins \
         "*.cls=source/latex/caption" \
@@ -43,7 +45,7 @@ if ctanify caption.ins \
 	"*.sto=tex/latex/caption" \
 	README "CHANGELOG=doc/latex/caption" "SUMMARY=doc/latex/caption" *.pdf
 then
-  cp -a /tmp/caption/caption.tar.gz "$dist_dir/caption_$(date --rfc-3339=date).tar.gz"
+  cp -a "$temp_dir/caption.tar.gz" "$dist_dir/caption_$(date --rfc-3339=date).tar.gz"
   cd "$dist_dir"
 
 #  ctanupload -l -p -u http://www.ctan.org/upload \
