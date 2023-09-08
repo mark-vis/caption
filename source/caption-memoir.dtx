@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{69}
+% \CheckSum{90}
 %
 % \iffalse
 %<*driver>
@@ -155,7 +155,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.sto}[2022/03/02 v2.2b Adaption of the caption package to the memoir document class (AR)]
+\ProvidesFile{caption-memoir.sto}[2023/09/08 v2.2c Adaption of the caption package to the memoir document class (AR)]
 %    \end{macrocode}
 %
 % \section{Adaptions already included in the caption package}
@@ -276,6 +276,30 @@
       #2%
     \fi}}%
 %    \end{macrocode}
+%
+% \section{Side captions}
+%
+% \begin{macro}{\endsidecaption}
+% \changes{v2.2c}{2023/09/08}{This re-definition added}
+% The \env{sidecaption} environment uses |\ref|\-|step|\-|counter| (if \pkg{hyperref} is not loaded)
+% or |\H@ref|\-|step|\-|counter| plus |\hyper@make|\-|current| (if \pkg{hyperref} is loaded).
+% We need to patch it so |\caption@ref|\-|step|\-|counter| is used instead to get a proper hyperlink reference.
+% Since the definition could be overwritten by |memhfixc.sty|, we need to define it using |\At|\-|Begin|\-|Document|.
+%    \begin{macrocode}
+\AtBeginDocument{\renewcommand*\endsidecaption{%
+  \m@mscapend@fbox
+  \caption@refstepcounter\@captype
+  \m@mscaplabel
+  \csname m@mscapcheckside\endcsname %<--- added 2012/08/19
+  \begin{lrbox}{\m@mscap@capbox}%
+    \begin{minipage}[c]{\sidecapwidth}%
+      \sidecapstyle
+      \@caption\@captype[\m@mscap@fortoc]{\m@mscap@forcap}
+    \end{minipage}%
+  \end{lrbox}%
+  \m@mscapopboxes}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \section{TODO}
 %

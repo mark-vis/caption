@@ -1,0 +1,53 @@
+% Issue: 175
+% Title: SX: broken hyperlinks with memoir, caption, hyperref, sidecaption, and pdflatex
+% Date:  Aug 13, 2023 5:14pm GMT+0200
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/175
+% SX:    https://tex.stackexchange.com/questions/629919/broken-hyperlinks-with-memoir-caption-hyperref-sidecaption-and-pdflatex
+
+% I am experiencing broken hyperlinks with memoir + caption + hyperref and the sidecaption environment in documents compiled with pdflatex. A MWE replicating my issue is below:
+
+\documentclass{memoir}
+
+\usepackage{caption}
+\usepackage{hyperref}
+
+\begin{document}
+
+% Set \ifcaptionrefstepcounter if \caption@refstepcounter was used
+\makeatletter
+\newif\ifcaptionrefstepcounter
+\let\caption@refstepcounter@ORI\caption@refstepcounter
+\renewcommand*\caption@refstepcounter{\global\captionrefstepcountertrue\caption@refstepcounter@ORI}
+\makeatother
+
+% create empty page for demonstration
+\mbox{}
+\clearpage
+
+\begin{figure}
+  \captionrefstepcounterfalse
+%
+  \begin{sidecaption}{test}[test]
+    test
+  \end{sidecaption}
+%
+  \ifcaptionrefstepcounter
+    \typeout{\string\caption@refstepcounter was used}%
+  \else
+    \PackageError{caption}{\string\caption@refstepcounter was not used}{}%
+    % This leads to "pdfTeX warning (dest): name{figure.0.1} has been referenced but does not exist, replaced by a fixed one"
+  \fi
+\end{figure}
+
+\ref{test} % link broken, links to first page
+
+\end{document}
+
+% Compiling with pdflatex yields the warning
+%
+% pdfTeX warning (dest): name{figure.0.1} has been referenced but does not exist, replaced by a fixed one
+%
+% and the hyperlink to the sidecaptioned figure is broken unless either (1) the caption package is not loaded or (2) a different engine such as xelatex is used.
+%
+% I experience this behavior with other sidecaptioned floats as well. In a large, complex document (https://bayesoptbook.com/), hyperrefs are all working fine except those pointing to sidecaptioned floats – similar warnings on compilation, and similar broken hyperlinks linking to the top of the document.
+
