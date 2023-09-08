@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{255}
+% \CheckSum{258}
 %
 % \iffalse
 %<*driver>
@@ -169,7 +169,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2022/12/27 v2.0c Adaption of the caption package to the KOMA-Script document classes (AR)]
+\ProvidesFile{caption-koma.sto}[2023/09/08 v2.0d Adaption of the caption package to the KOMA-Script document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Margin or width}
@@ -284,17 +284,24 @@
 %
 % \begin{macro}{\ifonelinecaptions}
 % \changes{v1.1g}{2008/03/01}{\cs{def} changed to \cs{g@addto@macro}}
+% \changes{v2.0d}{2023/09/08}{Re-written using \cs{DeclareCaptionSinglelinecheck} and \cs{SetCaptionDefault}}
+% Define an own single-line-check which depends on |\ifonelinecaptions| offered by \KOMAScript.
+%    \begin{macrocode}
+\DeclareCaptionSinglelinecheck{koma}{%
+  \ifonelinecaptions
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+%    \end{macrocode}
+% Make this new single-line-check the default one.
+%    \begin{macrocode}
+\SetCaptionDefault{singlelinecheck}{koma}
+%    \end{macrocode}
 % Patch |\onelinecaptionstrue| and |onelinecaptionsfalse| so they will set the corresponding \pkg{caption3} setting, too.
 %    \begin{macrocode}
-\g@addto@macro\onelinecaptionstrue{\caption@setsinglelinecheck{true}}%
-\g@addto@macro\onelinecaptionsfalse{\caption@setsinglelinecheck{false}}%
-%    \end{macrocode}
-%    \begin{macrocode}
-\ifonelinecaptions
-  \onelinecaptionstrue
-\else
-  \onelinecaptionsfalse
-\fi
+\g@addto@macro\onelinecaptionstrue{\caption@setsinglelinecheck{koma}}
+\g@addto@macro\onelinecaptionsfalse{\caption@setsinglelinecheck{koma}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -396,7 +403,7 @@
 % \changes{v1.5}{2013/02/15}{Support of \cs{if@figurecaptionabove} added}
 % Patch |\@figurecaptionabovetrue| and |\@figurecaptionabovefalse| so they will set the \pkg{caption3} position setting, too.
 %    \begin{macrocode}
-\caption@ifdefined\@figurecaptionabovetrue{%
+\@ifundefined{@figurecaptionabovetrue}{}{%
   \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}%
   \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}%
 %    \end{macrocode}
@@ -405,7 +412,7 @@
     \@figurecaptionabovetrue
   \else
     \@figurecaptionabovefalse
-  \fi}{}
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %

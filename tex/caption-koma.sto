@@ -6,7 +6,7 @@
 %%
 %% caption-koma.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -36,7 +36,7 @@
 %%   caption-thesis.sto, bicaption.sty, ltcaption.sty, subcaption.sty.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2022/12/27 v2.0c Adaption of the caption package to the KOMA-Script document classes (AR)]
+\ProvidesFile{caption-koma.sto}[2023/09/08 v2.0d Adaption of the caption package to the KOMA-Script document classes (AR)]
 \expandafter\let\expandafter\caption@koma@setcapwidth
                 \csname\string\setcapwidth\endcsname
 \@namedef{\string\setcapwidth}[#1]#2{%
@@ -97,13 +97,15 @@
 \newcommand*\caption@setcapindent{%
   \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
 \caption@ifdefined\cap@indent{\caption@setcapindent}{}
-\g@addto@macro\onelinecaptionstrue{\caption@setsinglelinecheck{true}}%
-\g@addto@macro\onelinecaptionsfalse{\caption@setsinglelinecheck{false}}%
-\ifonelinecaptions
-  \onelinecaptionstrue
-\else
-  \onelinecaptionsfalse
-\fi
+\DeclareCaptionSinglelinecheck{koma}{%
+  \ifonelinecaptions
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\SetCaptionDefault{singlelinecheck}{koma}
+\g@addto@macro\onelinecaptionstrue{\caption@setsinglelinecheck{koma}}
+\g@addto@macro\onelinecaptionsfalse{\caption@setsinglelinecheck{koma}}
 \DeclareCaptionFormat{default}[#1#2#3\par]{%
   \ifdofullc@p
     \caption@useformat{hang}{#1}{#2}{#3}%
@@ -140,14 +142,14 @@
 \else
   \@tablecaptionabovefalse
 \fi
-\caption@ifdefined\@figurecaptionabovetrue{%
+\@ifundefined{@figurecaptionabovetrue}{}{%
   \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}%
   \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}%
   \if@figurecaptionabove
     \@figurecaptionabovetrue
   \else
     \@figurecaptionabovefalse
-  \fi}{}
+  \fi}
 \AtCaptionPackage{%
   \let\caption@koma@figureposition\KV@caption@figureposition
   \DeclareCaptionOption{figureposition}{%
