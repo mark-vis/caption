@@ -2,7 +2,7 @@
 % 
 % This is file `caption-memoir.dtx'.
 % 
-% Copyright (C) 2011-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+% Copyright (C) 2011-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 % 
 % --------------------------------------------------------------------------
 % 
@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{90}
+% \CheckSum{135}
 %
 % \iffalse
 %<*driver>
@@ -155,7 +155,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.sto}[2023/09/08 v2.2c Adaption of the caption package to the memoir document class (AR)]
+\ProvidesFile{caption-memoir.sto}[2024/04/07 v2.2d Adaption of the caption package to the memoir document class (AR)]
 %    \end{macrocode}
 %
 % \section{Adaptions already included in the caption package}
@@ -286,18 +286,44 @@
 % We need to patch it so |\caption@ref|\-|step|\-|counter| is used instead to get a proper hyperlink reference.
 % Since the definition could be overwritten by |memhfixc.sty|, we need to define it using |\At|\-|Begin|\-|Document|.
 %    \begin{macrocode}
-\AtBeginDocument{\renewcommand*\endsidecaption{%
-  \m@mscapend@fbox
-  \caption@refstepcounter\@captype
-  \m@mscaplabel
-  \csname m@mscapcheckside\endcsname %<--- added 2012/08/19
-  \begin{lrbox}{\m@mscap@capbox}%
-    \begin{minipage}[c]{\sidecapwidth}%
-      \sidecapstyle
-      \@caption\@captype[\m@mscap@fortoc]{\m@mscap@forcap}
-    \end{minipage}%
-  \end{lrbox}%
-  \m@mscapopboxes}}
+\AtBeginDocument{\@ifundefined{sidecaption@refstepcounter}{%
+  \renewcommand*\endsidecaption{%
+    \m@mscapend@fbox
+    \caption@refstepcounter\@captype % Original: \refstepcounter\@captype resp. \H@refstepcounter{\@captype}\hyper@makecurrent{\@captype}
+    \m@mscaplabel
+    \csname m@mscapcheckside\endcsname %<--- added 2012/08/19
+    \begin{lrbox}{\m@mscap@capbox}%
+      \begin{minipage}[c]{\sidecapwidth}%
+        \sidecapstyle
+        \@caption\@captype[\m@mscap@fortoc]{\m@mscap@forcap}
+      \end{minipage}%
+    \end{lrbox}%
+    \m@mscapopboxes}%
+% \renewcommand*\endsidecontcaption{%
+%   \m@mscapend@fbox
+%   \addtocounter{\@captype}{\m@ne}%
+%   \TODO % Original: \refstepcounter\@captype resp. \H@refstepcounter{\@captype}\hyper@makecurrent{memhycontfloat}
+%   \m@mscaplabel
+%   \m@mscapcheckside %<--- added 2013/05/30
+%   \begin{lrbox}{\m@mscap@capbox}%
+%     \begin{minipage}[c]{\sidecapwidth}%
+%       \sidecapstyle
+%       \@contcaption\@captype{\m@mscap@forcap}
+%     \end{minipage}%
+%   \end{lrbox}%
+%   \m@mscapopboxes}%
+}{%
+  % memoir v3.8.2 [2023/09/10]
+  \let\caption@sidecaption@refstepcounter\sidecaption@refstepcounter
+  \renewcommand*\sidecaption@refstepcounter[2]{%
+    \ifx#1#2%
+      % used by \endsidecaption
+      \caption@refstepcounter{#1}%
+    \else
+      % used by \endsidecontcaption (TODO)
+      \caption@sidecaption@refstepcounter{#1}{#2}%
+    \fi}%
+}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -309,7 +335,7 @@
 % TODO: \hangcaption, \indentcaption, \normalcaption
 % TODO: \precaption, \postcaption, \midbicaption
 % TODO: \captiontitlefinal
-% TODO: \contcaption
+% TODO: \contcaption, \endsidecontcaption
 % TODO: \newfixedcaption, \renewfixedcaption, \providefixedcaption
 % 
 %    \end{macrocode}

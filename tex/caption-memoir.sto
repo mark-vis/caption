@@ -6,7 +6,7 @@
 %%
 %% caption-memoir.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -36,7 +36,7 @@
 %%   caption-thesis.sto, bicaption.sty, ltcaption.sty, subcaption.sty.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-memoir.sto}[2023/09/08 v2.2c Adaption of the caption package to the memoir document class (AR)]
+\ProvidesFile{caption-memoir.sto}[2024/04/07 v2.2d Adaption of the caption package to the memoir document class (AR)]
 \providecommand*\AtCaptionSingleLineCheck{\g@addto@macro\caption@prepareslc} % for caption v3.5
 \AtCaptionSingleLineCheck{%
   \let\pagenote\caption@gobble}
@@ -68,18 +68,31 @@
     \else
       #2%
     \fi}}%
-\AtBeginDocument{\renewcommand*\endsidecaption{%
-  \m@mscapend@fbox
-  \caption@refstepcounter\@captype
-  \m@mscaplabel
-  \csname m@mscapcheckside\endcsname %<--- added 2012/08/19
-  \begin{lrbox}{\m@mscap@capbox}%
-    \begin{minipage}[c]{\sidecapwidth}%
-      \sidecapstyle
-      \@caption\@captype[\m@mscap@fortoc]{\m@mscap@forcap}
-    \end{minipage}%
-  \end{lrbox}%
-  \m@mscapopboxes}}
+\AtBeginDocument{\@ifundefined{sidecaption@refstepcounter}{%
+  \renewcommand*\endsidecaption{%
+    \m@mscapend@fbox
+    \caption@refstepcounter\@captype % Original: \refstepcounter\@captype resp. \H@refstepcounter{\@captype}\hyper@makecurrent{\@captype}
+    \m@mscaplabel
+    \csname m@mscapcheckside\endcsname %<--- added 2012/08/19
+    \begin{lrbox}{\m@mscap@capbox}%
+      \begin{minipage}[c]{\sidecapwidth}%
+        \sidecapstyle
+        \@caption\@captype[\m@mscap@fortoc]{\m@mscap@forcap}
+      \end{minipage}%
+    \end{lrbox}%
+    \m@mscapopboxes}%
+}{%
+  % memoir v3.8.2 [2023/09/10]
+  \let\caption@sidecaption@refstepcounter\sidecaption@refstepcounter
+  \renewcommand*\sidecaption@refstepcounter[2]{%
+    \ifx#1#2%
+      % used by \endsidecaption
+      \caption@refstepcounter{#1}%
+    \else
+      % used by \endsidecontcaption (TODO)
+      \caption@sidecaption@refstepcounter{#1}{#2}%
+    \fi}%
+}}
 \endinput
 %%
 %% End of file `caption-memoir.sto'.
