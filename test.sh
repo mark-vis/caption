@@ -61,6 +61,7 @@ disable issues/sourceforge/ticket_43.tex  # Intended to fail w/ error: subcaptio
 disable issues/sourceforge/ticket_44.tex  # Intended to fail w/ error: \captionof{subfigure}
 disable issues/sourceforge/ticket_47.tex  # TODO: \DeclareCaptionListHook
 disable issues/sourceforge/ticket_52.tex  # Doomed to fail: Current LaTeX + tabu
+disable issues/github/issue_8.tex         # ! LaTeX Error: Loading a class or package in a group.
 disable issues/gitlab/issue_20.tex        # Doomed to fail: Current LaTeX + longtabu
 disable issues/gitlab/issue_25.tex        # Doomed to fail: \newsubfloat + subcaption package
 disable issues/gitlab/issue_27.tex        # Doomed to fail: Current LaTeX + tabu
