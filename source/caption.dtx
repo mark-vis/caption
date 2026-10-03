@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2934}
+% \CheckSum{2961}
 %
 % \iffalse
 %<*driver>
@@ -5050,6 +5050,37 @@
 %    \begin{macrocode}
 }{}
 %    \end{macrocode}
+%
+% \subsection{The standalone document class}
+% \changes{v3.6p}{2026/10/03}{Support of the \cls{standalone} option \opt{float=false} added}
+%
+% \begin{macro}{\sa@nofloat}
+% \changes{v3.6p}{2026/10/03}{Patch of \cs{sa@nofloat} added}
+% With the option \opt{float=false} (which is the default) the \cls{standalone}
+% document class replaces |\@float| by |\sa@nofloat|, which typesets the
+% contents inside a \env{trivlist} instead of a floating environment.
+% Since |\@xfloat| is not used then, we set the caption type and the
+% \pkg{hyperref} anchor here (as |\caption@xfloat| does).
+% The optional argument is processed first, since |\sa@nofloat| gobbles it
+% with |\@ifnextchar|.
+% (|\@float| was already set with |\let|, so it needs to be updated, too.)
+%    \begin{macrocode}
+\caption@AtBeginDocument{\caption@ifdefined\sa@nofloat{%
+  \let\caption@ORI@sa@nofloat\sa@nofloat
+  \def\caption@sa@nofloat#1{%
+    \@ifnextchar[{\caption@sa@@nofloat{#1}}{\caption@sa@@nofloat{#1}[]}}%
+  \def\caption@sa@@nofloat#1[#2]{%
+    \caption@ORI@sa@nofloat{#1}%
+    \caption@settype{#1}%
+    \caption@setanchor
+    \caption@xfloat@hook}%
+  \ifx\@float\sa@nofloat
+    \let\@float\caption@sa@nofloat
+  \fi
+  \let\sa@nofloat\caption@sa@nofloat
+}{}}
+%    \end{macrocode}
+% \end{macro}
 %
 % \subsection{The subfigure package}
 % \changes{v3.1}{2007/04/06}{subfigure package support added}
