@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{3874}
+% \CheckSum{3927}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2023/07/10 v2.4 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2026/10/03 v2.5 Implementation of the caption kernel]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -232,7 +232,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/03 v2.5 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -4230,6 +4230,81 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@SuspendTagging}
+% \begin{macro}{\caption@ResumeTagging}
+% \changes{v2.5}{2026/10/03}{These macros added}
+%   |\caption@SuspendTagging|\\
+%   |\caption@ResumeTagging|\\
+%   When a tagged PDF is produced, the boxes which are only typeset for measuring
+%   purposes (single-line check, check for an empty label) must not produce tagging
+%   structure. The \LaTeX\ kernel offers |\SuspendTagging| and |\ResumeTagging|
+%   (since 2024-06-01) for this purpose; with older kernels we do nothing.
+%   Without tagging these commands do nothing, too.
+%    \begin{macrocode}
+\ifdefined\SuspendTagging
+  \newcommand*\caption@SuspendTagging{\SuspendTagging{caption}}
+  \newcommand*\caption@ResumeTagging{\ResumeTagging{caption}}
+\else
+  \let\caption@SuspendTagging\relax
+  \let\caption@ResumeTagging\relax
+\fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@iftaglbl}
+% \changes{v2.5}{2026/10/03}{This macro added}
+%   |\caption@iftaglbl|\marg{true}\marg{false}\\
+%   The label is only tagged inside a |Caption| structure, i.e.~if the caption
+%   package has started one (with the tagging socket \texttt{caption/begin}) and has
+%   set |\caption@iftaglbl| to |\@firstoftwo| (locally).
+%    \begin{macrocode}
+\let\caption@iftaglbl\@secondoftwo
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@tag@lbl@begin}
+% \begin{macro}{\caption@tag@lbl@end}
+% \changes{v2.5}{2026/10/03}{These macros added}
+%   |\caption@tag@lbl@begin|\\
+%   |\caption@tag@lbl@end|\\
+%   When a tagged PDF is produced, the caption label will be tagged as |Lbl|
+%   structure inside the caption paragraph. For this purpose the marked content of
+%   the paragraph is interrupted (if we are in horizontal mode) and resumed afterwards.
+%   |\tag_if_active:T| is defined by the \LaTeX\ kernel (since 2024-11-01) or
+%   the \pkg{tagpdf} package; if it is not defined, or if tagging is not active,
+%   or if we are not inside a |Caption| structure (see |\caption@iftaglbl|),
+%   these macros do nothing.
+%    \begin{macrocode}
+\ifcsname tag_if_active:T\endcsname
+  \ExplSyntaxOn
+  \cs_new_protected:Npn \caption@tag@lbl@begin
+    {
+      \caption@iftaglbl { \tag_if_active:T
+        {
+          \mode_if_horizontal:T { \tag_mc_end_push: }
+          \tag_struct_begin:n { tag = Lbl }
+          \tag_mc_begin:n { }
+        } } { }
+    }
+  \cs_new_protected:Npn \caption@tag@lbl@end
+    {
+      \caption@iftaglbl { \tag_if_active:T
+        {
+          \tag_mc_end:
+          \tag_struct_end:
+          \mode_if_horizontal:T { \tag_mc_begin_pop:n { } }
+        } } { }
+    }
+  \ExplSyntaxOff
+\else
+  \let\caption@tag@lbl@begin\relax
+  \let\caption@tag@lbl@end\relax
+\fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
 % \begin{macro}{\caption@slc}
 % \changes{v1.1}{2007/06/13}{\cs{let}\cs{caption@justification}\cs{relax} added}
 % \changes{v1.1}{2007/07/29}{\cs{caption@setup}\cs{caption@sls} added after \cs{begingroup}}
@@ -4238,6 +4313,7 @@
 % \changes{v1.3}{2010/09/04}{Split into \cs{caption@slc} and \cs{caption@@slc}}
 % \changes{v1.5}{2012/12/26}{Merged into a single macro again}
 % \changes{v1.5}{2013/04/14}{Usage of \cs{ifsinglelinecaption} added}
+% \changes{v2.5}{2026/10/03}{Tagging is suspended while measuring}
 %   |\caption@slc|\marg{label}\marg{text}\marg{single-line-code}\marg{multi-line-code}\\
 %   This one does the single-line-check.
 %    \begin{macrocode}
@@ -4249,7 +4325,9 @@
   \let\caption@justification\relax
   \caption@calcmargin % calculate \caption@width
   \caption@prepareslc
+  \caption@SuspendTagging
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
+  \caption@ResumeTagging
   \ifdim\wd\@tempboxa>\caption@width
     \endgroup
     \singlelinecaptionfalse
@@ -4534,6 +4612,7 @@
 % \changes{v1.8}{2018/09/12}{\cs{par} replaced by \cs{caption@textend}}
 % \changes{v2.2c}{2020/10/10}{Usage of the label separators \opt{gobble} and \opt{gobbletwo} added}
 % \changes{v2.2e}{2020/10/21}{Adaptions to \pkg{floatrow} package added}
+% \changes{v2.5}{2026/10/03}{Tagging is suspended while checking the label; the label is tagged as \texttt{Lbl}}
 %   |\caption@@@make|\marg{caption label}\marg{caption text}\\
 %   This one finally typesets the caption paragraph, without margin and indention.
 %    \begin{macrocode}
@@ -4555,6 +4634,7 @@
 %    \begin{macrocode}
   \global\def\caption@tempa{gobbletwo}%
   \global\def\caption@tempb{}%
+  \caption@SuspendTagging
   \sbox\@tempboxa{%
     \let\caption@ignorespaces\ignorespaces
     \def\ignorespaces{%
@@ -4563,6 +4643,7 @@
     #1%
       {\global\let\caption@tempa\@undefined\aftergroup\@gobble}%
       {\global\def\caption@tempa{gobble\caption@tempb}}}%
+  \caption@ResumeTagging
   \ifdim\wd\@tempboxa=\z@
     \gdef\caption@tempa{none}%
 %   \@capbreakfalse
@@ -4590,14 +4671,17 @@
   \@setpar{\@@par\caption@@par}\caption@@par
 %    \end{macrocode}
 %   Finally typeset the caption.
+%   (When a tagged PDF is produced, the caption label will be tagged as |Lbl|.)
 %    \begin{macrocode}
   \caption@applyfont
   \caption@fmt
     {\ifcaption@star\else
+       \caption@tag@lbl@begin
        \begingroup
          \captionlabelfont
          #1\relax\relax
        \endgroup
+       \caption@tag@lbl@end
      \fi}%
     {\ifcaption@star\else
        \begingroup
