@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3855}
+% \CheckSum{3858}
 %
 % \iffalse
 %<*driver>
@@ -232,7 +232,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2023/07/31 v2.4d caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3882,9 +3882,14 @@
 % \changes{v1.7}{2015/09/20}{Unfortunately \pkg{subfig} defines and uses \cs{caption@lstfmt} as well, so I replaced the third argument with \cs{captionlisttype}}
 % \changes{v1.8}{2018/09/06}{Adapted to the \pkg{chkfloat} package}
 % \changes{v2.3}{2021/01/06}{Usage of \cs{p@xxx} and \cs{thexxx} replaced by \cs{caption@p} and \cs{caption@the}}
+% \changes{v2.4e}{2026/10/03}{Pending sub-caption list entries are not written by \cs{caption*} anymore}
 %   |\caption@addcontentsline|\marg{type}\marg{list entry}\\
 %   makes an entry in the list-of-whatever, if requested, i.e.~the argument
 %   \meta{list entry} is not empty and |list|\-|of=| was set to |true|.
+%   Afterwards the pending sub-caption list entries are written, but not
+%   for |\caption*|, since it does not make a list entry of its own;
+%   otherwise the sub-caption list entries would be placed in front of the
+%   list entry of the main caption which usually follows.
 %    \begin{macrocode}
 \newcommand\caption@addcontentsline[2]{%
   \caption@ifcontentsline{#2}{%
@@ -3903,7 +3908,9 @@
          \@namedef{the\caption@listtype}{\caption@the{#1}}}%
       \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
     \endgroup}%
-    \caption@addsubcontentslines{#1}}
+    \ifcaption@star \else
+      \caption@addsubcontentslines{#1}%
+    \fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand\caption@@addcontentsline[2]{%
