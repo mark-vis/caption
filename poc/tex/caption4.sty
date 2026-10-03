@@ -264,26 +264,25 @@
   \let\@makecaption\caption@makecaption % caption4: latex-lab redefines it at begin document
   \let\caption\caption@caption
   \let\@caption\caption@@caption
-  \let\caption@ORI@xfloat\@xfloat
-  \let\@xfloat\caption@xfloat
-  \let\caption@ORI@xdblfloat\@xdblfloat
-  \let\@xdblfloat\caption@xdblfloat
 }
 \caption@AtBeginDocument{%
   \caption@redefine
   \let\caption@redefine\relax}
 \let\@makecaption\caption@makecaption
-\def\caption@xfloat#1[#2]{%
-  \caption@ORI@xfloat{#1}[#2]%
-  \caption@settype{#1}%
+% caption4: instead of redefining \@xfloat and \@xdblfloat we use the generic
+% command hooks of the kernel; they are added to whatever definition is active
+% at \begin{document} (the kernel's or latex-lab's).
+\newcommand*\caption@xfloat{%
+  \expandafter\caption@settype\expandafter{\@captype}%
   \caption@setanchor
   \caption@xfloat@hook}
 \newcommand*\caption@xfloat@hook{}
-\def\caption@xdblfloat#1[#2]{%
-  \caption@ORI@xdblfloat{#1}[#2]% expands to \@xfloat{#1}[#2] + extra stuff
-  \caption@setoptions{#1*}%
+\newcommand*\caption@xdblfloat{%
+  \caption@setoptions{\@captype*}%
   \caption@xdblfloat@hook}
 \newcommand*\caption@xdblfloat@hook{}
+\AddToHook{cmd/@xfloat/after}{\caption@xfloat}
+\AddToHook{cmd/@xdblfloat/after}{\caption@xdblfloat}
 \caption@AtBeginDocument{%
   \DeclareCaptionOption{type}{\setcaptiontype{#1}}%
   \DeclareCaptionOption{type*}{\setcaptiontype*{#1}}%
