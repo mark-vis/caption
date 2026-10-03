@@ -264,25 +264,30 @@
   \let\@makecaption\caption@makecaption % caption4: latex-lab redefines it at begin document
   \let\caption\caption@caption
   \let\@caption\caption@@caption
+  \let\caption@ORI@xfloat\@xfloat
+  \let\@xfloat\caption@xfloat
+  \let\caption@ORI@xdblfloat\@xdblfloat
+  \let\@xdblfloat\caption@xdblfloat
 }
 \caption@AtBeginDocument{%
   \caption@redefine
   \let\caption@redefine\relax}
 \let\@makecaption\caption@makecaption
-% caption4: instead of redefining \@xfloat and \@xdblfloat we use the generic
-% command hooks of the kernel; they are added to whatever definition is active
-% at \begin{document} (the kernel's or latex-lab's).
-\newcommand*\caption@xfloat{%
-  \expandafter\caption@settype\expandafter{\@captype}%
+% caption4 note: the generic command hooks cmd/@xfloat/after and
+% cmd/@xdblfloat/after work, but cannot be added when babel-french is loaded
+% ("can't be retokenized cleanly", active characters). Until the kernel offers a
+% real hook at the start of a float, \@xfloat and \@xdblfloat are wrapped.
+\def\caption@xfloat#1[#2]{%
+  \caption@ORI@xfloat{#1}[#2]%
+  \caption@settype{#1}%
   \caption@setanchor
   \caption@xfloat@hook}
 \newcommand*\caption@xfloat@hook{}
-\newcommand*\caption@xdblfloat{%
-  \caption@setoptions{\@captype*}%
+\def\caption@xdblfloat#1[#2]{%
+  \caption@ORI@xdblfloat{#1}[#2]% expands to \@xfloat{#1}[#2] + extra stuff
+  \caption@setoptions{#1*}%
   \caption@xdblfloat@hook}
 \newcommand*\caption@xdblfloat@hook{}
-\AddToHook{cmd/@xfloat/after}{\caption@xfloat}
-\AddToHook{cmd/@xdblfloat/after}{\caption@xdblfloat}
 \caption@AtBeginDocument{%
   \DeclareCaptionOption{type}{\setcaptiontype{#1}}%
   \DeclareCaptionOption{type*}{\setcaptiontype*{#1}}%
@@ -931,4 +936,86 @@
     \caption@set@bool\caption@ifhypcap 1%
     \renewcommand*\caption@hypcapspace{\hypcapspace}%
   \fi}{}
+% caption4: longtable support (unchanged from caption.sty v3.6p)
+\providecommand*\LTcaptype{table}
+\providecommand*\caption@LT@array{}
+\newcommand\caption@AtBeginLongtable{%
+  \g@addto@macro\caption@LT@array}
+\caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
+  \RequirePackage{ltcaption}[2018/08/26]%
+  \let\LT@@makecaption\@undefined
+  \caption@AtBeginDocument{%
+    \let\caption@ORI@LT@array\LT@array
+    \renewcommand*\LT@array{%
+      \caption@LT@array
+      \caption@ORI@LT@array}}%
+  \caption@AtBeginLongtable{%
+    \global\let\caption@opt@@longtable\@undefined
+    \def\captionsetup{%
+      \noalign\bgroup
+      \@ifstar\@captionsetup\@captionsetup}% gobble *
+    \def\@captionsetup#1{\LT@captionsetup{#1}\egroup}%
+    \def\LT@captionsetup#1{%
+      \caption@setup@options\@gobble[@longtable]{#1}%
+      \global\let\caption@opt@@longtable\caption@opt@@longtable}%
+    \def\captionlistentry{%
+      \noalign\bgroup
+      \@ifstar{\egroup\LT@listentry\LTcaptype}% gobble *
+              {\egroup\LT@listentry\LTcaptype}}%
+%%      \let\Hy@LT@currentHlabel\@currentHlabel
+%%        \let\@currentHlabel\Hy@LT@currentHlabel
+    \def\continuedfloat{\noalign{%
+      \caption@OutsideFloat\continuedfloat}}%
+    \let\bicaption\LT@bicaption
+  }%
+  \def\LT@capti@n{%
+    \@ifstar
+      {\egroup\LT@c@ption\@gobble[]}%
+      {\egroup\caption@xdblarg{\LT@c@ption\@firstofone}}}%
+  \renewcommand\LT@makecaption[3]{%
+    \caption@LT@make{%
+      \edef\caption@tempa{\LTcaptype}%
+      \ifx\caption@tempa\@empty \def\LTcaptype{table}\fi
+      \caption@LT@settype\LTcaptype
+      \caption@LT@setup
+      \caption@setautoposition{\ifcase\LT@rows t\else b\fi}%
+      \caption@startrue#1\caption@starfalse
+      \caption@prepare@stepcounter\LTcaptype
+      \caption@begin\LTcaptype
+        \caption@normalsize
+        \vskip-\ht\@arstrutbox
+        \caption@ifdefined\FBifcaptop{%
+          \let\caption@belowskip\@empty}{}%
+        \caption@make@above
+        \caption@@make{#2}{#3}\endgraf
+        \caption@make@below
+      \caption@end}}%
+  \renewcommand*\LT@listentry[2]{%
+    \begingroup
+      \caption@LT@settype{#1}%
+      \caption@listentry\@firstoftwo[{#1}]{#2}%
+    \endgroup\ignorespaces}%
+  \newcommand*\caption@LT@settype[1]{%
+    \caption@settype{#1}%
+    \ifdim\LTcapwidth=4in \else
+      \caption@setwidth\LTcapwidth
+    \fi
+    \caption@setoptions{longtable}%
+    \caption@setoptions{@longtable}}%
+  \caption@AtBeginDocument{\caption@ifdefined\flrow@setlist@{%
+    \caption@InfoNoLine{Fixing longtable code of `floatrow' package}%
+    \let\caption@flrow@setlist@\flrow@setlist@
+    \renewcommand\flrow@setlist@[1]{%
+      \def\caption@tempa{{table}{longtable}}%
+      \def\caption@tempb{#1}%
+      \ifx\caption@tempa\caption@tempb
+        \def\@captype{table}%
+      \fi
+      \caption@flrow@setlist@{#1}}%
+  }{}}%
+}{%
+  \let\caption@AtBeginLongtable\@gobble
+  \let\caption@LT@array\@undefined
+}
+\providecommand*\caption@LT@setup{}
 \endinput
