@@ -210,10 +210,48 @@
   \caption@nobreak
   \caption@make@above
   \caption@nobreak
+  \caption@tagging@begin
   \caption@@make{#1}{#2}%
+  \caption@tagging@end
   \caption@nobreak
   \caption@make@below
   \caption@nobreak}
+% caption4: tagged PDF. The kernel declares the sockets caption/begin (with the
+% structure number of the parent float, empty = current structure) and caption/end;
+% latex-lab plugs them when tagging is active, otherwise they do nothing.
+\ifdefined\UseTaggingSocket
+  \newcommand*\caption@tagging@begin{%
+    \UseTaggingSocket{caption/begin}{\caption@floatstruct}%
+    % caption3 typesets the caption inside a \parbox: that box is not a
+    % structure of its own and must keep the (flattened) caption paragraph
+    \AssignTaggingSocketPlug{parbox/before}{noop}%
+    \AssignTaggingSocketPlug{parbox/after}{noop}%
+    % The paragraph which \parbox starts outside the box is not tagged,
+    % only the caption paragraph(s) inside the box.
+    \ifdefined\tagpdfparaOff \tagpdfparaOff \fi
+    \AssignTaggingSocketPlug{para/restore}{caption4}}
+  \NewTaggingSocketPlug{para/restore}{caption4}{\tagpdfparaOn}
+  \newcommand*\caption@tagging@end{%
+    \UseTaggingSocket{caption/end}}
+\else
+  \let\caption@tagging@begin\relax
+  \let\caption@tagging@end\relax
+\fi
+% The parent of a main caption is the float; a sub-caption stays in the current
+% structure (its sub-figure).
+\newcommand*\caption@floatstruct{%
+  \caption@ifsubtype{}{\ifdefined\@current@float@struct\@current@float@struct\fi}}
+% \caption@iftagfloat{<true>}{<false>}: true inside a float tagged by latex-lab
+% (main caption only). Such a float has its own link target <type>.struct.<n>.
+\newcommand*\caption@iftagfloat{%
+  \caption@ifsubtype\@secondoftwo{%
+    \ifx\@current@float@struct\@undefined
+      \expandafter\@secondoftwo
+    \else\ifx\@current@float@struct\@empty
+      \expandafter\expandafter\expandafter\@secondoftwo
+    \else
+      \expandafter\expandafter\expandafter\@firstoftwo
+    \fi\fi}}
 \newcommand*\caption@make@above{%
   \caption@iftop
     \caption@belowskip
@@ -223,6 +261,7 @@
     {\caption@aboveskip\caption@rule}%
     \caption@belowskip}
 \newcommand*\caption@redefine{%
+  \let\@makecaption\caption@makecaption % caption4: latex-lab redefines it at begin document
   \let\caption\caption@caption
   \let\@caption\caption@@caption
   \let\caption@ORI@xfloat\@xfloat
@@ -801,7 +840,8 @@
       because hyperref has stopped early}%
   }{%
     \AtCaptionSingleLineCheck{\measuring@true}%
-    \renewcommand*\caption@refstepcounter@{\H@refstepcounter}%
+    \renewcommand*\caption@refstepcounter@{%
+      \caption@iftagfloat\@kernel@refstepcounter\H@refstepcounter}% caption4
     \renewcommand*\caption@makecurrent[2]{%
       \caption@makecurrentHref{#1}%
       \caption@Debug{hyperref current=\@currentHref}%
@@ -821,8 +861,10 @@
     \newif\if@capstart
     \def\caption@start{\caption@ifhypcap\caption@start@\relax}%
     \def\caption@start@{%
-      \caption@makestart\@captype
-      \caption@startanchor\@currentHref
+      \caption@iftagfloat
+        {\xdef\@currentHref{\@captype.struct.\@current@float@struct}}% caption4: latex-lab's target
+        {\caption@makestart\@captype
+         \caption@startanchor\@currentHref}%
       \global\@capstarttrue
       \let\hc@currentHref\@currentHref
       \def\caption@makecurrentHref##1{%

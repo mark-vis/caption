@@ -113,7 +113,9 @@ def norm_labels(labels):
     # tagging fills the name field (3rd) of \newlabel; keep label, value, page, anchor
     out = []
     for l in labels:
-        m = re.match(r"(\\newlabel\{[^}]*\})\{\{(.*?)\}\{(.*?)\}\{.*?\}\{(.*?)\}", l)
+        # (the anchor is left out too: under tagging floats get latex-lab's
+        # <type>.struct.<n> target instead of caption's <type>.caption.<n>)
+        m = re.match(r"(\\newlabel\{[^}]*\})\{\{(.*?)\}\{(.*?)\}", l)
         out.append(m.groups() if m else l)
     return out
 
@@ -197,11 +199,15 @@ def main():
                             probs.append("  labels differ:\n" + "\n".join(first_diff(r_, n_)))
                 extra = sorted(w for w in set(new["warnings"]) - set(ref["warnings"])
                                if not any(i in w for i in IGNORE_WARN))
+                pre = [w for w in extra if reft and w in reft["warnings"]]
+                extra = [w for w in extra if w not in pre]
                 if extra:
                     probs.append("  new warnings: " + "; ".join(extra[:4]))
+                if pre:
+                    probs.append("  struct-info: warnings also with caption.sty under tagging: " + "; ".join(pre[:3]))
                 if m == "tag":
                     probs.append(f"  struct new={struct_summary(new.get('struct'))} ref(tag)={struct_summary(reft.get('struct') if reft else '')}")
-                hard = [p for p in probs if not p.startswith("  struct")]
+                hard = [p for p in probs if not p.startswith("  struct")]  # struct lines are information only
                 status = "OK  " if not hard else "DIFF"
                 bad += bool(hard)
                 print(f"{status} {name:28s} {e:9s} {m}")

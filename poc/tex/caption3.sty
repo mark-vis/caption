@@ -45,7 +45,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2022-02-20}                    % for caption v3.6
-\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/03 v2.4e-poc caption3 kernel (AR) + caption4 proof of concept]
 \@ifundefined{kernel@ifnextchar}{\let\kernel@ifnextchar\@ifnextchar}{}
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
@@ -1567,6 +1567,41 @@
     width=\the\caption@width,\MessageBreak
     leftmargin=\the\caption@leftmargin,
     rightmargin=\the\caption@rightmargin}}
+% caption4 PoC: measuring must not produce tagging structure (kernel 2024-06-01 or newer)
+\ifdefined\SuspendTagging
+  \newcommand*\caption@SuspendTagging{\SuspendTagging{caption}}
+  \newcommand*\caption@ResumeTagging{\ResumeTagging{caption}}
+\else
+  \let\caption@SuspendTagging\relax
+  \let\caption@ResumeTagging\relax
+\fi
+% caption4 PoC: the caption label is tagged as Lbl. Inside the caption paragraph
+% the marked content of the paragraph is interrupted for it.
+\ifcsname tag_if_active:T\endcsname
+  \ExplSyntaxOn
+  \cs_new_protected:Npn \caption@tag@lbl@begin
+    {
+      \tag_if_active:T
+        {
+          \mode_if_horizontal:T { \tag_mc_end_push: }
+          \tag_struct_begin:n { tag = Lbl }
+          \tag_mc_begin:n { }
+        }
+    }
+  \cs_new_protected:Npn \caption@tag@lbl@end
+    {
+      \tag_if_active:T
+        {
+          \tag_mc_end:
+          \tag_struct_end:
+          \mode_if_horizontal:T { \tag_mc_begin_pop:n { } }
+        }
+    }
+  \ExplSyntaxOff
+\else
+  \let\caption@tag@lbl@begin\relax
+  \let\caption@tag@lbl@end\relax
+\fi
 \newcommand\caption@slc[4]{%
   \caption@Debug{Begin SLC}%
   \singlelinecaptiontrue
@@ -1575,7 +1610,9 @@
   \let\caption@justification\relax
   \caption@calcmargin % calculate \caption@width
   \caption@prepareslc
+  \caption@SuspendTagging
   \sbox\@tempboxa{\caption@@@make{#1}{#2}}%
+  \caption@ResumeTagging
   \ifdim\wd\@tempboxa>\caption@width
     \endgroup
     \singlelinecaptionfalse
@@ -1665,6 +1702,7 @@
   \let\caption@lfmt\caption@labelformat
   \global\def\caption@tempa{gobbletwo}%
   \global\def\caption@tempb{}%
+  \caption@SuspendTagging
   \sbox\@tempboxa{%
     \let\caption@ignorespaces\ignorespaces
     \def\ignorespaces{%
@@ -1673,6 +1711,7 @@
     #1%
       {\global\let\caption@tempa\@undefined\aftergroup\@gobble}%
       {\global\def\caption@tempa{gobble\caption@tempb}}}%
+  \caption@ResumeTagging
   \ifdim\wd\@tempboxa=\z@
     \gdef\caption@tempa{none}%
   \fi
@@ -1688,10 +1727,12 @@
   \caption@applyfont
   \caption@fmt
     {\ifcaption@star\else
+       \caption@tag@lbl@begin
        \begingroup
          \captionlabelfont
          #1\relax\relax
        \endgroup
+       \caption@tag@lbl@end
      \fi}%
     {\ifcaption@star\else
        \begingroup
