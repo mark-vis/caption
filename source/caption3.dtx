@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3855}
+% \CheckSum{3871}
 %
 % \iffalse
 %<*driver>
@@ -232,7 +232,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2023/07/31 v2.4d caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -4622,6 +4622,7 @@
 % \changes{v1.1}{2007/07/04}{Re-defines itself now}
 % \changes{v1.2a}{2007/01/22}{Revised so \cs{label} will be detected, too}
 % \changes{v1.2b}{2008/08/02}{Revised so \cs{index} and \cs{glossary} will be detected, too}
+% \changes{v2.4e}{2026/10/03}{An optional argument of \cs{label}, \cs{index}, or \cs{glossary} will be skipped, too}
 %   |\caption@ifempty|\marg{text}\marg{yes-code}\\
 %   tests if the \meta{text} is actually empty.
 %   \Note{This will be done without expanding the text,
@@ -4651,15 +4652,15 @@
       \else
         \def\caption@tempb{\label}%
         \ifx\caption@tempa\caption@tempb
-          \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+          \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
         \else
           \def\caption@tempb{\index}%
           \ifx\caption@tempa\caption@tempb
-            \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+            \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
           \else
             \def\caption@tempb{\glossary}%
             \ifx\caption@tempa\caption@tempb
-              \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+              \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
             \else
               \let\caption@ifempty\@gobbletwo
             \fi
@@ -4671,6 +4672,19 @@
 %    \end{macrocode}
 %    \begin{macrocode}
 \long\def\caption@car#1#2\caption@nil{#1}% same as \@car, but \long
+%    \end{macrocode}
+%   |\caption@if@empty@cmd|\marg{text}\\
+%   is used after |\label|, |\index|, or |\glossary| was removed from the
+%   \meta{text}: it removes an optional argument (which is offered by some
+%   packages, e.g.~\pkg{cleveref}) and the mandatory argument, and tests
+%   the remaining text.
+%    \begin{macrocode}
+\long\def\caption@if@empty@cmd#1{%
+  \@ifnextchar[\caption@if@empty@opt\caption@if@empty@arg#1\caption@nil}
+\long\def\caption@if@empty@opt[#1]{%
+  \caption@if@empty@arg}
+\long\def\caption@if@empty@arg#1#2\caption@nil{%
+  \caption@if@empty{#2}}
 %    \end{macrocode}
 % \end{macro}
 %

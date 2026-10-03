@@ -1,0 +1,27 @@
+% Issue: 171
+% Title: Incorrect handling of optional arguments for \label, \index, and \glossary in is-caption-text-empty check
+% Date:  Aug 1, 2023 10:37:59 AM GMT+2
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/171
+
+% If \label (or \index or \glossary) is offered with optional argument (by a package which extends one of them)
+% the handling is not correct regarding the "is the caption text empty?" check:
+
+\documentclass{article}
+\usepackage{caption}
+
+\let\labelORI\label
+\renewcommand\label[2][]{%
+  \labelORI{#2#1}}
+
+\begin{document}
+
+\begin{figure}
+\caption[]{\label{test}}    % This results in a caption without separator...
+\caption[]{\label[2]{test}} % ...but this one does not.
+\caption[]{\label[2]{test2}Text}
+\end{figure}
+
+\end{document}
+
+% Expected output:
+% "Figure 1" and "Figure 2" (both without separator), and "Figure 3: Text".
