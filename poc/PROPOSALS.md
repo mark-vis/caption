@@ -55,9 +55,8 @@ The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b)
 All `\IncludeInRelease` blocks use **2026/11/01**. That is the date develop uses for
 its next release: `\fmtversion` is 2026-11-01 (base/ltvers.dtx),
 base/TEMPLATE-IncludeInRelease.txt uses 2026/11/01, ltclass.dtx already has blocks with
-that date, and base/doc/ltnews44.tex is the draft for November 2026. The first drafts
-of (a) and (d) used 2027/06/01, on the assumption that they would be too late for
-November. That is for the team to decide; as ltvers.dtx explains, a guessed date is
+that date, and base/doc/ltnews44.tex is the draft for November 2026. The team may
+prefer a later date; as ltvers.dtx explains, a guessed date is
 changed when the release date is fixed. caption's guards do not depend on the date:
 (a) tests `\@float@usehooks`, (b) and (c) test whether a socket exists. (d) adds no
 `latexrelease` block of its own, because lttagging is one module in `latexrelease`
@@ -99,10 +98,9 @@ confusing, (a) could use `float/box/begin`/`float/box/end` instead (open questio
 (b) deliberately adds no hooks named `caption/before`/`caption/after`, which would be
 easy to confuse with `cmd/caption/before` and the tagging socket `caption/begin`.
 
-### What changed when the four patches were combined
+### How the series differs from the stand-alone patches
 
-The four drafts were written separately. Stacking them needed these changes (all are in
-the series patches):
+The series patches differ from the stand-alone ones in these points:
 
 - (b) added the structure name `float/<type>/sub` to the `float/new` key, whose body (d)
   replaces with `\DeclareTaggingFloatType`. In the series, `\DeclareTaggingFloatType`
@@ -112,14 +110,14 @@ the series patches):
   `float/generic/caption`. The stand-alone (b) patch keeps its own version.
 - (c) changes the `caption/label/begin` plug, whose structure line (d) had changed; the
   series keeps (d)'s line.
-- The drafts did not contain the expected updates of existing `.tlg` files. They are now
-  part of the patches, saved with `l3build save` at each step: four
-  `tlb-latexrelease-rollback-*` tests (new `Applying/Skipping` lines from (a) and (b), for
-  pdfTeX, LuaTeX and XeTeX), 16 tests of `config-lthooks` (the two new hooks in hook
-  listings, from (a)) and `float-010-outside` (a tagpdf debug line, from (d)). In each
-  case the only difference is the added lines, or the two changed debug lines.
-- `changes.txt` entries were added for (a) and (d); the `float-017-declare` `.tlg` files
-  now have `<PDF version="2.0">` like the other `.tlg` files (see "Verification").
+
+All patches include the expected updates of existing `.tlg` files, saved with
+`l3build save`: four `tlb-latexrelease-rollback-*` tests (new `Applying/Skipping` lines
+from (a) and (b), for pdfTeX, LuaTeX and XeTeX), 16 tests of `config-lthooks` (the two
+new hooks in hook listings, from (a)) and `float-010-outside` (a tagpdf debug line, from
+(d)). In each case the only difference is the added lines, or the two changed debug
+lines. The new `float-017-declare` `.tlg` files have `<PDF version="2.0">` like the
+other `.tlg` files (see "Verification").
 
 No code had to change because of an interaction between the proposals.
 
@@ -342,7 +340,7 @@ and the three call sites:
 
 ### 4. Verification
 
-These runs were made by the author of (a) on the single patch (results for the combined
+These runs were made on the single patch (results for the combined
 patch are in the last section).
 
 - **New test** `tlb-float-hooks-001.lvt` (saved with `l3build save`, pdfTeX; LuaTeX
@@ -374,8 +372,7 @@ patch are in the last section).
 
   `tlb-float-hooks-002-rollback.lvt` (`latexrelease` 2026-06-01): the hooks are declared
   but no output appears. Both pass with `l3build check -e pdftex` and `-e luatex`.
-- **Nested `[H]` with the real float.sty** (`mwe/a4-nested-H.tex`, written by a
-  reviewer): a `program` `[H]` float in a minipage in a `figure`. With the first version
+- **Nested `[H]` with the real float.sty** (`mwe/a4-nested-H.tex`): a `program` `[H]` float in a minipage in a `figure`. With the first version
   of the patch it printed `END figure [] captype=program` and then
   `END figure [] captype=figure`. Now it prints one `BEGIN figure []` and one
   `END figure [] captype=figure`, with 0 errors.
@@ -797,7 +794,7 @@ and its `\@makecaption` makes the label sockets `noop` when `\if@captionstar` is
 
 ### 4. Verification
 
-These runs were made by the author of (b) on the stand-alone patch (results for the
+These runs were made on the stand-alone patch (results for the
 combined patch are in the last section).
 
 - **base, pdfTeX**: `l3build check -e pdftex caption-interface-001 tlb-hfloat-01
@@ -1194,7 +1191,7 @@ to `caption/separator` as well.
 
 ### 4. Verification
 
-These runs were made by the author of (c) on (b) + (c) (results for the combined patch
+These runs were made on (b) + (c) (results for the combined patch
 are in the last section).
 
 - `l3build check -c config-float` (pdfTeX and LuaTeX): only `firstaid-float-H-2` and the
@@ -1560,7 +1557,7 @@ in `\newfloat@announce`:
 
 ### 4. Verification
 
-These runs were made by the author of (d) on the stand-alone patch (results for the
+These runs were made on the stand-alone patch (results for the
 combined patch are in the last section).
 
 - **latex-lab** `l3build check -c config-float` (all float/marginpar tests including the
@@ -1709,7 +1706,7 @@ newfloat v1.2a. Three runs each (two for the simpler ones).
 | (b) `cls-star` with article, report, memoir, scrartcl, amsart | as in (b)4: "Starred" / ": Starred" / ". Starred", no LoF entry, right numbers |
 | (b) `release-back` | old behaviour: "Figure 2: \*", LoF entry "\*" |
 | (c) `c-caption3-plug`, `c-caption-remove`, `c-inpar` (pdfLaTeX, LuaLaTeX) | 0 errors; structure trees identical to the runs on (b)+(c); `c-inpar`: `Lbl` as child of `P`, no tagging warnings |
-| (d) `d1`, `d2` (newfloat v1.2 and v1.2a), `d3`, `d10`, `d10b` (pdfLaTeX, LuaLaTeX) | 0 errors (on develop: 9/14, 18/28, 0, 22/25, 21/24); `d2`/`d3` with v1.2a: 0 tagpdf warnings; `d10b`: 16 tagpdf warnings, as described in (d) |
+| (d) `d1`, `d2` (newfloat v1.2 and v1.2a), `d3`, `d10`, `d10b` (pdfLaTeX, LuaLaTeX) | 0 errors (on develop: `d1` 9/14, `d2` with v1.2 18/28, `d2` and `d3` with v1.2a 0, `d10` 22/25, `d10b` 21/24; `d3` is compiled with v1.2a only); `d2`/`d3` with v1.2a: 0 tagpdf warnings; `d10b`: 16 tagpdf warnings, as described in (d) |
 | (d) `d6`, `d7`, `d8`, `d9`, `d11`, `d12` with newfloat v1.2a (pdfLaTeX) | 0 errors, 0 tagpdf warnings (on develop: `d6`, `d7` 9 errors each) |
 
 ### What was not verified
