@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{549}
+% \CheckSum{569}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2023/08/13 v1.6 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2026/10/04 v1.7 Adds a sub-caption feature to the caption package]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -1835,7 +1835,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2026/10/03 v1.6c Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2026/10/04 v1.7 Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \pkg{caption} package we load it here.
@@ -1954,9 +1954,15 @@
 %    \end{macrocode}
 % `B' and `T' will add a |\vspace{0pt}|, all other values (and additional
 % optional arguments) will be passed unseen to the |minipage| environment.
+% \changes{v1.7}{2026/10/04}{Tagged PDF: The \env{minipage} is tagged as \texttt{Part}}
+% When a tagged PDF is produced (\texttt{latex-lab}), the \env{minipage} would be tagged
+% as |Div|. \texttt{latex-lab} plans to tag sub-figures as |Part| with their own |Caption|,
+% so we assign the role |Part| to the structure name \texttt{minipage} for this \env{minipage}
+% (but not for minipages inside of it).
 %    \begin{macrocode}
 \newcommand*\subcaption@iiminipage[3]{%
   \let\subcaption@endminipage@hook\@empty
+  \subcaption@tag@part
   \if#1B%
     \minipage[b]#2{#3}%
     \def\subcaption@endminipage@hook{\vspace{0pt}}%
@@ -1966,9 +1972,30 @@
   \else
     \minipage[#1]#2{#3}%
   \fi\fi
+  \subcaption@tag@endpart
   \@subfloatboxreset
   \setcaptionsubtype\relax}
 %    \end{macrocode}
+% \begin{macro}{\subcaption@tag@part}
+% \begin{macro}{\subcaption@tag@endpart}
+% \changes{v1.7}{2026/10/04}{These macros added}
+% |\subcaption@tag@part| assigns the role |Part| to the structure name \texttt{minipage}
+% (locally) and defines |\subcaption@tag@endpart| (used inside the \env{minipage}) which
+% assigns the previous role again. This is only done if the structure name
+% \texttt{minipage} is defined (by \texttt{latex-lab}).
+%    \begin{macrocode}
+\newcommand*\subcaption@tag@part{%
+  \ifcsname l__tag_name_minipage_tl\endcsname
+    \edef\subcaption@tag@endpart{%
+      \noexpand\AssignStructureRole{minipage}{\UseStructureName{minipage}}}%
+    \AssignStructureRole{minipage}{Part}%
+  \else
+    \let\subcaption@tag@endpart\relax
+  \fi}
+\let\subcaption@tag@endpart\relax
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
 %    \begin{macrocode}
 \newcommand*\subcaption@endminipage{%
   \subcaption@endminipage@hook
