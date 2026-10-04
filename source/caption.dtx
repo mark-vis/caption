@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3048}
+% \CheckSum{3127}
 %
 % \iffalse
 %<*driver>
@@ -841,11 +841,14 @@
 % New floating environments (for example defined with the \pkg{newfloat} package) must be made
 % known to the tagging code with |\tagpdfsetup{float/new=|\meta{type}|}| (this is not
 % specific to the \pkg{caption} package).
-% The captions typeset by the adaptations to other packages are not handled specially yet:
+% The captions of the \pkg{longtable} package stay inside their table cell, as with
+% \texttt{latex-lab}'s own longtable support, and are tagged as paragraph (|P|) with a non-empty
+% label as |Lbl|, but not as |Caption| structure: PDF~2.0 does not allow a |Caption| inside a
+% table cell, and a table can have only one |Caption| (but a longtable can repeat its caption
+% on every page).
+% The captions typeset by the other adaptations to other packages are not handled specially yet:
 % some of them are tagged as |Caption| structure, but not as part of a structure of their
-% environment (for example the captions inside the environments of the \pkg{wrapfig} package),
-% others are not tagged as |Caption| structure at all (for example the captions of the
-% \pkg{longtable} package).
+% environment (for example the captions inside the environments of the \pkg{wrapfig} package).
 %
 % \iffalse
 % ----------------------------------------------------------------------------------------------- %
@@ -1680,9 +1683,11 @@
 %
 % \begin{macro}{\caption@tagging@begin}
 % \begin{macro}{\caption@tagging@end}
+% \begin{macro}{\caption@tagging@setup}
 % \changes{v3.7}{2026/10/04}{These macros added}
 %  |\caption@tagging@begin|\\
-%  |\caption@tagging@end|\par
+%  |\caption@tagging@end|\\
+%  |\caption@tagging@setup|\par
 %  Support of tagged PDF: The \LaTeX\ kernel declares the tagging sockets
 %  \texttt{caption/begin} (with the structure number of the parent float as argument;
 %  empty means the current structure) and \texttt{caption/end}.
@@ -1693,32 +1698,157 @@
 %    \begin{macrocode}
 \newcommand*\caption@tagging@begin{}
 \newcommand*\caption@tagging@end{}
+\newcommand*\caption@tagging@setup{}
 \ifdefined\IfSocketExistsTF \ifdefined\NewTaggingSocketPlug
   \IfSocketExistsTF{tagsupport/caption/begin}{%
   \IfSocketExistsTF{tagsupport/parbox/before}{%
   \IfSocketExistsTF{tagsupport/para/restore}{%
 %    \end{macrocode}
-%  The \pkg{caption} kernel typesets the caption inside a |\parbox|. That box should
-%  not be a structure of its own, and it must keep the (flattened) caption paragraph.
-%  Furthermore the paragraph which |\parbox| starts outside the box is not tagged,
-%  only the caption paragraph(s) inside the box.
+%  The \pkg{caption} kernel typesets the caption inside one or more boxes (for example
+%  a |\parbox|, see the options |box=| and |parbox=|). These boxes should not be
+%  structures of their own, and only the caption paragraph(s) inside the innermost box
+%  are tagged (flattened, i.e.~as |P| without a |Part| or |Div| around it),
+%  but not the paragraphs started outside these boxes.
+%  So |\caption@tagging@setup| saves the current plugs of the sockets \texttt{parbox/before},
+%  \texttt{parbox/after} and \texttt{para/restore} (see |\caption@tagging@saveplugs|),
+%  replaces them with plugs which do nothing (\texttt{noop}) or only keep
+%  the paragraph flattened (\texttt{caption}), and switches paragraph tagging off.
+%  At the start of the caption paragraph the \pkg{caption} kernel executes
+%  |\caption@tag@par| which switches paragraph tagging on and restores the saved plugs,
+%  so boxes inside the caption label or text are tagged as usual.
+%  (If the paragraph has already been started, for example with |parbox=none|,
+%  |\caption@tag@par| starts the tagging of the paragraph explicitly, as \texttt{latex-lab}'s
+%  own definition of |\@makecaption| does.)
 %  Inside the |Caption| structure the \pkg{caption} kernel tags the label as |Lbl|
 %  (see |\caption@iftaglbl|).
 %  (These settings are local to the caption.)
+%  |\caption@tagging@setup| contains these settings without starting the |Caption|
+%  structure; it is also used for longtable captions (see |\LT@makecaption|).
 %    \begin{macrocode}
     \renewcommand*\caption@tagging@begin{%
       \UseTaggingSocket{caption/begin}{\caption@floatstruct}%
+      \caption@tagging@setup}%
+    \renewcommand*\caption@tagging@setup{%
+      \caption@tagging@saveplugs
+      \let\caption@tag@parend\caption@tagging@parend
+      \caption@tagging@flatten
       \let\caption@iftaglbl\@firstoftwo
       \AssignTaggingSocketPlug{parbox/before}{noop}%
       \AssignTaggingSocketPlug{parbox/after}{noop}%
-      \ifdefined\tagpdfparaOff \tagpdfparaOff \fi
-      \AssignTaggingSocketPlug{para/restore}{caption}}%
-    \NewTaggingSocketPlug{para/restore}{caption}{\tagpdfparaOn}%
+      \AssignTaggingSocketPlug{para/restore}{caption}%
+      \ifdefined\tagpdfparaOff \tagpdfparaOff \fi}%
+    \NewTaggingSocketPlug{para/restore}{caption}{\caption@tagging@flatten}%
     \renewcommand*\caption@tagging@end{%
       \let\caption@iftaglbl\@secondoftwo
       \UseTaggingSocket{caption/end}}%
   }{}}{}}{}%
 \fi \fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@tagging@saveplugs}
+% \begin{macro}{\caption@tagging@flatten}
+% \begin{macro}{\caption@tagging@parend}
+% \changes{v3.7}{2026/10/04}{These macros added}
+%  |\caption@tagging@saveplugs|\\
+%  |\caption@tagging@flatten|\\
+%  |\caption@tagging@parend|\par
+%  |\caption@tagging@saveplugs| (locally) defines |\caption@tag@par| (see above), using the
+%  plugs which are currently assigned to the sockets \texttt{parbox/before},
+%  \texttt{parbox/after}, and \texttt{para/restore}.
+%  (If |\socket_get_plug:nN| is not available, the default plugs are used.)
+%  If |\caption@tag@par| is already defined, the plugs have been saved before
+%  (see |\caption@LT@tagging@begin|), and nothing is done.
+%  |\caption@tagging@flatten| makes sure that paragraphs are flattened.
+%  |\caption@tagging@parend| (used as |\caption@tag@parend|) switches the paragraph
+%  tagging off after the caption paragraph (if it has ended).
+%    \begin{macrocode}
+\ifx\caption@tagging@begin\@empty \else
+  \ExplSyntaxOn
+  \tl_new:N \l__caption_parbox_before_plug_tl
+  \tl_new:N \l__caption_parbox_after_plug_tl
+  \tl_new:N \l__caption_para_restore_plug_tl
+  \cs_gset_protected:Npn \caption@tagging@saveplugs
+    {
+      \token_if_eq_meaning:NNT \caption@tag@par \@empty
+        {
+          \cs_if_exist:NTF \socket_get_plug:nN
+            {
+              \socket_get_plug:nN { tagsupport/parbox/before }
+                \l__caption_parbox_before_plug_tl
+              \socket_get_plug:nN { tagsupport/parbox/after }
+                \l__caption_parbox_after_plug_tl
+              \socket_get_plug:nN { tagsupport/para/restore }
+                \l__caption_para_restore_plug_tl
+            }
+            {
+              \tl_set:Nn \l__caption_parbox_before_plug_tl { kernel }
+              \tl_set:Nn \l__caption_parbox_after_plug_tl { kernel }
+              \tl_set:Nn \l__caption_para_restore_plug_tl { default }
+            }
+          \cs_set_protected:Npe \caption@tag@par
+            {
+              \exp_not:N \AssignTaggingSocketPlug { parbox/before }
+                { \l__caption_parbox_before_plug_tl }
+              \exp_not:N \AssignTaggingSocketPlug { parbox/after }
+                { \l__caption_parbox_after_plug_tl }
+              \exp_not:N \AssignTaggingSocketPlug { para/restore }
+                { \l__caption_para_restore_plug_tl }
+              \exp_not:n
+                {
+                  \tag_if_active:T
+                    {
+                      \tagpdfparaOn
+                      \mode_if_horizontal:T { \UseTaggingSocket { para/begin } }
+                    }
+                }
+            }
+        }
+    }
+  \cs_gset_protected:Npn \caption@tagging@flatten
+    { \tag_if_active:T { \tagpdfsetup { para/flattened = true } } }
+  \cs_gset_protected:Npn \caption@tagging@parend
+    { \tag_if_active:T { \mode_if_vertical:T { \tagpdfparaOff } } }
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@LT@tagging@begin}
+% \begin{macro}{\caption@LT@tagging@end}
+% \changes{v3.7}{2026/10/04}{These macros added}
+%  |\caption@LT@tagging@begin|\\
+%  |\caption@LT@tagging@end|\par
+%  These hooks are used by the \pkg{ltcaption} package (\version{1.5} or newer)
+%  inside the table cell which contains a longtable caption.
+%  Since PDF~2.0 does not allow a |Caption| structure inside a table cell, and a
+%  |Table| structure can have only one |Caption| (but a longtable can repeat its caption
+%  in the head on every page), a longtable caption gets no |Caption| structure.
+%  As with \texttt{latex-lab}'s own longtable caption, it stays inside the table cell,
+%  but it is tagged as one paragraph with the label as |Lbl| inside, without
+%  any |Div| structures of the boxes used for typesetting it.
+%  Therefore the \cs{parbox} typeset by \pkg{ltcaption} gets no structure of its own,
+%  and the marked content of the table cell is interrupted around the caption.
+%  (These settings are local to the table cell. The plugs are saved first, so
+%  |\caption@tag@par| restores the plugs of the table cell.)
+%  |\caption@tagging@setup| (used by |\LT@makecaption| inside the \cs{parbox} of
+%  \pkg{ltcaption}) does the rest; especially it flattens the caption paragraph again,
+%  since the \texttt{para/restore} plug of \texttt{latex-lab}'s table code (used by this
+%  \cs{parbox}) would put it into a |Div| otherwise.
+%    \begin{macrocode}
+  \cs_gset_protected:Npn \caption@LT@tagging@begin
+    {
+      \caption@tagging@saveplugs
+      \AssignTaggingSocketPlug{parbox/before}{noop}
+      \AssignTaggingSocketPlug{parbox/after}{noop}
+      \tag_if_active:T { \tag_mc_end_push: }
+    }
+  \cs_gset_protected:Npn \caption@LT@tagging@end
+    { \tag_if_active:T { \tag_mc_begin_pop:n { } } }
+  \ExplSyntaxOff
+\fi
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
@@ -4442,8 +4572,9 @@
 %    \begin{macrocode}
 \caption@IfPackageLoaded{longtable}[1995/05/24 v3.14]{%
 %    \end{macrocode}
+% \changes{v3.7}{2026/10/04}{Needs \pkg{ltcaption} \version{1.5} now}
 %    \begin{macrocode}
-  \RequirePackage{ltcaption}[2018/08/26]%
+  \RequirePackage{ltcaption}[2026/10/04]% needs v1.5 or newer
   \let\LT@@makecaption\@undefined
 %    \end{macrocode}
 %
@@ -4639,8 +4770,12 @@
 %    \end{macrocode}
 %  The following code should look familiar. We do our skips and use
 %  |\caption@@make| to typeset the caption itself.
+% \changes{v3.7}{2026/10/04}{Usage of \cs{caption@tagging@setup} added}
+%  (When a tagged PDF is produced, |\caption@tagging@setup| makes sure that the caption is tagged
+%  as one paragraph with the label as |Lbl|, see |\caption@LT@tagging@begin|.)
 %    \begin{macrocode}
         \caption@make@above
+        \caption@tagging@setup
         \caption@@make{#2}{#3}\endgraf
         \caption@make@below
       \caption@end}}%

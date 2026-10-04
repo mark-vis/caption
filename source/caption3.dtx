@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3931}
+% \CheckSum{3939}
 %
 % \iffalse
 %<*driver>
@@ -4076,6 +4076,7 @@
 % \changes{v1.7}{2016/01/31}{Adapted to the \pkg{bicaption} package}
 % \changes{v1.8f}{2019/12/18}{Usage of \cs{linewidth} replaced by \cs{hsize}}
 % \changes{v2.3}{2021/01/16}{Some code encapsulated as \cs{caption@make@leftmargin}, \cs{caption@make@parbox}, \cs{caption@make@indention}, and \cs{caption@make@rightmargin}}
+% \changes{v2.5}{2026/10/04}{Usage of \cs{caption@tag@par} added}
 %   |\caption@@make|\marg{caption label}\marg{caption text}
 %    \begin{macrocode}
 \newcommand\caption@@make[2]{%
@@ -4109,6 +4110,10 @@
 %    \begin{macrocode}
     \caption@make@parbox{%
 %    \end{macrocode}
+%   Prepare the tagging of the caption paragraph (see |\caption@tag@par|).
+%    \begin{macrocode}
+      \caption@tag@par
+%    \end{macrocode}
 %   Typeset the indention (option |indention=|)\\
 %   {\small Bugfix 04-05-05:
 %    |\hskip-\caption@indent| replaced by |\ifdim\caption@indent=\z@|\ldots}
@@ -4116,8 +4121,10 @@
       \caption@make@indention
 %    \end{macrocode}
 %   Typeset the caption itself and close the |\caption@parbox|
+%   (and finish the tagging of the caption paragraph, see |\caption@tag@par|)
 %    \begin{macrocode}
-      \caption@@@make{#1}{#2}}%
+      \caption@@@make{#1}{#2}%
+      \caption@tag@parend}%
 %    \end{macrocode}
 %   Typeset the right margin (option |margin=|)
 %    \begin{macrocode}
@@ -4257,14 +4264,36 @@
 % \begin{macro}{\caption@iftaglbl}
 % \changes{v2.5}{2026/10/04}{This macro added}
 %   |\caption@iftaglbl|\marg{true}\marg{false}\\
-%   The label is only tagged inside a |Caption| structure, i.e.~if the caption
-%   package has started one (with the tagging socket \texttt{caption/begin}) and has
-%   set |\caption@iftaglbl| to |\@firstoftwo| (locally).
+%   The label is only tagged if the caption package has set |\caption@iftaglbl| to
+%   |\@firstoftwo| (locally), i.e.~inside a |Caption| structure started by the caption
+%   package (with the tagging socket \texttt{caption/begin}), or in a longtable caption.
 %   |\caption@@@make| sets it back to |\@secondoftwo| if the label is empty,
 %   so no empty |Lbl| structure will be written.
 %    \begin{macrocode}
 \let\caption@iftaglbl\@secondoftwo
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@tag@par}
+% \begin{macro}{\caption@tag@parend}
+% \changes{v2.5}{2026/10/04}{These macros added}
+%   |\caption@tag@par|\\
+%   |\caption@tag@parend|\\
+%   This hook is executed at the start of the innermost box of the caption, i.e.~right before
+%   the caption paragraph starts. The \pkg{caption} package (re-)defines it locally when a
+%   tagged PDF is produced: it switches the paragraph tagging on (which is switched off
+%   for the paragraphs outside this box) and restores the tagging plugs of \cs{parbox}
+%   which were changed for the boxes of the caption, so boxes inside the caption label or
+%   text are tagged as usual.
+%   |\caption@tag@parend| is executed after the caption paragraph; the \pkg{caption} package
+%   (re-)defines it to switch the paragraph tagging off again, since the caption
+%   paragraph is not inside a box group if |parbox=none| is used.
+%   Both do nothing by default.
+%    \begin{macrocode}
+\let\caption@tag@par\@empty
+\let\caption@tag@parend\@empty
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@tag@lbl@begin}

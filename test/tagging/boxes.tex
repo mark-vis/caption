@@ -1,0 +1,55 @@
+% Tagged PDF: caption box options, boxes inside the caption text, captions in
+% contexts where paragraph tagging is off (caption v3.7, caption3 v2.5)
+\DocumentMetadata{lang=en-US,tagging=on}
+\documentclass{article}
+\usepackage{xcolor}
+\usepackage[labelfont=bf]{caption}
+\usepackage{subcaption}
+\DeclareCaptionFormat{myformat}{#1#2#3}
+\newcommand\fig[2]{%
+  \begin{figure}[h]
+    \centering
+    \rule{1cm}{5mm}
+    \captionsetup{#1}%
+    \caption{#2}
+  \end{figure}}
+\begin{document}
+\fig{}{Default}
+\fig{parbox=none}{Parbox none}
+\fig{box=parbox}{Box parbox}
+\fig{box=colorbox,boxcolor=yellow}{Box colorbox}
+\fig{format=hang,singlelinecheck=false}{Hang}
+\fig{margin=1cm,justification=raggedright}{Margin}
+\fig{format=myformat}{Myformat}
+\fig{width=3cm}{A rather long caption with a fixed width}
+\fig{}{A caption with a \parbox{2cm}{parbox inside} it}
+\fig{}{A caption with a \begin{minipage}{2cm}minipage inside\end{minipage} it}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{.4\linewidth}
+    \centering
+    \rule{2cm}{1cm}
+    \caption{Sub-figure}
+    \begin{minipage}{2cm}A minipage inside the sub-figure\end{minipage}
+  \end{subfigure}
+  \caption{A figure with a sub-figure}
+\end{figure}
+
+\begin{tabular}{lp{5cm}}
+  A & \begin{minipage}{4cm}\rule{1cm}{1cm}\captionof{figure}{In a table cell}\end{minipage}\\
+\end{tabular}
+\end{document}
+
+% Expected output:
+% Twelve figures with a bold label "Figure N:" (as without \DocumentMetadata).
+% Structure: every caption is a Caption with one P inside (the label as Lbl inside the P),
+% also with parbox=none (the caption text was not tagged with v3.7 before 2026/10/04)
+% and box=parbox (gave a P inside a P before). A \parbox or minipage inside the caption
+% text is tagged as usual (Div with its paragraphs), not as a P inside the caption P.
+% The sub-figure is a Part with its Caption; the minipage inside it is a Div.
+% The \captionof inside a minipage in a table cell is a Caption inside the Div of the
+% minipage, its paragraph is tagged although paragraph tagging is off in table cells.
+% No tagpdf warnings (nested marked content, para hooks), except one
+% "Parent-Child 'pdf2:TD' --> 'pdf2:Caption'" for the caption in the table cell, which
+% latex-lab gives without the caption package (with capt-of), too.

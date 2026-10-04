@@ -1,8 +1,10 @@
-% Tagged PDF: longtable captions (caption v3.7 together with latex-lab's table tagging)
+% Tagged PDF: longtable captions (caption v3.7, ltcaption v1.5)
+% together with latex-lab's table tagging
 \DocumentMetadata{lang=en-US,tagging=on}
 \documentclass{article}
 \usepackage{longtable}
-\usepackage[labelfont=bf,labelsep=period]{caption}
+\usepackage{ltcaption}
+\usepackage[labelfont=bf,labelsep=period,font=small]{caption}
 \begin{document}
 \listoftables
 
@@ -17,20 +19,56 @@
   A & B \\
 \end{longtable}
 
+\begin{longtable}{ll}
+  \caption[]{A long table without list entry}\label{tab:c}\\
+  A & B \\
+\end{longtable}
+
+\begin{longtable}{ll}
+  \caption[Short]{A long table with a very long caption text which needs more than
+    one line, so it will be typeset as a paragraph with several lines}\label{tab:d}\\
+  A & B \\
+\end{longtable}
+
+\begin{longtable*}{ll}
+  \caption*{A longtable* caption}\\
+  A & B \\
+\end{longtable*}
+
+\begin{longtable}{ll}
+  \captionsetup{labelformat=empty}
+  \caption{Empty label format}\\
+  A & B \\
+\end{longtable}
+
+\begin{longtable}{ll}
+  A & B \\
+  \caption{Caption at the bottom}\label{tab:g}
+\end{longtable}
+
 \begin{table}[h]
   \centering
-  \caption{A table}\label{tab:b}
+  \caption{A table}\label{tab:h}
   \begin{tabular}{ll} A & B \end{tabular}
 \end{table}
 
-References: \ref{tab:a}, \ref{tab:b}.
+References: \ref{tab:a}, \ref{tab:c}, \ref{tab:d}, \ref{tab:g}, \ref{tab:h}.
 \end{document}
 
 % Expected output:
-% The List of Tables lists "1 A long table" and "3 A table" (longtable steps the
-% table counter for the unnumbered long table, too, as without tagging).
-% The captions read "Table 1. A long table", "An unnumbered long table" and
-% "Table 3. A table", with a bold label, as without \DocumentMetadata.
-% The references read "1, 3".
-% The caption of the table float is tagged as Caption with Lbl; the longtable
-% captions get no Caption structure (neither latex-lab's longtable support does this).
+% The List of Tables lists "1 A long table", "4 Short", "5 Empty label format",
+% "6 Caption at the bottom" and "7 A table" (longtable steps the table counter for
+% the unnumbered long table and for \caption[], too, as without tagging; longtable*
+% does not).
+% The captions read "Table 1. A long table", "An unnumbered long table",
+% "Table 3. A long table without list entry", "Table 4. A long table with ..." (two
+% lines), "A longtable* caption", "Empty label format", "Table 6. Caption at the
+% bottom" and "Table 7. A table", with a bold label and in small font, as without
+% \DocumentMetadata. The references read "1, 3, 4, 6, 7".
+% Structure: the caption of the table float is tagged as Caption with Lbl. A longtable
+% caption stays in its table cell (TD) as with latex-lab's own longtable caption
+% (PDF 2.0 does not allow Caption inside TD), but it is tagged as one P with the label
+% as Lbl inside (if the label is not empty), without Div structures.
+% There is no tagpdf warning "Parent-Child ... not allowed" or "nested marked content".
+% Without hyperref, tagpdf warns "Destination 'table.N' has no related structure"
+% for the anchors set by longtable itself; this happens without the caption package, too.
