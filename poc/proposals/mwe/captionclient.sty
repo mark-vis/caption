@@ -1,0 +1,107 @@
+% captionclient.sty -- sketch: how caption.sty could use the proposed
+% kernel interface (proposal (b)) instead of redefining \caption/\@caption.
+% Only the parts that touch the interface are shown.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{captionclient}[2026/10/04 sketch of caption as a client]
+\IfSocketExistsF{caption/listentry}{%
+  \PackageWarningNoLine{captionclient}{Old kernel: the old code path
+    (redefining \string\caption) would be used here}%
+  \endinput}
+\ExplSyntaxOn
+% ---- options: list=true/false, ContinuedFloat
+\bool_new:N \l__cc_list_bool  \bool_set_true:N \l__cc_list_bool
+\bool_new:N \l__cc_continued_bool
+\NewDocumentCommand\ContinuedFloat{}{\bool_set_true:N \l__cc_continued_bool}
+\NewDocumentCommand\captionsetuplist{m}
+  { \str_if_eq:nnTF{#1}{false}{\bool_set_false:N \l__cc_list_bool}{\bool_set_true:N \l__cc_list_bool} }
+% ---- list entries: socket caption/listentry
+% * \caption[]{...}: no entry (caption's documented behaviour)
+% * list=false: no entry
+% * sub-entries are kept back and written after the entry of the main
+%   caption; the link target (\@currentHref) of the sub-caption is kept
+%   with the entry
+\tl_new:N \g__cc_sublist_tl
+\tl_new:N \l__cc_tmp_tl
+\cs_new_protected:Npn \__cc_flush_sublist:
+  { \tl_use:N \g__cc_sublist_tl \tl_gclear:N \g__cc_sublist_tl }
+\cs_new_protected:Npn \__cc_write_entry:nnnn #1#2#3#4
+  % #1 href, #2 type, #3 number, #4 list text
+  {
+    \group_begin:
+      \tl_set:Nn \@currentHref {#1}
+      \addcontentsline{\use:c{ext@#2}}{#2}{\protect\numberline{#3}{#4}}
+    \group_end:
+  }
+\NewSocketPlug{caption/listentry}{caption}
+  {
+    \bool_lazy_and:nnT { \l__cc_list_bool } { ! \tl_if_blank_p:n {#2} }
+      {
+        \str_if_eq:eeTF {#1} { sub \@captype }
+          {
+            \protected@edef \l__cc_tmp_tl
+              {
+                \__cc_write_entry:nnnn
+                  { \@currentHref } {#1} { \use:c{the#1} }
+                  { \exp_not:n { \ignorespaces #2 } }
+              }
+            \tl_gput_right:No \g__cc_sublist_tl \l__cc_tmp_tl
+          }
+          {
+            \addcontentsline{\use:c{ext@#1}}{#1}
+              {\protect\numberline{\use:c{the#1}}{\ignorespaces #2}}
+            \__cc_flush_sublist:
+          }
+      }
+  }
+\AssignSocketPlug{caption/listentry}{caption}
+% sub-entries of a float without main caption: write them at the end
+\AddToHook{env/figure/end}{\__cc_flush_sublist:}
+% ---- counter: \ContinuedFloat. The kernel steps the counter after the
+% generic hook cmd/caption/before; there we arrange that the next
+% \stepcounter of the float counter is skipped (\refstepcounter still
+% sets \@currentlabel and the target). The redefinition removes itself.
+\cs_new_eq:NN \__cc_ori_stepcounter:n \stepcounter % set again at use time
+\cs_new_protected:Npn \__cc_skip_step_once:n #1
+  {
+    \cs_set_eq:NN \stepcounter \__cc_ori_stepcounter:n
+    \str_if_eq:eeF {#1} { \@captype } { \stepcounter {#1} }
+  }
+\AddToHook{cmd/caption/before}[captionclient]
+  {
+    \bool_if:NT \l__cc_continued_bool
+      {
+        \bool_set_false:N \l__cc_continued_bool
+        \cs_set_eq:NN \__cc_ori_stepcounter:n \stepcounter
+        \cs_set_eq:NN \stepcounter \__cc_skip_step_once:n
+      }
+  }
+% ---- formatting (here only a font, as an example): existing hook
+\AddToHook{cmd/@makecaption/before}[captionclient]{\small}
+% ---- sub-captions: a sub-float context
+\newcounter{subfigure}
+\renewcommand\thesubfigure{\alph{subfigure}}
+\def\p@subfigure{}
+\def\fnum@subfigure{(\thesubfigure)}
+\def\ext@subfigure{lof}
+\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
+\AddToHook{env/figure/begin}{\setcounter{subfigure}{0}}
+\NewDocumentEnvironment{subfig}{m}
+  {
+    \begin{minipage}{#1}
+    \UseTaggingSocket{subfloat/begin}
+    \RenewDocumentCommand\caption{s o m}
+      {
+        \IfBooleanTF{##1}
+          { \legacy_if_set_true:n{@captionstar} \@caption{sub\@captype}[]{##3} }
+          {
+            \refstepcounter{sub\@captype}
+            \IfNoValueTF{##2}{\@caption{sub\@captype}[##3]{##3}}{\@caption{sub\@captype}[##2]{##3}}
+          }
+      }
+  }
+  {
+    \UseTaggingSocket{subfloat/end}
+    \end{minipage}
+  }
+\ExplSyntaxOff
+\endinput

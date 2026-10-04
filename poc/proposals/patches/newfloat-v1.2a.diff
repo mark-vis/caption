@@ -1,0 +1,78 @@
+diff --git a/newfloat.dtx b/newfloat.dtx
+index a332724..0f504c0 100644
+--- a/newfloat.dtx
++++ b/newfloat.dtx
+@@ -20,12 +20,12 @@
+ % and the derived file newfloat.sty.
+ % 
+ % \fi
+-% \CheckSum{1665}
++% \CheckSum{1677}
+ %
+ % \iffalse
+ %<*driver>
+ \NeedsTeXFormat{LaTeX2e}[1994/12/01]
+-\ProvidesFile{newfloat.drv}[2023/10/01 v1.2 This package offers a command for defining new floating environments]
++\ProvidesFile{newfloat.drv}[2026/10/03 v1.2a This package offers a command for defining new floating environments]
+ \hbadness=9999 \newcount\hbadness \hfuzz=48pt % Make TeX shut up.
+ %
+ \documentclass{ltxdoc}
+@@ -647,7 +647,7 @@
+ %
+ % Identify the current version of the package.
+ %    \begin{macrocode}
+-\ProvidesPackage{newfloat}[2023/10/01 v1.2 Defining new floating environments (AR)]
++\ProvidesPackage{newfloat}[2026/10/03 v1.2a Defining new floating environments (AR)]
+ %    \end{macrocode}
+ %
+ % \begin{macro}{\newfloat@Info}
+@@ -1183,6 +1183,7 @@
+ %
+ % \begin{macro}{\newfloat@announce}
+ % \changes{v1.1n}{2021/02/27}{Defines \cs{newfloat@env@xxx} now instead of \cs{newfloat@ext@xxx}}
++% \changes{v1.2a}{2026/10/03}{Registers the new float type for tagging now}
+ % |\newfloat@announce|\marg{environment name}\marg{list file extension}
+ %    \begin{macrocode}
+ \newcommand*\newfloat@announce[2]{%
+@@ -1219,12 +1220,41 @@
+     \contentsuse{#1}{#2}%
+   \fi
+ %    \end{macrocode}
++% Register the new float type for tagged PDF (see below)
++%    \begin{macrocode}
++  \newfloat@tagging@register{#1}%
++%    \end{macrocode}
+ %    \begin{macrocode}
+   \newfloat@hook{#1}}
+ \@onlypreamble\newfloat@announce
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \begin{macro}{\newfloat@tagging@register}
++% \changes{v1.2a}{2026/10/03}{This macro added}
++% |\newfloat@tagging@register|\marg{environment}\par
++% With |\DocumentMetadata{tagging=on}| the tagging code of the \LaTeX\ kernel
++% (\pkg{latex-lab-testphase-float}) only knows the float types |figure| and |table|.
++% Floats of other types get a generic structure, and their captions refer to
++% structure names which do not exist, so every |\caption| gives errors.
++% Here we declare the new type with |\tagpdfsetup{float/new=|\meta{type}|}|.
++% We skip types which are already known, because older versions of
++% \pkg{latex-lab-testphase-float} (before 2026-09-09) give an error then.
++% (We do not test for a kernel declaration command by its name only:
++% \pkg{floatrowbytocbasic}, for example, defines |\DeclareFloatType|
++% with a different meaning.)
++%    \begin{macrocode}
++\newcommand*\newfloat@tagging@register[1]{%
++  \@ifpackageloaded{latex-lab-testphase-float}%
++    {\ifcsname l__tag_name_float/#1_tl\endcsname \else
++       \newfloat@Info{Registering float type `#1' for tagging}%
++       \tagpdfsetup{float/new={#1}}%
++     \fi}%
++    {}}
++\@onlypreamble\newfloat@tagging@register
++%    \end{macrocode}
++% \end{macro}
++%
+ % \begin{macro}{\newfloat@ext}
+ % \changes{v1.1n}{2021/02/27}{This macro added}
+ % |\newfloat@ext|\marg{environment}

@@ -1,0 +1,52 @@
+% !Mode:: "TeX:DE:UTF-8:Main"
+% Proposal: \DeclareTaggingFloatType and generic caption names for unknown float types
+\DocumentMetadata{tagging=on,tagging-setup={role/user-NS=latex}}
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% two float types defined by hand, as newfloat, float, tocbasic, memoir do
+\def\newtestfloat#1{%
+  \newcounter{#1}%
+  \expandafter\def\csname fps@#1\endcsname{tbp}%
+  \expandafter\def\csname ftype@#1\endcsname{8}%
+  \expandafter\def\csname ext@#1\endcsname{lo#1}%
+  \expandafter\def\csname fnum@#1\endcsname{#1~\csname the#1\endcsname}%
+  \newenvironment{#1}{\@float{#1}}{\end@float}}
+\newtestfloat{diagram}
+\newtestfloat{scheme}
+\newtestfloat{chart}
+\makeatother
+\START
+\DeclareTaggingFloatType{diagram}
+\DeclareTaggingFloatType{diagram}   % second time: nothing happens
+\DeclareTaggingFloatType{figure}    % known type: nothing happens
+\tagpdfsetup{float/new=diagram} % info: already set up
+% declared inside a group: the roles are local and lost after the group,
+% a second declaration outside of the group assigns them again
+\begingroup \DeclareTaggingFloatType{chart}\endgroup
+\TYPE{chart caption role after the group: '\UseStructureName{float/chart/caption}'}
+\DeclareTaggingFloatType{chart}
+\TYPE{chart caption role after declaring again: '\UseStructureName{float/chart/caption}'}
+\OMIT
+\begin{document}
+\TIMO
+text
+
+\begin{diagram}
+A diagram
+\caption{A declared float type}
+\end{diagram}
+
+\begin{scheme}
+A scheme
+\caption{A float type that was not declared}
+\end{scheme}
+
+\begin{chart}
+A chart
+\caption{Declared in a group and again}
+\end{chart}
+
+text
+\SHOWPDFTAGS
+\end{document}

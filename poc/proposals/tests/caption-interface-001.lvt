@@ -1,0 +1,97 @@
+% Test of the proposed caption interface (proposal (b)):
+% \caption*, \if@captionstar, socket caption/listentry, tagging socket
+% caption/step (without tagging: only its second argument is used),
+% and the generic hook cmd/caption/before as the place where a package
+% can prepare a continued float.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% show the arguments \@makecaption gets
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
+    star=\if@captionstar true\else false\fi}%
+  \ORImakecaption{#1}{#2}}
+% show what is written to the list
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+\NewSocketPlug{caption/listentry}{test}{%
+  \ifx\relax#2\relax
+    \typeout{LISTENTRY: none for #1}%
+  \else
+    \typeout{LISTENTRY: #1: #2}%
+    \addcontentsline{lof}{#1}{\protect\numberline{\csname the#1\endcsname}{#2}}%
+  \fi}
+% continued float, as the caption package does it: the next
+% \stepcounter of the float counter is skipped (refstepcounter still
+% sets \@currentlabel); the redefinition removes itself
+\newif\ifcontinued
+\let\ORIstepcounter\stepcounter
+\def\skipnextstep#1{%
+  \let\stepcounter\ORIstepcounter
+  \edef\reserved@a{#1}%
+  \ifx\reserved@a\@captype\else\stepcounter{#1}\fi}
+\AddToHook{cmd/caption/before}{%
+  \ifcontinued
+    \typeout{CONTINUED: next step of \@captype\space skipped}%
+    \let\stepcounter\skipnextstep
+  \fi}
+\makeatother
+\begin{document}
+\START
+\TEST{normal caption}{%
+  \begin{figure}
+    \caption{Normal}
+    \typeout{figure=\thefigure, currentlabel=\csname @currentlabel\endcsname}
+  \end{figure}}
+\TEST{star caption: no step, no list entry, empty label}{%
+  \begin{figure}
+    \caption*{Star}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{star with optional argument (ignored)}{%
+  \begin{figure}
+    \caption*[ignored]{Star with optional argument}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{empty optional argument: kernel plug writes an empty entry}{%
+  \begin{figure}
+    \caption[]{Empty optional argument}
+  \end{figure}}
+\TEST{own plug for caption/listentry: no entry for empty argument}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/listentry}{test}%
+    \caption[]{No entry}
+    \caption[Short]{Long}
+  \end{figure}}
+\TEST{continued float via cmd/caption/before: counter not stepped}{%
+  \begin{figure}
+    \continuedtrue
+    \caption{Continued}
+    \typeout{figure=\thefigure, currentlabel=\csname @currentlabel\endcsname}
+  \end{figure}
+  \begin{figure}
+    \caption{Next}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{star flag is reset after the caption}{%
+  \begin{figure}
+    \caption*{Star}
+    \makeatletter
+    \typeout{after caption*: star=\if@captionstar true\else false\fi}
+    \makeatother
+  \end{figure}}
+\TEST{article makecaption with empty label: no separator}{%
+  \makeatletter
+  \setbox0=\vbox{\hsize=10cm \ORImakecaption{}{Text}}%
+  \showbox0
+  \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
+  \showbox0
+  \makeatother}
+\TEST{caption outside float: error as before}{%
+  \caption{Outside}}
+\TEST{caption* outside float: error as before}{%
+  \caption*{Outside}}
+\end{document}

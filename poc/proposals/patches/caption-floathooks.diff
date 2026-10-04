@@ -1,0 +1,69 @@
+--- a/tex/caption.sty
++++ b/tex/caption.sty
+@@ -261,11 +261,62 @@
+ \newcommand*\caption@redefine{%
+   \let\caption\caption@caption
+   \let\@caption\caption@@caption
+-  \let\caption@ORI@xfloat\@xfloat
+-  \let\@xfloat\caption@xfloat
+-  \let\caption@ORI@xdblfloat\@xdblfloat
+-  \let\@xdblfloat\caption@xdblfloat
++  \caption@iffloathooks
++    {\caption@floathooks}%
++    {\let\caption@ORI@xfloat\@xfloat
++     \let\@xfloat\caption@xfloat
++     \let\caption@ORI@xdblfloat\@xdblfloat
++     \let\@xdblfloat\caption@xdblfloat}%
+ }
++% The kernel hooks float/begin and float/end can be used if they exist
++% and were not disabled by a latexrelease rollback:
++\newcommand*\caption@iffloathooks{%
++  \@tempswafalse
++  \ifdefined\@float@usehooks
++    \ifx\@float@usehooks\@gobbletwo\else\@tempswatrue\fi
++  \fi
++  \if@tempswa\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
++% \caption@ifinmeaning<cs1><cs2>: is <cs1> in the meaning of <cs2>?
++\newcommand*\caption@ifinmeaning[2]{%
++  \edef\caption@tempa{\noexpand\in@{\string#1}{\meaning#2}}%
++  \caption@tempa
++  \ifin@\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
++\newcommand*\caption@floathooks{%
++  \AddToHookWithArguments{float/begin}[caption]{%
++    \let\caption@float@hooked\@empty
++    \caption@settype{##1}%
++    \caption@setanchor
++    \caption@xfloat@hook
++    \ifx\relax##2\relax \else
++      \let\caption@dblfloat@hooked\@empty
++      \caption@setoptions{##1##2}%
++      \caption@xdblfloat@hook
++    \fi}%
++% If \@xfloat or \@xdblfloat do not (visibly) execute the hook, because a
++% package or class has redefined them, we wrap them as before, but the
++% wrappers only do their work if the hook did not run for this float:
++  \caption@ifinmeaning\@float@begin@hook\@xfloat{}{%
++    \let\caption@ORI@xfloat\@xfloat
++    \let\@xfloat\caption@xfloat@check}%
++  \caption@ifinmeaning\@float@usehooks\@xdblfloat{}{%
++    \let\caption@ORI@xdblfloat\@xdblfloat
++    \let\@xdblfloat\caption@xdblfloat@check}}
++\def\caption@xfloat@check#1[#2]{%
++  \caption@ORI@xfloat{#1}[#2]%
++  \ifx\caption@float@hooked\@empty \else
++% the kernel \@xdblfloat disables the hook in \@xfloat and executes it itself
++    \ifx\@float@begin@hook\@gobble \else
++      \caption@settype{#1}%
++      \caption@setanchor
++      \caption@xfloat@hook
++    \fi
++  \fi}
++\def\caption@xdblfloat@check#1[#2]{%
++  \caption@ORI@xdblfloat{#1}[#2]%
++  \ifx\caption@dblfloat@hooked\@empty \else
++    \caption@setoptions{#1*}%
++    \caption@xdblfloat@hook
++  \fi}
+ \caption@AtBeginDocument{%
+   \caption@redefine
+   \let\caption@redefine\relax}

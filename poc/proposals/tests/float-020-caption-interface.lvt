@@ -1,0 +1,45 @@
+% Proposal (b): \caption*, the tagging socket caption/step and the
+% subfloat sockets with tagging (and hyperref)
+\DocumentMetadata{lang=en,tagging=on}
+\input{regression-test}
+\documentclass{article}
+\usepackage{hyperref}
+\makeatletter
+% a minimal sub-caption, as a package like subcaption would do it
+\newcounter{subfigure}[figure]
+\renewcommand\thesubfigure{\alph{subfigure}}
+\def\fnum@subfigure{(\thesubfigure)}
+\def\ext@subfigure{lof}
+\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
+\newcommand\subcap[1]{%
+  \refstepcounter{subfigure}%
+  \typeout{sub target: \@currentHref}%
+  \@caption{subfigure}[#1]{#1}}
+\newcommand\showtarget{\typeout{figure=\thefigure, target=\@currentHref}}
+\makeatother
+\begin{document}
+\START
+\begin{figure}[h]
+  \caption{Numbered}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \caption*{Star: no Lbl, no number}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \begin{minipage}{.4\linewidth}
+    \UseTaggingSocket{subfloat/begin}%
+    sub content A
+    \subcap{Sub A}\label{suba}%
+    \UseTaggingSocket{subfloat/end}%
+  \end{minipage}
+  \begin{minipage}{.4\linewidth}
+    \UseTaggingSocket{subfloat/begin}%
+    sub content B
+    \caption*{Sub B, unnumbered}%
+    \UseTaggingSocket{subfloat/end}%
+  \end{minipage}
+  \caption{Main}\showtarget
+\end{figure}
+See \ref{suba}.
+\SHOWPDFTAGS
+\end{document}

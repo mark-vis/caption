@@ -1,0 +1,32 @@
+% caption3-labelplug.tex -- proposed code for caption3.sty (proposal (c)).
+% 1. Plugs "caption3" for latex-lab's caption/label and caption/separator
+%    sockets. They give caption3's labelformat, labelfont and labelsep to
+%    code that uses latex-lab's \@makecaption (classes or packages that load
+%    caption3 without caption.sty, latex-lab-listings, ...).
+% 2. Tagging of the label in caption3's own \caption@@@make with the kernel
+%    sockets (the label is typeset inside the caption paragraph).
+\ExplSyntaxOn
+\IfSocketExistsTF { caption/separator }
+  {
+    \NewSocketPlug { caption/label } { caption3 }
+      {
+        \caption@setfnum { \@captype }   % \fnum@<type> -> caption3 labelformat
+        \group_begin: \captionlabelfont #1 \group_end:
+      }
+    \NewSocketPlug { caption/separator } { caption3 }
+      {
+        \caption@labelseparator          % defines \caption@labelsep and \caption@iflabelfont
+        \group_begin:
+          \caption@iflabelfont \captionlabelfont \scan_stop:
+          \caption@labelsep
+        \group_end:
+      }
+    \cs_set_protected:Npn \caption@tag@lbl@begin { \UseTaggingSocket { caption/label/begin } }
+    \cs_set_protected:Npn \caption@tag@lbl@end   { \UseTaggingSocket { caption/label/end } }
+  }
+  {
+    % older latex-lab: caption3 keeps the private tagpdf code of the PoC here
+    \cs_set_eq:NN \caption@tag@lbl@begin \scan_stop:
+    \cs_set_eq:NN \caption@tag@lbl@end   \scan_stop:
+  }
+\ExplSyntaxOff

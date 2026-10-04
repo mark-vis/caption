@@ -1,0 +1,25 @@
+% common part of the a5-* tests: caption with the float hooks and its fallback
+\usepackage{caption}
+\captionsetup[figure*]{labelsep=period}
+\makeatletter
+\let\TSTsettype\caption@settype
+\def\caption@settype#1{\typeout{SETTYPE #1}\TSTsettype{#1}}
+\let\TSTsetoptions\caption@setoptions
+\def\caption@setoptions#1{\def\TST{#1}\def\TSTb{figure*}%
+  \ifx\TST\TSTb\typeout{SETOPTIONS #1}\fi\TSTsetoptions{#1}}
+\AddToHook{begindocument/end}{%
+  \typeout{XFLOAT: \ifx\@xfloat\caption@xfloat@check wrapped (check)\else
+    \ifx\@xfloat\caption@xfloat wrapped (old)\else not wrapped\fi\fi}%
+  \typeout{XDBLFLOAT: \ifx\@xdblfloat\caption@xdblfloat@check wrapped (check)\else
+    \ifx\@xdblfloat\caption@xdblfloat wrapped (old)\else not wrapped\fi\fi}}
+\makeatother
+\begin{document}
+\typeout{TEST figure}
+\begin{figure}[t] A \caption{F}\end{figure}
+\typeout{TEST figure*}
+\begin{figure*}[t] B \caption{F*}\end{figure*}
+\ifdefined\TSTH
+\typeout{TEST figure[H]}
+\begin{figure}[H] C \caption{FH}\end{figure}
+\fi
+\end{document}

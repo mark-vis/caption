@@ -1,0 +1,32 @@
+% Compiles caption-excerpt.tex with stubs for the caption internals it uses.
+% With the patched format: new path; with TL 2026: old path (stub message).
+\documentclass{article}
+\makeatletter
+\newif\ifcaptioncontinued
+\def\caption@ifcontinued{\ifcaptioncontinued\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+\def\caption@addcontentsline#1#2{%
+  \ifx\relax#2\relax\typeout{caption: no entry for #1}\else
+  \addcontentsline{\csname ext@#1\endcsname}{#1}{\protect\numberline{\csname the#1\endcsname}{#2}}\fi}
+\def\caption@AtBeginDocument#1{\AtBeginDocument{#1}}
+\def\caption@redefine{\typeout{caption: OLD PATH (redefine \string\caption)}}
+\input{caption-excerpt}
+\newcounter{subfigure}[figure]
+\renewcommand\thesubfigure{\alph{subfigure}}
+\def\fnum@subfigure{(\thesubfigure)}
+\def\ext@subfigure{lof}
+\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
+\makeatother
+\begin{document}
+\listoffigures
+\begin{figure}[h]\caption{One}\end{figure}
+\begin{figure}[h]\caption[]{Two, no entry}\end{figure}
+\begin{figure}[h]\captioncontinuedtrue\caption{Two (continued)}\typeout{continued: figure=\thefigure}\end{figure}
+\begin{figure}[h]
+  \makeatletter
+  \begin{minipage}{.4\linewidth}\caption@subfloat@begin
+    \caption@subcaption{Sub}{Sub}\caption@subfloat@end\end{minipage}
+  \makeatother
+  \caption{Three}\typeout{figure=\thefigure}
+\end{figure}
+\begin{figure}[h]\caption*{Unnumbered}\end{figure}
+\end{document}

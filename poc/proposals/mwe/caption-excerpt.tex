@@ -1,0 +1,29 @@
+% caption.sty, new code path (excerpt).
+% Kernels with the caption interface have the socket caption/listentry;
+% older kernels take today's path (redefine \caption and \@caption).
+\IfSocketExistsTF{caption/listentry}{%
+  % list entries: caption's rules ([] = none, list=false,
+  % sub-entries after the main entry) stay in \caption@addcontentsline
+  \NewSocketPlug{caption/listentry}{caption}{\caption@addcontentsline{#1}{#2}}%
+  \AssignSocketPlug{caption/listentry}{caption}%
+  % \ContinuedFloat: the next \stepcounter of the float counter is skipped
+  \AddToHook{cmd/caption/before}[caption]{\caption@ifcontinued\caption@skipnextstep{}}%
+  % subcaption.sty: the sub-float context (inside subfigure, \subcaptionbox)
+  \def\caption@subfloat@begin{\UseTaggingSocket{subfloat/begin}}%
+  \def\caption@subfloat@end{\UseTaggingSocket{subfloat/end}}%
+}{%
+  \caption@AtBeginDocument{\caption@redefine}%
+  \let\caption@subfloat@begin\relax
+  \let\caption@subfloat@end\relax
+}
+\newcommand*\caption@skipnextstep{%
+  \let\caption@ORI@stepcounter\stepcounter
+  \let\stepcounter\caption@stepcounter@once}
+\newcommand*\caption@stepcounter@once[1]{%
+  \let\stepcounter\caption@ORI@stepcounter
+  \edef\caption@tempa{#1}%
+  \ifx\caption@tempa\@captype \else \stepcounter{#1}\fi}
+% subcaption.sty: sub-captions step their own counter and use \@caption directly:
+\newcommand*\caption@subcaption[2]{% #1 list entry, #2 text
+  \refstepcounter{sub\@captype}%
+  \@caption{sub\@captype}[#1]{#2}}

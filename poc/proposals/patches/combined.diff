@@ -1,0 +1,3849 @@
+diff --git a/base/changes.txt b/base/changes.txt
+index fcb371111..2e13adb46 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -6,6 +6,28 @@ to completeness or accuracy and it contains some references to files that are
+ not part of the distribution.
+ ================================================================================
+ 
++2026-10-03  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
++
++	* ltfloat.dtx:
++	Add the hooks float/begin and float/end (executed inside the
++	float box by \@xfloat, \@xdblfloat and \@endfloatbox)
++
++	* lttagging.dtx:
++	Add \DeclareTaggingFloatType; the list of float types for tagging
++	moves here from latex-lab-float
++
++	* ltfloat.dtx:
++	Add \caption* and the sockets caption/step and caption/listentry
++
++	* lttagging.dtx:
++	Add tagging sockets subfloat/begin and subfloat/end;
++	\DeclareTaggingFloatType also declares float/<type>/sub.
++	Document that caption/label/begin and caption/label/end can be used
++	inside the caption paragraph
++
++	* classes.dtx:
++	No label separator in \@makecaption if the label is empty
++
+ 2026-10-01 Joseph Wright  <Joseph.Wright@latex-project.org>
+ 
+ 	* ltfloats.dtx:
+diff --git a/base/classes.dtx b/base/classes.dtx
+index 6a83ef734..170ab7d13 100644
+--- a/base/classes.dtx
++++ b/base/classes.dtx
+@@ -53,7 +53,7 @@
+ %<*driver>
+ \ProvidesFile{classes.drv}
+ %</driver>
+-              [2026-06-04 v1.4n
++              [2026-10-03 v1.4o
+ %<article|report|book> Standard LaTeX document class]
+ %<10pt|11pt|12pt>      Standard LaTeX file (size option)]
+ %    \end{macrocode}
+@@ -3558,14 +3558,17 @@
+ %    therefore we first typeset it in a temporary box.
+ % \changes{v1.2q}{1994/05/29}{Use \cs{sbox}\cs{@tempboxa} instead of
+ %    \cs{setbox}\cs{@tempboxa}\cs{hbox} to make this color safe}
++% \changes{v1.4o}{2026/10/03}{No label and separator if the label is
++%    empty (\cs{caption*})}
++%    If the label is empty (\cs{caption*}) we omit the separator too.
+ %    \begin{macrocode}
+-  \sbox\@tempboxa{#1: #2}%
++  \sbox\@tempboxa{\if\relax\detokenize{#1}\relax\else#1: \fi#2}%
+ %    \end{macrocode}
+ %    We can the measure its width. It that is larger than the current
+ %    |\hsize| we typeset the caption as an ordinary paragraph.
+ %    \begin{macrocode}
+   \ifdim \wd\@tempboxa >\hsize
+-    #1: #2\par
++    \if\relax\detokenize{#1}\relax\else#1: \fi#2\par
+ %    \end{macrocode}
+ %    If the caption fits, we center it. Because this uses an |\hbox|
+ %    directly in vertical mode, it does not execute the |\everypar|
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 3a19b0c84..1b95ea872 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -31,7 +31,7 @@
+ %
+ %<*driver>
+ % \fi
+-\ProvidesFile{ltfloat.dtx}[2026-10-01 v1.2j LaTeX Kernel (Floats)]
++\ProvidesFile{ltfloat.dtx}[2026-10-03 v1.2k LaTeX Kernel (Floats)]
+ % \iffalse
+ \documentclass{ltxdoc}
+ \GetFileInfo{ltfloat.dtx}
+@@ -229,6 +229,67 @@
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \begin{socketdecl}{caption/step}
++%    This socket is used by \cs{caption} (not by \cs{caption*}) to step
++%    the counter of the caption type and to set the target for links
++%    (\cs{@currentHref}). The argument is the counter name
++%    (\cs{@captype}). The default plug \plug{kernel} calls
++%    \cs{refstepcounter}. The float code of the tagging project uses the
++%    socket to set the target to the float structure instead of creating
++%    a new one.
++% \end{socketdecl}
++%
++% \begin{socketdecl}{caption/listentry}
++%    This socket writes the entry for the list of figures, tables, etc.
++%    It is used by \cs{@caption} unless the star form \cs{caption*}
++%    was used. The first argument is the caption type, the second the
++%    text for the list (the optional argument of \cs{caption}, or the
++%    caption text if it was not given). The default plug
++%    \plug{kernel} writes the entry with \cs{addcontentsline} as
++%    before; it also writes an (empty) entry if the optional argument
++%    is empty.
++%
++%    The declarations are also written to \texttt{latexrelease}, guarded,
++%    so that rolling forward from an older format works.
++%    \begin{macrocode}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {caption sockets}{caption interface}%
++\IfSocketExistsF{caption/step}{%
++  \NewSocket{caption/step}{1}%
++  \NewSocketPlug{caption/step}{kernel}{\refstepcounter{#1}}%
++  \AssignSocketPlug{caption/step}{kernel}%
++}
++\IfSocketExistsF{caption/listentry}{%
++  \NewSocket{caption/listentry}{2}%
++  \NewSocketPlug{caption/listentry}{kernel}
++    {%
++      \addcontentsline{\csname ext@#1\endcsname}{#1}%
++        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
++    }%
++  \AssignSocketPlug{caption/listentry}{kernel}%
++}
++%    \end{macrocode}
++% \end{socketdecl}
++%
++% \begin{macro}{\if@captionstar}
++%    True while a caption is typeset by \cs{caption*}. Implementations
++%    of \cs{@makecaption} can test it; in that case the first argument
++%    of \cs{@makecaption} is empty. (\cs{@ifundefined} and not \cs{ifx}
++%    because a skipped \cs{if@captionstar} would unbalance the
++%    conditional.)
++%    \begin{macrocode}
++\@ifundefined{if@captionstar}{\newif\if@captionstar}{}
++%    \end{macrocode}
++% \end{macro}
++%
++%    \begin{macrocode}
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
++%    \end{macrocode}
++%
+ % \begin{macro}{\caption}
+ %
+ %    This is set to be an error message outside a float since no
+@@ -236,17 +297,51 @@
+ %    classes.
+ % \changes{v1.1u}{1999/04/19}
+ %    {Made caption an error outside a float: latex/2815}
++% \changes{v1.2k}{2026/10/03}
++%    {Add star form, step the counter through the socket
++%     \texttt{caption/step}}
++%
++%    The star form \cs{caption*} typesets a caption without a label:
++%    it does not step the counter, sets no target and writes no list
++%    entry. An optional argument is accepted and ignored.
++%
++%    The counter is stepped through the socket \texttt{caption/step}.
++%    Code that has to run before the step (e.g., for a continued float)
++%    can use the generic hook \hook{cmd/caption/before}.
+ %    \begin{macrocode}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\caption}{star form}%
+ \def\caption{%
+    \ifx\@captype\@undefined
+      \@latex@error{\noexpand\caption outside float}\@ehd
+      \expandafter\@gobble
+    \else
+-     \refstepcounter\@captype
+      \expandafter\@firstofone
+    \fi
+-   {\@dblarg{\@caption\@captype}}%
++   {\@ifstar
++      {\@captionstartrue\@dblarg{\@caption\@captype}}%
++      {\@captionstarfalse
++       \UseSocket{caption/step}{\@captype}%
++       \@dblarg{\@caption\@captype}}}%
+ }
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\caption}{star form}%
++%<latexrelease>\def\caption{%
++%<latexrelease>   \ifx\@captype\@undefined
++%<latexrelease>     \@latex@error{\noexpand\caption outside float}\@ehd
++%<latexrelease>     \expandafter\@gobble
++%<latexrelease>   \else
++%<latexrelease>     \refstepcounter\@captype
++%<latexrelease>     \expandafter\@firstofone
++%<latexrelease>   \fi
++%<latexrelease>   {\@dblarg{\@caption\@captype}}%
++%<latexrelease>}
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
+ % \end{macro}
+ %
+@@ -255,11 +350,19 @@
+ %     {Use \cs{normalsize} not \cs{@normalsize}}
+ % \changes{v1.1r}{1996/12/06}
+ %     {Call \cs{@setminpage} if needed. latex/2318}
++% \changes{v1.2k}{2026/10/03}
++%     {Use socket \texttt{caption/listentry}; empty label for
++%      \cs{caption*}}
+ %    \begin{macrocode}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@caption}{star form, list entry socket}%
+ \long\def\@caption#1[#2]#3{%
+   \par
+-  \addcontentsline{\csname ext@#1\endcsname}{#1}%
+-    {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
++  \if@captionstar \else
++    \UseSocket{caption/listentry}{#1}{#2}%
++  \fi
+   \begingroup
+ %    \end{macrocode}
+ %
+@@ -287,8 +390,115 @@
+ %
+ %    \begin{macrocode}
+     \normalsize
+-    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+-  \endgroup}
++    \if@captionstar
++      \expandafter\@firstoftwo
++    \else
++      \expandafter\@secondoftwo
++    \fi
++    {\@makecaption{}}%
++    {\@makecaption{\csname fnum@#1\endcsname}}%
++      {\ignorespaces #3}\par
++  \endgroup
++%    \end{macrocode}
++%    The star flag is reset, so that code which calls \cs{@caption}
++%    directly (without \cs{caption}) gets a normal caption.
++%    \begin{macrocode}
++  \@captionstarfalse}
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@caption}{star form, list entry socket}%
++%<latexrelease>\long\def\@caption#1[#2]#3{%
++%<latexrelease>  \par
++%<latexrelease>  \addcontentsline{\csname ext@#1\endcsname}{#1}%
++%<latexrelease>    {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
++%<latexrelease>  \begingroup
++%<latexrelease>    \@parboxrestore
++%<latexrelease>    \if@minipage
++%<latexrelease>      \@setminipage
++%<latexrelease>    \fi
++%<latexrelease>    \normalsize
++%<latexrelease>    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++%<latexrelease>  \endgroup}
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
++%    \end{macrocode}
++% \end{macro}
++%
++% \changes{v1.2k}{2026/10/03}{Hooks float/begin and float/end added}
++% \paragraph{The hooks \texttt{float/begin} and \texttt{float/end}.}
++%    Two hooks with two arguments each, for packages that need to
++%    run code at the start and at the end of every float (for example
++%    to set up float-type specific settings or a link target).
++%    \begin{description}
++%    \item[\texttt{float/begin}] is executed by \cs{@xfloat} (for
++%      double-column floats in two-column mode by \cs{@xdblfloat}),
++%      inside the box of the float and the group of the environment,
++%      after \cs{@captype} has been set, \cs{@parboxrestore} and
++%      \cs{@floatboxreset} have been executed and, for double-column
++%      floats, \cs{hsize} and \cs{linewidth} have been set to
++%      \cs{textwidth}.
++%    \item[\texttt{float/end}] is executed by \cs{@endfloatbox}, inside
++%      the box of the float, after the last paragraph has been ended
++%      and before the box is closed.
++%    \end{description}
++%    The first argument is the float type (the value of \cs{@captype}),
++%    the second argument is |*| for a double-column float in two-column
++%    mode, and empty otherwise. The two hooks are a mirrored pair, so
++%    code added to \texttt{float/end} is executed in reverse order.
++%
++%    The hooks are not related to the tagging sockets \texttt{float/begin}
++%    and \texttt{float/end} declared in \texttt{lttagging.dtx}: sockets
++%    and hooks are in different name spaces (the same holds for
++%    \texttt{para/begin}). The sockets start and stop the structure
++%    outside of the float box, the hooks are executed inside it.
++%    \begin{macrocode}
++%</2ekernel>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@float@begin@hook}{Float hooks}%
++%<*2ekernel|latexrelease>
++\NewMirroredHookPairWithArguments{float/begin}{float/end}{2}
++%    \end{macrocode}
++%
++% \begin{macro}{\@float@usehooks,\@float@begin@hook,\@float@end@hook,
++%                \@float@hook@level}
++% \changes{v1.2k}{2026/10/03}{Macros added}
++%    \cs{@float@usehooks}\marg{type}\marg{star} executes the
++%    \texttt{float/begin} hook and defines \cs{@float@end@hook} (locally,
++%    inside the float box) to execute the \texttt{float/end} hook with the
++%    same arguments. \cs{@endfloatbox} uses \cs{@float@end@hook}, which
++%    is \cs{relax} outside of floats. Some packages use \cs{@endfloatbox}
++%    for boxes that do not start with \cs{@xfloat} (for example
++%    \pkg{float} for |[H]| floats), and such a box can be nested inside
++%    a float, where the local definition is still visible. Therefore the
++%    group level is recorded, and the end hook is executed only by the
++%    \cs{@endfloatbox} at the same group level, that is, the one that
++%    ends the box in which the begin hook was executed.
++%    \cs{@float@begin@hook} is used by \cs{@xfloat}; \cs{@xdblfloat}
++%    disables it and calls \cs{@float@usehooks} itself after the width
++%    has been changed.
++%    \begin{macrocode}
++\def\@float@usehooks#1#2{%
++  \edef\@float@hook@level{\the\currentgrouplevel}%
++  \def\@float@end@hook{%
++    \ifnum\currentgrouplevel=\@float@hook@level\relax
++      \expandafter\@firstofone
++    \else
++      \expandafter\@gobble
++    \fi
++    {\UseHookWithArguments{float/end}{2}{#1}{#2}}}%
++  \UseHookWithArguments{float/begin}{2}{#1}{#2}}
++\def\@float@begin@hook#1{\@float@usehooks{#1}{}}
++\let\@float@end@hook\relax
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@float@begin@hook}{Float hooks}%
++%<latexrelease>\let\@float@usehooks\@gobbletwo
++%<latexrelease>\let\@float@begin@hook\@gobble
++%<latexrelease>\let\@float@end@hook\relax
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
+ % \end{macro}
+ %
+@@ -370,8 +580,8 @@
+ %                  floats in the preamble}
+ %    \begin{macrocode}
+ %</2ekernel>
+-%<latexrelease>\IncludeInRelease{2015/01/01}%
+-%<latexrelease>                 {\@xfloat}{Check float options}%
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@xfloat}{Float hooks}%
+ %<*2ekernel|latexrelease>
+ \def\@xfloat #1[#2]{%
+   \@nodocument
+@@ -472,9 +682,81 @@
+         \hsize\columnwidth
+         \@parboxrestore
+         \@floatboxreset
++%    \end{macrocode}
++% \changes{v1.2k}{2026/10/03}{Execute the \texttt{float/begin} hook}
++%    \begin{macrocode}
++        \@float@begin@hook{#1}%
+ }%
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{2015/01/01}%
++%<latexrelease>                 {\@xfloat}{Check float options}%
++%<latexrelease>\def\@xfloat #1[#2]{%
++%<latexrelease>  \@nodocument
++%<latexrelease>  \def \@captype {#1}%
++%<latexrelease>   \def \@fps {#2}%
++%<latexrelease>   \@onelevel@sanitize \@fps
++%<latexrelease>   \def \reserved@b {!}%
++%<latexrelease>   \ifx \reserved@b \@fps
++%<latexrelease>     \@fpsadddefault
++%<latexrelease>   \else
++%<latexrelease>     \ifx \@fps \@empty
++%<latexrelease>       \@fpsadddefault
++%<latexrelease>     \fi
++%<latexrelease>   \fi
++%<latexrelease>   \ifhmode
++%<latexrelease>     \@bsphack
++%<latexrelease>     \@floatpenalty -\@Mii
++%<latexrelease>   \else
++%<latexrelease>     \@floatpenalty-\@Miii
++%<latexrelease>   \fi
++%<latexrelease>  \ifinner
++%<latexrelease>     \@parmoderr\@floatpenalty\z@
++%<latexrelease>  \else
++%<latexrelease>    \@next\@currbox\@freelist
++%<latexrelease>      {%
++%<latexrelease>       \@tempcnta \sixt@@n
++%<latexrelease>       \expandafter \@tfor \expandafter \reserved@a
++%<latexrelease>         \expandafter :\expandafter =\@fps
++%<latexrelease>         \do
++%<latexrelease>          {%
++%<latexrelease>           \if \reserved@a h%
++%<latexrelease>             \ifodd \@tempcnta
++%<latexrelease>             \else
++%<latexrelease>               \advance \@tempcnta \@ne
++%<latexrelease>             \fi
++%<latexrelease>           \else\if \reserved@a t%
++%<latexrelease>             \@setfpsbit \tw@
++%<latexrelease>           \else\if \reserved@a b%
++%<latexrelease>             \@setfpsbit 4%
++%<latexrelease>           \else\if \reserved@a p%
++%<latexrelease>             \@setfpsbit 8%
++%<latexrelease>           \else\if \reserved@a !%
++%<latexrelease>             \ifnum \@tempcnta>15
++%<latexrelease>               \advance\@tempcnta -\sixt@@n\relax
++%<latexrelease>             \fi
++%<latexrelease>           \else
++%<latexrelease>             \@latex@error{Unknown float option `\reserved@a'}%
++%<latexrelease>             {Option `\reserved@a' ignored and `p' used.}%
++%<latexrelease>             \@setfpsbit 8%
++%<latexrelease>           \fi\fi\fi\fi\fi
++%<latexrelease>           }%
++%<latexrelease>       \@tempcntb \csname ftype@\@captype \endcsname
++%<latexrelease>       \multiply \@tempcntb \@xxxii
++%<latexrelease>       \advance \@tempcnta \@tempcntb
++%<latexrelease>       \global \count\@currbox \@tempcnta
++%<latexrelease>       }%
++%<latexrelease>    \@fltovf
++%<latexrelease>  \fi
++%<latexrelease>  \global \setbox\@currbox
++%<latexrelease>    \color@vbox
++%<latexrelease>      \normalcolor
++%<latexrelease>      \vbox \bgroup
++%<latexrelease>        \hsize\columnwidth
++%<latexrelease>        \@parboxrestore
++%<latexrelease>        \@floatboxreset
++%<latexrelease>}%
++%<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+ %<latexrelease>                 {\@xfloat}{Check float options}%
+ %<latexrelease>\def\@xfloat #1[#2]{%
+@@ -720,8 +1002,17 @@
+ %    maintain the integrity of this code, which is used twice and, as
+ %    can be seen, is subject to frequent changes.
+ %    \begin{macrocode}
++%</2ekernel>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@endfloatbox}{Float hooks}%
++%<*2ekernel|latexrelease>
+ \def \@endfloatbox{%
+-      \par\vskip\z@skip      %% \par\vskip\z@ added 15 Dec 87
++      \par
++%    \end{macrocode}
++% \changes{v1.2k}{2026/10/03}{Execute the \texttt{float/end} hook}
++%    \begin{macrocode}
++      \@float@end@hook
++      \vskip\z@skip      %% \par\vskip\z@ added 15 Dec 87
+ %    \end{macrocode}
+ % \changes{v1.0a}
+ %     {1994/03/07}{(DPC) Extra group for color}
+@@ -742,6 +1033,19 @@
+     \egroup                  %% end of vbox
+   \color@endbox
+ }
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@endfloatbox}{Float hooks}%
++%<latexrelease>\def \@endfloatbox{%
++%<latexrelease>      \par\vskip\z@skip
++%<latexrelease>      \@minipagefalse
++%<latexrelease>      \outer@nobreak
++%<latexrelease>    \egroup
++%<latexrelease>  \color@endbox
++%<latexrelease>}
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
+ % \end{macro}
+ %
+@@ -782,10 +1086,26 @@
+ % \changes{v1.1g}{1994/12/10}{Macros reinserted temporarily}
+ %
+ %
++% \changes{v1.2k}{2026/10/03}{Execute the \texttt{float/begin} hook
++%    after the width has been set}
+ %    \begin{macrocode}
+ \def\@dbflt#1{\@ifnextchar[{\@xdblfloat{#1}}{\@xdblfloat{#1}[tp]}}
++%</2ekernel>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@xdblfloat}{Float hooks}%
++%<*2ekernel|latexrelease>
+ \def\@xdblfloat#1[#2]{%
+-  \@xfloat{#1}[#2]\hsize\textwidth\linewidth\textwidth}
++  \let\@float@begin@hook\@gobble
++  \@xfloat{#1}[#2]\hsize\textwidth\linewidth\textwidth
++  \@float@usehooks{#1}{*}}
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@xdblfloat}{Float hooks}%
++%<latexrelease>\def\@xdblfloat#1[#2]{%
++%<latexrelease>  \@xfloat{#1}[#2]\hsize\textwidth\linewidth\textwidth}
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
+ %  \end{macro}
+ %  \end{macro}
+diff --git a/base/lttagging.dtx b/base/lttagging.dtx
+index 1b7bf1f35..aa73ab7b1 100644
+--- a/base/lttagging.dtx
++++ b/base/lttagging.dtx
+@@ -33,7 +33,7 @@
+ %<*driver>
+ % \fi
+ \ProvidesFile{lttagging.dtx}
+-             [2026-08-19 v1.1a LaTeX Kernel (tagging support)]
++             [2026-10-03 v1.1b LaTeX Kernel (tagging support)]
+ % \iffalse
+ \documentclass{l3in2edoc}
+ \GetFileInfo{lttagging.dtx}
+@@ -992,18 +992,43 @@
+ %
+ % \begin{taggingsocketdecl}{caption/label/begin,
+ %                    caption/label/end}
++% \changes{v1.1b}{2026/10/03}{Label sockets can also be used inside the
++%    caption paragraph}
+ %  These sockets are used in \cs{@makecaption} around the
+-%  label. Their default plugs ensure that
++%  label. If they are used before the caption paragraph starts (as in
++%  \cs{@makecaption}), their default plugs ensure that
+ %  the label is outside the paragraph and that
+ %  the rest of the caption uses flattened para mode. If the
+ %  caption is not in a hbox, the \texttt{para/begin}
+ %  socket should follow to properly start the paragraph.
++%  They can also be used inside the caption paragraph (when a marked
++%  content chunk is open, e.g., by the \pkg{caption} package, which
++%  typesets the label as part of the paragraph). Then the label
++%  becomes a child of the paragraph structure, and no
++%  \texttt{para/begin} socket must follow.
+ %    \begin{macrocode}
+ \NewTaggingSocket{caption/label/begin}{0}
+ \NewTaggingSocket{caption/label/end}{0}
+ %    \end{macrocode}
+ % \end{taggingsocketdecl}
+ %
++% \begin{taggingsocketdecl}{subfloat/begin,
++%                    subfloat/end}
++% \changes{v1.1b}{2026/10/03}{sockets for sub-floats added}
++%  These sockets are meant for packages which build sub-figures,
++%  sub-tables, etc.\ inside a float (e.g., \pkg{subcaption}). They
++%  open and close the structure of the sub-float. The begin socket
++%  should also set \cs{@current@float@struct} (locally) to the number
++%  of this structure, so that a caption inside the sub-float uses it
++%  as parent. They have no arguments; the float type is \cs{@captype}.
++%  They should be used in vertical mode, inside the box of the sub-float
++%  (e.g., a \env{minipage}).
++%    \begin{macrocode}
++\NewTaggingSocket{subfloat/begin}{0}
++\NewTaggingSocket{subfloat/end}{0}
++%    \end{macrocode}
++% \end{taggingsocketdecl}
++%
+ %
+ % \subsection{Tagging support for output routines}
+ %
+@@ -1292,6 +1317,67 @@
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \subsection{Float types}
++% \begin{variable}{\g_@@_float_types_seq}
++% \changes{v1.1b}{2026/10/03}{Variable moved here from latex-lab-float}
++%    The float types known to the tagging code. The float code
++%    (\pkg{latex-lab-float}) creates a container structure for each of
++%    them and uses the structure names \texttt{float/\meta{type}s},
++%    \texttt{float/\meta{type}}, \texttt{float/\meta{type}/caption},
++%    \texttt{float/\meta{type}/label} and \texttt{float/\meta{type}/sub}
++%    (for sub-floats, see the sockets \texttt{subfloat/begin} and
++%    \texttt{subfloat/end}). The names for \texttt{figure}
++%    and \texttt{table} are declared in \pkg{latex-lab-namespace}.
++%    \begin{macrocode}
++\ExplSyntaxOn
++\seq_new:N \g_@@_float_types_seq
++\seq_gput_right:Nn \g_@@_float_types_seq {figure}
++\seq_gput_right:Nn \g_@@_float_types_seq {table}
++%    \end{macrocode}
++% \end{variable}
++%
++% \begin{macro}{\DeclareTaggingFloatType}
++% \changes{v1.1b}{2026/10/03}{Command added}
++%    \cs{DeclareTaggingFloatType}\Arg{type} declares a new float type for
++%    tagging. \meta{type} is the value that \cs{@captype} has inside the
++%    float, the argument of \cs{@float}. Packages and classes that define
++%    float environments (\pkg{newfloat}, \pkg{float}, \pkg{tocbasic},
++%    \pkg{memoir}, \ldots) should use it for each new type. It can be used
++%    whether or not tagging is active, and more than once for the same
++%    type: a structure name that already has a role is not changed.
++%
++%    It should be used in the preamble, outside of a group. The type is
++%    recorded globally, but, as with \cs{NewStructureName} and
++%    \cs{AssignStructureRole}, the roles are assigned locally; after a
++%    group they are empty. Declaring the type again outside of the group
++%    assigns them again. Afterwards the roles of the five structure names
++%    can be changed with \cs{AssignStructureRole}.
++%    \begin{macrocode}
++\cs_new_protected:Npn \DeclareTaggingFloatType #1
++  {
++    \seq_if_in:NnF \g_@@_float_types_seq {#1}
++      { \seq_gput_right:Nn \g_@@_float_types_seq {#1} }
++    \@@_float_type_name:nn {float/#1s}         {Sect}
++    \@@_float_type_name:nn {float/#1}          {float}
++    \@@_float_type_name:nn {float/#1/caption}  {Caption}
++    \@@_float_type_name:nn {float/#1/label}    {Lbl}
++    \@@_float_type_name:nn {float/#1/sub}      {Part}
++  }
++%    \end{macrocode}
++%    A name is created if it does not exist, and gets its default role if
++%    it has none (also when it was created inside a group that has ended).
++%    \begin{macrocode}
++\cs_new_protected:Npn \@@_float_type_name:nn #1#2
++  {
++    \tl_if_exist:cF { l_@@_name_#1_tl }
++      { \NewStructureName {#1} \tl_clear:c { l_@@_name_#1_tl } }
++    \tl_if_empty:cT { l_@@_name_#1_tl }
++      { \AssignStructureRole {#1} {#2} }
++  }
++\ExplSyntaxOff
++%    \end{macrocode}
++% \end{macro}
++%
+ %
+ % \section{For lttab.dtx parked here for now}
+ %
+diff --git a/base/testfiles-lthooks/ltcmdhooks-001.tlg b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+index 233299cf5..c339c7149 100644
+--- a/base/testfiles-lthooks/ltcmdhooks-001.tlg
++++ b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+@@ -119,6 +119,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-000.tlg b/base/testfiles-lthooks/lthooks-000.tlg
+index 687cd77a4..777a5d8d8 100644
+--- a/base/testfiles-lthooks/lthooks-000.tlg
++++ b/base/testfiles-lthooks/lthooks-000.tlg
+@@ -55,6 +55,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-001.tlg b/base/testfiles-lthooks/lthooks-001.tlg
+index 40b8ee5bf..72c836438 100644
+--- a/base/testfiles-lthooks/lthooks-001.tlg
++++ b/base/testfiles-lthooks/lthooks-001.tlg
+@@ -62,6 +62,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -319,6 +321,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -424,6 +428,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-002.tlg b/base/testfiles-lthooks/lthooks-002.tlg
+index f924f4ec9..e97df4c75 100644
+--- a/base/testfiles-lthooks/lthooks-002.tlg
++++ b/base/testfiles-lthooks/lthooks-002.tlg
+@@ -62,6 +62,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -322,6 +324,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -427,6 +431,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-003.tlg b/base/testfiles-lthooks/lthooks-003.tlg
+index 07e769051..30fddaa9e 100644
+--- a/base/testfiles-lthooks/lthooks-003.tlg
++++ b/base/testfiles-lthooks/lthooks-003.tlg
+@@ -64,6 +64,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -180,6 +182,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-004.tlg b/base/testfiles-lthooks/lthooks-004.tlg
+index da03de2cb..c2cc001de 100644
+--- a/base/testfiles-lthooks/lthooks-004.tlg
++++ b/base/testfiles-lthooks/lthooks-004.tlg
+@@ -49,6 +49,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -159,6 +161,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-005.tlg b/base/testfiles-lthooks/lthooks-005.tlg
+index 8cc7b9b24..406c306f6 100644
+--- a/base/testfiles-lthooks/lthooks-005.tlg
++++ b/base/testfiles-lthooks/lthooks-005.tlg
+@@ -71,6 +71,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -187,6 +189,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-006.tlg b/base/testfiles-lthooks/lthooks-006.tlg
+index bbdb6f1ab..1554663a6 100644
+--- a/base/testfiles-lthooks/lthooks-006.tlg
++++ b/base/testfiles-lthooks/lthooks-006.tlg
+@@ -46,6 +46,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -154,6 +156,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-007.tlg b/base/testfiles-lthooks/lthooks-007.tlg
+index 22dda1a5f..c16c98cc7 100644
+--- a/base/testfiles-lthooks/lthooks-007.tlg
++++ b/base/testfiles-lthooks/lthooks-007.tlg
+@@ -46,6 +46,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -155,6 +157,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -433,6 +437,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-008.tlg b/base/testfiles-lthooks/lthooks-008.tlg
+index af8448f1e..79a519798 100644
+--- a/base/testfiles-lthooks/lthooks-008.tlg
++++ b/base/testfiles-lthooks/lthooks-008.tlg
+@@ -50,6 +50,8 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {float/begin}
++>  {float/end}
+ >  {insertmark}
+ >  {package/before}
+ >  {class/before}
+@@ -164,6 +166,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-009.tlg b/base/testfiles-lthooks/lthooks-009.tlg
+index 4287dae74..64b9724ee 100644
+--- a/base/testfiles-lthooks/lthooks-009.tlg
++++ b/base/testfiles-lthooks/lthooks-009.tlg
+@@ -64,6 +64,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-011.tlg b/base/testfiles-lthooks/lthooks-011.tlg
+index 4d8a94f26..9c5c7e0c3 100644
+--- a/base/testfiles-lthooks/lthooks-011.tlg
++++ b/base/testfiles-lthooks/lthooks-011.tlg
+@@ -57,6 +57,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -334,6 +336,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -613,6 +617,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+@@ -894,6 +900,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-013.tlg b/base/testfiles-lthooks/lthooks-013.tlg
+index 7dd8ee0d5..02a548e88 100644
+--- a/base/testfiles-lthooks/lthooks-013.tlg
++++ b/base/testfiles-lthooks/lthooks-013.tlg
+@@ -114,6 +114,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-021.tlg b/base/testfiles-lthooks/lthooks-021.tlg
+index 648aa00c7..9808eefaa 100644
+--- a/base/testfiles-lthooks/lthooks-021.tlg
++++ b/base/testfiles-lthooks/lthooks-021.tlg
+@@ -55,6 +55,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-legacy.tlg b/base/testfiles-lthooks/lthooks-legacy.tlg
+index a8344ec1d..288d88b55 100644
+--- a/base/testfiles-lthooks/lthooks-legacy.tlg
++++ b/base/testfiles-lthooks/lthooks-legacy.tlg
+@@ -82,6 +82,8 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'float/begin' on input line ...:
++[lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+ [lthooks] Update code for hook 'package/before' on input line ...:
+ [lthooks] Update code for hook 'class/before' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-rollback-args.tlg b/base/testfiles-lthooks/lthooks-rollback-args.tlg
+index 4956832fe..bb1541dc0 100644
+--- a/base/testfiles-lthooks/lthooks-rollback-args.tlg
++++ b/base/testfiles-lthooks/lthooks-rollback-args.tlg
+@@ -770,10 +770,22 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+new file mode 100644
+index 000000000..69c06f08b
+--- /dev/null
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -0,0 +1,97 @@
++% Test of the proposed caption interface (proposal (b)):
++% \caption*, \if@captionstar, socket caption/listentry, tagging socket
++% caption/step (without tagging: only its second argument is used),
++% and the generic hook cmd/caption/before as the place where a package
++% can prepare a continued float.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++\NewSocketPlug{caption/listentry}{test}{%
++  \ifx\relax#2\relax
++    \typeout{LISTENTRY: none for #1}%
++  \else
++    \typeout{LISTENTRY: #1: #2}%
++    \addcontentsline{lof}{#1}{\protect\numberline{\csname the#1\endcsname}{#2}}%
++  \fi}
++% continued float, as the caption package does it: the next
++% \stepcounter of the float counter is skipped (refstepcounter still
++% sets \@currentlabel); the redefinition removes itself
++\newif\ifcontinued
++\let\ORIstepcounter\stepcounter
++\def\skipnextstep#1{%
++  \let\stepcounter\ORIstepcounter
++  \edef\reserved@a{#1}%
++  \ifx\reserved@a\@captype\else\stepcounter{#1}\fi}
++\AddToHook{cmd/caption/before}{%
++  \ifcontinued
++    \typeout{CONTINUED: next step of \@captype\space skipped}%
++    \let\stepcounter\skipnextstep
++  \fi}
++\makeatother
++\begin{document}
++\START
++\TEST{normal caption}{%
++  \begin{figure}
++    \caption{Normal}
++    \typeout{figure=\thefigure, currentlabel=\csname @currentlabel\endcsname}
++  \end{figure}}
++\TEST{star caption: no step, no list entry, empty label}{%
++  \begin{figure}
++    \caption*{Star}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{star with optional argument (ignored)}{%
++  \begin{figure}
++    \caption*[ignored]{Star with optional argument}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{empty optional argument: kernel plug writes an empty entry}{%
++  \begin{figure}
++    \caption[]{Empty optional argument}
++  \end{figure}}
++\TEST{own plug for caption/listentry: no entry for empty argument}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/listentry}{test}%
++    \caption[]{No entry}
++    \caption[Short]{Long}
++  \end{figure}}
++\TEST{continued float via cmd/caption/before: counter not stepped}{%
++  \begin{figure}
++    \continuedtrue
++    \caption{Continued}
++    \typeout{figure=\thefigure, currentlabel=\csname @currentlabel\endcsname}
++  \end{figure}
++  \begin{figure}
++    \caption{Next}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{star flag is reset after the caption}{%
++  \begin{figure}
++    \caption*{Star}
++    \makeatletter
++    \typeout{after caption*: star=\if@captionstar true\else false\fi}
++    \makeatother
++  \end{figure}}
++\TEST{article makecaption with empty label: no separator}{%
++  \makeatletter
++  \setbox0=\vbox{\hsize=10cm \ORImakecaption{}{Text}}%
++  \showbox0
++  \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
++  \showbox0
++  \makeatother}
++\TEST{caption outside float: error as before}{%
++  \caption{Outside}}
++\TEST{caption* outside float: error as before}{%
++  \caption*{Outside}}
++\end{document}
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+new file mode 100644
+index 000000000..bdf053896
+--- /dev/null
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -0,0 +1,123 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: normal caption
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Normal}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Normal], star=false
++figure=1, currentlabel=1
++============================================================
++============================================================
++TEST 2: star caption: no step, no list entry, empty label
++============================================================
++MAKECAPTION: [] [\ignorespaces Star], star=true
++figure=1
++============================================================
++============================================================
++TEST 3: star with optional argument (ignored)
++============================================================
++MAKECAPTION: [] [\ignorespaces Star with optional argument], star=true
++figure=1
++============================================================
++============================================================
++TEST 4: empty optional argument: kernel plug writes an empty entry
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Empty optional argument], star=false
++============================================================
++============================================================
++TEST 5: own plug for caption/listentry: no entry for empty argument
++============================================================
++LISTENTRY: none for figure
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces No entry], star=false
++LISTENTRY: figure: Short
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{Short}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Long], star=false
++============================================================
++============================================================
++TEST 6: continued float via cmd/caption/before: counter not stepped
++============================================================
++CONTINUED: next step of figure skipped
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Continued}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Continued], star=false
++figure=4, currentlabel=4
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Next}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Next], star=false
++figure=5
++============================================================
++============================================================
++TEST 7: star flag is reset after the caption
++============================================================
++MAKECAPTION: [] [\ignorespaces Star], star=true
++after caption*: star=false
++============================================================
++============================================================
++TEST 8: article makecaption with empty label: no separator
++============================================================
++> \box...=
++\vbox(16.83331+0.0)x284.52756
++.\glue 10.0
++.\hbox(6.83331+0.0)x284.52756, glue set 132.26376fil
++..\glue 0.0 plus 1.0fil
++..\hbox(6.83331+0.0)x20.00003
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...\ORImakecaption {}{Text}}\showbox 0 
++                                                  \setbox 0=\vbox {\hsize =1...
++l. ...  \makeatother}
++> \box...=
++\vbox(16.94444+0.0)x284.52756
++.\glue 10.0
++.\hbox(6.94444+0.0)x284.52756, glue set 116.49985fil
++..\glue 0.0 plus 1.0fil
++..\hbox(6.94444+0.0)x51.52788
++...\OT1/cmr/m/n/10 L
++...\OT1/cmr/m/n/10 a
++...\OT1/cmr/m/n/10 b
++...\kern0.27779
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 l
++...\OT1/cmr/m/n/10 :
++...\glue 4.44444 plus 3.33331 minus 0.55556
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...akecaption {Label}{Text}}\showbox 0 
++                                                  \makeatother 
++l. ...  \makeatother}
++============================================================
++============================================================
++TEST 9: caption outside float: error as before
++============================================================
++! LaTeX Error: \caption outside float.
++See the LaTeX manual or LaTeX Companion for explanation.
++Type  H <return>  for immediate help.
++ ...                                              
++l. ...  \caption{Outside}}
++You're in trouble here.  Try typing  <return>  to proceed.
++If that doesn't work, type  X <return>  to quit.
++============================================================
++============================================================
++TEST 10: caption* outside float: error as before
++============================================================
++! LaTeX Error: \caption outside float.
++See the LaTeX manual or LaTeX Companion for explanation.
++Type  H <return>  for immediate help.
++ ...                                              
++l. ...  \caption*{Outside}}
++You're in trouble here.  Try typing  <return>  to proceed.
++If that doesn't work, type  X <return>  to quit.
++============================================================
++[1
++] [2] (caption-interface-001.aux)
+diff --git a/base/testfiles/tlb-float-hooks-001.lvt b/base/testfiles/tlb-float-hooks-001.lvt
+new file mode 100644
+index 000000000..d8931849e
+--- /dev/null
++++ b/base/testfiles/tlb-float-hooks-001.lvt
+@@ -0,0 +1,52 @@
++% Test the float/begin and float/end hooks (proposal, not in the kernel)
++\documentclass{article}
++\input{regression-test}
++\makeatletter
++\def\showmode{\ifinner inner \fi\ifvmode vertical\else
++  \ifhmode horizontal\else other\fi\fi}
++\AddToHookWithArguments{float/begin}{%
++  \edef\reserved@a{\showmode}%
++  \TYPE{BEGIN: #1 [#2], captype=\@captype, hsize=\the\hsize,
++        linewidth=\the\linewidth, mode=\reserved@a,
++        \if@minipage minipage\else no minipage\fi}}
++\AddToHookWithArguments{float/end}{%
++  \edef\reserved@a{\showmode}%
++  \TYPE{END: #1 [#2], captype=\@captype, hsize=\the\hsize,
++        mode=\reserved@a}}
++\setlength\textwidth{400pt}
++\setlength\columnsep{20pt}
++\begin{document}
++\sbox0{\begin{minipage}{2cm}x\end{minipage}}% load fonts before \START
++\START
++\TEST{one-column figure}{%
++  \begin{figure}[ht] A \end{figure}}
++\TEST{one-column figure* (same as figure)}{%
++  \begin{figure*} B \end{figure*}}
++\TEST{float started in horizontal mode}{%
++  \noindent text \begin{table}[b] C \end{table} more text\par}
++\TEST{a box ended by @endfloatbox without @xfloat: no hook}{%
++  \setbox0\color@vbox\vbox\bgroup D\@endfloatbox
++  \TYPE{box done}}
++\TEST{a box ended by @endfloatbox nested in a float (like float.sty [H]
++  in a minipage): end hook only once, for the float}{%
++  \begin{figure}
++    \begin{minipage}{2cm}%
++      \def\@captype{program}%
++      \setbox0\color@vbox\vbox\bgroup D1\@endfloatbox
++    \end{minipage}%
++    \setbox0\color@vbox\vbox\bgroup D2\@endfloatbox
++  \end{figure}}
++\twocolumn
++\TEST{two-column figure}{%
++  \begin{figure} E \end{figure}}
++\TEST{two-column figure*}{%
++  \begin{figure*} F \end{figure*}}
++\TEST{two-column table* with optional argument}{%
++  \begin{table*}[p] G \end{table*}}
++\AddToHookWithArguments{float/begin}[pkgA]{\TYPE{pkgA begin: #1}}
++\AddToHookWithArguments{float/begin}[pkgB]{\TYPE{pkgB begin: #1}}
++\AddToHookWithArguments{float/end}[pkgA]{\TYPE{pkgA end: #1}}
++\AddToHookWithArguments{float/end}[pkgB]{\TYPE{pkgB end: #1}}
++\TEST{code from two labels: float/end is reversed}{%
++  \begin{figure} H \end{figure}}
++\END
+diff --git a/base/testfiles/tlb-float-hooks-001.tlg b/base/testfiles/tlb-float-hooks-001.tlg
+new file mode 100644
+index 000000000..f82491d21
+--- /dev/null
++++ b/base/testfiles/tlb-float-hooks-001.tlg
+@@ -0,0 +1,61 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: one-column figure
++============================================================
++BEGIN: figure [], captype=figure, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: figure [], captype=figure, hsize=400.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 2: one-column figure* (same as figure)
++============================================================
++BEGIN: figure [], captype=figure, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: figure [], captype=figure, hsize=400.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 3: float started in horizontal mode
++============================================================
++BEGIN: table [], captype=table, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: table [], captype=table, hsize=400.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 4: a box ended by @endfloatbox without @xfloat: no hook
++============================================================
++box done
++============================================================
++============================================================
++TEST 5: a box ended by @endfloatbox nested in a float (like float.sty [H] in a minipage): end hook only once, for the float
++============================================================
++BEGIN: figure [], captype=figure, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: figure [], captype=figure, hsize=400.0pt, mode=inner vertical
++============================================================
++[1
++] [2]
++============================================================
++TEST 6: two-column figure
++============================================================
++BEGIN: figure [], captype=figure, hsize=190.0pt, linewidth=190.0pt, mode=inner vertical, minipage
++END: figure [], captype=figure, hsize=190.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 7: two-column figure*
++============================================================
++BEGIN: figure [*], captype=figure, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: figure [*], captype=figure, hsize=400.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 8: two-column table* with optional argument
++============================================================
++BEGIN: table [*], captype=table, hsize=400.0pt, linewidth=400.0pt, mode=inner vertical, minipage
++END: table [*], captype=table, hsize=400.0pt, mode=inner vertical
++============================================================
++============================================================
++TEST 9: code from two labels: float/end is reversed
++============================================================
++pkgA begin: figure
++pkgB begin: figure
++BEGIN: figure [], captype=figure, hsize=190.0pt, linewidth=190.0pt, mode=inner vertical, minipage
++END: figure [], captype=figure, hsize=190.0pt, mode=inner vertical
++pkgB end: figure
++pkgA end: figure
++============================================================
+diff --git a/base/testfiles/tlb-float-hooks-002-rollback.lvt b/base/testfiles/tlb-float-hooks-002-rollback.lvt
+new file mode 100644
+index 000000000..883ec4b74
+--- /dev/null
++++ b/base/testfiles/tlb-float-hooks-002-rollback.lvt
+@@ -0,0 +1,15 @@
++% Rollback of the float hooks (proposal): with latexrelease 2026-06-01
++% the hooks still exist but are no longer executed.
++\RequirePackage[2026-06-01]{latexrelease}
++\documentclass{article}
++\input{regression-test}
++\AddToHookWithArguments{float/begin}{\TYPE{BEGIN: #1 [#2]}}
++\AddToHookWithArguments{float/end}{\TYPE{END: #1 [#2]}}
++\begin{document}
++\START
++\TEST{figure after rollback: no hook output}{%
++  \begin{figure} A \end{figure}}
++\twocolumn
++\TEST{figure* after rollback: no hook output}{%
++  \begin{figure*} B \end{figure*}}
++\END
+diff --git a/base/testfiles/tlb-float-hooks-002-rollback.tlg b/base/testfiles/tlb-float-hooks-002-rollback.tlg
+new file mode 100644
+index 000000000..1ca8231b9
+--- /dev/null
++++ b/base/testfiles/tlb-float-hooks-002-rollback.tlg
+@@ -0,0 +1,11 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: figure after rollback: no hook output
++============================================================
++============================================================
++[1]
++============================================================
++TEST 2: figure* after rollback: no hook output
++============================================================
++============================================================
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
+index d7c0a0db4..2fddd714e 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
+@@ -716,10 +716,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+@@ -1689,10 +1701,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
+index 5a7815227..f7220be99 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
+@@ -710,10 +710,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+@@ -1673,10 +1685,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
+index a09be7491..ee8b81e6a 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
+@@ -710,10 +710,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+@@ -1681,10 +1693,22 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Skipping: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
+index 0bfb5a03e..bda43b292 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
+@@ -782,10 +782,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.tlg b/base/testfiles/tlb-latexrelease-rollback-004.tlg
+index b1d2e7a81..d7aa417dc 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.tlg
+@@ -770,10 +770,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
+index 0d635bc38..2d88b81a9 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
+@@ -771,10 +771,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
+index df0a8565e..6220324f7 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
+@@ -782,10 +782,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
+index 6c27ad032..7e60b7890 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
+@@ -770,10 +770,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
+index ed6019f14..19ca847e3 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
+@@ -771,10 +771,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
+index 2fc9f142f..ed81939ca 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
+@@ -782,10 +782,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
+index 3f96313db..4eeb43b29 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
+@@ -770,10 +770,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
+index 5ea328b44..87a171d6b 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
+@@ -771,10 +771,22 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
++Skipping: [....-..-..] star form on input line ....
++Applying: [....-..-..] star form on input line ....
++Skipping: [....-..-..] star form, list entry socket on input line ....
++Applying: [....-..-..] star form, list entry socket on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Check float options on input line ....
+ Already applied: [....-..-..] Check float options on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
++Skipping: [....-..-..] Float hooks on input line ....
++Applying: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] float order in 2-column on input line ....
+ Already applied: [....-..-..] float order in 2-column on input line ....
+ Applying: [....-..-..] Explicit par for marginpar on input line ....
+diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
+index d0152f5b9..897f0b741 100644
+--- a/required/latex-lab/changes.txt
++++ b/required/latex-lab/changes.txt
+@@ -1,3 +1,29 @@
++2026-10-03  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
++
++	* latex-lab-float.dtx:
++	Execute the kernel hook float/begin in \@xfloat
++	Use \DeclareTaggingFloatType in the key float/new; captions in floats
++	of undeclared types use float/generic/caption and float/generic/label
++
++	* latex-lab-namespace.dtx:
++	Add the names float/generic/caption and float/generic/label
++
++	* latex-lab-float.dtx:
++	Use the kernel socket caption/step instead of redefining \caption,
++	support \caption*, plugs for the sockets subfloat/begin and subfloat/end
++
++	* latex-lab-namespace.dtx:
++	Structure names float/<type>/sub for sub-floats
++
++	* latex-lab-float.dtx:
++	Document the contract of the caption/label socket, add socket
++	caption/separator and plugs label-only and colon, allow the label
++	tagging sockets inside a paragraph, label latex-lab/float/makecaption
++	for the begindocument redefinition of \@makecaption
++
++	* latex-lab-listings.dtx:
++	Void the socket caption/separator for titles
++
+ 2026-10-02  Frank Mittelbach  <Frank.Mittelbach@latex-project.org>
+ 
+ 	* latex-lab-block.dtx (subsubsection{The \insttype{thmstyle} instances they use}):
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index 216c24151..b95cabd73 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -15,8 +15,8 @@
+ %
+ %    https://github.com/latex3/latex2e/issues
+ %
+-\def\ltlabfloatdate{2026-09-09}
+-\def\ltlabfloatversion{0.81p}
++\def\ltlabfloatdate{2026-10-03}
++\def\ltlabfloatversion{0.81q}
+ %<*driver>
+ \DocumentMetadata{tagging=on,pdfstandard=ua-2}
+ \documentclass{l3in2edoc}
+@@ -96,8 +96,10 @@
+ % move it to the begin of the structure. If a float has two captions the author
+ % has to insert a command which splits the float in two.
+ %
+-% Subfigures and subcaptions are currently not handled, but will be implemented
+-% as simple \texttt{Part} with their own \texttt{Caption}.
++% Subfigures and subcaptions are not handled by the kernel. Packages which
++% provide them (e.g., \pkg{subcaption}) can use the tagging sockets
++% \texttt{subfloat/begin} and \texttt{subfloat/end}: they create a
++% \texttt{Part} and a caption inside becomes its first kid.
+ %
+ % Unknown float types are put into a generic structure when they are encountered in the
+ % source. To add support for a new float type the \texttt{float/new} key described below can
+@@ -206,22 +208,21 @@
+ %
+ % \begin{variable}{
+ %  \g_@@_float_sect_prop,
+-%  \g_@@_float_types_seq,
+ %  \@current@float@struct,
+ %  \g_@@_float_int
+ %   }
+-% These variables will hold the structure number for the float container
+-% and the list of float types. Currently only figure and table are supported
+-% TODO: interface to declare new float types.
++% These variables will hold the structure number for the float container.
++% The list of float types, \cs{g_@@_float_types_seq}, is declared in
++% lttagging, new types are added with \cs{DeclareTaggingFloatType}.
+ % To set the target for links we need also a unique counter.
+ % With tagging we could use the structure number, but
+ % the structure commands now are hidden inside tagging sockets
+ % so we use a dedicated counter.
+ %    \begin{macrocode}
+ \prop_new:N \g_@@_float_sect_prop
+-\seq_new:N  \g_@@_float_types_seq
+-\seq_gput_right:Nn \g_@@_float_types_seq {figure}
+-\seq_gput_right:Nn \g_@@_float_types_seq {table}
++%    \end{macrocode}
++% \changes{0.81q}{2026-10-03}{\cs{g_@@_float_types_seq} is now declared in lttagging}
++%    \begin{macrocode}
+ \tl_new:N\@current@float@struct
+ \int_new:N\g_@@_float_int
+ %    \end{macrocode}
+@@ -268,6 +269,7 @@
+ % This is all done with the following key. The value is the captype.
+ % \changes{0.81p}{2026-09-09}{Avoid that float/new errors if the type is already
+ % declared}
++% \changes{0.81q}{2026-10-03}{Use kernel command \cs{DeclareTaggingFloatType}}
+ %    \begin{macrocode}
+ \msg_new:nnn { tag }{ float-exist }
+  {
+@@ -283,16 +285,8 @@
+          \msg_info:nnn { tag } { float-exist }{#1}         
+        }
+        {
+-        \NewStructureName{float/#1s}
+-        \AssignStructureRole{float/#1s}{Sect}
+-        \NewStructureName{float/#1}
+-        \AssignStructureRole{float/#1}{float}
+-        \NewStructureName{float/#1/caption}
+-        \AssignStructureRole{float/#1/caption}{Caption}
+-        \NewStructureName{float/#1/label}
+-        \AssignStructureRole{float/#1/label}{Lbl}
+-        \seq_gput_right:Nn \g_@@_float_types_seq {#1}
+-       } 
++        \DeclareTaggingFloatType{#1}
++       }
+     }
+  }
+ %    \end{macrocode}
+@@ -631,6 +625,14 @@
+ % We add a target for links. TODO: check that it doesn't affect spacing!!
+ %    \begin{macrocode}
+         \MakeLinkTarget*{\@captype.struct.\@current@float@struct}%
++%    \end{macrocode}
++% \changes{0.81q}{2026-10-03}{Execute the kernel hook \hook{float/begin}}
++% Then the kernel hook \hook{float/begin}, so that code in the hook
++% is inside the float structure and after the link target.
++% (\cs{@endfloatbox} executes \hook{float/end}, so \cs{end@float}
++% needs no change for it.)
++%    \begin{macrocode}
++        \@float@begin@hook{#1}%
+ }%
+ %    \end{macrocode}
+ %  The end code of the float ...
+@@ -689,16 +691,41 @@
+ % These sockets are in lttagging: \texttt{caption/begin} (1 argument),
+ % \texttt{caption/end}, \texttt{caption/label/begin}, \texttt{caption/label/end}.
+ %
+-% \begin{socketdecl}{caption/label}
+-% This socket is a lightweight start for
+-% some interface to format the label or add a font command.
+-% The argument is the label text.
+-% The default plug \texttt{kernel} adds a colon
+-% and a space.
+-% TODO: revisit after checking float and caption packages
+-% to identify which sockets and hooks are needed.
++% \begin{socketdecl}{caption/label,caption/separator}
++% \changes{0.81q}{2026-10-03}{Document the contract of \texttt{caption/label},
++%   add socket \texttt{caption/separator}}
++% These sockets format the label of a caption and the separator between
++% the label and the caption text. They are used by \cs{@makecaption}
++% (and can be used by other code which typesets captions, e.g., the
++% \pkg{caption} package):
++% \begin{itemize}
++% \item The argument of \texttt{caption/label} is the first argument of
++%   \cs{@makecaption}, i.e., \cs{fnum@\meta{type}} or the tokens
++%   |\csname fnum@|\meta{type}|\endcsname|. \texttt{caption/separator} has no
++%   argument; the caption type is \cs{@captype}.
++% \item Both are used twice: once while measuring the caption (tagging is
++%   suspended there) and once for typesetting. They must give the same
++%   result both times, must not write to files or step counters, and must
++%   only produce horizontal material.
++% \item \texttt{caption/label} is used between the tagging sockets
++%   \texttt{caption/label/begin} and \texttt{caption/label/end}, so its
++%   output is the content of the \texttt{Lbl} structure.
++%   \texttt{caption/separator} is used after \texttt{caption/label/end}
++%   and \texttt{para/begin}, so its output belongs to the text of the
++%   caption.
++% \end{itemize}
++% The default plugs are \plug{kernel} for both: \texttt{caption/label}
++% adds a colon and a space (so they are part of \texttt{Lbl}, as before),
++% \texttt{caption/separator} is empty. The plugs \plug{label-only} and
++% \plug{colon} put the colon outside \texttt{Lbl}. Classes and packages which
++% assign their own plug to \texttt{caption/label} only keep working as
++% before, as long as \texttt{caption/separator} has its default plug.
++% Code which suppresses the label (by assigning \plug{noop} to
++% \texttt{caption/label}, e.g., for listing titles or \cs{caption*}) must
++% assign \plug{noop} to \texttt{caption/separator} as well.
+ %    \begin{macrocode}
+ \NewSocket{caption/label}{1}
++\NewSocket{caption/separator}{0}
+ %    \end{macrocode}
+ % \end{socketdecl}
+ %
+@@ -710,8 +737,38 @@
+    #1:~
+  }
+ \AssignSocketPlug{caption/label}{kernel}
++\NewSocketPlug{caption/label}{label-only}
++ {
++   #1
++ }
++\NewSocketPlug{caption/separator}{kernel}{}
++\AssignSocketPlug{caption/separator}{kernel}
++\NewSocketPlug{caption/separator}{colon}
++ {
++   :~
++ }
+ %    \end{macrocode}
+ % \end{plugdecl}
++% \begin{macro}{\@@_float_name:n}
++% \changes{0.81q}{2026-10-03}{Fall back to generic names for unknown float types}
++% The symbolic name for the caption, the label or a sub-float of the
++% current float type (the argument is \texttt{caption}, \texttt{label} or
++% \texttt{sub}).
++% Unknown float types (not declared with \cs{DeclareTaggingFloatType}) get a
++% \texttt{float/generic} structure in \cs{@@_float_begin:}, so their caption,
++% label and sub-floats use \texttt{float/generic/caption},
++% \texttt{float/generic/label} and \texttt{float/generic/sub}.
++% Before, \cs{UseStructureName} gave an undefined control sequence here.
++%    \begin{macrocode}
++\cs_new:Npn \@@_float_name:n #1
++  {
++    float/
++    \cs_if_exist:cTF { l_@@_name_float/\@captype/#1_tl }
++      { \@captype } { generic }
++    /#1
++  }
++%    \end{macrocode}
++% \end{macro}
+ % \begin{plugdecl}{default}
+ % The caption begin socket takes an argument: the structure number of
+ % the parent float. If the argument is empty, the current structure is used.
+@@ -722,10 +779,10 @@
+   {
+      \tl_if_empty:eTF {#1}
+       {
+-        \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/caption},firstkid}
++        \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{caption}},firstkid}
+       }
+       {
+-        \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/caption},parent=#1,firstkid}
++        \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{caption}},parent=#1,firstkid}
+       }
+      \bool_set_true:N \l__tag_para_flattened_bool
+   }
+@@ -743,14 +800,29 @@
+ % \end{plugdecl}
+ %
+ % \begin{plugdecl}{default (tagsupport/caption/label/begin)}
+-%    \begin{macrocode}
++% \changes{0.81q}{2026-10-03}{Allow the label sockets inside a paragraph}
++% The label sockets can be used before the paragraph of the caption
++% starts (as in \cs{@makecaption}) or inside it, when a marked content
++% chunk of the paragraph is open (as in the \pkg{caption} package, which
++% typesets the label as part of the caption paragraph). In the second case the
++% chunk is interrupted for the label and continued after it.
++%    \begin{macrocode}
++\bool_new:N \g_@@_caption_label_inpar_bool
+ \NewTaggingSocketPlug{caption/label/begin}{default}
+   {
++    \tag_mc_if_in:TF
++      {
++        \bool_gset_true:N \g_@@_caption_label_inpar_bool
++        \tag_mc_end_push:
++      }
++      {
+ %    \end{macrocode}
+ % suppress para tagging at the begin.
+ %    \begin{macrocode}
+-     \tagpdfparaOff
+-     \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/label}}
++        \bool_gset_false:N \g_@@_caption_label_inpar_bool
++        \tagpdfparaOff
++      }
++     \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{label}}}
+      \tag_mc_begin:n{}
+   }
+ \AssignTaggingSocketPlug{caption/label/begin}{default}
+@@ -763,61 +835,109 @@
+   {
+     \tag_mc_end:
+     \tag_struct_end:
+-    \tagpdfparaOn
++    \bool_if:NTF \g_@@_caption_label_inpar_bool
++      { \tag_mc_begin_pop:n{} }
++      { \tagpdfparaOn }
+   }
+ \AssignTaggingSocketPlug{caption/label/end}{default}
+ %    \end{macrocode}
+ % \end{plugdecl}
+ %
+-% \subsubsection{Redefinitions}
+-%
+-% With hyperref that means that the \cs{refstepcounter} now can affect spacing so we
+-% change that to the kernel refstepcounter:
+-%    \begin{macrocode}
+-\def\caption{%
+-   \ifx\@captype\@undefined
+-     \@latex@error{\noexpand\caption\c_space_tl outside~float}\@ehd
+-     \expandafter\@gobble
+-   \else
+-%    \end{macrocode}
+-% if a caption is used outside a float no
+-% target has been set and \cs{@current@float@struct} is empty
++% \subsubsection{Stepping the counter}
++%
++% With hyperref the \cs{refstepcounter} now can affect spacing so we
++% change that to the kernel refstepcounter. The kernel \cs{caption}
++% steps the counter through the socket \texttt{caption/step},
++% so we only need a plug and no longer redefine \cs{caption}.
++% It is a normal socket and not a tagging socket, because the float
++% target is also used if tagging is not active.
++% \changes{0.81q}{2026-10-03}{Use the kernel socket \texttt{caption/step}
++%   instead of redefining \cs{caption}}
++% \begin{plugdecl}{latex-lab (caption/step)}
++% If a caption is used outside a float no
++% target has been set and \cs{@current@float@struct} is empty. Inside
++% a sub-float the structure number is that of the sub-float, which has no
++% target, so there we use the normal \cs{refstepcounter} too.
++% Otherwise we need to reset the target for \cs{addcontentsline}.
++% We use \cs{@captype} to support autoref.
+ %    \begin{macrocode}
+-     \tl_if_empty:NTF\@current@float@struct
++\bool_new:N \l_@@_subfloat_bool
++\NewSocketPlug{caption/step}{latex-lab}
++  {
++    \bool_lazy_or:nnTF
++      { \tl_if_empty_p:N \@current@float@struct }
++      { \l_@@_subfloat_bool }
++      { \refstepcounter {#1} }
+       {
+-        \refstepcounter\@captype
++        \@kernel@refstepcounter {#1}
++        \xdef\@currentHref{\@captype.struct.\@current@float@struct}
+       }
+-      {
+-        \@kernel@refstepcounter\@captype
++  }
++\AssignSocketPlug{caption/step}{latex-lab}
+ %    \end{macrocode}
+-% we need to reset the target for \cs{addcontentsline}.
+-% We use \cs{@captype} to support autoref.
++% \end{plugdecl}
++%
++% \subsubsection{Sub-floats}
++% \changes{0.81q}{2026-10-03}{Plugs for the sockets \texttt{subfloat/begin}
++%   and \texttt{subfloat/end}}
++% A sub-float (a sub-figure etc.\ with its own caption) gets the structure
++% \texttt{float/\meta{type}/sub} (role \texttt{Part}), or
++% \texttt{float/generic/sub} for unknown float types.
++% Its structure number is stored in \cs{@current@float@struct}, so that
++% the caption of the sub-float becomes its first kid.
+ %    \begin{macrocode}
+-        \xdef\@currentHref{\@captype.struct.\@current@float@struct}%
+-      }
+-     \expandafter\@firstofone
+-   \fi
+-   {\@dblarg{\@caption\@captype}}%
+-}
++\NewTaggingSocketPlug{subfloat/begin}{default}
++  {
++    \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{sub}}}
++    \tl_set:Ne\@current@float@struct{\tag_get:n{struct_num}}
++    \bool_set_true:N \l_@@_subfloat_bool
++  }
++\AssignTaggingSocketPlug{subfloat/begin}{default}
++\NewTaggingSocketPlug{subfloat/end}{default}
++  {
++    \tag_struct_end:
++  }
++\AssignTaggingSocketPlug{subfloat/end}{default}
+ %    \end{macrocode}
+ %
+ % \begin{macro}{\@makecaption}
+ % \cs{@makecaption} is defined by the classes so we overwrite it for now
+ % at begin document.
+ % \changes{0.81k}{2025-10-11}{Add command hook explicitly to avoid patching error, tagging issue 998}
++% \changes{0.81q}{2026-10-03}{Use the label \texttt{latex-lab/float/makecaption}}
++% The code uses the documented label \texttt{latex-lab/float/makecaption}.
++% A package which provides its own \cs{@makecaption} with tagging support
++% (using the sockets \texttt{caption/begin}, \texttt{caption/end},
++% \texttt{caption/label/begin}, \texttt{caption/label/end} and
++% \texttt{para/begin}, \texttt{para/end}) can keep its definition with
++% \begin{verbatim}
++% \RemoveFromHook{begindocument}[latex-lab/float/makecaption]
++% \end{verbatim}
+ %    \begin{macrocode}
+ \NewHookWithArguments{cmd/@makecaption/before}{2}
+-\AddToHook{begindocument}
++\AddToHook{begindocument}[latex-lab/float/makecaption]
+   {
+     \long\def\@makecaption#1#2{%
+       \UseHookWithArguments{cmd/@makecaption/before}{2}{#1}{#2}%
+       \vskip\abovecaptionskip
+ %    \end{macrocode}
++% \cs{caption*} has no label (the first argument is empty), so the label
++% sockets are disabled locally.
++% \changes{0.81q}{2026-10-03}{Support for \cs{caption*}}
++%    \begin{macrocode}
++      \legacy_if:nT { @captionstar }
++        {
++          \AssignSocketPlug{caption/label}{noop}
++          \AssignSocketPlug{caption/separator}{noop}
++          \AssignTaggingSocketPlug{caption/label/begin}{noop}
++          \AssignTaggingSocketPlug{caption/label/end}{noop}
++        }
++%    \end{macrocode}
+ % We don't want tagging when storing the caption for the singleline check.
+ % \changes{0.81l}{2025-10-17}{Measure \texttt{caption/label} socket instead of hard-coded colon and space, tagging issue 935}
+ %    \begin{macrocode}
+       \SuspendTagging{\@makecaption}
+-      \sbox\@tempboxa{\UseSocket{caption/label}{#1}#2}%
++      \sbox\@tempboxa{\UseSocket{caption/label}{#1}\UseSocket{caption/separator}#2}%
+       \ResumeTagging{\@makecaption}
+ %    \end{macrocode}
+ % We pass \cs{@current@float@struct} as parent structure
+@@ -829,6 +949,7 @@
+       \UseSocket{caption/label}{#1}
+       \UseTaggingSocket{caption/label/end}
+       \UseTaggingSocket{para/begin}
++      \UseSocket{caption/separator}
+           #2
+       \par
+       \else
+@@ -841,6 +962,7 @@
+          \UseSocket{caption/label}{#1}
+          \UseTaggingSocket{caption/label/end}
+          \UseTaggingSocket{para/begin}
++         \UseSocket{caption/separator}
+           #2
+          \UseTaggingSocket{para/end}
+          \hfil}%
+diff --git a/required/latex-lab/latex-lab-listings.dtx b/required/latex-lab/latex-lab-listings.dtx
+index 6c14a0257..a85c356a7 100644
+--- a/required/latex-lab/latex-lab-listings.dtx
++++ b/required/latex-lab/latex-lab-listings.dtx
+@@ -9,8 +9,8 @@
+ %
+ %    https://www.latex-project.org/lppl.txt
+ %
+-\def\ltlablistingsdate{2026-09-21}
+-\def\ltlablistingsversion{0.80a}
++\def\ltlablistingsdate{2026-10-03}
++\def\ltlablistingsversion{0.80b}
+ 
+ %<*driver>
+ \DocumentMetadata{tagging=on,pdfstandard=ua-2}
+@@ -198,14 +198,16 @@
+ \def\lst@makecaption{%
+   \AssignStructureRole {para/textblock}{\UseStructureName{span}}\def\@captype{lstlisting}\@makecaption}
+ %    \end{macrocode}
+-% Titles are captions without labels, so we need to void the socket and we must ensure 
++% Titles are captions without labels, so we need to void the sockets and we must ensure 
+ % that the \cs{@captype} is set even if there is no float:
++% \changes{v0.80b}{2026-10-03}{Void the socket \texttt{caption/separator} too}
+ %    \begin{macrocode}
+ \def\lst@maketitle{\def\@captype{lstlisting}%
+  \AssignStructureRole {para/textblock}{\UseStructureName{span}}
+  \AssignTaggingSocketPlug{caption/label/begin}{noop}%
+  \AssignTaggingSocketPlug{caption/label/end}{noop}%
+  \AssignSocketPlug{caption/label}{noop}%
++ \AssignSocketPlug{caption/separator}{noop}%
+  \@makecaption\lst@title@dropdelim}
+ %    \end{macrocode}
+ % If a listings ends with empty lines and the \texttt{showlines} option is false
+diff --git a/required/latex-lab/latex-lab-namespace.dtx b/required/latex-lab/latex-lab-namespace.dtx
+index b4513f453..67c691c54 100644
+--- a/required/latex-lab/latex-lab-namespace.dtx
++++ b/required/latex-lab/latex-lab-namespace.dtx
+@@ -12,8 +12,8 @@
+ %    https://www.latex-project.org/lppl.txt
+ %
+ %<*package>
+-\def\ltlabnamesdate{2026-09-27}
+-\def\ltlabnamesversion{0.8r}
++\def\ltlabnamesdate{2026-10-03}
++\def\ltlabnamesversion{0.8s}
+ %</package>
+ %<*driver>
+ \DocumentMetadata{tagging=on,pdfstandard=ua-2}
+@@ -618,6 +618,13 @@ subparagraph-heading,  H6,pdf2,
+ %    \begin{macrocode}
+ \NewStructureName{float/generic}
+ \AssignStructureRole{float/generic}{float}
++%    \end{macrocode}
++% \changes{v0.8s}{2026-10-03}{Names for captions in floats of unknown type}
++%    \begin{macrocode}
++\NewStructureName{float/generic/caption}
++\AssignStructureRole{float/generic/caption}{Caption}
++\NewStructureName{float/generic/label}
++\AssignStructureRole{float/generic/label}{Lbl}
+ \NewStructureName{float/figures}
+ \AssignStructureRole{float/figures}{figures}
+ \NewStructureName{float/tables}
+@@ -635,6 +642,16 @@ subparagraph-heading,  H6,pdf2,
+ \NewStructureName{float/table/label}
+ \AssignStructureRole{float/table/label}{Lbl}
+ %    \end{macrocode}
++% Sub-floats (sub-figures etc.\ with their own caption).
++% \changes{v0.8s}{2026-10-03}{Names for sub-floats added}
++%    \begin{macrocode}
++\NewStructureName{float/generic/sub}
++\AssignStructureRole{float/generic/sub}{Part}
++\NewStructureName{float/figure/sub}
++\AssignStructureRole{float/figure/sub}{Part}
++\NewStructureName{float/table/sub}
++\AssignStructureRole{float/table/sub}{Part}
++%    \end{macrocode}
+ %
+ % \subsubsection{Footnotes}
+ %
+diff --git a/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg b/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
+index b94c86e42..130fb929a 100644
+--- a/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
++++ b/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
+@@ -10,7 +10,7 @@ Package tagpdf Info: Parent-Child 'Document' --> 'Caption'.
+ Package tagpdf Warning: Parent-Child 'pdf2:Document' --> 'pdf2:Caption'.
+ (tagpdf)                Relation is not allowed! on line ...
+ (tagpdf)                struct 2, Document --> struct 6, Caption
+-tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {float/\@captype /caption},firstkid 
++tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {caption}},firstkid 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Caption}{Caption}}
+@@ -19,7 +19,7 @@ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer brac
+ Package tagpdf Info: Checking Parent-Child 'pdf2:Caption' --> 'pdf2:Lbl'
+ Package tagpdf Info: Parent-Child 'Caption' --> 'Lbl'.
+ (tagpdf)             Relation is 1 (='0..n') on line ...
+-tagpdf DEBUG Info: Struct 7 begin inserted with options: tag=\UseStructureName {float/\@captype /label} 
++tagpdf DEBUG Info: Struct 7 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {label}} 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Lbl}{Lbl}}
+diff --git a/required/latex-lab/testfiles-float/float-010-outside.tlg b/required/latex-lab/testfiles-float/float-010-outside.tlg
+index bac1508a6..36e8be391 100644
+--- a/required/latex-lab/testfiles-float/float-010-outside.tlg
++++ b/required/latex-lab/testfiles-float/float-010-outside.tlg
+@@ -10,7 +10,7 @@ Package tagpdf Info: Parent-Child 'Document' --> 'Caption'.
+ Package tagpdf Warning: Parent-Child 'pdf2:Document' --> 'pdf2:Caption'.
+ (tagpdf)                Relation is not allowed! on line ...
+ (tagpdf)                struct 2, Document --> struct 5, Caption
+-tagpdf DEBUG Info: Struct 5 begin inserted with options: tag=\UseStructureName {float/\@captype /caption},firstkid 
++tagpdf DEBUG Info: Struct 5 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {caption}},firstkid 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Caption}{Caption}}
+@@ -19,7 +19,7 @@ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer brac
+ Package tagpdf Info: Checking Parent-Child 'pdf2:Caption' --> 'pdf2:Lbl'
+ Package tagpdf Info: Parent-Child 'Caption' --> 'Lbl'.
+ (tagpdf)             Relation is 1 (='0..n') on line ...
+-tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {float/\@captype /label} 
++tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {label}} 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Lbl}{Lbl}}
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg b/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg
+new file mode 100644
+index 000000000..4cb1b70ee
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg
+@@ -0,0 +1,175 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Package tagpdf Info: Float type diagram is already setup for tagging.
++(tagpdf)             Ignoring 'float/new' on line ...
++chart caption role after the group: ''
++chart caption role after declaring again: 'Caption'
++Floatstructure:10
++Floatstructure:16
++Floatstructure:22
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-017-declare.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.008"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <float xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.016"
++      rolemaps-to="Aside"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.019"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.020"
++       >
++      <?MarkedContent page="1" ?>scheme 1: 
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.021"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A float type that was not declared
++     </text-block>
++    </Caption>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.017"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.018"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A scheme
++     </text-block>
++    </semantic-para>
++   </float>
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.028"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.029"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.006"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.010"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.013"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.014"
++        >
++       <?MarkedContent page="1" ?>diagram 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A declared float type
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.011"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.012"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A diagram
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.007"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.022"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.025"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.026"
++        >
++       <?MarkedContent page="1" ?>chart 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.027"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Declared in a group and again
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.023"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.024"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A chart
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-017-declare.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-017-declare.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~29 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.lvt b/required/latex-lab/testfiles-float/float-017-declare.lvt
+new file mode 100644
+index 000000000..fb1f329a0
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.lvt
+@@ -0,0 +1,52 @@
++% !Mode:: "TeX:DE:UTF-8:Main"
++% Proposal: \DeclareTaggingFloatType and generic caption names for unknown float types
++\DocumentMetadata{tagging=on,tagging-setup={role/user-NS=latex}}
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% two float types defined by hand, as newfloat, float, tocbasic, memoir do
++\def\newtestfloat#1{%
++  \newcounter{#1}%
++  \expandafter\def\csname fps@#1\endcsname{tbp}%
++  \expandafter\def\csname ftype@#1\endcsname{8}%
++  \expandafter\def\csname ext@#1\endcsname{lo#1}%
++  \expandafter\def\csname fnum@#1\endcsname{#1~\csname the#1\endcsname}%
++  \newenvironment{#1}{\@float{#1}}{\end@float}}
++\newtestfloat{diagram}
++\newtestfloat{scheme}
++\newtestfloat{chart}
++\makeatother
++\START
++\DeclareTaggingFloatType{diagram}
++\DeclareTaggingFloatType{diagram}   % second time: nothing happens
++\DeclareTaggingFloatType{figure}    % known type: nothing happens
++\tagpdfsetup{float/new=diagram} % info: already set up
++% declared inside a group: the roles are local and lost after the group,
++% a second declaration outside of the group assigns them again
++\begingroup \DeclareTaggingFloatType{chart}\endgroup
++\TYPE{chart caption role after the group: '\UseStructureName{float/chart/caption}'}
++\DeclareTaggingFloatType{chart}
++\TYPE{chart caption role after declaring again: '\UseStructureName{float/chart/caption}'}
++\OMIT
++\begin{document}
++\TIMO
++text
++
++\begin{diagram}
++A diagram
++\caption{A declared float type}
++\end{diagram}
++
++\begin{scheme}
++A scheme
++\caption{A float type that was not declared}
++\end{scheme}
++
++\begin{chart}
++A chart
++\caption{Declared in a group and again}
++\end{chart}
++
++text
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.tlg b/required/latex-lab/testfiles-float/float-017-declare.tlg
+new file mode 100644
+index 000000000..27a2481e7
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.tlg
+@@ -0,0 +1,175 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Package tagpdf Info: Float type diagram is already setup for tagging.
++(tagpdf)             Ignoring 'float/new' on line ...
++chart caption role after the group: ''
++chart caption role after declaring again: 'Caption'
++Floatstructure:9
++Floatstructure:15
++Floatstructure:21
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-017-declare.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.007"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.008"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <float xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.015"
++      rolemaps-to="Aside"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.018"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.019"
++       >
++      <?MarkedContent page="1" ?>scheme 1:
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.020"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A float type that was not declared
++     </text-block>
++    </Caption>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.016"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.017"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A scheme
++     </text-block>
++    </semantic-para>
++   </float>
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.027"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.028"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.005"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.012"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>diagram 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A declared float type
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.010"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A diagram
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.006"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.021"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.024"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.025"
++        >
++       <?MarkedContent page="1" ?>chart 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.026"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Declared in a group and again
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.022"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.023"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A chart
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-017-declare.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-017-declare.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~28 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg b/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg
+new file mode 100644
+index 000000000..ed0173a6e
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg
+@@ -0,0 +1,218 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++figure=1, target=figure.struct.6
++Floatstructure:10
++figure=1, target=figure.struct.10
++Floatstructure:13
++sub target: subfigure.1.1
++Package hyperref Info: bookmark level for unknown subfigure defaults to 0 on input line ....
++figure=2, target=figure.struct.13
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-020-caption-interface.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.034"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.035"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>See 
++     <Link xmlns="http://iso.org/pdf2/ssn"
++        id="ID.036"
++       >
++      <?MarkedContent page="1" ?>a
++      <?ReferencedObject type="Annot" page="1" ?>
++     </Link>
++     <?MarkedContent page="1" ?>.
++    </text-block>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.007"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.008"
++        >
++       <?MarkedContent page="1" ?>Figure 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.009"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.010"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.011"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.012"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Star: no Lbl, no number
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.013"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.031"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.032"
++        >
++       <?MarkedContent page="1" ?>Figure 2: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.033"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Main
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.014"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.016"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.017"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.020"
++          >
++         <Lbl xmlns="http://iso.org/pdf2/ssn"
++            id="ID.021"
++           >
++          <?MarkedContent page="1" ?>(a): 
++         </Lbl>
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.022"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub A
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.018"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.019"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content A 
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.023"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.024"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.025"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.028"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.029"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub B, unnumbered
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.026"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.027"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content B
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.030"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-020-caption-interface.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-020-caption-interface.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~36 structure objects
++(tagpdf)             with ~18 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.lvt b/required/latex-lab/testfiles-float/float-020-caption-interface.lvt
+new file mode 100644
+index 000000000..40723677d
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.lvt
+@@ -0,0 +1,45 @@
++% Proposal (b): \caption*, the tagging socket caption/step and the
++% subfloat sockets with tagging (and hyperref)
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\usepackage{hyperref}
++\makeatletter
++% a minimal sub-caption, as a package like subcaption would do it
++\newcounter{subfigure}[figure]
++\renewcommand\thesubfigure{\alph{subfigure}}
++\def\fnum@subfigure{(\thesubfigure)}
++\def\ext@subfigure{lof}
++\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
++\newcommand\subcap[1]{%
++  \refstepcounter{subfigure}%
++  \typeout{sub target: \@currentHref}%
++  \@caption{subfigure}[#1]{#1}}
++\newcommand\showtarget{\typeout{figure=\thefigure, target=\@currentHref}}
++\makeatother
++\begin{document}
++\START
++\begin{figure}[h]
++  \caption{Numbered}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \caption*{Star: no Lbl, no number}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \begin{minipage}{.4\linewidth}
++    \UseTaggingSocket{subfloat/begin}%
++    sub content A
++    \subcap{Sub A}\label{suba}%
++    \UseTaggingSocket{subfloat/end}%
++  \end{minipage}
++  \begin{minipage}{.4\linewidth}
++    \UseTaggingSocket{subfloat/begin}%
++    sub content B
++    \caption*{Sub B, unnumbered}%
++    \UseTaggingSocket{subfloat/end}%
++  \end{minipage}
++  \caption{Main}\showtarget
++\end{figure}
++See \ref{suba}.
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.tlg b/required/latex-lab/testfiles-float/float-020-caption-interface.tlg
+new file mode 100644
+index 000000000..662529702
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.tlg
+@@ -0,0 +1,221 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++figure=1, target=figure.struct.5
++Floatstructure:9
++figure=1, target=figure.struct.9
++Floatstructure:12
++sub target: subfigure.1.1
++Package hyperref Info: bookmark level for unknown subfigure defaults to 0 on input line ....
++figure=2, target=figure.struct.12
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-020-caption-interface.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.033"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.034"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>See
++     <Link xmlns="http://iso.org/pdf2/ssn"
++        id="ID.035"
++       >
++      <?MarkedContent page="1" ?>a
++      <?ReferencedObject type="Annot" page="1" ?>
++     </Link>
++     <?MarkedContent page="1" ?>.
++    </text-block>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.003"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.006"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.007"
++        >
++       <?MarkedContent page="1" ?>Figure 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.010"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Star: no Lbl, no number
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.012"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.030"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.031"
++        >
++       <?MarkedContent page="1" ?>Figure 2:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.032"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Main
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.013"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.016"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.019"
++          >
++         <Lbl xmlns="http://iso.org/pdf2/ssn"
++            id="ID.020"
++           >
++          <?MarkedContent page="1" ?>(a):
++         </Lbl>
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.021"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub A
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.017"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.018"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content A
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.022"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.023"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.024"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.027"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.028"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub B, unnumbered
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.025"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.026"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content B
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.029"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-020-caption-interface.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-020-caption-interface.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~35 structure objects
++(tagpdf)             with ~18 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-021-caption-label.luatex.tlg b/required/latex-lab/testfiles-float/float-021-caption-label.luatex.tlg
+new file mode 100644
+index 000000000..88f810b5d
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-021-caption-label.luatex.tlg
+@@ -0,0 +1,127 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++Floatstructure:10
++Floatstructure:14
++Floatstructure:18
++LaTeX Warning: `h' float specifier changed to `ht'.
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-021-caption-label.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.007"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.008"
++        >
++       <?MarkedContent page="1" ?>Figure 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.009"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Kernel plugs
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.010"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.011"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.012"
++        >
++       <?MarkedContent page="1" ?>Figure 2
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.013"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>: Separator outside Lbl
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.014"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.015"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.016"
++        >
++       <?MarkedContent page="1" ?>Figure 3 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.017"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Class plug, unchanged
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.018"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.019"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.020"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.021"
++         >
++        <?MarkedContent page="2" ?>Figure 4
++       </Lbl>
++       <?MarkedContent page="2" ?>: Label inside the paragraph
++      </text-block>
++     </Caption>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-021-caption-label.xml (end) ---------
++============================================================
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-021-caption-label.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~21 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-021-caption-label.lvt b/required/latex-lab/testfiles-float/float-021-caption-label.lvt
+new file mode 100644
+index 000000000..a720734c2
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-021-caption-label.lvt
+@@ -0,0 +1,33 @@
++% Proposal (c): contract of the caption/label socket, new caption/separator
++% socket, and caption/label/begin|end used inside a paragraph
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++% a class-style plug as in asmeconf.cls (separator inside the plug)
++\NewSocketPlug{caption/label}{class}{{\bfseries #1\quad}}
++\begin{document}
++\START
++\begin{figure}[h]
++  \caption{Kernel plugs}
++\end{figure}
++\begin{figure}[h]
++  \AssignSocketPlug{caption/label}{label-only}%
++  \AssignSocketPlug{caption/separator}{colon}%
++  \caption{Separator outside Lbl}
++\end{figure}
++\begin{figure}[h]
++  \AssignSocketPlug{caption/label}{class}%
++  \caption{Class plug, unchanged}
++\end{figure}
++\makeatletter
++\begin{figure}[h]
++  % like the caption package: the label is typeset inside the caption paragraph
++  \UseTaggingSocket{caption/begin}{\@current@float@struct}%
++  \noindent
++  \UseTaggingSocket{caption/label/begin}Figure 4\UseTaggingSocket{caption/label/end}:
++  Label inside the paragraph\par
++  \UseTaggingSocket{caption/end}%
++\end{figure}
++\makeatother
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-021-caption-label.tlg b/required/latex-lab/testfiles-float/float-021-caption-label.tlg
+new file mode 100644
+index 000000000..7c0ff0946
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-021-caption-label.tlg
+@@ -0,0 +1,128 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++Floatstructure:9
++Floatstructure:13
++Floatstructure:17
++LaTeX Warning: `h' float specifier changed to `ht'.
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-021-caption-label.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.003"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.006"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.007"
++        >
++       <?MarkedContent page="1" ?>Figure 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Kernel plugs
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.010"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.011"
++        >
++       <?MarkedContent page="1" ?>Figure 2
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.012"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>: Separator outside Lbl
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.013"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.014"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.015"
++        >
++       <?MarkedContent page="1" ?>Figure 3
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.016"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Class plug, unchanged
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.017"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.018"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.019"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.020"
++         >
++        <?MarkedContent page="2" ?>Figure 4
++       </Lbl>
++       <?MarkedContent page="2" ?>: Label inside the paragraph
++      </text-block>
++     </Caption>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-021-caption-label.xml (end) ---------
++============================================================
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-021-caption-label.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~20 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-022-caption-separator.luatex.tlg b/required/latex-lab/testfiles-float/float-022-caption-separator.luatex.tlg
+new file mode 100644
+index 000000000..0f924261d
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-022-caption-separator.luatex.tlg
+@@ -0,0 +1,135 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:17
++Floatstructure:21
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-022-caption-separator.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.007"
++      rolemaps-to="Part"
++     >
++    <verbatim xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.008"
++       rolemaps-to="Code"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.009"
++       >
++      <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.010"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="Span"
++        >
++       <?MarkedContent page="1" ?>My title
++      </text-fragment>
++     </Caption>
++     <codeline xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.011"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="Sub"
++       >
++      <?MarkedContent page="1" ?>code
++     </codeline>
++    </verbatim>
++    <verbatim xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.012"
++       rolemaps-to="Code"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.013"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.014"
++        >
++       <?MarkedContent page="1" ?>Listing 1
++      </Lbl>
++      <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="Span"
++        >
++       <?MarkedContent page="1" ?>: My caption
++      </text-fragment>
++     </Caption>
++     <codeline xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.016"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="Sub"
++       >
++      <?MarkedContent page="1" ?>code
++     </codeline>
++    </verbatim>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.017"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.018"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.019"
++        >
++       <?MarkedContent page="1" ?>Figure 1
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.020"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>: Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.021"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.022"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.023"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Unnumbered
++      </text-block>
++     </Caption>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-022-caption-separator.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-022-caption-separator.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~23 structure objects
++(tagpdf)             with ~10 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-022-caption-separator.lvt b/required/latex-lab/testfiles-float/float-022-caption-separator.lvt
+new file mode 100644
+index 000000000..ab8ce6083
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-022-caption-separator.lvt
+@@ -0,0 +1,25 @@
++% Proposal (c), on top of (b): with label-only + colon the separator is
++% outside Lbl; captions without label (listings titles, \caption*) must
++% not get a stray separator.
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\usepackage{listings}
++\AssignSocketPlug{caption/label}{label-only}
++\AssignSocketPlug{caption/separator}{colon}
++\begin{document}
++\START
++\begin{lstlisting}[title={My title}]
++code
++\end{lstlisting}
++\begin{lstlisting}[caption={My caption}]
++code
++\end{lstlisting}
++\begin{figure}[h]
++  \caption{Numbered}
++\end{figure}
++\begin{figure}[h]
++  \caption*{Unnumbered}
++\end{figure}
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-022-caption-separator.tlg b/required/latex-lab/testfiles-float/float-022-caption-separator.tlg
+new file mode 100644
+index 000000000..29b52d103
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-022-caption-separator.tlg
+@@ -0,0 +1,135 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:16
++Floatstructure:20
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-022-caption-separator.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.006"
++      rolemaps-to="Part"
++     >
++    <verbatim xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.007"
++       rolemaps-to="Code"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.008"
++       >
++      <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.009"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="Span"
++        >
++       <?MarkedContent page="1" ?>My title
++      </text-fragment>
++     </Caption>
++     <codeline xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.010"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="Sub"
++       >
++      <?MarkedContent page="1" ?>code
++     </codeline>
++    </verbatim>
++    <verbatim xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.011"
++       rolemaps-to="Code"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.012"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>Listing 1
++      </Lbl>
++      <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="Span"
++        >
++       <?MarkedContent page="1" ?>: My caption
++      </text-fragment>
++     </Caption>
++     <codeline xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.015"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="Sub"
++       >
++      <?MarkedContent page="1" ?>code
++     </codeline>
++    </verbatim>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.003"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.016"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.017"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.018"
++        >
++       <?MarkedContent page="1" ?>Figure 1
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.019"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>: Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.020"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.021"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.022"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Unnumbered
++      </text-block>
++     </Caption>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-022-caption-separator.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-022-caption-separator.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~22 structure objects
++(tagpdf)             with ~10 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
