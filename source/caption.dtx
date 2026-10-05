@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption.drv}[2026/10/04 v3.7 The caption package]
+\ProvidesFile{caption.drv}[2026/10/05 v3.8 The caption package]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -1095,20 +1095,21 @@
 \DeclareRelease{v3.4}{2019-11-24}{caption_2020-07-29.sty}
 \DeclareRelease{v3.5}{2020-08-30}{caption_2020-10-26.sty}
 \DeclareRelease{v3.6}{2022-02-20}{caption_2026-10-03.sty}
-\DeclareCurrentRelease{v3.7}{2026-10-04}
+\DeclareCurrentRelease{v3.8}{2026-10-05}
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2026/10/04 v3.7 Customizing captions (AR)]
+\ProvidesPackage{caption}[2026/10/05 v3.8 Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
 %
 % Load a matching version of the \pkg{caption} kernel.
 % \changes{v3.7}{2026/10/04}{Needs \pkg{caption3} \version{2.5} now}
+% \changes{v3.8}{2026/10/05}{Needs \pkg{caption3} \version{2.6} now (PoC)}
 %    \begin{macrocode}
-\RequirePackage{caption3}[2026/10/04] % needs v2.5 or newer
+\RequirePackage{caption3}[2026/10/05] % needs v2.6 or newer
 %    \end{macrocode}
 %
 % \section{Check against unknown document classes}
@@ -1911,16 +1912,18 @@
 % \changes{v3.1k}{2009/03/30}{The macro \cs{caption@redefine} contains the patching code now}
 % \changes{v3.5}{2020/08/30}{Re-definition of \cs{@xdblfloat} added}
 % \changes{v3.7}{2026/10/04}{Re-definition of \cs{@makecaption} added if \texttt{latex-lab} handles floats}
+% \changes{v3.8}{2026/10/05}{Re-definition of \cs{@makecaption} only if the code of \texttt{latex-lab} could not be removed (PoC)}
 %    \begin{macrocode}
 \newcommand*\caption@redefine{%
 %    \end{macrocode}
 %   The \texttt{latex-lab} float code (loaded by |\DocumentMetadata|) overwrites
 %   |\@makecaption| at |\begin{document}|, so we set our definition again here.
-%   (This is only done if our tagging support is active, see |\caption@tagging@begin|.)
+%   (This is only done if our tagging support is active, see |\caption@tagging@begin|,
+%   and if we could not remove the code of \texttt{latex-lab}, see below.)
 %    \begin{macrocode}
   \ifx\caption@tagging@begin\@empty \else
     \ifdefined\@current@float@struct
-      \let\@makecaption\caption@makecaption
+      \caption@iflabelsockets{}{\let\@makecaption\caption@makecaption}%
     \fi
   \fi
 %    \end{macrocode}
@@ -1963,6 +1966,22 @@
 % The redefinition of |\@make|\-|caption| will be done immediately.
 %    \begin{macrocode}
 \let\@makecaption\caption@makecaption
+%    \end{macrocode}
+% \changes{v3.8}{2026/10/05}{Code of \texttt{latex-lab} which redefines \cs{@makecaption} removed (PoC)}
+% Newer \texttt{latex-lab} float code (with the socket \texttt{caption/separator},
+% see |\caption@iflabelsockets|) adds its definition of |\@makecaption| to the hook
+% \texttt{begindocument} with the label \texttt{latex-lab/float/makecaption}.
+% If our tagging support is active (see |\caption@tagging@begin|), our |\@makecaption|
+% tags the caption with the kernel sockets, so we remove this code instead of
+% overwriting its result at |\begin{document}| again (see |\caption@redefine|).
+% (Without |\DocumentMetadata| the socket does not exist, and \cs{RemoveFromHook}
+% would issue a warning.)
+%    \begin{macrocode}
+\ifx\caption@tagging@begin\@empty \else
+  \caption@iflabelsockets
+    {\RemoveFromHook{begindocument}[latex-lab/float/makecaption]}%
+    {}%
+\fi
 %    \end{macrocode}
 % \end{macro}
 %
