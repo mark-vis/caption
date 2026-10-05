@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2026/10/04 v2.5 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2026/10/05 v2.6 Implementation of the caption kernel]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -229,12 +229,12 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareRelease{v2.3} {2022-02-20}{caption3_2026-10-03.sty} % for caption v3.6
-\DeclareCurrentRelease{v2.5}{2026-10-04}                    % for caption v3.7
+\DeclareCurrentRelease{v2.6}{2026-10-05}                    % for caption v3.8
 %    \end{macrocode}
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2026/10/04 v2.5 caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/05 v2.6 caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -4333,6 +4333,85 @@
 \else
   \let\caption@tag@lbl@begin\relax
   \let\caption@tag@lbl@end\relax
+\fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{\caption@iflabelsockets}
+% \changes{v2.6}{2026/10/05}{This macro added (PoC)}
+%   |\caption@iflabelsockets|\marg{true}\marg{false}\\
+%   Newer \texttt{latex-lab} float code (PoC kernel patch (c)) documents the contract
+%   of the socket \texttt{caption/label}, adds the socket \texttt{caption/separator},
+%   and allows the tagging sockets \texttt{caption/label/begin} and
+%   \texttt{caption/label/end} inside the caption paragraph.
+%   We test for the existence of the socket \texttt{caption/separator}, not for a
+%   format date. (It only exists if the \texttt{latex-lab} float code is loaded.)
+%    \begin{macrocode}
+\let\caption@iflabelsockets\@secondoftwo
+\ifdefined\IfSocketExistsTF
+  \IfSocketExistsTF{caption/separator}%
+    {\let\caption@iflabelsockets\@firstoftwo}{}%
+\fi
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@tag@lbl@begin}
+% \begin{macro}{\caption@tag@lbl@end}
+% \changes{v2.6}{2026/10/05}{Use the tagging sockets \texttt{caption/label/begin} and
+%   \texttt{caption/label/end} if available (PoC)}
+%   If the label sockets can be used inside the caption paragraph, we use them instead
+%   of our own tagging code above. Then the label structure is the one of the
+%   \texttt{latex-lab} float code (\texttt{float/}\meta{type}\texttt{/label}, role |Lbl|),
+%   and the marked content of the paragraph is interrupted by the plug of the socket.
+%   (The sockets do nothing if tagging is not active.)
+%    \begin{macrocode}
+\ifx\caption@iflabelsockets\@firstoftwo
+  \ExplSyntaxOn
+  \cs_set_protected:Npn \caption@tag@lbl@begin
+    { \caption@iftaglbl { \UseTaggingSocket { caption/label/begin } } { } }
+  \cs_set_protected:Npn \caption@tag@lbl@end
+    { \caption@iftaglbl { \UseTaggingSocket { caption/label/end } } { } }
+  \ExplSyntaxOff
+\fi
+%    \end{macrocode}
+% \end{macro}
+% \end{macro}
+%
+% \begin{macro}{caption3 (caption/label)}
+% \begin{macro}{caption3 (caption/separator)}
+% \changes{v2.6}{2026/10/05}{Plugs \texttt{caption3} for \texttt{caption/label} and
+%   \texttt{caption/separator} added (PoC)}
+%   These plugs give the label format, the label font and the label separator of
+%   \pkg{caption3} to captions which are typeset by the |\@makecaption| of the
+%   \texttt{latex-lab} float code (and not by the \pkg{caption} package), for example
+%   in a document class which uses \pkg{caption3} but not \pkg{caption}.
+%   They are only declared here; they have to be assigned with
+%   \begin{verbatim}
+%   \AssignSocketPlug{caption/label}{caption3}
+%   \AssignSocketPlug{caption/separator}{caption3}
+%   \end{verbatim}
+%   The \pkg{caption} package itself does not use them, since it keeps its own
+%   |\@makecaption| (the format |hang|, the margins etc.\ cannot be expressed by
+%   the label sockets).
+%   The argument of \texttt{caption/label} is |\csname fnum@|\meta{type}|\endcsname|,
+%   so |\caption@setfnum| makes it use the label format.
+%   As the contract of the sockets requires, both plugs give the same result when
+%   they are used for measuring and for typesetting, and only produce horizontal material.
+%    \begin{macrocode}
+\ifx\caption@iflabelsockets\@firstoftwo
+  \NewSocketPlug{caption/label}{caption3}{%
+    \caption@setfnum\@captype
+    \begingroup
+      \captionlabelfont
+      #1%
+    \endgroup}%
+  \NewSocketPlug{caption/separator}{caption3}{%
+    \begingroup
+      \caption@labelseparator % defines \caption@iflabelfont and \caption@labelsep
+      \caption@iflabelfont\captionlabelfont\relax
+      \caption@labelsep
+    \endgroup}%
 \fi
 %    \end{macrocode}
 % \end{macro}
