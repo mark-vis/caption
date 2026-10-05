@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{620}
+% \CheckSum{614}
 %
 % \iffalse
 %<*driver>
@@ -1959,14 +1959,15 @@
 % as |Div|. \texttt{latex-lab} plans to tag sub-figures as |Part| with their own |Caption|,
 % so we assign the role |Part| to the structure name \texttt{minipage} for this \env{minipage}
 % (but not for minipages inside of it).
-% \changes{v1.8}{2026/10/05}{PoC: Tagged PDF: Uses the tagging sockets \texttt{subfloat/begin}
-%   and \texttt{subfloat/end} if offered by the \LaTeX\ kernel}
-% If the \LaTeX\ kernel offers the tagging sockets \texttt{subfloat/begin} and
-% \texttt{subfloat/end}, we use them instead (see |\subcaption@subfloat@begin|).
+% \changes{v1.8}{2026/10/05}{PoC: Tagged PDF: Uses the tagging socket \texttt{subfloat/box}
+%   if offered by the \LaTeX\ kernel}
+% If the \LaTeX\ kernel offers the tagging socket \texttt{subfloat/box}, we use it instead
+% (see |\subcaption@subfloat@box|).
 %    \begin{macrocode}
 \newcommand*\subcaption@iiminipage[3]{%
   \let\subcaption@endminipage@hook\@empty
   \subcaption@tag@part
+  \subcaption@subfloat@box
   \if#1B%
     \minipage[b]#2{#3}%
     \def\subcaption@endminipage@hook{\vspace{0pt}}%
@@ -1977,7 +1978,6 @@
     \minipage[#1]#2{#3}%
   \fi\fi
   \subcaption@tag@endpart
-  \subcaption@subfloat@begin
   \@subfloatboxreset
   \setcaptionsubtype\relax}
 %    \end{macrocode}
@@ -2004,57 +2004,44 @@
 %    \begin{macrocode}
 \newcommand*\subcaption@endminipage{%
   \subcaption@endminipage@hook
-  \subcaption@subfloat@end
   \endminipage}
 %    \end{macrocode}
 %
-% \begin{macro}{\subcaption@subfloat@begin}
-% \begin{macro}{\subcaption@subfloat@end}
-% \begin{macro}{\subcaption@subfloat@@end}
-% \changes{v1.8}{2026/10/05}{PoC: These macros added}
-% |\subcaption@subfloat@begin| is used at the start of the contents of a
-% sub-float (in vertical mode, inside its box: the \env{minipage} of
-% \env{subcaptionblock}, \env{subfigure} etc., or the \cs{parbox} of |\subcaptionbox|),
-% |\subcaption@subfloat@end| at the end of its contents (still inside the box).
-% If the \LaTeX\ kernel offers the tagging sockets \texttt{subfloat/begin} and
-% \texttt{subfloat/end} (and \texttt{latex-lab} has assigned plugs to them),
-% the sub-float gets a structure of its own (|float/|\meta{type}|/sub|, role |Part|),
-% and its sub-caption becomes its first kid (the current structure is used as parent
-% of a sub-caption, see |\caption@floatstruct|).
-% In this case the role of the \env{minipage} is not changed (see |\subcaption@tag@part|),
-% so the |Part| is a kid of the |Div| of the \env{minipage} (or \cs{parbox}).
-% The sockets need |\@captype|, so they are only used inside a floating environment
-% (or after |\captionsetup{type=|\meta{type}|}|);
-% |\subcaption@subfloat@begin| defines |\subcaption@subfloat@end| (locally) only then.
-% Without these sockets both macros do nothing, so the code of \version{1.7} is used.
-% The same is done if an older release of the \pkg{caption} package was loaded
-% (e.g.~with |\usepackage{caption}[=v3.6]| or after a roll-back with \pkg{latexrelease}),
+% \begin{macro}{\subcaption@subfloat@box}
+% \changes{v1.8}{2026/10/05}{PoC: This macro added}
+% |\subcaption@subfloat@box| is used directly before the box of a sub-float
+% (the \env{minipage} of \env{subcaptionblock}, \env{subfigure} etc., inside the
+% environment, or the \cs{parbox} of |\subcaptionbox|).
+% If the \LaTeX\ kernel offers the tagging socket \texttt{subfloat/box}
+% (and \texttt{latex-lab} has assigned a plug to it), the next \env{minipage} or \cs{parbox}
+% becomes the structure of the sub-float (|float/|\meta{type}|/sub|, role |Part|)
+% instead of a |Div|, and its sub-caption becomes its first kid (the current structure is used as
+% parent of a sub-caption, see |\caption@floatstruct|).
+% The structure is ended by the box itself. Boxes inside the sub-float are tagged as usual.
+% In this case the role of the \env{minipage} is not changed (see |\subcaption@tag@part|).
+% The plug of the socket needs |\@captype| for the structure name, so it is only used inside a
+% floating environment (or after |\captionsetup{type=|\meta{type}|}|).
+% Without this socket |\subcaption@subfloat@box| does nothing, so the code of \version{1.7} is
+% used. The same is done if an older release of the \pkg{caption} package was loaded
+% (e.g.~with |\usepackage{caption}[=v3.7]| or after a roll-back with \pkg{latexrelease}),
 % so the result is the same as with \version{1.7} together with this release;
-% we test for |\caption@ifclient| which is defined since \pkg{caption} \version{3.8}.
+% we test |\caption@ifclient| which is defined since \pkg{caption} \version{3.8}, and is true
+% if \pkg{caption} uses the caption interface of the kernel.
 % \changes{v1.8}{2026/10/05}{PoC: Sockets only used together with \pkg{caption} \version{3.8} or newer}
+% \changes{v1.8}{2026/10/05}{PoC: Uses \texttt{subfloat/box} instead of \texttt{subfloat/begin}
+%   and \texttt{subfloat/end}}
 %    \begin{macrocode}
-\newcommand*\subcaption@subfloat@begin{}
-\newcommand*\subcaption@subfloat@end{}
-\ifdefined\IfSocketExistsTF \ifdefined\caption@ifclient
-  \IfSocketExistsTF{tagsupport/subfloat/begin}{%
-    \let\subcaption@tag@part\relax
-    \renewcommand*\subcaption@subfloat@begin{%
-      \caption@iftype
-        {\UseTaggingSocket{subfloat/begin}%
-         \let\subcaption@subfloat@end\subcaption@subfloat@@end}%
-        {}}%
+\newcommand*\subcaption@subfloat@box{}
+\ifdefined\caption@ifclient
+  \caption@ifclient{%
+    \IfSocketExistsTF{tagsupport/subfloat/box}{%
+      \let\subcaption@tag@part\relax
+      \renewcommand*\subcaption@subfloat@box{%
+        \caption@iftype{\UseTaggingSocket{subfloat/box}}{}}%
+    }{}%
   }{}%
-\fi \fi
+\fi
 %    \end{macrocode}
-% Before the sub-float structure ends, the last paragraph must be ended.
-%    \begin{macrocode}
-\newcommand*\subcaption@subfloat@@end{%
-  \par
-  \UseTaggingSocket{subfloat/end}%
-  \let\subcaption@subfloat@end\@empty}
-%    \end{macrocode}
-% \end{macro}
-% \end{macro}
 % \end{macro}
 %    \begin{macrocode}
 \providecommand*\@subfloatboxreset{}
@@ -2218,29 +2205,43 @@
 % \end{macro}
 %
 % \begin{macro}{\subcaption@box@settype}
+% \begin{macro}{\subcaption@box@arm}
 % \begin{macro}{\subcaption@box@subfloat}
 % \changes{v1.8}{2026/10/05}{PoC: These macros added}
-% |\caption@ibox| uses its first argument twice: as |#1*| inside a group (only to
-% set the caption position), and as |#1\relax| at the start of the contents of the
-% \cs{parbox}. Without the tagging socket \texttt{subfloat/begin}
+% |\caption@ibox| uses its first argument twice: as |#1*| inside a group which ends
+% directly before the \cs{parbox} (only to set the caption position), and as |#1\relax| at
+% the start of the contents of the \cs{parbox}. Without the tagging socket \texttt{subfloat/box}
 % |\subcaption@box@settype| is simply |\setcaptionsubtype|.
-% With the socket the sub-float structure is started at the start of the \cs{parbox}
-% contents, and ended at the end of the group in which the contents of the
-% \cs{parbox} are typeset (|\color@begingroup|\ldots|\color@endgroup|, inside the
-% \cs{vbox}, after its last paragraph), using |\aftergroup|, since |\caption@ibox| offers no
-% hook at the end of the \cs{parbox} contents.
+% With the socket the |#1*| call sets |\caption@ibox@parbox| (with |\aftergroup|, so it is set
+% after this group) to |\subcaption@box@subfloat|, which puts the \cs{parbox} into a group and uses
+% |\subcaption@subfloat@box| directly before it. (The plug of \texttt{subfloat/box} and the
+% plugs it assigns change settings at the level of the \cs{parbox}, so the group is needed.
+% The contents could have been typeset in a box before, to measure their width, so we
+% cannot use the socket earlier.) |\subcaption@box@subfloat| sets |\caption@ibox@parbox| back
+% at once, so other boxes are not affected.
 %    \begin{macrocode}
 \newcommand*\subcaption@box@settype{\setcaptionsubtype}
-\ifx\subcaption@subfloat@begin\@empty \else
+\ifx\subcaption@subfloat@box\@empty \else
   \renewcommand*\subcaption@box@settype{%
-    \@ifstar{\setcaptionsubtype*}{\subcaption@box@subfloat\setcaptionsubtype}}
+    \@ifstar
+      {\aftergroup\subcaption@box@arm\setcaptionsubtype*}%
+      {\setcaptionsubtype}}
 \fi
-\newcommand*\subcaption@box@subfloat{%
-  \subcaption@subfloat@begin
-  \ifx\subcaption@subfloat@end\@empty \else
-    \aftergroup\subcaption@subfloat@@end
-  \fi}
 %    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\subcaption@box@arm{%
+  \let\caption@ibox@parbox\subcaption@box@subfloat}
+%    \end{macrocode}
+%    \begin{macrocode}
+\long\def\subcaption@box@subfloat#1{%
+  \let\caption@ibox@parbox\@firstofone
+  \leavevmode
+  \begingroup
+    \subcaption@subfloat@box
+    #1%
+  \endgroup}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 % \end{macro}
 %
