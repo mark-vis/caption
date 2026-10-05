@@ -2040,7 +2040,8 @@
 %
 % Newer kernels (PoC kernel patch (b), version~2) offer a caption interface:
 % \begin{itemize}
-% \item |\caption*| (no counter step, no list entry, empty label for |\@makecaption|;
+% \item |\caption*| (no counter step, no list entry, the label |\@caption@nolabel| for
+%   |\@makecaption|, which typesets nothing and removes the usual separators after it;
 %   the legacy switch |\if@captionstar| is true until the end of |\@caption|),
 % \item the hook \texttt{caption/before} with the arguments \meta{type}, \meta{star}
 %   (|\BooleanTrue| or |\BooleanFalse|), \meta{optional argument} (or |\NoValue|) and
@@ -2049,8 +2050,8 @@
 % \item the legacy switches |\if@captionstep| and |\if@captiontarget|, which tell the plugs
 %   of the socket \texttt{caption/step} whether the counter should be stepped and whether
 %   a link target should be made (if the counter is not stepped, the plug uses the float
-%   target or makes an anonymous one, never a second target with the name of the last
-%   stepped caption; we do not plug this socket),
+%   target or makes one with a unique name, e.g.~\texttt{figure.1*1}, never a second
+%   target with the name of the last stepped caption; we do not plug this socket),
 % \item the hook \texttt{caption/prepare} with the arguments \meta{type}, \meta{star},
 %   \meta{list text} and \meta{text}; it is executed by |\@caption| after |\par| and before
 %   the list entry, also if |\@caption| is called directly (e.g.~for sub-captions),
@@ -2179,8 +2180,11 @@
 %  Decides if the plug of the socket \texttt{caption/step} makes a link target.
 %  Without \pkg{hyperref} (or if our \pkg{hyperref} support is not active) it does nothing,
 %  so the kernel makes its usual target (for a continued float, whose counter is not
-%  stepped, the float target or an anonymous one, so the name is not the one of the
-%  previous caption). See below (\pkg{hyperref} support) for the re-definition.
+%  stepped, the float target or one with a unique name such as \texttt{figure.1*1}, so
+%  the name is not the one of the previous caption; the same holds if we have stepped
+%  the counter ourselves, e.g.~for a caption after sub-captions placed above, so such
+%  a caption gets a name like \texttt{figure.1.2*1}). See below (\pkg{hyperref} support)
+%  for the re-definition.
 %    \begin{macrocode}
 \newcommand*\caption@client@settarget[1]{}
 %    \end{macrocode}
