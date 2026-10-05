@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3455}
+% \CheckSum{3460}
 %
 % \iffalse
 %<*driver>
@@ -2931,6 +2931,11 @@
 \long\def\caption@iiibox#1{%
   \caption@iiiibox{#1}\vbox\vtop}
 %    \end{macrocode}
+% \changes{v3.8}{2026/10/05}{Usage of \cs{caption@ibox@parbox} added (PoC)}
+% The \cs{parbox} is given to |\caption@ibox@parbox| (which is |\@firstofone| by default), so
+% code executed by |#1*| can put something around it (with |\aftergroup|, see the \pkg{subcaption}
+% package, which uses this to put the sub-float into a group when the kernel offers the tagging
+% socket \texttt{subfloat/box}).
 %    \begin{macrocode}
 \long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
   \caption@checkdecl{justification}{#7}{%
@@ -2938,23 +2943,28 @@
     #1*% set \caption@position
     \caption@iftop{%
       \endgroup
+      \caption@ibox@parbox{%
       \parbox[t]{#6}{%
         #1\relax
         \caption@setposition t%
         #2{\caption#4{#5}}%
         \captionbox@hrule
         \csname caption@justification@#7\endcsname
-        #8}%
+        #8}}%
     }{%
       \endgroup
+      \caption@ibox@parbox{%
       \parbox[b]{#6}{%
         #1\relax
         \caption@setposition b%
         \csname caption@justification@#7\endcsname
         #8%
         \captionbox@hrule
-        #3{\caption#4{#5}}}%
+        #3{\caption#4{#5}}}}%
     }}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\let\caption@ibox@parbox\@firstofone
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\captionbox@innerpos@default{c}
