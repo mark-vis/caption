@@ -1912,6 +1912,7 @@
 % \changes{v3.1k}{2009/03/30}{The macro \cs{caption@redefine} contains the patching code now}
 % \changes{v3.5}{2020/08/30}{Re-definition of \cs{@xdblfloat} added}
 % \changes{v3.7}{2026/10/04}{Re-definition of \cs{@makecaption} added if \texttt{latex-lab} handles floats}
+% \changes{v3.8}{2026/10/05}{Does not redefine \cs{caption} and \cs{@caption} if the kernel offers the caption interface (PoC)}
 % \changes{v3.8}{2026/10/05}{Uses the kernel hooks \texttt{float/begin} instead of redefining \cs{@xfloat} and \cs{@xdblfloat}, if available (PoC)}
 % \changes{v3.8}{2026/10/05}{Re-definition of \cs{@makecaption} only if the code of \texttt{latex-lab} could not be removed (PoC)}
 %    \begin{macrocode}
@@ -1935,9 +1936,14 @@
 %   but is simply overcautious and especially unwanted by the user nowadays.
 %   So starting with \version{3.4} we only do not redefine |\caption| and |\@caption| if the
 %   `compatibility' option is set to `true', and starting with \version{3.6} we always redefine them.
+%   Starting with \version{3.8} we do not redefine them if the kernel offers the caption
+%   interface and |\caption| and |\@caption| are still the ones of the kernel, see
+%   |\caption@ifkernelcaption| and |\caption@client|.
 %    \begin{macrocode}
-  \let\caption\caption@caption
-  \let\@caption\caption@@caption
+  \caption@ifkernelcaption
+    {\caption@client}%
+    {\let\caption\caption@caption
+     \let\@caption\caption@@caption}%
 %    \end{macrocode}
 %   If the kernel offers the hooks \texttt{float/begin} and \texttt{float/end}
 %   we use them, see |\caption@floathooks|.
@@ -1985,6 +1991,301 @@
     {\RemoveFromHook{begindocument}[latex-lab/float/makecaption]}%
     {}%
 \fi
+%    \end{macrocode}
+% \end{macro}
+%
+% \subsection{Using the caption interface of the kernel}
+%
+% Newer kernels (PoC kernel patch (b)) offer a caption interface:
+% \begin{itemize}
+% \item |\caption*| (no counter step, no list entry, empty label for |\@makecaption|;
+%   the legacy switch |\if@captionstar| is true while it is typeset),
+% \item the socket \texttt{caption/step} which steps the counter in |\caption|
+%   (owned by the kernel resp.\ \texttt{latex-lab}; we do not plug it),
+% \item the socket \texttt{caption/listentry} which writes the list entry in |\@caption|
+%   (we plug it),
+% \item and the generic hook \texttt{cmd/caption/before} which is executed at the
+%   start of |\caption|, before the counter is stepped.
+% \end{itemize}
+% If these are available we do not redefine |\caption| and |\@caption|. Instead:
+% \begin{itemize}
+% \item In \texttt{cmd/caption/before} we check the group level and prepare two
+%   one-shot interceptors (see |\caption@client@before|): one for the |\stepcounter|
+%   of the float counter (so we can decide if the counter will be stepped, which depends
+%   on |\ContinuedFloat| and on sub-captions placed above), and one for the |\@dblarg|
+%   which follows the counter step (so we know whether |\caption*| was used,
+%   and can process the arguments with |\caption@dblarg|).
+% \item Our plug \texttt{caption} for \texttt{caption/listentry} prepares the
+%   \pkg{hyperref} anchor and writes the list entry with |\caption@addcontentsline|.
+% \item Our |\@makecaption| does the rest of what |\caption@@caption| does around
+%   |\@makecaption| (type-specific label format, position, hooks, anchor).
+% \end{itemize}
+%
+% \begin{macro}{\caption@ifclient}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@ifclient|\marg{true}\marg{false}\par
+%  True if we use the caption interface of the kernel (set by |\caption@client|).
+%    \begin{macrocode}
+\let\caption@ifclient\@secondoftwo
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifkernelcaption}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@ifkernelcaption|\marg{true}\marg{false}\par
+%  We use the caption interface if the socket \texttt{caption/listentry} exists (we do
+%  not test the format date), and if |\caption| and |\@caption| still use the sockets
+%  \texttt{caption/step} and \texttt{caption/listentry}. The latter test is needed since
+%  other packages and classes redefine |\caption| and |\@caption| (e.g.\ \pkg{float},
+%  \pkg{hyperref} without |\DocumentMetadata|, \cls{memoir}, \KOMAScript, \cls{beamer});
+%  and after a roll-back with \pkg{latexrelease} the sockets still exist, but are not
+%  used anymore. In these cases we redefine |\caption| and |\@caption| as before.
+%    \begin{macrocode}
+\newcommand*\caption@ifkernelcaption{%
+  \@tempswafalse
+  \ifdefined\IfSocketExistsTF
+    \IfSocketExistsTF{caption/listentry}%
+      {\caption@ifinmeaning{caption/step}\caption
+         {\caption@ifinmeaning{caption/listentry}\@caption\@tempswatrue{}}{}}%
+      {}%
+  \fi
+  \if@tempswa\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  Will be executed by |\caption@redefine| (at |\begin{document}|) instead of redefining
+%  |\caption| and |\@caption|.
+%    \begin{macrocode}
+\newcommand*\caption@client{%
+  \caption@InfoNoLine{Using the caption interface of the kernel}%
+  \let\caption@ifclient\@firstoftwo
+%    \end{macrocode}
+%  The kernel |\@caption| will be used inside sub-floats, too
+%  (see |\caption@subtypehook|).
+%    \begin{macrocode}
+  \let\caption@kernel@caption\@caption
+%    \end{macrocode}
+%  List entries:
+%    \begin{macrocode}
+  \NewSocketPlug{caption/listentry}{caption}{\caption@client@listentry{##1}{##2}}%
+  \AssignSocketPlug{caption/listentry}{caption}%
+%    \end{macrocode}
+%  Counter step, |\caption*| and the arguments:
+%    \begin{macrocode}
+  \AddToHook{cmd/caption/before}[caption]{\caption@client@before}%
+%    \end{macrocode}
+%  Formatting: our |\@makecaption| gets a front end which detects if it is called by the
+%  kernel |\@caption|. (If |\@makecaption| is not ours here, e.g.~because the document
+%  class or another package has redefined it after loading the \pkg{caption} package,
+%  it will be called by the kernel |\@caption| without our settings.)
+%    \begin{macrocode}
+  \let\caption@@makecaption\caption@makecaption
+  \let\caption@makecaption\caption@client@makecaption
+  \ifx\@makecaption\caption@@makecaption
+    \let\@makecaption\caption@makecaption
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@before}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  Code for the hook \texttt{cmd/caption/before}. Outside floats the kernel issues an
+%  error, so we do nothing. The interceptors are only installed once if |\caption| is
+%  nested (e.g.~inside |\caption@freeze|).
+%    \begin{macrocode}
+\newcommand*\caption@client@before{%
+  \caption@iftype
+    {\caption@checkgrouplevel\@empty\caption
+     \ifx\stepcounter\caption@client@stepcounter \else
+       \let\caption@client@ORI@stepcounter\stepcounter
+       \let\stepcounter\caption@client@stepcounter
+     \fi
+     \ifx\@dblarg\caption@client@dblarg \else
+       \let\caption@client@ORI@dblarg\@dblarg
+       \let\@dblarg\caption@client@dblarg
+     \fi}%
+    {}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@stepcounter}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  The first |\stepcounter| of the float counter (executed by the plug of the socket
+%  \texttt{caption/step}, usually inside |\refstepcounter|) removes the interceptor
+%  and does what |\caption@refstepcounter| does: depending on the flags (continued float,
+%  sub-captions above) the counter will be stepped or not. In both cases
+%  |\refstepcounter| sets |\@currentlabel| and the link target afterwards.
+%  Other counters are stepped as usual.
+%    \begin{macrocode}
+\newcommand*\caption@client@stepcounter[1]{%
+  \edef\caption@tempa{#1}%
+  \edef\caption@tempb{\@captype}%
+  \ifx\caption@tempa\caption@tempb
+    \let\stepcounter\caption@client@ORI@stepcounter
+    \expandafter\caption@client@@stepcounter
+  \else
+    \expandafter\caption@client@ORI@stepcounter
+  \fi
+  {#1}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@client@@stepcounter[1]{%
+  \@nameuse{donemaincaptiontrue}% Support of the memoir document class
+  \caption@client@skiptarget
+  \caption@ifrefstepcounter
+    {\caption@prepare@stepcounter{#1}\stepcounter{#1}}%
+    {}}% Suppress incrementation of counter
+%    \end{macrocode}
+%  |\caption@client@skiptarget| suppresses the link target of \pkg{hyperref} for
+%  this step (see there); |\caption@client@unskiptarget| restores the previous setting.
+%  Both do nothing without \pkg{hyperref}.
+%    \begin{macrocode}
+\let\caption@client@skiptarget\relax
+\let\caption@client@unskiptarget\relax
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@dblarg}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  The kernel |\caption| executes |\@dblarg{\@caption\@captype}| after the counter step
+%  (or, for |\caption*|, without a counter step). Here we remove both interceptors
+%  (the one for |\stepcounter| is still active if |\caption*| was used), set our
+%  star flag and use |\caption@dblarg| instead of |\@dblarg|, so |\caption{}|
+%  produces a list entry but |\caption[]{}| does not, and the option
+%  \opt{list-entry=heading} works.
+%    \begin{macrocode}
+\long\def\caption@client@dblarg#1{%
+  \caption@client@ifcaptionarg#1\caption@nil
+    {\let\@dblarg\caption@client@ORI@dblarg
+     \ifx\stepcounter\caption@client@stepcounter
+       \let\stepcounter\caption@client@ORI@stepcounter
+     \fi
+     \caption@client@unskiptarget
+     \let\caption@client@unskiptarget\relax
+     \caption@client@savewidth
+     \if@captionstar \caption@startrue \fi
+     \caption@dblarg{#1}}%
+    {\caption@client@ORI@dblarg{#1}}}
+%    \end{macrocode}
+%  Other code may use |\@dblarg| between the hook and the counter step (for example
+%  |\captionsetup| in the |\caption| of \KOMAScript's \pkg{tocbasic}, which executes
+%  the hook \texttt{cmd/caption/before} itself), so we only take the |\@dblarg| whose
+%  argument starts with |\@caption|.
+%    \begin{macrocode}
+\long\def\caption@client@ifcaptionarg#1#2\caption@nil{%
+  \ifx\@caption#1%
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@listentry}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  Our plug for the socket \texttt{caption/listentry}, used by the kernel |\@caption|
+%  after |\par|, unless |\caption*| was used. (It is used for sub-captions, too, also
+%  for |\subcaption*|.) We store the caption type for |\caption@client@makecaption|,
+%  prepare the \pkg{hyperref} anchor (as |\caption@@caption| does) and write the list
+%  entry. (Unlike |\caption@@caption| we do not call |\memcaptioninfo| since the socket
+%  does not get the caption text; this only matters for the \cls{memoir} document class
+%  which redefines |\caption| anyway.)
+%    \begin{macrocode}
+\newcommand\caption@client@listentry[2]{%
+  \gdef\caption@client@type{#1}%
+  \caption@client@savewidth
+  \ifcaption@star \else
+    \caption@prepareanchor{#1}{#2}%
+    \@nameuse{nag@hascaptiontrue}%
+  \fi
+  \caption@addcontentsline{#1}{#2}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@makecaption}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  Front end of our |\@makecaption| (see |\caption@client|):
+%  It is called by the kernel |\@caption| if our plug for \texttt{caption/listentry}
+%  has stored the caption type, or if |\caption*| is used. Otherwise (for example for
+%  \pkg{listings} captions) we simply use our original definition |\caption@@makecaption|.
+%  The kernel |\@caption| uses |\ignorespaces|\meta{text} as second argument; we remove
+%  the |\ignorespaces| since we need the text itself.
+%    \begin{macrocode}
+\long\def\caption@client@makecaption#1#2{%
+  \caption@client@ifkernel
+    {\expandafter\caption@client@@makecaption\expandafter{\@gobble#2}}%
+    {\caption@@makecaption{#1}{#2}}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@client@ifkernel{%
+  \ifx\caption@client@type\@undefined
+    \if@captionstar
+      \def\caption@client@curtype{\@captype}%
+      \expandafter\expandafter\expandafter\@firstoftwo
+    \else
+      \expandafter\expandafter\expandafter\@secondoftwo
+    \fi
+  \else
+    \let\caption@client@curtype\caption@client@type
+    \global\let\caption@client@type\@undefined
+    \expandafter\@firstoftwo
+  \fi}
+%    \end{macrocode}
+%  This is what |\caption@@caption| does around |\@makecaption|.
+%  The kernel |\@caption| has already executed |\par|, |\@parboxrestore|,
+%  |\@setminipage| and |\normalsize|, and has written the list entry (with our plug);
+%  for |\caption*| the kernel gives us an empty label, so we use
+%  |\csname fnum@|\meta{type}|\endcsname| in any case, as |\caption@@caption| does.
+%    \begin{macrocode}
+\long\def\caption@client@@makecaption#1{%
+  \expandafter\caption@client@@@makecaption\expandafter{\caption@client@curtype}{#1}}
+\long\def\caption@client@@@makecaption#1#2{%
+  \caption@nobreak
+%    \end{macrocode}
+%  |\caption@begin| determines the caption position outside its group, so it is valid
+%  for the rest of the float (sub-captions use it, for example). Here we are inside
+%  the group of the kernel |\@caption|, so we pass it to the outside with |\aftergroup|.
+%    \begin{macrocode}
+  \caption@fixposition
+  \caption@iftop
+    {\aftergroup\caption@client@settop}%
+    {\aftergroup\caption@client@setbottom}%
+  \caption@begin{#1}%
+    \caption@client@restorewidth
+    \caption@beginex@hook
+    \caption@ifempty{#2}{}%
+    \caption@setfloatcapt{%
+      \caption@parboxrestore
+      \if@minipage
+        \@setminipage
+      \fi
+      \caption@normalsize
+      \ifcaption@star
+        \let\caption@makeanchor\@firstofone
+      \fi
+      \caption@@makecaption{\csname fnum@#1\endcsname}%
+                           {\ignorespaces\caption@makeanchor{#2}}\par
+      \caption@nobreak
+      \caption@if@minipage\@minipagetrue\@minipagefalse}%
+  \caption@end}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@client@settop{\let\caption@@iftop\@firstoftwo}
+\newcommand*\caption@client@setbottom{\let\caption@@iftop\@secondoftwo}
+%    \end{macrocode}
+%  The kernel |\@caption| executes |\@parboxrestore| before |\@makecaption|, which sets
+%  |\linewidth| to |\hsize|. But |\caption@beginex@hook| needs the |\linewidth| of the
+%  float (see the support of \pkg{changepage} and \pkg{scrextend}), since
+%  |\caption@@caption| executes it before |\caption@parboxrestore|. So we save it in
+%  |\caption@client@dblarg| resp.\ |\caption@client@listentry| and restore it here.
+%    \begin{macrocode}
+\newcommand*\caption@client@savewidth{%
+  \xdef\caption@client@restorewidth{%
+    \linewidth\the\linewidth\relax
+    \global\let\noexpand\caption@client@restorewidth\relax}}
+\let\caption@client@restorewidth\relax
 %    \end{macrocode}
 % \end{macro}
 %
@@ -3186,6 +3487,7 @@
 % \changes{v3.5}{2020/07/27}{Adapted to \pkg{caption3} v2.0}
 % \changes{v3.6}{2020/09/20}{Handling of flags out-sourced to \cs{caption@stepcounter}}
 % \changes{v3.6d}{2022/04/17}{Usage of \cs{if@subfloatrow} removed in favour of a re-definition of \env{subfloatrow*}}
+% \changes{v3.8}{2026/10/05}{Uses the kernel \cs{@caption} if we use the caption interface of the kernel (PoC)}
 %  Hook, will be used inside \cs{caption@setsubtype}.\par
 % (Note: If we are inside an |sub|\-|float|\-|row| environment we have to keep
 % the |\@make|\-|caption| code of the \pkg{floatrow} package intact.)
@@ -3219,7 +3521,9 @@
 %    \begin{macrocode}
 % redefine \caption
     \let\caption\caption@subcaption
-    \let\@caption\caption@@caption
+    \caption@ifclient
+      {\let\@caption\caption@kernel@caption}%
+      {\let\@caption\caption@@caption}%
     \let\phantomcaption\caption@subphantom
     \let\captionlistentry\caption@sublistentry
     \let\captiontext\caption@subtext
@@ -4267,6 +4571,25 @@
 %    \end{macrocode}
 % \end{macro}
 %
+% \begin{macro}{\caption@client@skiptarget}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+% If we use the caption interface of the kernel, the counter is stepped by the plug of the
+% socket \texttt{caption/step}, i.e.~(outside floats handled by \texttt{latex-lab})
+% with |\refstepcounter| which lets \pkg{hyperref} set a link target. Since we set our
+% own link target (option \opt{hypcap}) or anchor (see |\caption@makeanchor|), we
+% suppress the one of \pkg{hyperref} for this step, as |\H@refstepcounter| does.
+% (See |\caption@client@stepcounter| and |\caption@client@dblarg|.)
+%    \begin{macrocode}
+    \def\caption@client@skiptarget{%
+      \if@skiphyperref
+        \let\caption@client@unskiptarget\relax
+      \else
+        \let\caption@client@unskiptarget\@skiphyperreffalse
+      \fi
+      \@skiphyperreftrue}%
+%    \end{macrocode}
+% \end{macro}
+%
 % \begin{macro}{\caption@makecurrent}
 % \changes{v3.1l}{2010/01/09}{Adapted to current version of nameref package}
 % We redefine |\caption@makecurrent| so a \pkg{hyperref} label
@@ -5009,12 +5332,15 @@
 %
 % \begin{macro}{\caption@window}
 % \changes{v3.1c}{2007/10/06}{Bugfix: \cs{caption@clearmargin} added}
+% \changes{v3.8}{2026/10/05}{Replaces \cs{caption@@makecaption} instead of \cs{@makecaption} if we use the caption interface of the kernel (PoC)}
 % Beside calling |\caption@settype| we redefine |\caption@par|\-|box|\-|restore|
 % (as in \pkg{floatflt} \& \pkg{picins} package support)
 % and |\@makecaption| (as in \pkg{float} package support) here.
 %    \begin{macrocode}
   \newcommand*\caption@window[1]{%
-    \let\@makecaption\caption@@make
+    \caption@ifclient
+      {\let\caption@@makecaption\caption@@make}%
+      {\let\@makecaption\caption@@make}%
     \caption@setautoposition b%
     \caption@settype{#1}%
     \caption@clearmargin
@@ -5213,9 +5539,14 @@
 % \begin{macro}{\rotcaption}
 % \changes{v3.0c}{2004/07/16}{Bugfix: Check for \cs{caption@star} removed}
 % \changes{v3.0i}{2005/12/07}{Rewritten, works with \pkg{hyperref} now}
+% \changes{v3.8}{2026/10/05}{Replaces \cs{caption@@makecaption} instead of \cs{@makecaption} if we use the caption interface of the kernel (PoC)}
 %  Make |\rotcaption*| work.
 %    \begin{macrocode}
-  \def\rotcaption{\let\@makecaption\@makerotcaption\caption}%
+  \def\rotcaption{%
+    \caption@ifclient
+      {\let\caption@@makecaption\@makerotcaption}%
+      {\let\@makecaption\@makerotcaption}%
+    \caption}%
 % \let\@rotcaption\@undefined
 %    \end{macrocode}
 % \end{macro}
