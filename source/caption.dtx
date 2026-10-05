@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3439}
+% \CheckSum{3455}
 %
 % \iffalse
 %<*driver>
@@ -1900,6 +1900,29 @@
     \else
       \expandafter\expandafter\expandafter\@firstoftwo
     \fi\fi}}
+%    \end{macrocode}
+% \changes{v3.8}{2026/10/05}{Uses \cs{@floatHref@}\meta{type} if we use the caption interface of the kernel (PoC)}
+% If we use the caption interface of the kernel, \texttt{latex-lab} stores the link target of
+% the float in |\@floatHref@|\meta{type} (it is empty inside sub-floats), so we test this one,
+% see |\caption@iffloattarget|. (A |\captionsetup{type=table}| inside a \env{figure} does not
+% use the link target of the \env{figure}.)
+%    \begin{macrocode}
+\caption@ifclient{%
+  \renewcommand*\caption@iftagfloat{%
+    \caption@ifsubtype\@secondoftwo{\caption@iffloattarget\@captype}}%
+}{}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@floatHref}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@floatHref|\par
+%  The link target of the current float handled by \texttt{latex-lab}
+%  (only used if |\caption@iftagfloat| is true).
+%    \begin{macrocode}
+\caption@ifclient
+  {\newcommand*\caption@floatHref{\csname @floatHref@\@captype\endcsname}}%
+  {\newcommand*\caption@floatHref{\@captype.struct.\@current@float@struct}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -4655,7 +4678,7 @@
 % at the start of the float, so the link points to the float structure.
 %    \begin{macrocode}
       \caption@iftagfloat
-        {\xdef\@currentHref{\@captype.struct.\@current@float@struct}}%
+        {\xdef\@currentHref{\caption@floatHref}}%
         {\caption@makestart\@captype
          \caption@startanchor\@currentHref}%
 %    \end{macrocode}
