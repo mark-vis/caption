@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{511}
+% \CheckSum{549}
 %
 % \iffalse
 %<*driver>
@@ -1835,7 +1835,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{subcaption}[2023/07/28 v1.6b Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2026/10/03 v1.6c Sub-captions (AR)]
 %    \end{macrocode}
 %
 % Since we base on the \pkg{caption} package we load it here.
@@ -2137,14 +2137,54 @@
 %
 % \subsubsection{The \cs{subref} command}
 %
-% We redefine |\label| to |\subcaption@label| at |\setcaptionsubtype|.
+% \changes{v1.6c}{2026/10/03}{Use the \texttt{label} hook of the \LaTeX\ kernel instead of redefining \cs{label}}
+% With a \LaTeX\ kernel 2023-06-01 or newer we do not redefine |\label|
+% but use the kernel hook \texttt{label} instead: at |\setcaptionsubtype|
+% we activate |\subcaption@write@label| which writes the second label for
+% |\sub|\-|ref| whenever a label is placed.
+% This way it doesn't matter which package (e.g.\ \pkg{amsmath}, which
+% resets |\label| in |\@arrayparboxrestore| since 2025) has the last word
+% on the definition of |\label|.
 %    \begin{macrocode}
-\g@addto@macro\caption@subtypehook{%
-  \ifx\label\subcaption@label \else
-    \let\subcaption@ORI@label\label
-    \let\label\subcaption@label
-  \fi}
+\IfFormatAtLeastTF{2023/06/01}{%
+  \AddToHookWithArguments{label}[subcaption]{\subcaption@label@hook{#1}}%
+  \let\subcaption@label@hook\@gobble
+  \g@addto@macro\caption@subtypehook{%
+    \let\subcaption@label@hook\subcaption@write@label}%
+}{%
 %    \end{macrocode}
+% With older kernels we redefine |\label| to |\subcaption@label| at
+% |\setcaptionsubtype|.
+%    \begin{macrocode}
+  \g@addto@macro\caption@subtypehook{%
+    \ifx\label\subcaption@label \else
+      \let\subcaption@ORI@label\label
+      \let\label\subcaption@label
+    \fi}%
+}
+%    \end{macrocode}
+%
+% \begin{macro}{\subcaption@write@label}
+% \changes{v1.6c}{2026/10/03}{This macro added}
+% The code of the \texttt{label} hook is executed inside a group, before
+% the kernel writes the label to the \texttt{.aux} file. We write the
+% second label with |\@currentlabel| set to the `sub' counter value only,
+% inside another group so the label itself is not affected.
+% (The format of the |\newlabel| entry is the same as the one used by the
+% kernel's |\label|.)
+%    \begin{macrocode}
+\newcommand*\subcaption@write@label[1]{%
+  \begingroup
+    \protected@edef\@currentlabel{\csname thesub\@captype\endcsname}%
+    \protected@write\@auxout{%
+      \let\label\@gobble@om
+      \let\index\@gobble@som
+      \let\glossary\@gobble@om}%
+      {\string\newlabel{sub@#1}{{\@currentlabel}{\thepage}%
+        {\@currentlabelname}{\@currentHref}{\@kernel@reserved@label@data}}}%
+  \endgroup}
+%    \end{macrocode}
+% \end{macro}
 %
 % \begin{macro}{\subcaption@label}
 % \changes{v1.1}{2011/09/12}{Adapted to the \pkg{showkeys} package}
