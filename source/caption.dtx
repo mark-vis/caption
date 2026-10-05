@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3460}
+% \CheckSum{3476}
 %
 % \iffalse
 %<*driver>
@@ -2129,7 +2129,7 @@
     {\caption@startrue}%
     {\@nameuse{donemaincaptiontrue}% Support of the memoir document class
      \caption@ifrefstepcounter
-       {\caption@prepare@stepcounter{#1}}%
+       {\caption@prepare@stepcounter{#1}\caption@client@prestep{#1}}%
        {\@captionstepfalse}% Suppress incrementation of counter
      \caption@client@settarget{#1}%
      \IfNoValueTF{#3}%
@@ -2139,6 +2139,35 @@
        {\caption@iflistheading
           {\def\caption@client@list{#4}}%
           {\def\caption@client@list{#3}}}}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@prestep}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@client@prestep|\marg{type}\par
+%  Executed by |\caption@client@before| if the counter will be stepped. It does nothing,
+%  unless the \pkg{subfig} package is loaded: its |\ContinuedFloat| decrements the float
+%  counter and sets |\if@ccflag|, and its |\caption| replaces |\refstepcounter| with
+%  |\refsteponlycounter|, which increments the counter again without resetting the
+%  sub-float counter. Since the kernel |\caption| steps the counter with the socket
+%  \texttt{caption/step} (and not with |\refstepcounter|), we use |\refsteponlycounter|
+%  here in this case and tell the plug not to step the counter. (We use the current
+%  definition of |\refsteponlycounter|, since \pkg{floatrow} makes it local when measuring
+%  the caption.)
+%    \begin{macrocode}
+\newcommand*\caption@client@prestep[1]{}
+\caption@ifclient{%
+  \caption@AtBeginDocument{%
+    \@ifpackageloaded{subfig}{%
+      \def\caption@client@prestep#1{%
+        \ifx\refstepcounter\refsteponlycounter
+          \if@ccflag
+            \refsteponlycounter{#1}%
+            \@captionstepfalse
+          \fi
+        \fi}%
+    }{}}%
+}{}
 %    \end{macrocode}
 % \end{macro}
 %
