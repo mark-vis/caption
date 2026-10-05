@@ -4594,14 +4594,29 @@
 % own link target (option \opt{hypcap}) or anchor (see |\caption@makeanchor|), we
 % suppress the one of \pkg{hyperref} for this step, as |\H@refstepcounter| does.
 % (See |\caption@client@stepcounter| and |\caption@client@dblarg|.)
+% \changes{v3.8}{2026/10/05}{\cs{@currentHref} is empty while the counter is stepped (PoC)}
+% At the end of |\refstepcounter| the tagging socket \texttt{recordtarget} records
+% |\@currentHref| as link target of the current structure. Since no target was set,
+% |\@currentHref| would still be the previous one (e.g.~the one of the last section
+% or float), and its links would point to the structure of this caption.
+% So we make |\@currentHref| empty while the counter is stepped (an empty name is not
+% recorded), and restore it afterwards, unless the plug has set a new one
+% (as \texttt{latex-lab} does inside floats).
 %    \begin{macrocode}
     \def\caption@client@skiptarget{%
       \if@skiphyperref
-        \let\caption@client@unskiptarget\relax
+        \let\caption@client@unskiptarget\caption@client@restoreHref
       \else
-        \let\caption@client@unskiptarget\@skiphyperreffalse
+        \def\caption@client@unskiptarget{%
+          \@skiphyperreffalse\caption@client@restoreHref}%
       \fi
-      \@skiphyperreftrue}%
+      \@skiphyperreftrue
+      \let\caption@client@ORI@currentHref\@currentHref
+      \let\@currentHref\@empty}%
+    \def\caption@client@restoreHref{%
+      \ifx\@currentHref\@empty
+        \let\@currentHref\caption@client@ORI@currentHref
+      \fi}%
 %    \end{macrocode}
 % \end{macro}
 %
