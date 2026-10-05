@@ -4365,13 +4365,34 @@
 %   \texttt{latex-lab} float code (\texttt{float/}\meta{type}\texttt{/label}, role |Lbl|),
 %   and the marked content of the paragraph is interrupted by the plug of the socket.
 %   (The sockets do nothing if tagging is not active.)
+%   The plugs of \texttt{latex-lab} need |\@captype| for the structure name; it is
+%   not defined for captions outside floats which were not started by
+%   |\setcaptiontype|, e.g.~\pkg{listings} captions, so there we keep our own code.
 %    \begin{macrocode}
 \ifx\caption@iflabelsockets\@firstoftwo
+  \let\caption@tag@lbl@@begin\caption@tag@lbl@begin
+  \let\caption@tag@lbl@@end\caption@tag@lbl@end
   \ExplSyntaxOn
   \cs_set_protected:Npn \caption@tag@lbl@begin
-    { \caption@iftaglbl { \UseTaggingSocket { caption/label/begin } } { } }
+    {
+      \caption@iftaglbl
+        {
+          \cs_if_exist:NTF \@captype
+            { \UseTaggingSocket { caption/label/begin } }
+            { \caption@tag@lbl@@begin }
+        }
+        { }
+    }
   \cs_set_protected:Npn \caption@tag@lbl@end
-    { \caption@iftaglbl { \UseTaggingSocket { caption/label/end } } { } }
+    {
+      \caption@iftaglbl
+        {
+          \cs_if_exist:NTF \@captype
+            { \UseTaggingSocket { caption/label/end } }
+            { \caption@tag@lbl@@end }
+        }
+        { }
+    }
   \ExplSyntaxOff
 \fi
 %    \end{macrocode}
