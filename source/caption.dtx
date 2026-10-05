@@ -1912,6 +1912,7 @@
 % \changes{v3.1k}{2009/03/30}{The macro \cs{caption@redefine} contains the patching code now}
 % \changes{v3.5}{2020/08/30}{Re-definition of \cs{@xdblfloat} added}
 % \changes{v3.7}{2026/10/04}{Re-definition of \cs{@makecaption} added if \texttt{latex-lab} handles floats}
+% \changes{v3.8}{2026/10/05}{Uses the kernel hooks \texttt{float/begin} instead of redefining \cs{@xfloat} and \cs{@xdblfloat}, if available (PoC)}
 % \changes{v3.8}{2026/10/05}{Re-definition of \cs{@makecaption} only if the code of \texttt{latex-lab} could not be removed (PoC)}
 %    \begin{macrocode}
 \newcommand*\caption@redefine{%
@@ -1938,18 +1939,20 @@
   \let\caption\caption@caption
   \let\@caption\caption@@caption
 %    \end{macrocode}
-%   We redefine |\@x|\-|float| so inside floating environments our
+%   If the kernel offers the hooks \texttt{float/begin} and \texttt{float/end}
+%   we use them, see |\caption@floathooks|.
+%   Otherwise we redefine |\@x|\-|float| so inside floating environments our
 %   type-specific options will be used, a \pkg{hyperref}
 %   anchor will be set etc.
-%    \begin{macrocode}
-  \let\caption@ORI@xfloat\@xfloat
-  \let\@xfloat\caption@xfloat
-%    \end{macrocode}
 %   We redefine |\@xdbl|\-|float|, too, so special options for |figure*|
 %   or |table*| will be applied here.
 %    \begin{macrocode}
-  \let\caption@ORI@xdblfloat\@xdblfloat
-  \let\@xdblfloat\caption@xdblfloat
+  \caption@iffloathooks
+    {\caption@floathooks}%
+    {\let\caption@ORI@xfloat\@xfloat
+     \let\@xfloat\caption@xfloat
+     \let\caption@ORI@xdblfloat\@xdblfloat
+     \let\@xdblfloat\caption@xdblfloat}%
 %    \end{macrocode}
 %    \begin{macrocode}
 }
@@ -1983,6 +1986,107 @@
     {}%
 \fi
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@iffloathooks}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@iffloathooks|\marg{true}\marg{false}\par
+%  Newer kernels (PoC kernel patch (a)) execute the hooks \texttt{float/begin} and
+%  \texttt{float/end} at the start and at the end of every float, inside the float box.
+%  We test for the internal macro |\@float@usehooks| which executes them, not for a
+%  format date; after a roll-back with \pkg{latexrelease} it is |\@gobbletwo|.
+%  (A public test would be better, see open question (a)4.)
+%    \begin{macrocode}
+\newcommand*\caption@iffloathooks{%
+  \@tempswafalse
+  \ifdefined\@float@usehooks
+    \ifx\@float@usehooks\@gobbletwo \else \@tempswatrue \fi
+  \fi
+  \if@tempswa\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@ifinmeaning}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  |\caption@ifinmeaning|\marg{tokens}\meta{cmd}\marg{true}\marg{false}\par
+%  Tests if \meta{tokens} (detokenized) are part of the meaning of \meta{cmd}.
+%    \begin{macrocode}
+\newcommand*\caption@ifinmeaning[2]{%
+  \edef\caption@tempa{\noexpand\in@{\detokenize{#1}}{\meaning#2}}%
+  \caption@tempa
+  \ifin@\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@floathooks}
+% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
+%  We do the same as |\caption@xfloat| and |\caption@xdblfloat| do, but in the hook
+%  \texttt{float/begin}. Its second argument is |*| for a double-column float in
+%  two-column mode (\cs{@xdblfloat}), and empty otherwise.
+%  The local flags |\caption@float@hooked| and |\caption@dblfloat@hooked| tell the
+%  checking wrappers below that the hook was executed for this float.
+%  \Note{For |figure*| and |table*| in two-column mode the hook is executed after
+%  \cs{hsize} and \cs{linewidth} have been set to \cs{textwidth}, while
+%  |\caption@xfloat| applied the type-specific options before. So options like
+%  |width=.5\linewidth| given with |\captionsetup[figure]| now refer to the
+%  text width in |figure*|.}
+%    \begin{macrocode}
+\newcommand*\caption@floathooks{%
+  \AddToHookWithArguments{float/begin}[caption]{%
+    \let\caption@float@hooked\@empty
+    \caption@settype{##1}%
+    \caption@setanchor
+    \caption@xfloat@hook
+    \ifx\relax##2\relax \else
+      \let\caption@dblfloat@hooked\@empty
+      \caption@setoptions{##1##2}%
+      \caption@xdblfloat@hook
+    \fi}%
+%    \end{macrocode}
+%  Classes or packages which redefine |\@xfloat| or |\@xdblfloat| completely
+%  (for example \cls{revtex4-2} or \pkg{nidanfloat}) bypass the hook.
+%  So if the hook is not visible in the meaning of these macros, we still wrap them,
+%  but the wrappers only do their work if the hook was not executed for the current float.
+%  (Wrappers which call the kernel code, like the ones of \pkg{float}, \pkg{floatrow}
+%  and \pkg{setspace}, hide the hook as well, so we wrap them, too.)
+%    \begin{macrocode}
+  \caption@ifinmeaning\@float@begin@hook\@xfloat{}{%
+    \let\caption@ORI@xfloat\@xfloat
+    \let\@xfloat\caption@xfloat@check}%
+  \caption@ifinmeaning\@float@usehooks\@xdblfloat{}{%
+    \let\caption@ORI@xdblfloat\@xdblfloat
+    \let\@xdblfloat\caption@xdblfloat@check}}
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@xfloat@check}
+% \begin{macro}{\caption@xdblfloat@check}
+% \changes{v3.8}{2026/10/05}{These macros added (PoC)}
+%  The kernel |\@xdblfloat| sets |\@float@begin@hook| to |\@gobble| before it calls
+%  |\@xfloat|, and executes the hook itself afterwards; so in this case
+%  |\caption@xfloat@check| has nothing to do.
+%    \begin{macrocode}
+\def\caption@xfloat@check#1[#2]{%
+  \let\caption@float@hooked\@undefined
+  \caption@ORI@xfloat{#1}[#2]%
+  \ifx\caption@float@hooked\@empty \else
+    \ifx\@float@begin@hook\@gobble \else
+      \caption@settype{#1}%
+      \caption@setanchor
+      \caption@xfloat@hook
+    \fi
+  \fi}
+%    \end{macrocode}
+%    \begin{macrocode}
+\def\caption@xdblfloat@check#1[#2]{%
+  \let\caption@dblfloat@hooked\@undefined
+  \caption@ORI@xdblfloat{#1}[#2]%
+  \ifx\caption@dblfloat@hooked\@empty \else
+    \caption@setoptions{#1*}%
+    \caption@xdblfloat@hook
+  \fi}
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@xfloat}
