@@ -2042,14 +2042,16 @@
 %  used anymore. In these cases we redefine |\caption| and |\@caption| as before.
 %    \begin{macrocode}
 \newcommand*\caption@ifkernelcaption{%
-  \@tempswafalse
   \ifdefined\IfSocketExistsTF
-    \IfSocketExistsTF{caption/listentry}%
-      {\caption@ifinmeaning{caption/step}\caption
-         {\caption@ifinmeaning{caption/listentry}\@caption\@tempswatrue{}}{}}%
-      {}%
-  \fi
-  \if@tempswa\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+    \expandafter\caption@@ifkernelcaption
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\newcommand*\caption@@ifkernelcaption[2]{%
+  \IfSocketExistsTF{caption/listentry}%
+    {\caption@ifinmeaning{caption/step}\caption
+       {\caption@ifinmeaning{caption/listentry}\@caption{#1}{#2}}{#2}}%
+    {#2}}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -2299,11 +2301,13 @@
 %  (A public test would be better, see open question (a)4.)
 %    \begin{macrocode}
 \newcommand*\caption@iffloathooks{%
-  \@tempswafalse
-  \ifdefined\@float@usehooks
-    \ifx\@float@usehooks\@gobbletwo \else \@tempswatrue \fi
-  \fi
-  \if@tempswa\expandafter\@firstoftwo\else\expandafter\@secondoftwo\fi}
+  \ifx\@float@usehooks\@undefined
+    \expandafter\@secondoftwo
+  \else\ifx\@float@usehooks\@gobbletwo
+    \expandafter\expandafter\expandafter\@secondoftwo
+  \else
+    \expandafter\expandafter\expandafter\@firstoftwo
+  \fi\fi}
 %    \end{macrocode}
 % \end{macro}
 %
