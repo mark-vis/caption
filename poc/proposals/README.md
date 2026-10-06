@@ -15,7 +15,7 @@ DRAFT, 2026-10-04. Everything here is written against latex2e `develop` at
 | `patches/standalone/d-tagging-float-types.patch` | (d) alone: series 0002 plus the version line of latex-lab-float |
 | `patches/caption-floathooks.diff` | caption side of (a), against the generated caption.sty v3.6p |
 | `patches/newfloat-v1.2a.diff` | newfloat side of (d), against newfloat.dtx v1.2 (TeX Live 2026); newfloat lives in its own repository, https://gitlab.com/axelsommerfeldt/newfloat |
-| `tests/` | the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface` (b), `float-021-caption-label`, `float-022-caption-separator` (c) |
+| `tests/` | the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface` (b), `float-021-caption-label`, `float-022-caption-separator`, `float-025-makecaption-label`, `float-026-makecaption-voids` (c) |
 | `mwe/` | the test documents and sketches (see below) |
 | `scripts/` | scripts that reproduce the checks |
 
@@ -39,7 +39,7 @@ files of existing tests (rollback tests, `config-lthooks`, `float-010-outside`) 
 | `release-back.tex`, `release-fwd.tex` | (b) | `latexrelease` rollback and roll-forward |
 | `c-kernel.tex`, `c-caption.tex`, `c-inpar.tex` | (c) | the problem on TL 2026 (`c-inpar.tex` works with the patch) |
 | `caption3-labelplug.tex`, `caption-sty-remove.tex` | (c) | proposed caption3/caption.sty code of (c)5 |
-| `c-caption3-plug.tex`, `c-caption-remove.tex`, `remove-notag.tex` | (c) | tests of that code |
+| `c-caption3-plug.tex`, `c-caption-remove.tex`, `remove-notag.tex`, `voids-notag.tex` | (c) | tests of that code |
 | `d1-manual-float*.tex`, `d2`…`d12` | (d) | float types defined by hand, by newfloat, caption, tocbasic, memoir, float.sty, floatrow(bytocbasic) |
 
 ## How to rerun the checks

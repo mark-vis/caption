@@ -1,6 +1,6 @@
 # What caption needs from the kernel: four proposals
 
-**DRAFT, not sent.** 2026-10-04. Written against latex2e `develop` at 829e56a15
+**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept). Written against latex2e `develop` at 829e56a15
 (format date 2026-11-01, pre-release). caption references are to branch
 `fixes-combined` of https://github.com/mark-vis/caption (caption v3.6p, caption3 v2.4e),
 other packages and classes as in TeX Live 2026. All files mentioned are in
@@ -35,7 +35,7 @@ combined patch").
 |---|---|---|---|---|---|
 | (a) | Hooks at the start and end of every float | ltfloat: mirrored hook pair `float/begin`/`float/end` (2 args), used in `\@xfloat`, `\@xdblfloat`, `\@endfloatbox`; latex-lab-float: the same call in its copy of `\@xfloat` | caption.sty uses the hook instead of wrapping `\@xfloat`/`\@xdblfloat`; a checking wrapper stays for classes that bypass the kernel code | +202/−7 (about 25 lines of code; the rest is `latexrelease` copies and documentation) | — |
 | (b) | A caption interface: `\caption*`, list entries, sub-captions | ltfloat: `\caption*`, sockets `caption/step` and `caption/listentry`, `\if@captionstar`; classes: no ": " for an empty label; lttagging: tagging sockets `subfloat/begin`/`subfloat/end`; latex-lab-float: plugs instead of redefining `\caption` | caption plugs `caption/listentry`, prepares `\ContinuedFloat` in `cmd/caption/before`, subcaption uses the sub-float sockets; no more redefinition of `\caption`/`\@caption` | +249/−42 | — |
-| (c) | caption3's label format as a plug for `caption/label` | latex-lab-float: documented contract for `caption/label`, new socket `caption/separator`, label tagging sockets usable inside a paragraph, hook label `latex-lab/float/makecaption`; latex-lab-listings; lttagging documentation | caption3 provides plugs `caption3`; caption.sty keeps its own `\@makecaption` with `\RemoveFromHook` and tags the label with the kernel sockets | +91/−17 | (b) |
+| (c) | caption3's label format as a plug for `caption/label` | latex-lab-float: documented contract for `caption/label`, new socket `caption/separator`, label tagging sockets usable inside a paragraph, the existing hook label `latex-lab-testphase-float` of latex-lab's `\@makecaption` code documented (not renamed); latex-lab-listings; lttagging documentation | caption3 provides plugs `caption3`; caption.sty keeps its own `\@makecaption` with a `voids` rule against that label and tags the label with the kernel sockets | +102/−17 | (b) |
 | (d) | Registering new float types for tagging | lttagging: `\DeclareTaggingFloatType`, the list of float types moves there; latex-lab-float: `float/new` uses it, captions of undeclared types fall back to generic names; latex-lab-namespace: `float/generic/caption`, `float/generic/label` | newfloat (a separate package, see (d)) registers each new type; caption's `\DeclareCaptionType` gets it through newfloat | +97/−23, plus +30 in newfloat | — |
 
 **Recommended order.**
@@ -86,7 +86,7 @@ No two proposals define the same name. Some new names sit next to existing ones:
 | `caption/separator` | socket (latex-lab) | new (c) | after the label |
 | `cmd/caption/before` | generic hook | existing; (b) uses it for `\ContinuedFloat` | start of `\caption` |
 | `cmd/@makecaption/before` | hook (latex-lab) | existing | start of latex-lab's `\@makecaption` |
-| `latex-lab/float/makecaption` | label of a `begindocument` hook chunk | new (c) | latex-lab's redefinition of `\@makecaption` |
+| `latex-lab-testphase-float` | label of a `begindocument` hook chunk | existing (the package's default label); (c) documents it and keeps it | latex-lab's redefinition of `\@makecaption` |
 | `\DeclareTaggingFloatType` | document-level command | new (d) | preamble |
 | `float/<type>/sub`, `float/generic/sub` | structure names (`Part`) | new (b) | sub-floats |
 | `float/generic/caption`, `float/generic/label` | structure names | new (d) | captions in floats of undeclared types |
@@ -954,8 +954,20 @@ section 4):
 Patch: series 0004 (`poc/proposals/patches/series/0004-*.patch`), on top of (b): it also
 handles `\caption*`. There is no stand-alone version; without (b) only the `\caption*`
 lines would have to go. Tests: `poc/proposals/tests/float-021-caption-label.*`,
-`float-022-caption-separator.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
+`float-022-caption-separator.*`, `float-025-makecaption-label.*`,
+`float-026-makecaption-voids.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
 `mwe/caption-sty-remove.tex`.
+
+> **Changed 2026-10-06 (item 4).** The first version of (c) moved latex-lab's
+> `begindocument` code for `\@makecaption` to a new label `latex-lab/float/makecaption`.
+> That broke acmart, mitthesis, asmeconf and asmejour, which remove the code with
+> `\RemoveFromHook{begindocument}[latex-lab-testphase-float]` (the workaround from
+> tagging-project issue 720): the removal failed with "Cannot remove chunk", latex-lab's
+> `\@makecaption` stayed active, and acmart with `\DocumentMetadata` printed "Fig. 1:
+> First" instead of "Fig. 1. First" and "Fig. 1: Starred" for `\caption*`. (c) now keeps
+> the label `latex-lab-testphase-float` and only documents it; caption.sty uses a `voids`
+> rule. Measurements in section 4 and in "Verification of the combined patch" that are
+> not marked "2026-10-06" were taken with the first version.
 
 ### 1. Problem
 
@@ -1108,13 +1120,21 @@ No change to kernel code is needed.
    - Inside a paragraph, `Lbl` becomes a child of the caption's `P`, which is what the
      PoC produces today.
 4. **A documented label for latex-lab's `\@makecaption`.** The `begindocument` code that
-   replaces `\@makecaption` gets the hook label `latex-lab/float/makecaption`. Today it
-   has the package's default label.
+   replaces `\@makecaption` keeps the label it has today, the package's default label
+   `latex-lab-testphase-float`; the patch documents it, says that it must not change
+   (acmart, mitthesis, asmeconf and asmejour already remove the code by this label) and
+   that it is the only code of latex-lab-float in `begindocument`.
    - A package that provides its own `\@makecaption` with tagging (built on the sockets
      `caption/begin`, `caption/end`, `caption/label/begin`, `caption/label/end` and
-     `para/begin`/`para/end`) can keep its definition with
-     `\RemoveFromHook{begindocument}[latex-lab/float/makecaption]`, instead of
-     overwriting latex-lab's afterwards.
+     `para/begin`/`para/end`) can keep its definition, instead of overwriting latex-lab's
+     afterwards, with a rule (preferred)
+     `\DeclareHookRule{begindocument}{<own label>}{voids}{latex-lab-testphase-float}`,
+     where `<own label>` is the label of code it adds to `begindocument` itself, or with
+     `\RemoveFromHook{begindocument}[latex-lab-testphase-float]`. The rule does not warn
+     when the code is not there (no `\DocumentMetadata`) or a class has removed it
+     already; `\RemoveFromHook` warns "Cannot remove chunk" in both cases.
+   - As the label is not new, this item needs no code change; it works on develop
+     today (`mwe/c-caption-remove.tex` gives the same output on unpatched develop).
    - This solves problem 1: caption's formatting (`labelsep`, `labelfont`, `hang`,
      margins, `singlelinecheck`) survives, and the tagging stays in kernel sockets.
 5. **Plugs owned by caption3, not by the kernel:**
@@ -1172,7 +1192,7 @@ latex-lab-float (the contract is documented in the patch):
 % caption/label/end: \tag_mc_end: \tag_struct_end:, then
 %   \tag_mc_begin_pop:n{} if the label was inside a paragraph, else \tagpdfparaOn
 ...
-\AddToHook{begindocument}[latex-lab/float/makecaption]
+\AddToHook{begindocument}[latex-lab-testphase-float]   % label unchanged, now documented
   {
     \long\def\@makecaption#1#2{%
       ...
@@ -1192,11 +1212,23 @@ to `caption/separator` as well.
 ### 4. Verification
 
 These runs were made on (b) + (c) (results for the combined patch
-are in the last section).
+are in the last section). Unless marked "2026-10-06", they were made with the first
+version of item 4, which renamed the hook label (renamed label); the other items did not
+change, and the 2026-10-06 runs below show that the rest of the output did not either.
 
 - `l3build check -c config-float` (pdfTeX and LuaTeX): only `firstaid-float-H-2` and the
   three new tests (`float-020`, `float-021`, `float-022`) differ, and only in the
   `<PDF version="2.0">` line. That line differs the same way on the unpatched clone.
+  (Renamed label.) 2026-10-06, on the latex2e branch with the label kept: the same ten
+  `.diff` files with the same content as before, and the new `float-025` and `float-026`
+  pass; `config-table-pdftex`, `config-table-luatex` and `config-block` give the same
+  `.diff` files with the same content as with the renamed label.
+- 2026-10-06, new tests for item 4 (one `.tlg` for both engines):
+  `float-025-makecaption-label` removes the code as the classes do
+  (`\RemoveFromHook{begindocument}[latex-lab-testphase-float]` in the preamble), and
+  `float-026-makecaption-voids` disables it with a `voids` rule. In both, the class's own
+  `\@makecaption` survives `\begin{document}` and is used for `\caption` and
+  `\caption*`, without a warning. Both fail with the renamed label.
 - Other latex-lab tests that use captions: `config-block firstaid-listings` (assigns
   `noop` to `caption/label`); `config-table-pdftex` / `config-table-luatex` with
   `table-012-caption`, `table-013-longtable-hyperref` and `table-021-longtable`;
@@ -1231,24 +1263,41 @@ are in the last section).
   (bold font in `pdffonts`). Structure: `Lbl "Figure (1)"`, then `P ". Short caption"`.
   The multi-line branch behaves the same.
 - Item 4, with caption.sty 3.6 from TL 2026 (`mwe/c-caption-remove.tex` =
-  `c-caption.tex` plus the `\RemoveFromHook` line): 0 errors in both engines.
+  `c-caption.tex` plus `\RemoveFromHook{begindocument}[latex-lab-testphase-float]`;
+  2026-10-06, on the series with the label kept and on unpatched develop): 0 errors in
+  both engines.
   - caption's formatting is back: "Figure (1). A caption ...", with the label in bold
-    (SFBX/CMBX in `pdffonts`) and hanging indentation.
+    (SFBX/CMBX in `pdffonts`) and hanging indentation. Unpatched develop gives the same
+    output, because the label is not new.
   - caption 3.6 has no tagging code, so there is no `Caption`/`Lbl` here. This only shows
     that the hook label works. The tagging part is the PoC run below.
+  - The same document with `mwe/caption-sty-remove.tex` (the `voids` rule) in place of
+    the `\RemoveFromHook` line gives the same output on the series. On unpatched develop
+    that code does nothing, because the socket `caption/separator` does not exist.
   - Without `\DocumentMetadata`, `\RemoveFromHook` with this label warns "Cannot remove
-    chunk" (`mwe/remove-notag.tex`). So caption.sty only removes it when the latex-lab
-    socket `caption/separator` exists (section 5).
+    chunk" (`mwe/remove-notag.tex`), and so does a second removal after a class has
+    removed the code. The `voids` rule warns in neither case (`mwe/voids-notag.tex`,
+    with and without its first line), so caption.sty uses the rule (section 5).
+  - With the label kept, acmart, mitthesis, asmeconf and asmejour (all of which remove
+    the code by this label) were checked on 2026-10-06 (pdfLaTeX) against unpatched develop and
+    TeX Live, with `\DocumentMetadata{lang=en}` (with and without hyperref),
+    `tagging=on`, and with caption: no "Cannot remove chunk" any more, and the captions
+    are the same as on develop and TeX Live (acmart: "Fig. 1. First", "Starred"). With
+    the renamed label they were "Fig. 1: First", "Fig. 1: Starred". Remaining
+    differences to develop do not involve the label: in asmejour and mitthesis `\caption*` no longer steps the counter
+    ((b); "Fig. 2" instead of "Fig. 3" for the next caption), and under tagging acmart and
+    asmeconf get one `Lbl` more, acmart also 14 instead of 10 errors (these tagging errors
+    exist on develop as well).
 - caption3 using the sockets: in the PoC caption3.sty I replaced the private tagpdf code
   with `\UseTaggingSocket{caption/label/begin|end}` ("sock"). In the PoC caption4.sty I
   also replaced the second `\let\@makecaption` at `\begin{document}` with
-  `\RemoveFromHook{begindocument}[latex-lab/float/makecaption]` ("rm"). Five PoC test
+  `\RemoveFromHook` of latex-lab's code (renamed label) ("rm"). Five PoC test
   documents with tagging (`poc/tests/` t01, t02, t07, t10, t11), both engines: all 20
   runs 0 errors. "rm" vs "sock": identical structure trees (`pdfinfo -struct-text`), text
   and warnings. Every caption is a `Caption` with `Lbl`. No "Cannot remove chunk"
   warning. "sock" vs the original PoC code with private tagpdf calls: identical as well.
   (These modified PoC files are not part of `poc/proposals`, and these runs were not
-  repeated on the combined patch.)
+  repeated on the combined patch or with the label kept.)
 
 **Not verified:** PDF/UA validation (veraPDF/PAC); `labelsep=newline` with the caption3
 plug (the contract forbids `\\`, see the open questions); latex-lab-table's longtable
@@ -1288,9 +1337,11 @@ so older formats and older latex-lab versions take the old path
   }
 \ExplSyntaxOff
 % caption.sty (not caption3): keep caption's own \@makecaption, which tags
-% with the kernel sockets, instead of overwriting latex-lab's at \begin{document}
+% with the kernel sockets, instead of overwriting latex-lab's at \begin{document};
+% a voids rule does not warn if a class has removed latex-lab's code already
 \IfSocketExistsT{caption/separator}
-  {\RemoveFromHook{begindocument}[latex-lab/float/makecaption]}
+  {\AddToHook{begindocument}[caption]{}%
+   \DeclareHookRule{begindocument}{caption}{voids}{latex-lab-testphase-float}}
 ```
 
 - `\caption@@@make` already calls `\caption@tag@lbl@begin` / `\caption@tag@lbl@end`
@@ -1310,9 +1361,11 @@ so older formats and older latex-lab versions take the old path
 3. `labelsep=newline` and similar: should the contract allow vertical material in
    `caption/separator`, or should caption3 map those separators itself?
 4. Should latex-lab-table's longtable caption use the same sockets instead of `#2:~`?
-5. Is a documented hook label plus `\RemoveFromHook` the right way for a package to keep
-   its own `\@makecaption`, or would you rather have a flag, or have latex-lab not
-   redefine `\@makecaption` at all once the class code has the sockets?
+5. Is a documented hook label plus a `voids` rule (or `\RemoveFromHook`) the right way
+   for a package to keep its own `\@makecaption`, or would you rather have a flag, or
+   have latex-lab not redefine `\@makecaption` at all once the class code has the
+   sockets? The label stays `latex-lab-testphase-float` because classes already use it;
+   documenting it makes that name permanent, although it says "testphase".
 
 ---
 
@@ -1662,12 +1715,26 @@ an unpatched copy of the same commit. The stand-alone patches (a), (b) and (d) w
 applied alone to fresh copies. Every l3build and TeX run had a time limit. The scripts
 are in `poc/proposals/scripts/`; `poc/proposals/README.md` explains how to rerun them.
 
+**Taken with the renamed label.** The tables below were measured with the first version
+of (c), which renamed latex-lab's hook label (see (c), "Changed 2026-10-06"). After the
+change, series 0004 and `combined.diff` were regenerated from the latex2e branch, and on
+that branch (an export, not the series applied by `run-checks.sh`) latex-lab
+`config-float`, `config-table-pdftex`, `config-table-luatex` and `config-block` gave the
+same `.diff` files with the same content as before; the two new tests `float-025` and
+`float-026` pass in both engines and fail with the renamed label. The series still
+applies to 829e56a15 and gives the tree of the branch. The base tests and
+`config-lthooks` were not rerun: (c) changes no base file except the lttagging
+documentation, and the change touches latex-lab-float only. The client documents were
+not rerun on the combined patch; `c-caption-remove` was rerun on a format built from the
+branch (see (c)4).
+
 **About the `<PDF version="2.0">` line.** The `.pvt`-style latex-lab tests print the
 structure with show-pdf-tags. The `.tlg` files in the repository contain
 `<PDF version="2.0">`; my local show-pdf-tags writes `<PDF>`. So `firstaid-float-H-2`,
 `firstaid-listings` and (LuaTeX) `table-015-hhline` fail locally on unpatched develop,
 and the new tests 017, 020, 021 and 022 (whose
-`.tlg` files have the repository's line) fail locally in exactly that one line. They
+`.tlg` files have the repository's line) fail locally in exactly that one line
+(`float-025` and `float-026` print no structure and pass). They
 may need to be saved again on your setup.
 
 ### l3build

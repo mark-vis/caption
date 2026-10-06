@@ -1762,10 +1762,10 @@ index 5ea328b44..87a171d6b 100644
  Already applied: [....-..-..] float order in 2-column on input line ....
  Applying: [....-..-..] Explicit par for marginpar on input line ....
 diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
-index d0152f5b9..5d22af38d 100644
+index d0152f5b9..f71612e2b 100644
 --- a/required/latex-lab/changes.txt
 +++ b/required/latex-lab/changes.txt
-@@ -1,3 +1,29 @@
+@@ -1,3 +1,30 @@
 +2026-10-03  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
 +
 +	* latex-lab-float.dtx:
@@ -1786,8 +1786,9 @@ index d0152f5b9..5d22af38d 100644
 +	* latex-lab-float.dtx:
 +	Document the contract of the caption/label socket, add socket
 +	caption/separator and plugs label-only and colon, allow the label
-+	tagging sockets inside a paragraph, label latex-lab/float/makecaption
-+	for the begindocument redefinition of \@makecaption
++	tagging sockets inside a paragraph, document the label
++	latex-lab-testphase-float of the begindocument redefinition of
++	\@makecaption (classes remove it by this label)
 +
 +	* latex-lab-listings.dtx:
 +	Void the socket caption/separator for titles
@@ -1796,7 +1797,7 @@ index d0152f5b9..5d22af38d 100644
  
  	* latex-lab-block.dtx (subsubsection{The \insttype{thmstyle} instances they use}):
 diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
-index 216c24151..b95cabd73 100644
+index 216c24151..eed80ce0c 100644
 --- a/required/latex-lab/latex-lab-float.dtx
 +++ b/required/latex-lab/latex-lab-float.dtx
 @@ -15,8 +15,8 @@
@@ -2029,7 +2030,7 @@ index 216c24151..b95cabd73 100644
       \tag_mc_begin:n{}
    }
  \AssignTaggingSocketPlug{caption/label/begin}{default}
-@@ -763,61 +835,109 @@
+@@ -763,61 +835,120 @@
    {
      \tag_mc_end:
      \tag_struct_end:
@@ -2128,19 +2129,30 @@ index 216c24151..b95cabd73 100644
  % \cs{@makecaption} is defined by the classes so we overwrite it for now
  % at begin document.
  % \changes{0.81k}{2025-10-11}{Add command hook explicitly to avoid patching error, tagging issue 998}
-+% \changes{0.81q}{2026-10-03}{Use the label \texttt{latex-lab/float/makecaption}}
-+% The code uses the documented label \texttt{latex-lab/float/makecaption}.
-+% A package which provides its own \cs{@makecaption} with tagging support
-+% (using the sockets \texttt{caption/begin}, \texttt{caption/end},
++% \changes{0.81q}{2026-10-03}{Document the label \texttt{latex-lab-testphase-float}
++%   of this code}
++% The code is added with the label \texttt{latex-lab-testphase-float}
++% (the default label of this package). Classes already use this label
++% to remove the code, e.g., \cls{acmart}, so it must not change. It is
++% the only code of this package in the hook \hook{begindocument}. A
++% class or package which provides its own \cs{@makecaption} with tagging
++% support (using the sockets \texttt{caption/begin}, \texttt{caption/end},
 +% \texttt{caption/label/begin}, \texttt{caption/label/end} and
 +% \texttt{para/begin}, \texttt{para/end}) can keep its definition with
++% a rule (preferred, as it does not fail if the code has already been
++% removed or is not there)
 +% \begin{verbatim}
-+% \RemoveFromHook{begindocument}[latex-lab/float/makecaption]
++% \DeclareHookRule{begindocument}{<own label>}{voids}{latex-lab-testphase-float}
++% \end{verbatim}
++% where \meta{own label} is the label of code that it adds to
++% \hook{begindocument} itself, or with
++% \begin{verbatim}
++% \RemoveFromHook{begindocument}[latex-lab-testphase-float]
 +% \end{verbatim}
  %    \begin{macrocode}
  \NewHookWithArguments{cmd/@makecaption/before}{2}
 -\AddToHook{begindocument}
-+\AddToHook{begindocument}[latex-lab/float/makecaption]
++\AddToHook{begindocument}[latex-lab-testphase-float]
    {
      \long\def\@makecaption#1#2{%
        \UseHookWithArguments{cmd/@makecaption/before}{2}{#1}{#2}%
@@ -2167,7 +2179,7 @@ index 216c24151..b95cabd73 100644
        \ResumeTagging{\@makecaption}
  %    \end{macrocode}
  % We pass \cs{@current@float@struct} as parent structure
-@@ -829,6 +949,7 @@
+@@ -829,6 +960,7 @@
        \UseSocket{caption/label}{#1}
        \UseTaggingSocket{caption/label/end}
        \UseTaggingSocket{para/begin}
@@ -2175,7 +2187,7 @@ index 216c24151..b95cabd73 100644
            #2
        \par
        \else
-@@ -841,6 +962,7 @@
+@@ -841,6 +973,7 @@
           \UseSocket{caption/label}{#1}
           \UseTaggingSocket{caption/label/end}
           \UseTaggingSocket{para/begin}
@@ -3847,3 +3859,100 @@ index 000000000..29b52d103
 +Package tagpdf Info: writing NameSpaces
 +Package tagpdf Info: writing StructElems
 +Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt b/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt
+new file mode 100644
+index 000000000..57c3084f3
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt
+@@ -0,0 +1,23 @@
++% The code of latex-lab-float that redefines \@makecaption at
++% \begin{document} has the label latex-lab-testphase-float. Classes
++% (acmart, mitthesis, asmeconf, asmejour) remove it by this label to
++% keep their own \@makecaption, so the label must not change: the class
++% definition below must survive, without a warning, also for \caption*.
++\DocumentMetadata{lang=en}
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++\long\def\@makecaption#1#2{\typeout{CLASS MAKECAPTION: \detokenize{#1}}#1. #2\par}
++\RemoveFromHook{begindocument}[latex-lab-testphase-float]
++\makeatother
++\begin{document}
++\START
++\makeatletter
++\TEST{The class definition survives}{\typeout{\meaning\@makecaption}}
++\makeatother
++\TEST{Numbered caption and caption*}{%
++  \begin{figure}[h]
++    \caption{Numbered}
++    \caption*{Unnumbered}
++  \end{figure}}
++\END
+diff --git a/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg b/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg
+new file mode 100644
+index 000000000..cf5a88682
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg
+@@ -0,0 +1,13 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: The class definition survives
++============================================================
++\long macro:#1#2->\typeout {CLASS MAKECAPTION: \detokenize {#1}}#1. #2\par 
++============================================================
++============================================================
++TEST 2: Numbered caption and caption*
++============================================================
++CLASS MAKECAPTION: \csname fnum@\@captype \endcsname 
++CLASS MAKECAPTION: 
++============================================================
+diff --git a/required/latex-lab/testfiles-float/float-026-makecaption-voids.lvt b/required/latex-lab/testfiles-float/float-026-makecaption-voids.lvt
+new file mode 100644
+index 000000000..52f9e1adb
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-026-makecaption-voids.lvt
+@@ -0,0 +1,24 @@
++% The code of latex-lab-float that redefines \@makecaption at
++% \begin{document} has the label latex-lab-testphase-float. The
++% documented way for a class or package to keep its own \@makecaption
++% is a voids rule (it does not warn if the code has been removed
++% already): the class definition below must survive, also for \caption*.
++\DocumentMetadata{lang=en}
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++\long\def\@makecaption#1#2{\typeout{CLASS MAKECAPTION: \detokenize{#1}}#1. #2\par}
++\AddToHook{begindocument}[myclass]{}
++\DeclareHookRule{begindocument}{myclass}{voids}{latex-lab-testphase-float}
++\makeatother
++\begin{document}
++\START
++\makeatletter
++\TEST{The class definition survives}{\typeout{\meaning\@makecaption}}
++\makeatother
++\TEST{Numbered caption and caption*}{%
++  \begin{figure}[h]
++    \caption{Numbered}
++    \caption*{Unnumbered}
++  \end{figure}}
++\END
+diff --git a/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg b/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg
+new file mode 100644
+index 000000000..cf5a88682
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg
+@@ -0,0 +1,13 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: The class definition survives
++============================================================
++\long macro:#1#2->\typeout {CLASS MAKECAPTION: \detokenize {#1}}#1. #2\par 
++============================================================
++============================================================
++TEST 2: Numbered caption and caption*
++============================================================
++CLASS MAKECAPTION: \csname fnum@\@captype \endcsname 
++CLASS MAKECAPTION: 
++============================================================
