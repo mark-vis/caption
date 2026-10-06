@@ -2078,7 +2078,8 @@
 %   by \texttt{latex-lab}), and which list entry will be made (|\caption{}| makes one, but
 %   |\caption[]{|\ldots|}| does not, and option \opt{list-entry=heading}).
 % \item In \texttt{caption/prepare} we prepare the \pkg{hyperref} anchor (as |\caption@@caption|
-%   does).
+%   does; with a unique name if other code in \texttt{caption/before} has told the kernel not
+%   to step the counter, see |\caption@client@makecurrentHref|).
 % \item Our plug \texttt{caption} for \texttt{caption/listentry} writes the list entry with
 %   |\caption@addcontentsline|.
 % \item Our plug \texttt{caption} for \texttt{caption/typeset} does the rest of what
@@ -2128,15 +2129,21 @@
 %  |\caption{}| gives |\relax|, so a list entry is made, |\caption[]{|\ldots|}| gives an empty
 %  one, so no list entry is made, and the option \opt{list-entry=heading} selects the caption
 %  text.
+% \changes{v3.8}{2026/10/06}{Remembers if we have told the kernel not to step the counter (PoC)}
+%  We also remember in |\caption@client@ifownnostep| whether we have told the kernel not to
+%  step the counter (see |\caption@client@nostep|): other code in this hook can do the same
+%  (e.g.~for a continued float of its own), and then our \pkg{hyperref} anchor needs a
+%  unique name (see |\caption@client@makecurrentHref|).
 %    \begin{macrocode}
 \newcommand\caption@client@before[4]{%
   \caption@checkgrouplevel\@empty\caption
   \IfBooleanTF{#2}%
     {\caption@startrue}%
     {\@nameuse{donemaincaptiontrue}% Support of the memoir document class
+     \let\caption@client@ifownnostep\@secondoftwo
      \caption@ifrefstepcounter
        {\caption@prepare@stepcounter{#1}\caption@client@prestep{#1}}%
-       {\@captionstepfalse}% Suppress incrementation of counter
+       {\caption@client@nostep}% Suppress incrementation of counter
      \caption@client@settarget{#1}%
      \IfNoValueTF{#3}%
        {\caption@iftokens{#4}%
@@ -2146,6 +2153,23 @@
           {\def\caption@client@list{#4}}%
           {\def\caption@client@list{#3}}}}}
 %    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@nostep}
+% \begin{macro}{\caption@client@ifownnostep}
+% \changes{v3.8}{2026/10/06}{These macros added (PoC)}
+%  |\caption@client@nostep| tells the plug of the socket \texttt{caption/step} not to step
+%  the counter, because we have decided so (|\continuedfloat|, a caption after sub-captions
+%  placed above) or have stepped it ourselves (see |\caption@client@prestep|), and
+%  remembers this in |\caption@client@ifownnostep|\marg{true}\marg{false} (locally; it is
+%  set false by |\caption@client@before| first, and is false outside of captions).
+%    \begin{macrocode}
+\newcommand*\caption@client@nostep{%
+  \@captionstepfalse
+  \let\caption@client@ifownnostep\@firstoftwo}
+\let\caption@client@ifownnostep\@secondoftwo
+%    \end{macrocode}
+% \end{macro}
 % \end{macro}
 %
 % \begin{macro}{\caption@client@prestep}
@@ -2169,7 +2193,7 @@
         \ifx\refstepcounter\refsteponlycounter
           \if@ccflag
             \refsteponlycounter{#1}%
-            \@captionstepfalse
+            \caption@client@nostep
           \fi
         \fi}%
     }{}}%
@@ -4673,6 +4697,58 @@
 %    \end{macrocode}
 %    \begin{macrocode}
     \newcommand*\caption@makecurrentHref{\hyper@makecurrent}%
+%    \end{macrocode}
+% \end{macro}
+%
+% \begin{macro}{\caption@client@makecurrentHref}
+% \changes{v3.8}{2026/10/06}{This macro added (PoC)}
+%  |\caption@client@makecurrentHref|\marg{type}\par
+%  If we use the caption interface of the kernel, other code can tell the kernel in the hook
+%  \texttt{caption/before} not to step the counter (|\@captionstepfalse|, e.g.~for a
+%  continued float of its own). Since we have told the plug of the socket
+%  \texttt{caption/step} not to make a link target (see |\caption@client@settarget|), our
+%  anchor made by |\hyper@makecurrent| would then get the name of the caption which has
+%  stepped the counter last, i.e.~a second destination with the same name, and links to
+%  it would lead to the first caption. (This happens if |\caption@start| has not made an
+%  anchor with a unique name \texttt{\meta{type}.caption.\meta{number}} before, in which case
+%  |\caption@makecurrentHref| is not this macro: outside floats with |\captionof| or with a
+%  |\caption| for which |\@captype| has been defined by hand, and inside floats not handled by
+%  \texttt{latex-lab} if the option \opt{hypcap} is not active.) In this case we give
+%  |\theH|\meta{type} the same unique suffix
+%  |*|\meta{n} as the kernel does for its own target (with |\@caption@uniqueH|, so the
+%  names are counted together with the kernel's, e.g.~\texttt{figure.3*1}), and restore
+%  |\theH|\meta{type} afterwards. If we have decided ourselves that the counter should not
+%  be stepped (see |\caption@client@nostep|), nothing changes: our |\continuedfloat| has
+%  already given |\theH|\meta{type} a suffix of its own. (Older kernels with the caption
+%  interface but without |\@caption@uniqueH| do not exist, but we make sure that we use
+%  our own unique name there: \texttt{\meta{type}.caption.\meta{number}}, as
+%  |\caption@makestart| does.)
+%    \begin{macrocode}
+    \caption@ifclient{%
+      \def\caption@makecurrentHref{\caption@client@makecurrentHref}%
+      \def\caption@client@makecurrentHref#1{%
+        \if@captionstep
+          \expandafter\@firstoftwo
+        \else
+          \expandafter\caption@client@ifownnostep
+        \fi
+          {\hyper@makecurrent{#1}}%
+          {\caption@client@uniqueHref{#1}}}%
+      \caption@ifundefined\@caption@uniqueH{%
+        \def\caption@client@uniqueHref{\caption@makestart}%
+      }{%
+        \def\caption@client@uniqueHref#1{%
+          \ifcsname theH#1\endcsname
+            \expandafter\let\expandafter\caption@client@savedH
+              \csname theH#1\endcsname
+          \else
+            \let\caption@client@savedH\@undefined
+          \fi
+          \@caption@uniqueH{#1}%
+          \hyper@makecurrent{#1}%
+          \expandafter\let\csname theH#1\endcsname\caption@client@savedH}%
+      }%
+    }{}%
 %    \end{macrocode}
 % \end{macro}
 %
