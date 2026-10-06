@@ -1,0 +1,80 @@
+From 6a4559e8caa41e03ade955c4b1f18be346c369a3 Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 00:47:26 +0200
+Subject: [PATCH 16/32] (b) v2, part b-3: documentation of \caption* for users
+
+Review findings F4, N2 and N6 of round 1:
+
+- The usrguide draft said that \caption* gives "no link target for a
+  \label". In fact \@currentlabel and \@currentHref are unchanged, so a
+  \label after \caption* refers to the last numbered object, as after
+  \section* (the kernel does not change that, for consistency with
+  \section*); usrguide and ltfloat.dtx now say so and advise against a
+  \label there.
+- usrguide mentions captcont, whose \caption* is a numbered caption
+  without list entry.
+- The usrguide section carries a source comment: it should only be
+  published together with hyperref support (hyperref not replacing
+  \caption on kernels with the caption interface), since with hyperref
+  without \DocumentMetadata \caption* still gives the old output.
+---
+ base/doc/usrguide.tex | 16 ++++++++++++----
+ base/ltfloat.dtx      |  4 +++-
+ 2 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/base/doc/usrguide.tex b/base/doc/usrguide.tex
+index b36020d67..229cf6923 100644
+--- a/base/doc/usrguide.tex
++++ b/base/doc/usrguide.tex
+@@ -1524,6 +1524,11 @@ respectively
+ \end{itemize}
+ The naming here follows the pattern established by OpenType math parameters.
+ 
++% DRAFT (proposal (b) v2): publish this section only together with
++% support in hyperref (hyperref should not replace \caption on kernels
++% with the caption interface, i.e., \hyper@nopatch@caption when
++% \@kernel@caption is defined). Until then \caption* gives the old output
++% with hyperref without \DocumentMetadata, the most common setup.
+ \section{Captions without a number}
+ 
+ \begin{decl}
+@@ -1532,9 +1537,11 @@ The naming here follows the pattern established by OpenType math parameters.
+ Where \cs{caption} can be used (inside a float, for example), \cs{caption*}
+ typesets \meta{text} as a caption without a label: the counter of the float
+ is not stepped, nothing is written to the list of figures, tables, etc., and
+-there is no number and no link target for a \cs{label}. The optional argument
+-is accepted for symmetry with \cs{caption}; the kernel does not use it, but
+-packages may.
++no link target is made. As after \cs{section*}, a \cs{label} after
++\cs{caption*} refers to the last numbered object before it (for example an
++earlier caption in the same float, or the current section), so do not use
++\cs{label} there. The optional argument is accepted for symmetry with
++\cs{caption}; the kernel does not use it, but packages may.
+ 
+ The caption has the layout of the document class. The standard classes and
+ many others omit the label and its separator (a colon or a period). A class
+@@ -1549,7 +1556,8 @@ without \cs{DocumentMetadata} and \pkg{beamer}) do not know
+ \cs{caption*} yet: with them \verb|\caption*{Text}| gives, as before, a
+ numbered caption with the text `*' and a list entry, followed by `Text'.
+ With \pkg{float} the kernel definition is used (also for floats restyled
+-by \pkg{float}).
++by \pkg{float}). The \pkg{captcont} package has a \cs{caption*} of its own,
++which gives a numbered caption without list entry.
+ The \pkg{caption} package supports \cs{caption*} with all of them.
+ 
+ \section{Support for problem solving}
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 6ecdb34dd..205e22b2b 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -850,7 +850,9 @@
+ %
+ %    The star form \cs{caption*} typesets a caption without a label:
+ %    it does not step the counter, sets no target and writes no list
+-%    entry. An optional argument is accepted; it is only passed to the
++%    entry. \cs{@currentlabel} and \cs{@currentHref} are not changed, so,
++%    as after \cs{section*}, a \cs{label} after \cs{caption*} refers to
++%    the last numbered object before it. An optional argument is accepted; it is only passed to the
+ %    hook \hook{caption/before} (and to \cs{@caption} as list text, which
+ %    the kernel \cs{@caption} only passes to \hook{caption/prepare}).
+ % \changes{v1.2k}{2026/10/05}

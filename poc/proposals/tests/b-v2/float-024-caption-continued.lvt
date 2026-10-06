@@ -1,0 +1,97 @@
+% Test of the caption interface (proposal (b)) with the real plugs of
+% hyperref, without \DocumentMetadata (so without float targets of
+% latex-lab; it is here because base tests cannot load hyperref):
+% hyperref is told not to replace \caption and \@caption
+% (\hyper@nopatch@caption, as with \DocumentMetadata), so the kernel
+% \caption and the hyperref plugs of refstepcounter/target and
+% \MakeLinkTarget are used.
+% A caption that does not step the counter (continued float) must not
+% make a second target with the name of the last stepped caption (that
+% gave "destination with the same identifier" and links to the first
+% caption): it gets a target with a unique name, and its \label
+% records the number of the counter and that target. \caption* makes
+% no target and no list entry. A class that replaces \@caption and makes
+% its own target from \theH<type> gets a unique name for \caption* and
+% continued captions as well.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+\def\hyper@nopatch@caption{}
+\makeatother
+\usepackage{hyperref}
+\makeatletter
+\newif\ifcontinued
+\AddToHookWithArguments{caption/before}[test]{%
+  \ifcontinued \@captionstepfalse \fi
+  \csname testbefore\endcsname}
+\def\targetoff{\@captiontargetfalse}
+\def\showhref#1{\typeout{#1: label=\@currentlabel, href=\@currentHref}}
+\def\showref#1{\typeout{#1: \expandafter\meaning\csname r@#1\endcsname}}
+\def\setcaptype#1{\def\@captype{#1}}
+% an \@caption replaced by a class that makes its own target (as mwcls
+% does with hyperref): \caption* and continued captions must not give it
+% the name of the last stepped caption
+\long\def\classcaption#1[#2]#3{%
+  \hyper@makecurrent{\@captype}%
+  \par\addcontentsline{\csname ext@#1\endcsname}{#1}%
+    {\protect\numberline{\csname the#1\endcsname.}{\ignorespaces #2}}%
+  \begingroup\@parboxrestore\normalsize
+    \@makecaption{\csname fnum@#1\endcsname}%
+      {\ignorespaces\Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#3}%
+    \par
+  \endgroup}
+\def\useclasscaption{\let\@caption\classcaption}
+\makeatother
+\begin{document}
+\START
+\TEST{captions outside of floats}{%
+  \begin{minipage}{5cm}
+    \setcaptype{figure}%
+    \caption{First}\label{a}\showhref{First}
+    \continuedtrue
+    \caption{First, continued}\label{ac}\showhref{Continued}
+    \caption{First, continued again}\label{acc}\showhref{Continued again}
+    \continuedfalse
+    \caption{Second}\label{b}\showhref{Second}
+  \end{minipage}}
+\TEST{captions in floats}{%
+  \begin{figure}[h]
+    \caption{Third}\label{c}\showhref{Third}
+  \end{figure}
+  \begin{figure}[h]
+    \continuedtrue
+    \caption{Third, continued}\label{cc}\showhref{Continued}
+  \end{figure}
+  \begin{figure}[h]
+    \caption{Fourth}\label{d}\showhref{Fourth}
+  \end{figure}}
+\TEST{no step and no target: href unchanged}{%
+  \begin{figure}[h]
+    \continuedtrue
+    \let\testbefore\targetoff
+    \caption{Fourth, continued, no target}\showhref{No target}
+  \end{figure}}
+\TEST{caption*: no step, no target}{%
+  \begin{figure}[h]
+    \caption*{Starred}\showhref{Starred}
+  \end{figure}}
+\TEST{class @caption with its own target}{%
+  \begin{figure}[h]
+    \caption{Fifth}\label{e}\showhref{Fifth}
+  \end{figure}
+  \begin{figure}[h]
+    \useclasscaption
+    \caption*{Fifth, starred}\label{es}\showhref{Starred}
+  \end{figure}
+  \begin{figure}[h]
+    \useclasscaption
+    \continuedtrue
+    \caption{Fifth, continued}\label{ec}\showhref{Continued}
+  \end{figure}}
+\TEST{labels}{%
+  \showref{a}\showref{ac}\showref{acc}\showref{b}%
+  \showref{c}\showref{cc}\showref{d}%
+  \showref{e}\showref{es}\showref{ec}}
+\TEST{destinations (no duplicate)}{%
+  \clearpage}
+\END

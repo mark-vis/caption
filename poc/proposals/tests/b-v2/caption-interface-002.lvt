@@ -1,0 +1,38 @@
+% Roll-back of the caption interface (proposal (b)): with latexrelease
+% 2026-06-01 the old \caption and \@caption are back, the kernel copies
+% \@kernel@caption, \@kernel@@caption, \@kernel@caption@reset and
+% \@kernel@caption@unique are undefined, the hooks
+% are not executed, and the guarded declarations give no errors.
+\RequirePackage[2026-06-01]{latexrelease}
+\documentclass{article}
+\input{regression-test}
+\makeatletter
+\def\showcopies{%
+  \typeout{\string\@kernel@caption: \ifdefined\@kernel@caption
+    defined\else undefined\fi, \string\@kernel@@caption:
+    \ifdefined\@kernel@@caption defined\else undefined\fi,
+    \string\@kernel@caption@reset:
+    \ifdefined\@kernel@caption@reset defined\else undefined\fi,
+    \string\@kernel@caption@unique:
+    \ifdefined\@kernel@caption@unique defined\else undefined\fi}}
+\AddToHookWithArguments{caption/before}{\typeout{BEFORE: #1}}
+\AddToHookWithArguments{caption/prepare}{\typeout{PREPARE: #1}}
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}]}%
+  \ORImakecaption{#1}{#2}}
+\makeatother
+\begin{document}
+\START
+\TEST{kernel copies after the roll-back}{\showcopies}
+\TEST{caption after the roll-back: old code, no hooks}{%
+  \begin{figure}
+    \caption{Normal}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{caption* after the roll-back: the star is the caption text}{%
+  \begin{figure}
+    \caption*{Star}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\END

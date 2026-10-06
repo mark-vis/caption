@@ -1,6 +1,6 @@
 # What caption needs from the kernel: four proposals
 
-**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept). Written against latex2e `develop` at 829e56a15
+**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06. Written against latex2e `develop` at 829e56a15
 (format date 2026-11-01, pre-release). caption references are to branch
 `fixes-combined` of https://github.com/mark-vis/caption (caption v3.6p, caption3 v2.4e),
 other packages and classes as in TeX Live 2026. All files mentioned are in
@@ -34,7 +34,7 @@ combined patch").
 | | Proposal | Kernel / latex-lab change | caption side | Size (.dtx lines) | Depends on |
 |---|---|---|---|---|---|
 | (a) | Hooks at the start and end of every float | ltfloat: mirrored hook pair `float/begin`/`float/end` (2 args), used in `\@xfloat`, `\@xdblfloat`, `\@endfloatbox`; latex-lab-float: the same call in its copy of `\@xfloat` | caption.sty uses the hook instead of wrapping `\@xfloat`/`\@xdblfloat`; a checking wrapper stays for classes that bypass the kernel code | +202/−7 (about 25 lines of code; the rest is `latexrelease` copies and documentation) | — |
-| (b) | A caption interface: `\caption*`, list entries, sub-captions | ltfloat: `\caption*`, sockets `caption/step` and `caption/listentry`, `\if@captionstar`; classes: no ": " for an empty label; lttagging: tagging sockets `subfloat/begin`/`subfloat/end`; latex-lab-float: plugs instead of redefining `\caption` | caption plugs `caption/listentry`, prepares `\ContinuedFloat` in `cmd/caption/before`, subcaption uses the sub-float sockets; no more redefinition of `\caption`/`\@caption` | +249/−42 | — |
+| (b) | A caption interface: `\caption*`, list entries, sub-captions (version 2) | ltfloat: `\caption` reads its own arguments, `\caption*`, hooks `caption/before`/`caption/prepare`, sockets `caption/step`, `caption/listentry` (3 args), `caption/typeset`, switches `\if@captionstar`/`\if@captionstep`/`\if@captiontarget`, unique targets for unstepped captions, `\@kernel@caption@reset`, `\@kernel@caption@unique`, kernel copies; lttagging: `subfloat/box` (and v1's `subfloat/begin`/`end`); latex-lab-float: float target per type, no own `\caption`; first aid for float.sty; classes unchanged | caption becomes a client in every setup: restores the kernel copies, decides in the hooks, plugs `caption/listentry` and `caption/typeset`; subcaption uses `subfloat/box` | v1 +249/−42, then v2 +975/−89 in ltfloat.dtx, +153/−43 in latex-lab-float | — |
 | (c) | caption3's label format as a plug for `caption/label` | latex-lab-float: documented contract for `caption/label`, new socket `caption/separator`, label tagging sockets usable inside a paragraph, the existing hook label `latex-lab-testphase-float` of latex-lab's `\@makecaption` code documented (not renamed); latex-lab-listings; lttagging documentation | caption3 provides plugs `caption3`; caption.sty keeps its own `\@makecaption` with a `voids` rule against that label and tags the label with the kernel sockets | +102/−17 | (b) |
 | (d) | Registering new float types for tagging | lttagging: `\DeclareTaggingFloatType`, the list of float types moves there; latex-lab-float: `float/new` uses it, captions of undeclared types fall back to generic names; latex-lab-namespace: `float/generic/caption`, `float/generic/label` | newfloat (a separate package, see (d)) registers each new type; caption's `\DeclareCaptionType` gets it through newfloat | +97/−23, plus +30 in newfloat | — |
 
@@ -45,10 +45,12 @@ combined patch").
    newfloat's maintainer, not for the LaTeX team.
 2. (a) and the kernel part of (d): small, independent of each other and of (b)/(c).
 3. (b): the largest change, and the one with the most open questions (classes,
-   template-based captions).
-4. (c), on top of (b).
+   hyperref, template-based captions). It is being split into parts ((b)4); its optional
+   part O2 is small and can go early.
+4. (c), on top of (b) (in the split: after b-3).
 
-The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b), (c).
+The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b) version 1, (c);
+(b) version 2 is the further series in `patches/b-v2/` on top of it.
 
 ### Release dates and versions
 
@@ -84,22 +86,31 @@ No two proposals define the same name. Some new names sit next to existing ones:
 | `subfloat/begin`, `subfloat/end` | tagging sockets, 0 arguments | new (b) | inside the box of a sub-float |
 | `caption/begin`, `caption/end` | tagging sockets | existing | around the caption, unchanged |
 | `caption/label/begin`, `caption/label/end` | tagging sockets | existing; (c) lets them work inside a paragraph | around the label |
-| `caption/step`, `caption/listentry` | sockets | new (b) | `\caption`, `\@caption` |
+| `caption/step`, `caption/listentry` | sockets | new (b); `caption/listentry` has 3 arguments in v2 | `\caption`, `\@caption` |
+| `caption/before`, `caption/prepare` | hooks, 4 arguments | new (b) v2 | after the arguments are read; in `\@caption` |
+| `caption/typeset` | socket, 3 arguments | new (b) v2 | in `\@caption`, at float level |
 | `caption/label` | socket (latex-lab) | existing; (c) documents its contract | label text |
 | `caption/separator` | socket (latex-lab) | new (c) | after the label |
-| `cmd/caption/before` | generic hook | existing; (b) uses it for `\ContinuedFloat` | start of `\caption` |
+| `cmd/caption/before` | generic hook | existing; (b) v1 used it for `\ContinuedFloat`, v2 uses `caption/before` | start of `\caption` |
 | `cmd/@makecaption/before` | hook (latex-lab) | existing | start of latex-lab's `\@makecaption` |
 | `latex-lab-testphase-float` | label of a `begindocument` hook chunk | existing (the package's default label); (c) documents it and keeps it | latex-lab's redefinition of `\@makecaption` |
 | `\DeclareTaggingFloatType` | document-level command | new (d) | preamble |
 | `float/<type>/sub`, `float/generic/sub` | structure names (`Part`) | new (b) | sub-floats |
 | `float/generic/caption`, `float/generic/label` | structure names | new (d) | captions in floats of undeclared types |
 | `\if@captionstar` | legacy boolean | new (b) | during `\caption*` |
+| `\if@captionstep`, `\if@captiontarget` | legacy booleans | new (b) v2 | set in `caption/before`, read by `caption/step` plugs |
+| `\@caption@nolabel` | robust command | new (b) v2 | the label of `\caption*` |
+| `\@kernel@caption`, `\@kernel@@caption`, `\@kernel@caption@reset`, `\@kernel@caption@unique` | copies and commands for clients | new (b) v2 | availability test; end of `\caption*` settings; unique target names |
+| `\@floatHref@<type>` | latex-lab state, documented | new (b) v2 | target of the current float |
+| `subfloat/box` | tagging socket, 0 arguments | new (b) v2 | before the box of a sub-float |
 
 The hooks of (a) have the same names as the existing tagging sockets. Hooks and sockets
 are separate name spaces, and `para/begin`/`para/end` already exist as both. If this is
 confusing, (a) could use `float/box/begin`/`float/box/end` instead (open question (a)1).
-(b) deliberately adds no hooks named `caption/before`/`caption/after`, which would be
-easy to confuse with `cmd/caption/before` and the tagging socket `caption/begin`.
+Version 1 of (b) deliberately added no hooks named `caption/before`/`caption/after`;
+version 2 adds `caption/before` and `caption/prepare`, because the client needed a point
+after the star and the arguments are read (open question (b)2 asks about the names). The
+names that version 2 adds are listed in (b)2.
 
 ### How the series differs from the stand-alone patches
 
@@ -532,446 +543,216 @@ entry is written.
 
 ---
 
-## (b) A caption interface: `\caption*`, list entries, sub-captions
+## (b) A caption interface: `\caption*`, list entries, sub-captions (version 2)
 
-Patches: `poc/proposals/patches/standalone/b-caption-interface.patch` (stand-alone) and
-series 0003 (on top of (a) and (d)). Tests: `poc/proposals/tests/caption-interface-001.*`,
-`poc/proposals/tests/float-020-caption-interface.*`. Client sketches:
-`poc/proposals/mwe/captionclient.sty`, `mwe/caption-excerpt.tex`.
+> **Version 2, 2026-10-06.** This replaces version 1 of (b) (2026-10-04; the old text is in the
+> git history of this file, and its code is still series 0003, on which version 2 is built). The
+> long working version with all measurements and review findings is `PROPOSAL-b-v2.md` in the
+> caption branch `poc-b2` (folder `poc-b2/`); `poc/PROPOSALS-b-v2-draft.md` is this section on
+> its own.
+
+Patches (in `poc/proposals/patches/b-v2/`):
+- `series/0001-0028`: version 2 as 28 commits on top of the series (a), (d), (b) v1, (c)
+  (`patches/series/0001-0004`); `kernel-b2.patch` is the same as one diff. Together they give
+  latex2e branch `poc-b2` (head 37cb2bcd7) on develop 829e56a15.
+- `on-develop-2a9bfe9d6/`: all 32 commits replayed on develop 2a9bfe9d6 (2026-10-06), because
+  the 829e56a15 patches now conflict in `required/latex-lab/changes.txt`.
+- `caption-client.diff`: caption as a client (against the caption PoC v3.8, a518ec6).
+
+Tests (copies in `poc/proposals/tests/b-v2/`): base `caption-interface-001` (32 cases), `-002`
+(roll-back), `-003` (unique names); latex-lab `float-020`, `float-023`, `float-024`; firstaid
+`firstaid-float-caption`, `-hyperref`.
+
+**Not yet a reviewable series.** Version 2 is built on version 1 and then rewrites much of it,
+and its core is one large commit. The split into the parts of section 4 has started on current
+develop ((a), (d), O2 are done); until it is finished, please read the patches as a prototype of
+the interface, not as the PR.
 
 ### 1. Problem
 
-The kernel `\caption` and `\@caption` (base/ltfloat.dtx:240-249 and 259-292) have no
-entry points. `\refstepcounter\@captype` and
-`\addcontentsline{\csname ext@#1\endcsname}...` are hard-coded, and there is no star
-form. So every package that needs a slightly different caption redefines both commands,
-and the last definition wins:
+The kernel `\caption` and `\@caption` have no entry points: `\refstepcounter\@captype` and the
+`\addcontentsline` are hard-coded, and there is no star form. So caption.sty, latex-lab-float,
+hyperref (without `\DocumentMetadata`), float.sty, memoir, beamer, rlbabel and classes such as
+llncs each redefine one or both, and the last definition wins. With tagging, caption's and
+latex-lab's definitions overwrite each other. On develop, `\caption*{Starred}` prints
+"Figure 2: \*", then "Starred", and writes the LoF entry "2 \*".
 
-- **caption.sty** redefines `\caption` and `\@caption` at `\begin{document}`
-  (caption.dtx:1670-1706), together with the `\@xfloat` wrapping of (a). The comment
-  there says why: "Some packages (like the hyperref package for example) redefines
-  \caption and \@caption, too. So we have to use \AtBeginDocument here, so we can make
-  sure our definition is the one which will be valid at last." Its own versions
-  (`\caption@caption`, caption.dtx:1508, and `\caption@@caption`, :1553) add:
-  - `\caption*`;
-  - list-entry control: `\caption[]{...}` gives no entry, and there are `list=false`,
-    `\captionlistentry`, and sub-entries written after the main entry. All of this lives
-    in caption3's `\caption@addcontentsline` (caption3.dtx:3894);
-  - `\ContinuedFloat` (the counter is not stepped, caption.dtx:2484-2505);
-  - hypcap anchors;
-  - sub-captions (subcaption replaces `\caption` locally inside `subfigure`).
-- **latex-lab-float** redefines `\caption` when it is loaded (latex-lab-float.dtx:777-801).
-  It does this only to change the counter step: `\@kernel@refstepcounter\@captype` plus
-  `\xdef\@currentHref{\@captype.struct.\@current@float@struct}`. It also replaces
-  `\@makecaption` at `begindocument` (:809-850; that is the subject of (c)).
-- **hyperref** without `\DocumentMetadata` redefines `\caption` and `\@caption` for its
-  anchors (hyperref.sty:7281-7343). With `\DocumentMetadata` it does not
-  (`\hyper@nopatch@caption`, hyperref.sty:109-121).
+Version 1 (`\caption*`, sockets `caption/step` and `caption/listentry`, tagging sockets
+`subfloat/begin|end`) was implemented in caption as a real client. It was not enough:
+- the client could use it in only 290 of 488 test runs (float.sty, classic hyperref, memoir,
+  beamer and rlbabel replace `\caption`), and had to test the *meaning* of the macros;
+- there was no point after the star and the arguments are known, so caption still intercepted
+  `\stepcounter` and `\@dblarg` (`\caption{}` and `\caption[]{x}` could not be told apart);
+- no point at float level (caption's per-caption setup needs the float's group and
+  `\linewidth`);
+- no way to say "do not step" or "no target", so continued captions made duplicate
+  destinations;
+- sub-floats were one level too deep (`Div` > `Part`).
 
-Compiled with TL 2026:
+Two latex-lab bugs came up as well: after `float/split`, and for a `table` caption inside a
+figure, the caption target does not exist ("has been referenced but does not exist").
 
-- `mwe/b-kernel.tex` (kernel only): `\caption*{Unnumbered caption}` prints
-  "Figure 1: \*" and then the text as a normal paragraph, and the LoF gets the entry
-  "1 \*". `\caption[]{...}` writes an empty LoF line (`\numberline {2}{\ignorespaces }`).
-- `mwe/b-tagging.tex` (caption 3.6 + subcaption + hyperref, `\DocumentMetadata{tagging=on}`):
-  - At `\begin{document}`, `\caption` and `\@caption` are caption's, but `\@makecaption`
-    is latex-lab's.
-  - latex-lab's counter/target code is gone, so tagpdf warns "Destination
-    'figure.caption.2' has no related structure" (tagging-project #85).
-  - `\caption*{Unnumbered}` prints "Figure 1: Unnumbered", because latex-lab's
-    `\@makecaption` does not know caption's star flag.
-  - `labelsep=period` and `labelfont=bf` are lost.
+### 2. Interface
 
-Sub-figures have no kernel support at all: "Subfigures and subcaptions are currently not
-handled, but will be implemented as simple `Part` with their own `Caption`"
-(latex-lab-float.dtx:99-100).
+For `\caption[o]{t}` in a float (type = the expansion of `\@captype`):
 
-The long-term plan is template-based captions. ltnews43.tex:346-357 says the new context
-mechanism "is going to be used when we implement caption handling using the template
-mechanism", and latex-lab-context.dtx:673-679 has TODOs for it. ltnews43.tex:449-464
-shows a possible signature, `\DeclareDocumentCommand\caption{s ={short-title} +O{#3} +m}`.
-It explains that a given but blank `[]` becomes an empty keyval list, and "For cases
-where a classical `[]` means something is explicitly empty, adding an empty brace group
-(`[{}]`) will work". caption has always documented `\caption[]{...}` as "no list entry".
-Under that signature, `[]` would no longer mean that; users would have to write `[{}]`.
+| step | where | what | for `\caption*` |
+|---|---|---|---|
+| 0 | `\caption` | generic hook `cmd/caption/before` (unchanged) | yes |
+| 1 | `\caption` | outside a float: error; then the star and both arguments are skipped (O2) | yes |
+| 2 | `\caption` | `\@kernel@caption@reset`: end the settings of an earlier `\caption*` (step 5a), switches to their defaults | yes |
+| 3 | `\caption` | read `*`, `[o]` (absent: `\NoValue`) and `{t}` | yes |
+| 4 | `\caption` | hook **`caption/before`** {type}{`\BooleanTrue`/`\BooleanFalse`}{o}{t} | yes |
+| 5 | `\caption` | socket **`caption/step`** {type} | no |
+| 5a | `\caption` | if the counter was not stepped: settings for a replaced `\@caption` | yes |
+| 6 | `\caption` | `\@caption{type}[o or t]{t}` (still the last token) | yes |
+| 7 | `\@caption` | undo 5a, `\par` | yes |
+| 8 | `\@caption` | hook **`caption/prepare`** {type}{star}{list text}{t} | yes |
+| 9 | `\@caption` | socket **`caption/listentry`** {type}{list text}{t} | no |
+| 10 | `\@caption` | socket **`caption/typeset`** {type}{star}{t}; the kernel plug calls `\@makecaption` | yes |
+| 11 | `\@caption` | `\@kernel@caption@reset` | yes |
 
-### 2. Proposed interface
+With the default plugs and empty hooks, `\caption` gives the same output as today.
 
-This is a small layer on top of the current code. Each package gets one place to plug
-in, and nobody has to redefine `\caption` or `\@caption` any more. New:
+**New names.**
 
-| Name | Kind, arguments | Where it is used | Default | Expected plug owner |
-|---|---|---|---|---|
-| `\caption*` | kernel star form | `\caption` | no counter step, no target, no list entry; `\@makecaption{}{text}` | — |
-| `\if@captionstar` | legacy boolean | true from `\caption*` until the end of `\@caption` | false | read by `\@makecaption` |
-| `caption/listentry` | socket, 2 args (type, list text) | `\@caption`, before the group, not for `\caption*` | plug `kernel` = today's `\addcontentsline` | caption |
-| `caption/step` | socket, 1 arg (counter) | `\caption`, not for `\caption*` | plug `kernel` = `\refstepcounter{#1}` | latex-lab only |
-| `subfloat/begin`, `subfloat/end` | tagging sockets, 0 args | used by sub-float packages (subcaption) | latex-lab: structure `float/<type>/sub` (role `Part`) | latex-lab only |
+| name | kind | default / use |
+|---|---|---|
+| `\caption*` | kernel star form | no step, no target, no list entry; `\@makecaption{\@caption@nolabel}{text}` with `\if@captionstar` true |
+| `caption/before`, `caption/prepare` | hooks, 4 arguments | empty; caption (step and list decisions; anchor), possibly hyperref, nameref, memoir |
+| `caption/step` | socket, 1 argument | `\@kernel@caption@step`; latex-lab no longer plugs it |
+| `caption/listentry` | socket, 3 arguments (v1: 2) | today's `\addcontentsline` |
+| `caption/typeset` | socket, 3 arguments | `\@kernel@caption@typeset` (today's code, at float level) |
+| `\if@captionstar`, `\if@captionstep`, `\if@captiontarget` | legacy switches | false, true, true; the last two may be set false in `caption/before` |
+| `\@caption@nolabel` | robust command | the label of `\caption*`: typesets nothing |
+| `\@kernel@caption`, `\@kernel@@caption` | copies of `\caption`, `\@caption` | availability test (`\ifdefined\@kernel@caption`); a client may restore them |
+| `\@kernel@caption@reset` | command, 0 arguments | ends the settings of a `\caption*`; for code that keeps its own numbered `\caption` and passes only `\caption*` to the kernel |
+| `\@kernel@caption@unique` | command: {counter}{code} | runs code while `\theH<counter>` has the next unique suffix `*<n>`, then restores it; no group; for code that makes the target of an unstepped caption itself |
+| `\@floatHref@<type>` | latex-lab state, documented | the target of the current float of that type |
+| `subfloat/box` | tagging socket, 0 arguments | the next `minipage`/`\parbox` is a sub-float (`Part` instead of `Div`) |
 
-Existing points that the proposal relies on and does not change:
+The three `\@kernel@...` commands are defined in one release block, so a `latexrelease`
+roll-back undefines them; the hooks, sockets and switches stay defined (unused), so
+`\IfHookExistsTF` is not a valid test.
 
-- the generic hook `cmd/caption/before`, which runs before the counter step (caption
-  prepares `\ContinuedFloat` there);
-- the hook `cmd/@makecaption/before`{2} (latex-lab-float.dtx:809), for formatting code;
-- the sockets `refstepcounter` and `refstepcounter/target` (ltxref.dtx:469, 482).
+**Contracts.**
+- **Step and target.** A `caption/step` plug wraps everything in the socket `refstepcounter`,
+  steps only if `\if@captionstep`, always sets `\@currentcounter` and `\@currentlabel`, and only
+  if `\if@captiontarget` uses `\@floatHref@<type>` or makes a target (with `recordtarget`). With
+  `\@captiontargetfalse` nothing is recorded. This replaces caption's use of `\if@skiphyperref`.
+- **Captions that do not step** (continued floats) get a target with a unique name,
+  `<counter>.<\theH<counter>>*<n>` (`figure.1*1`), counted per name, or the float target inside
+  a tagged float. So there is no duplicate destination, and a `\label` points to the continued
+  caption itself.
+- **`\caption*`** does not step, makes no target and writes no list entry; `\@currentlabel`
+  stays as after `\section*`. The class's `\@makecaption` is called with `\if@captionstar` true
+  and the label `\@caption@nolabel`. Testing the switch is the only documented way for a class
+  to support `\caption*`. The standard classes are *not* changed: babel-french and caption3
+  recognise them by comparing `\@makecaption` with its standard definition.
+- **Separator removal (optional convenience).** For the many `\@makecaption` definitions that
+  do not test the switch, `\@caption@nolabel` removes a following `:`/`.` and spaces (also after
+  `\textbf{#1}` or `{\bfseries #1:}`), starts the paragraph by a rule (before mode-dependent
+  primitives and `\\`, `\newline`, `\@`), and warns once if something else is printed. About 70
+  lines; without it the contract still holds.
+- **A replaced `\@caption`** (llncs, mwcls and others; threeparttable defers it): for an
+  unstepped caption the kernel sets `\theH<type>` with the unique suffix, and for `\caption*`
+  also `\fnum@<type>` to the empty label and `\ext@<type>` to empty, until the next `\caption`
+  or the end of the group. Such classes then give a clean `\caption*` in their own layout.
+- **latex-lab.** Its `caption/step` plug goes; the float target is stored per type at the float
+  start and after `float/split` (fixes both bugs above); captions with an undefined
+  `\@captype` get `generic` structure names; `\caption*` uses `nolabel` plugs of
+  `caption/label/begin|end`; latex-lab's `\@makecaption` tests `\if@captionstar`.
+- **float.sty** (first aid, only for v1.3d): float's numbered `\caption` is kept, `\caption*`
+  goes to the kernel with float's style for that caption.
+- **Optional:** O1, `\@caption` sets `\@currentlabelname` (so `\nameref` to a caption gives the
+  caption, not the last heading; might better live in nameref through `caption/prepare`); O2,
+  skip the arguments after "`\caption` outside float".
 
-Details:
+### 3. Compatibility and limits
 
-- `\caption*[x]{text}`: the optional argument is accepted and ignored.
-- `\@makecaption` gets an empty first argument for `\caption*`. The standard classes
-  (classes.dtx) then drop the ": " (`\if\relax\detokenize{#1}\relax`). latex-lab's
-  `\@makecaption` tests `\if@captionstar` and makes the label socket `noop`, as
-  latex-lab-listings already does for listing titles (latex-lab-listings.dtx:203-209).
-  With (c), it also makes `caption/separator` `noop`. The label tagging sockets get new
-  plugs `nolabel` (no `Lbl`; they start the paragraph without para tagging, as the
-  default plugs do). Changed 2026-10-06: the first version made them `noop`, so a
-  `\caption*` wider than the line was started as a paragraph by its text after the
-  `para/begin` socket: a `P` inside a `P` and the tagpdf error "para hooks differ" at the
-  end, in any tagged document (`float-028-caption-star-wide`, see section 4).
-- `caption/listentry` gets the optional argument exactly as given. The kernel plug still
-  writes an empty entry for `[]` (no change); caption's plug writes none.
-- `caption/step` replaces latex-lab's redefinition of `\caption`. latex-lab's plug sets
-  the float target, except outside a float and inside a sub-float. There it runs the code
-  (plain `\refstepcounter`), as today outside floats. A sub-caption steps its own counter
-  with `\refstepcounter{sub<type>}` and does not use the socket.
-- The sub-float sockets give the structure `Part` > (`Caption`, content). `caption/begin`
-  already takes the parent structure number (lttagging.dtx:979-989), so a sub-caption
-  becomes the first kid of its `Part` without any other change. The structure names are
-  per type, like the other float names: `float/figure/sub`, `float/table/sub` and
-  `float/generic/sub` in latex-lab-namespace, and `float/<type>/sub` for new types. In the
-  stand-alone patch `float/new` declares it (latex-lab-float.dtx:286-292); together with
-  (d), `\DeclareTaggingFloatType` declares it, and types that are not declared use
-  `float/generic/sub`.
-- `\@xfloat`/`\end@float` and the tagging sockets `float/begin`/`float/end` are not
-  changed (the float begin hook is proposal (a)).
+- Without clients, output is unchanged (8 classes × 4 modes and 23 package documents against
+  develop), except `\caption*`, the latex-lab target fixes and, with O1, the third field of
+  `\newlabel`.
+- Captions no longer go through `\refstepcounter` (cleveref still works through the kernel's
+  `label` hook; checked). `\@kernel@caption@step` repeats its body.
+- Targets of unstepped captions are renamed (`figure.1*1`), also where a client had already
+  made them distinct (`.aux` and tagging data only).
+- **`\caption*` cannot reach** code that replaces `\caption`: classic hyperref, beamer, and
+  classes such as aastex701, mnras, tufte-book, uwthesis keep the old output. Two hyperref
+  sketches were tested (route only the star to `\@kernel@caption*`, or stop patching when
+  `\@kernel@caption` exists); beamer needs `\caption*` in its templates. KOMA, memoir, AMS and
+  babel-french print their separator with a warning; one `\if@captionstar` test each would fix
+  that. Of 85 TL classes that compile with pdfLaTeX, 50 give a clean `\caption*`.
+- Known gaps: `subfloat/box` needs a group around the box; O1 overwrites titles that memoir or
+  nameref sanitised; `\@kernel@caption@unique` must not be used between a `\caption*` handled by
+  a replaced `\@caption` and the next `\caption` (it loops); with hyperref's
+  `naturalnames=true`, captions left unstepped by other code still give duplicates.
+- Size: ltfloat.dtx code grows from 371 lines (develop) to 656 (all proposals with v2).
 
-**Why not the existing interfaces?**
+### 4. Parts (the planned PRs) and their state
 
-- *`refstepcounter` / `refstepcounter/target`.* `refstepcounter` wraps every
-  `\refstepcounter`. hyperref owns it (plugs `hyperref` and `hyperref/fixcleveref`,
-  hyperref.sty:6634-6645) and also owns `refstepcounter/target` (:6648-6665). latex-lab
-  needs a different target only for the one step in `\caption`. It would have to assign
-  its own plug just before that step, put hyperref's plug back afterwards, and pass every
-  other counter on to hyperref. That needs a hook around the step anyway, plus knowledge
-  of which plug to restore. A socket at the step itself is smaller. It has to be a normal
-  socket, not a tagging socket, because latex-lab also uses the float target when
-  tagging is not active. I tried a tagging socket first, and the existing test
-  `float-tagging-off` failed: the target became `figure.1` instead of `figure.struct.1`.
-- *`cmd/@makecaption/before`.* An earlier version of this draft added hooks
-  `caption/before` and `caption/after` around `\@makecaption`. They are not needed:
-  formatting code can use `cmd/@makecaption/before`, which asmeconf.cls, asmejour.cls,
-  mitthesis.cls and biblatex-apa already use. latex-lab can handle the star case in its
-  own `\@makecaption`. caption keeps its own `\@makecaption`, so it does its type options
-  there.
-- *`cmd/caption/before`.* It runs at the start of `\caption`, before the step. That is
-  exactly where caption has to prepare a continued float. So caption does not need to
-  own a step socket.
+| part | content | state |
+|---|---|---|
+| O2 | skip the arguments after "`\caption` outside float" | committed on develop 2a9bfe9d6 after (a) and (d); passes the full base suite, hook configs, firstaid, latex-lab float |
+| b-3 | `\caption` reads its arguments, `\caption*` with `\@caption@nolabel`, `caption/before`, `caption/step` with the switches and unique targets, replaced-`\@caption` settings, `\@kernel@caption@reset`, `\@kernel@caption@unique`, documentation (ltfloat, usrguide and clsguide drafts) | in progress |
+| b-3f | first aid: `\caption*` with float.sty | to split |
+| b-1 | latex-lab: float target per type, generic structure names (needs b-3's step plug) | to split |
+| b-4 | `caption/prepare`, 3-argument `caption/listentry` | to split |
+| (c) | (section (c)), after b-3 | to rebase |
+| b-5 | `caption/typeset`, the kernel copies | to split; open design question (RFC) |
+| b-6 | `subfloat/box` | to split; open design question for the tagging team (RFC) |
+| O1 | nameref title | to split, or to nameref |
 
-**Who owns which socket.** A socket has one plug, so a socket that several packages want
-to change only moves the "last definition wins" problem into the socket. The earlier
-draft had that problem: latex-lab, caption and (classic) hyperref would all have wanted
-the plug of a `caption/step` socket, and caption had to chain the previous plug. The
-design here avoids it:
+The current code (v1 series + 28 commits) passes, on its head: the full base suite in pdfTeX,
+XeTeX and LuaTeX (605 tests), all base configurations, firstaid, and all latex-lab CI
+configurations (the same differences as develop, all local: the `<PDF>` vs
+`<PDF version="2.0">` line of show-pdf-tags and similar).
+Every commit of the v1 series passes the same on its own.
 
-- `caption/step` belongs to the float code of the tagging project (latex-lab). caption
-  does not plug it.
-- `caption/listentry` is for a package that takes over list entries (in practice
-  caption).
-- `\ContinuedFloat` uses a hook, and hooks can have many users.
+### 5. How caption uses it
 
-What is left is caption's own technique for continued floats: a local, self-removing
-redefinition of `\stepcounter` (as in caption.dtx:2493-2505). A documented "do not step
-this caption" flag in the kernel would be cleaner (see the open questions).
-
-**Backward compatibility.**
-
-- Documents that do not use `\caption*` produce the same output. The `latexrelease`
-  blocks restore the old `\caption`/`\@caption`. The new sockets and `\if@captionstar`
-  are also declared, guarded, in the `latexrelease` part, so rolling forward works too.
-- `\caption*` itself is a visible change. Today the kernel prints "Figure 1: \*" and the
-  text. With the patch:
-  - the standard classes print just the text;
-  - classes that have their own `\@makecaption` or wrap the kernel `\caption` inherit the
-    new `\caption*`. The counter and the LoF are right, but they print the separator in
-    front of the text: memoir (memoir.cls:5953-5962 wraps `\caption`/`\@caption`) and
-    KOMA (scrartcl.cls:5710, own `\@makecaption`) give ": Starred", and amsart
-    (amsart.cls:1386) gives ". Starred". These classes would have to test
-    `\if@captionstar` or an empty first argument.
-- Packages that redefine `\caption`/`\@caption` (caption today, hyperref without
-  `\DocumentMetadata`) bypass the new points, as they do now. Nothing breaks, but they
-  gain nothing until they become clients. In my test, a document *without*
-  `\DocumentMetadata` but with hyperref ignores the interface completely.
-
-**How this maps onto template-based captions.** The new points are meant as the inside
-of a later template-based `\caption`, so that clients keep working when it arrives:
-
-- `caption/listentry` would be the list-entry step of the template;
-- `\if@captionstar` would be a key such as `label=false`;
-- `caption/step` would be the counter step of the instance;
-- the sub-float sockets would stay as they are.
-
-### 3. Code sketch against latex2e develop
-
-The full patch also changes classes.dtx (`\@makecaption` without ": " for an empty
-label), lttagging.dtx (declaration and documentation of `subfloat/begin|end`),
-latex-lab-namespace.dtx (`float/figure/sub`, `float/table/sub`, `float/generic/sub`) and
-`changes.txt`, and adds the two tests. The core, in ltfloat.dtx (declarations guarded so
-that `latexrelease` can roll forward):
-
-```latex
-\IfSocketExistsF{caption/step}{%
-  \NewSocket{caption/step}{1}%
-  \NewSocketPlug{caption/step}{kernel}{\refstepcounter{#1}}%
-  \AssignSocketPlug{caption/step}{kernel}%
-}
-\IfSocketExistsF{caption/listentry}{%
-  \NewSocket{caption/listentry}{2}%
-  \NewSocketPlug{caption/listentry}{kernel}
-    {%
-      \addcontentsline{\csname ext@#1\endcsname}{#1}%
-        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
-    }%
-  \AssignSocketPlug{caption/listentry}{kernel}%
-}
-\@ifundefined{if@captionstar}{\newif\if@captionstar}{}
-
-\def\caption{%
-   \ifx\@captype\@undefined
-     \@latex@error{\noexpand\caption outside float}\@ehd
-     \expandafter\@gobble
-   \else
-     \expandafter\@firstofone
-   \fi
-   {\@ifstar
-      {\@captionstartrue\@dblarg{\@caption\@captype}}%
-      {\@captionstarfalse
-       \UseSocket{caption/step}{\@captype}%
-       \@dblarg{\@caption\@captype}}}%
-}
-\long\def\@caption#1[#2]#3{%
-  \par
-  \if@captionstar \else
-    \UseSocket{caption/listentry}{#1}{#2}%
-  \fi
-  \begingroup
-    \@parboxrestore
-    \if@minipage
-      \@setminipage
-    \fi
-    \normalsize
-    \if@captionstar
-      \expandafter\@firstoftwo
-    \else
-      \expandafter\@secondoftwo
-    \fi
-    {\@makecaption{}}%
-    {\@makecaption{\csname fnum@#1\endcsname}}%
-      {\ignorespaces #3}\par
-  \endgroup
-  \@captionstarfalse}
-```
-
-In latex-lab-float, the redefinition of `\caption` is replaced by a plug, and the
-sub-float sockets get plugs (series version; the stand-alone version tests the list of
-float types instead of using (d)'s `\__tag_float_name:n`):
-
-```latex
-\bool_new:N \l_@@_subfloat_bool
-\NewSocketPlug{caption/step}{latex-lab}
-  {
-    \bool_lazy_or:nnTF
-      { \tl_if_empty_p:N \@current@float@struct }
-      { \l_@@_subfloat_bool }
-      { \refstepcounter {#1} }
-      {
-        \@kernel@refstepcounter {#1}
-        \xdef\@currentHref{\@captype.struct.\@current@float@struct}
-      }
-  }
-\AssignSocketPlug{caption/step}{latex-lab}
-\NewTaggingSocketPlug{subfloat/begin}{default}
-  {
-    \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{sub}}}
-    \tl_set:Ne\@current@float@struct{\tag_get:n{struct_num}}
-    \bool_set_true:N \l_@@_subfloat_bool
-  }
-\AssignTaggingSocketPlug{subfloat/begin}{default}
-\NewTaggingSocketPlug{subfloat/end}{default}
-  { \tag_struct_end: }
-\AssignTaggingSocketPlug{subfloat/end}{default}
-```
-
-and its `\@makecaption` makes the label socket `noop` and gives the label tagging sockets
-the new plugs `nolabel` (`\tagpdfparaOff` at the begin; `\leavevmode\tagpdfparaOn` at the
-end) when `\if@captionstar` is true.
-
-### 4. Verification
-
-These runs were made on the stand-alone patch (results for the
-combined patch are in the last section).
-
-- **base, pdfTeX**: `l3build check -e pdftex caption-interface-001 tlb-hfloat-01
-  tlb0018 tlb1893 tlb2400 tlb2815 github-robust-0123 tl2e8 tltx001 tltc001`. All pass.
-  These are the base tests that use `\caption` (found with grep); tlb2815 is the
-  "\caption outside float" error. The unpatched clone also passes them.
-- **New base test** `caption-interface-001.lvt`. I made the `.tlg` with `l3build save`
-  and read it by hand. It covers:
-  - a normal caption (`\@makecaption` gets `\csname fnum@\@captype\endcsname`);
-  - `\caption*` and `\caption*[x]`: no step, no `\addcontentsline`, an empty first
-    argument, and the star flag is reset afterwards;
-  - `\caption[]` with the kernel plug (an empty entry, as before) and with a test plug
-    (no entry);
-  - a continued float prepared in `cmd/caption/before`: the number stays 4, and the next
-    figure is 5;
-  - article's `\@makecaption` with an empty label: `\showbox` contains only "Text", with
-    no ": ";
-  - `\caption` and `\caption*` outside a float: the same error as before.
-- **latex-lab**, `l3build check -c config-float` (pdfTeX + LuaTeX): only
-  `firstaid-float-H-2` and the new `float-020` differ, and only in the line
-  `<PDF version="2.0">` vs `<PDF>` (see "Verification of the combined patch"). It is the
-  same on the unpatched clone. The other latex-lab tests that use captions
-  (`config-block firstaid-listings`, `config-table-pdftex|luatex table-012-caption
-  table-013-longtable-hyperref (table-021-longtable)`, `tlb-context-001`) give the same
-  results as on the unpatched clone. The test `float-tagging-off` matters here: it caught
-  my first attempt, which used a tagging socket for the step (see section 2).
-- **New latex-lab test** `float-028-caption-star-wide.lvt` (2026-10-06; pdfTeX and LuaTeX
-  `.tlg`): a `\caption*` wider than the line, a short one and a wide numbered caption,
-  with the counts of the para hooks printed before the end (the tagpdf error at the end
-  is not in the test log). It gives 3 begin and 3 end, and one `P` per caption; with
-  the first version (`noop` plugs) 4 begin and 3 end, a `P` inside a `P` and the tagpdf
-  error.
-- **New latex-lab test** `float-020-caption-interface.lvt` (pdfTeX and LuaTeX `.tlg`),
-  with hyperref and tagging:
-  - a normal caption: target `figure.struct.5`, `Caption` > `Lbl "Figure 1:"`, `P`;
-  - `\caption*`: the counter stays 1, and `Caption` has only `P`;
-  - a sub-float with a numbered sub-caption: target `subfigure.1.1` (hyperref's own),
-    `Part` > (`Caption` > `Lbl "(a):"`, `P`), then the content; `\ref` to it works;
-  - a sub-float with `\caption*`: `Part` > `Caption` > `P`;
-  - the main caption after the sub-floats: target `figure.struct.12`, first kid of the
-    float.
-- **Client document** (`mwe/client-doc.tex` with `mwe/captionclient.sty`, pdfLaTeX and
-  LuaLaTeX, in three variants: tagging + hyperref, no tagging and no hyperref, and no
-  tagging with classic hyperref). 0 errors in all six runs.
-  - `\caption*`: no number, no LoF entry.
-  - `\caption[]`: numbered, no entry.
-  - The sub-entries "a Sub A" and "b Sub B" are written *after* their main entry (level
-    2), even though the sub-captions come first. Each one keeps its own link target
-    (`subfigure.1`, `subfigure.2`), not the main float's.
-  - `\ContinuedFloat` keeps the number (3, 3).
-  - `\ref` to the sub-figure works.
-  - With tagging there is no "has no related structure" warning. The main `Caption` is
-    the first kid of the float, and each sub-caption is the first kid of its `Part`. The
-    only tagging warning is "Parent-Child 'Link' --> 'Link'", which comes from a `\ref`
-    inside a caption that is also linked from the LoF; caption.sty gives it too.
-  - With classic hyperref (no `\DocumentMetadata`), hyperref's own `\caption` replaces
-    the kernel's, and the interface is bypassed: `\caption*` gives a LoF entry "\*" and
-    `[]` an empty one. This is as described under backward compatibility.
-- **Section 5 excerpt**: `mwe/caption-excerpt.tex` is exactly the code shown in section 5.
-  `mwe/caption-excerpt-doc.tex` loads it with stubs for the caption internals it calls.
-  With the patched format: 0 errors, the new path, `[]` gives no entry, the continued
-  figure keeps number 2, and the sub-caption is stepped and listed. With TL 2026: 0
-  errors, and the old path is taken.
-- **Other classes** (`mwe/cls-star.tex`, patched format, pdfLaTeX): article, report:
-  "Starred"; memoir, scrartcl: ": Starred"; amsart: ". Starred". In every case there is no
-  LoF entry, and the next figure has the right number (memoir 0.2, the others 2). This
-  is the class issue described in section 2.
-- **latexrelease**:
-  - Rollback (`mwe/release-back.tex`): the patched format with
-    `\RequirePackage[2026-06-01]{latexrelease}` gives the old behaviour (`\caption*`
-    prints "Figure 2: \*", with a LoF entry "\*").
-  - Roll-forward (`mwe/release-fwd.tex`): the TL 2026 format (2026-06-01) with the
-    `latexrelease.sty` built from the patched sources and
-    `\RequirePackage[latest]{latexrelease}`. The sockets `caption/step` and
-    `caption/listentry` exist, and `\caption*` does not step and writes no entry. It
-    prints ": Star", because classes.cls is not part of latexrelease. The run reports 6
-    errors ("Argument of \@p@pfilepath@aux has an extra }"). The unpatched develop
-    `latexrelease.sty` gives the same 6 errors, so they do not come from this patch.
-    (Not rerun on the combined patch.)
-  - The first version of the guard, `\ifx\if@captionstar\@undefined`, would have broken
-    the conditional nesting when skipped. It is now `\@ifundefined`.
-- The patched `ltfloat.dtx` typesets with `source2edoc` without errors.
-
-**Not verified:** the full base suite, base with XeTeX; the real caption.sty on top of
-this (only the excerpt with stubs and the `captionclient.sty` sketch);
-`\tagpdfsetup{float/split}` together with `\caption*`; real subcaption code on the
-sub-float sockets (only the minimal sub-caption in float-020, the excerpt and
-`captionclient.sty`); PDF/UA validation (veraPDF/PAC).
-
-### 5. How caption would use it
-
-caption.sty keeps today's path for older kernels and becomes a client when the socket
-exists. The guard is `\IfSocketExistsTF{caption/listentry}`, which is equivalent to
-`\IfFormatAtLeastTF{2026-11-01}` for releases but also works with a development format.
-The excerpt below is `mwe/caption-excerpt.tex` and compiles as is (with stubs, see
-section 4):
-
-```latex
-% caption.sty, new code path (excerpt).
-% Kernels with the caption interface have the socket caption/listentry;
-% older kernels take today's path (redefine \caption and \@caption).
-\IfSocketExistsTF{caption/listentry}{%
-  % list entries: caption's rules ([] = none, list=false,
-  % sub-entries after the main entry) stay in \caption@addcontentsline
-  \NewSocketPlug{caption/listentry}{caption}{\caption@addcontentsline{#1}{#2}}%
-  \AssignSocketPlug{caption/listentry}{caption}%
-  % \ContinuedFloat: the next \stepcounter of the float counter is skipped
-  \AddToHook{cmd/caption/before}[caption]{\caption@ifcontinued\caption@skipnextstep{}}%
-  % subcaption.sty: the sub-float context (inside subfigure, \subcaptionbox)
-  \def\caption@subfloat@begin{\UseTaggingSocket{subfloat/begin}}%
-  \def\caption@subfloat@end{\UseTaggingSocket{subfloat/end}}%
-}{%
-  \caption@AtBeginDocument{\caption@redefine}%
-  \let\caption@subfloat@begin\relax
-  \let\caption@subfloat@end\relax
-}
-\newcommand*\caption@skipnextstep{%
-  \let\caption@ORI@stepcounter\stepcounter
-  \let\stepcounter\caption@stepcounter@once}
-\newcommand*\caption@stepcounter@once[1]{%
-  \let\stepcounter\caption@ORI@stepcounter
-  \edef\caption@tempa{#1}%
-  \ifx\caption@tempa\@captype \else \stepcounter{#1}\fi}
-% subcaption.sty: sub-captions step their own counter and use \@caption directly:
-\newcommand*\caption@subcaption[2]{% #1 list entry, #2 text
-  \refstepcounter{sub\@captype}%
-  \@caption{sub\@captype}[#1]{#2}}
-```
-
-- caption keeps setting its own `\@makecaption` (`\caption@makecaption`). In the client
-  path it also does there what its `\@caption` does today around `\@makecaption`: the
-  type options (`\caption@beginex`) and the hypcap anchor.
-- latex-lab replaces `\@makecaption` at `begindocument`. Proposal (c) gives that code a
-  documented hook label, so that caption can remove it instead of overwriting it again.
-- With (a), the `\@xfloat` wrapping in the old path is replaced by the float hook as
-  well; the two changes are independent.
-- `mwe/captionclient.sty` is a complete, compiled sketch of the same mechanics in expl3.
-  It keeps the sub-entries back until the main entry is written and stores the link
-  target of each sub-caption with its entry. Without that, the LoF links of the
-  sub-entries would point to the main float.
+caption becomes a client if `\@kernel@caption` is defined; otherwise its v3.7 code runs
+unchanged. On the client path it restores the kernel copies at `\begin{document}` (where it used
+to install its own `\caption`/`\@caption`), decides step, target and list entry in
+`caption/before`, makes its hypcap anchor in `caption/prepare` (for an unstepped caption with
+`\@kernel@caption@unique{<type>}{\hyper@makecurrent{<type>}}`), and plugs `caption/listentry`
+and `caption/typeset`. subcaption uses `subfloat/box`. All of v1's interceptions
+(`\stepcounter`, `\@dblarg`, `\if@skiphyperref`, `\@currentHref`, meaning tests, the
+`\aftergroup` position transfer, the global `\linewidth`) are gone. The client path is taken in
+every tested setup, including classic hyperref, float.sty and memoir. caption's test suite (310
+tests): on TeX Live the failure lists equal v3.7's; on the patched kernel the only new failure
+is `issue_111` (the kernel's error for `\caption` outside a float instead of caption's).
 
 ### Open questions for the team
 
-1. Is a kernel `\caption*` welcome? Should the classes test `\if@captionstar`, or an
-   empty first argument as here? Can memoir, KOMA and amsart be told in advance?
-2. `\ContinuedFloat`: would you rather have a documented flag ("this caption does not
-   step the counter") that the kernel and the `caption/step` plug respect, instead of
-   caption's local redefinition of `\stepcounter`?
-3. Template-based `\caption`: caption documents `\caption[]{...}` as "no list entry",
-   while the keyval conversion treats `[]` as "no keys" and offers `[{}]` instead. Would
-   a template key (for example `list-entry={}` or `list=false`) be the way to say "no
-   entry", with `[]` mapped to it for compatibility?
-4. Sub-floats: is `Part` inside the minipage's `Div` acceptable, or should the sub-float
-   socket replace the minipage structure? Should the kernel know `sub<type>` counters
-   (for example through a `\NewSubCaptionType`), or is that left to packages?
-5. Would hyperref (classic mode) also stop redefining `\caption`, so that the interface
-   works without `\DocumentMetadata` too?
+1. Is a kernel `\caption*` with this contract welcome, with the separator removal as an
+   optional layer? Would hyperref take one of the two sketches, and beamer support the star?
+   Should KOMA-Script, memoir, the AMS classes and babel-french be told in advance?
+2. Two hooks with four arguments: are the names `caption/before` (next to the generic
+   `cmd/caption/before`) and `caption/prepare` right?
+3. Step and target control: switches set in a hook (as here), plugs assigned in
+   `caption/before`, or arguments of `caption/step`? Should a "refstepcounter with options" live
+   in ltxref? Is the naming rule `<name>*<n>` acceptable?
+4. `\@floatHref@<type>`: latex-lab state read by the kernel, or a latex-lab plug of
+   `caption/step`?
+5. `caption/typeset` and the copies: acceptable as a step towards a template-based caption, or
+   should availability be a documented conditional and the copies not be restored by clients?
+6. Sub-floats: `subfloat/box` with one-shot plugs, a key for `minipage`/`\parbox`, or a
+   sub-float environment in latex-lab? Which role in table cells?
+7. A first aid that adds `\caption*` to the unmaintained float.sty?
+8. The names a client may use: the copies, hooks, sockets, switches, `\@floatHref@<type>`,
+   `\@kernel@caption@reset` and `\@kernel@caption@unique`. Is `\@kernel@...` the right form for
+   commands that packages are told to call, or should they get public names?
+9. O1 in the kernel or in nameref? O2 looks uncontroversial.
+10. Release: the patches use 2026/11/01, too early for an interface that has not been
+    discussed. Which release, and is a latex-dev phase wanted? (No ltnews text yet.)
 
 ---
 
 ## (c) caption3's label format as a plug for the `caption/label` socket
 
-Patch: series 0004 (`poc/proposals/patches/series/0004-*.patch`), on top of (b): it also
-handles `\caption*`. There is no stand-alone version; without (b) only the `\caption*`
+Patch: series 0004 (`poc/proposals/patches/series/0004-*.patch`), on top of (b) version 1
+(series 0003; version 2 is built on top of (c)): it also handles `\caption*`. There is no stand-alone version; without (b) only the `\caption*`
 lines would have to go. Tests: `poc/proposals/tests/float-021-caption-label.*`,
 `float-022-caption-separator.*`, `float-025-makecaption-label.*`,
 `float-026-makecaption-voids.*`, `float-027-caption-in-box.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
@@ -1761,6 +1542,10 @@ for sub-figures see the sub-float sockets in (b).
 ---
 
 ## Verification of the combined patch
+
+This section is about the series (a), (d), (b) version 1, (c). The verification of (b)
+version 2 is summarised in (b)4 and given in full in `PROPOSAL-b-v2.md` (caption branch
+`poc-b2`, sections 4.1-4.5).
 
 All four kernel patches applied in sequence (`patches/series/0001`–`0004`, the same
 content as `patches/combined.diff`) to a fresh copy of develop 829e56a15, compared with

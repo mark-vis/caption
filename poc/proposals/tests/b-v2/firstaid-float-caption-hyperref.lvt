@@ -1,0 +1,40 @@
+% First aid for float with hyperref loaded before float (hyperref's
+% \@caption stays active, float's \caption replaces hyperref's): \caption*
+% gives no label, no list entry and a target with a unique name; a
+% numbered caption after it in the same float is unchanged.
+\input{regression-test}
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage{float}
+\floatstyle{ruled}
+\restylefloat{table}
+\makeatletter
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+\def\showcapt{\showbox\@floatcapt}
+\def\showstate#1{\typeout{#1=\csname the#1\endcsname,
+  label=\@currentlabel, href=\@currentHref,
+  star=\if@captionstar true\else false\fi}}
+\makeatother
+\begin{document}
+\START
+\TEST{figure: numbered, caption*, numbered}{%
+  \begin{figure}[H]
+    \caption{First}
+    \showstate{figure}
+    \caption*{Starred}
+    \showstate{figure}
+    \caption{Second}
+    \showstate{figure}
+  \end{figure}}
+\TEST{restyled table: caption*, then numbered}{%
+  \begin{table}[H]
+    \caption*{Starred table}
+    \showstate{table}
+    \caption{Numbered table}
+    \showstate{table}
+    \showcapt
+  \end{table}}
+\END

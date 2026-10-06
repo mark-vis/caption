@@ -1,0 +1,323 @@
+From 34c9bdfa752500f98286f6810d524c6d55296366 Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 00:08:48 +0200
+Subject: [PATCH 08/28] (b) v2, part b-3: unique caption targets counted per
+ name
+
+Follow-up to the unique target of a caption that does not step its
+counter (review finding N3):
+
+- \theH<counter> was redefined with \protected@edef of itself. If it
+  was undefined (an old-style counter made with \newcount), \csname
+  made it \relax and the \edef a self-referencing macro: "TeX capacity
+  exceeded". Now \the<counter> is used if \theH<counter> is undefined,
+  as hyperref does.
+- The old \theH<counter> was expanded early, outside the context that
+  hyperref sets up for names (\@alph etc.). Now the suffix is added to
+  a copy of its meaning, so hyperref expands it as usual.
+- <n> was one global count, so adding a continued float anywhere
+  renamed all later targets. Now it is counted per name: the continued
+  parts of figure 1 get figure.1*1, figure.1*2, ..., independently of
+  other floats.
+
+The documentation of the socket caption/step now says why
+\NextLinkTarget is not used (the kernel plug of refstepcounter/target
+does not honour it), and the documentation of \@captionstepfalse names
+its two uses (continued float, counter already stepped by the code;
+review finding N4) and how code that has stepped the counter itself
+gets the usual name.
+
+Tests: caption-interface-001 test 20 now expects figure.16*1 and
+figure.16*2; new tests for the count per name (interleaved figure and
+table) and for a counter without \theH. float-024: figure.3*1 instead
+of figure.3*3.
+---
+ base/changes.txt                              |  6 +-
+ base/ltfloat.dtx                              | 73 +++++++++++++++----
+ base/testfiles/caption-interface-001.lvt      | 28 +++++++
+ base/testfiles/caption-interface-001.tlg      | 51 +++++++++++--
+ .../float-024-caption-continued.tlg           |  4 +-
+ 5 files changed, 138 insertions(+), 24 deletions(-)
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 70ed628cd..c42e710e4 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -26,8 +26,10 @@ not part of the distribution.
+ 	* ltfloat.dtx:
+ 	A caption that does not step its counter (\@captionstepfalse, e.g.,
+ 	a continued float) gets the float target or a target with a unique
+-	name (\theH<counter> with the suffix *<n> for refstepcounter/target),
+-	never a second target with the name of the last stepped caption
++	name (\theH<counter> with the suffix *<n> for refstepcounter/target,
++	<n> counted per name: figure.1*1, figure.1*2, ...; \the<counter> if
++	\theH<counter> is undefined), never a second target with the name of
++	the last stepped caption
+ 
+ 	* ltfloat.dtx:
+ 	\caption* passes \@caption@nolabel as label to \@makecaption: it
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 0c5554ae7..e0761a938 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -386,10 +386,21 @@
+ %    the first caption. With the suffix the name is unique (for example
+ %    |figure.1*1|; \pkg{hyperref} does not use |*| in
+ %    \cs{theH}\meta{counter}), so a \cs{label} after such a caption gives
+-%    the number of the counter and a link to the caption itself. The
++%    the number of the counter and a link to the caption itself.
++%    \meta{n} counts the targets made in this way for the same name, so
++%    the targets of the continued parts of figure~1 are |figure.1*1|,
++%    |figure.1*2|, \ldots, and adding a continued float elsewhere does not
++%    change these names. The suffix is added to the definition of
++%    \cs{theH}\meta{counter} without expanding it first, so \pkg{hyperref}
++%    expands it in its usual context; if \cs{theH}\meta{counter} is not
++%    defined, \cs{the}\meta{counter} is used (as \pkg{hyperref} does). The
+ %    target is made by the same socket as for other captions, so
+ %    \pkg{hyperref} makes it as usual and without \pkg{hyperref} no
+-%    node is added to the list. Inside a float that has a target of
++%    node is added to the list. (\cs{NextLinkTarget} is not used for the
++%    name: the kernel plug of \texttt{refstepcounter/target} does not
++%    honour it, so without \pkg{hyperref} \cs{@currentHref} and the
++%    target recorded for tagging would still be the name of the last
++%    stepped caption.) Inside a float that has a target of
+ %    its own (\cs{@floatHref@}\meta{type}), that target is used, because it
+ %    belongs to the float that contains the caption.
+ %    The default plug \plug{kernel} uses \cs{@kernel@caption@step}, which
+@@ -483,12 +494,19 @@
+ %    uses the socket \texttt{caption/step} itself, directly before the use)
+ %    can set them false:
+ %    \begin{itemize}
+-%    \item \cs{@captionstepfalse}: the counter is not stepped (for example
+-%      for a continued float); \cs{@currentcounter} and \cs{@currentlabel}
++%    \item \cs{@captionstepfalse}: the counter is not stepped by the plug,
++%      either because the caption continues an earlier one (a continued
++%      float) or because the code has already stepped it itself (e.g.,
++%      for a caption after sub-captions that stepped it);
++%      \cs{@currentcounter} and \cs{@currentlabel}
+ %      are still set, and if \cs{if@captiontarget} is true a target as
+ %      well: the float target or one with a unique name, never a second
+ %      target with the name made from the counter (see the socket
+-%      \texttt{caption/step}).
++%      \texttt{caption/step}). The plug cannot tell the two cases apart,
++%      so in both the target gets the unique name; code that has stepped
++%      the counter itself and wants the usual name sets
++%      \cs{@captiontargetfalse} as well and makes the target itself
++%      (with the socket \texttt{refstepcounter/target}).
+ %    \item \cs{@captiontargetfalse}: the step makes no target and does not
+ %      record one for tagging, and \cs{@currentHref} is unchanged; the code
+ %      makes its own target.
+@@ -507,7 +525,7 @@
+ %
+ % \begin{macro}{\@kernel@caption@step}
+ % \begin{macro}{\@caption@target,\@caption@newtarget,\@caption@floattarget,
+-%                \@caption@uniquetarget,\@caption@unstepped}
++%                \@caption@uniquetarget,\@caption@uniqueH}
+ %    \cs{@kernel@caption@step}\marg{counter} implements the contract of
+ %    the socket \texttt{caption/step}. It is not \cs{refstepcounter},
+ %    because the counter is not always stepped and the target not always
+@@ -531,10 +549,10 @@
+ %    \pkg{latex-lab-float} does that). If it is defined, not \cs{relax}
+ %    and not empty, the caption uses this target, otherwise a new one is
+ %    made as by \cs{refstepcounter}; if the counter was not stepped,
+-%    \cs{@caption@uniquetarget} gives \cs{theH}\meta{counter} the suffix
+-%    |*|\meta{n} inside a group around the socket, with a global number
+-%    \meta{n} (\cs{@caption@unstepped}), because a target named after the
+-%    unchanged counter would be a duplicate. \cs{@ifundefined}
++%    \cs{@caption@uniquetarget} makes it inside a group in which
++%    \cs{@caption@uniqueH} has given \cs{theH}\meta{counter} the suffix
++%    |*|\meta{n}, because a target named after the unchanged counter
++%    would be a duplicate. \cs{@ifundefined}
+ %    is used and not
+ %    \cs{ifcsname}, so that a name that has been made \cs{relax} by a
+ %    \cs{csname} test counts as undefined. As the type is part of the name,
+@@ -543,6 +561,9 @@
+ %    of the figure.
+ % \changes{v1.2k}{2026/10/05}{A caption that does not step the counter
+ %    gets a target with a unique name, not a duplicate of the last one}
++% \changes{v1.2k}{2026/10/06}{Unique names: count per name, no early
++%    expansion of \cs{theH}\meta{counter}, fall back to
++%    \cs{the}\meta{counter} if it is undefined}
+ %    \begin{macrocode}
+ \def\@caption@target#1{%
+   \@ifundefined{@floatHref@#1}%
+@@ -563,13 +584,37 @@
+   {\@caption@uniquetarget{#1}}%
+   \UseTaggingSocket{recordtarget}}
+ \def\@caption@uniquetarget#1{%
+-  \xdef\@caption@unstepped{\the\numexpr\@caption@unstepped+\@ne}%
+   \begingroup
+-    \expandafter\protected@edef\csname theH#1\endcsname
+-      {\csname theH#1\endcsname*\@caption@unstepped}%
++    \@caption@uniqueH{#1}%
+     \UseSocket{refstepcounter/target}{#1}%
+   \endgroup}
+-\def\@caption@unstepped{0}
++%    \end{macrocode}
++%    \cs{@caption@uniqueH}\marg{counter} redefines \cs{theH}\meta{counter}
++%    locally as its previous meaning (kept in
++%    \cs{@caption@H@}\meta{counter}, or \cs{the}\meta{counter} if
++%    \cs{theH}\meta{counter} is undefined) followed by |*|\meta{n}. The
++%    previous meaning is not expanded here, so \pkg{hyperref} expands it
++%    in the context it sets up for names. \meta{n} is counted per name:
++%    \cs{@caption@Hname} is the name without the suffix (made with
++%    \cs{protected@edef}, only to tell names apart), and
++%    \cs{@caption@H@n@}\meta{name} holds the last \meta{n} used for it,
++%    globally, so the numbering does not depend on captions elsewhere.
++%    \begin{macrocode}
++\def\@caption@uniqueH#1{%
++  \@ifundefined{theH#1}%
++    {\expandafter\let\csname @caption@H@#1\expandafter\endcsname
++       \csname the#1\endcsname}%
++    {\expandafter\let\csname @caption@H@#1\expandafter\endcsname
++       \csname theH#1\endcsname}%
++  \protected@edef\@caption@Hname{#1.\csname @caption@H@#1\endcsname}%
++  \edef\@caption@Hname{\detokenize\expandafter{\@caption@Hname}}%
++  \@ifundefined{@caption@H@n@\@caption@Hname}%
++    {\expandafter\xdef\csname @caption@H@n@\@caption@Hname\endcsname{1}}%
++    {\expandafter\xdef\csname @caption@H@n@\@caption@Hname\endcsname
++       {\the\numexpr\csname @caption@H@n@\@caption@Hname\endcsname+\@ne}}%
++  \expandafter\edef\csname theH#1\endcsname
++    {\expandafter\noexpand\csname @caption@H@#1\endcsname
++     *\csname @caption@H@n@\@caption@Hname\endcsname}}
+ \def\@caption@floattarget#1{%
+   \xdef\@currentHref{\csname @floatHref@#1\endcsname}}
+ %    \end{macrocode}
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+index 2720264dd..681aa1832 100644
+--- a/base/testfiles/caption-interface-001.lvt
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -100,6 +100,12 @@
+     addcontentsline: \ifx\addcontentsline\@gobblethree
+     no-op\else normal\fi}}}
+ \def\staroff{\@captionstarfalse}
++% a counter without \theH<counter> (as made before 2024 by \newcount)
++\newcount\c@myfig
++\def\themyfig{\arabic{myfig}}
++\def\p@myfig{}
++\def\fnum@myfig{My \themyfig}
++\def\ext@myfig{lom}
+ \makeatother
+ \begin{document}
+ \START
+@@ -279,4 +285,26 @@
+     \typeout{figure=\thefigure}
+     \showswitches
+   \end{figure}}
++\TEST{unique targets are counted per name}{%
++  \begin{figure}
++    \let\testbefore\stepoff
++    \caption{Continued, first}
++    \showhref
++    \settype{table}%
++    \caption{Continued table}
++    \showhref
++    \settype{figure}%
++    \caption{Continued, second}
++    \showhref
++  \end{figure}}
++\TEST{unique target for a counter without theH}{%
++  \begin{figure}
++    \settype{myfig}%
++    \let\testbefore\stepoff
++    \caption{Continued myfig}
++    \showhref
++    \caption{Continued myfig again}
++    \showhref
++    \typeout{theHmyfig: \expandafter\meaning\csname theHmyfig\endcsname}
++  \end{figure}}
+ \end{document}
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+index d57ee5954..036400ce3 100644
+--- a/base/testfiles/caption-interface-001.tlg
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -299,17 +299,17 @@ href=OLD
+ TEST 20: two continued captions: two different unique targets
+ ============================================================
+ BEFORE: {figure}{false}{NoValue}{Continued once}, figure=16, linewidth=345.0pt
+-TARGET: new target figure.16*2
+-PREPARE: {figure}{false}{Continued once}{Continued once}, figure=16, label=16, href=figure.16*2
++TARGET: new target figure.16*1
++PREPARE: {figure}{false}{Continued once}{Continued once}, figure=16, label=16, href=figure.16*1
+ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued once}}
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued once], star=false
+-href=figure.16*2
++href=figure.16*1
+ BEFORE: {figure}{false}{NoValue}{Continued twice}, figure=16, linewidth=345.0pt
+-TARGET: new target figure.16*3
+-PREPARE: {figure}{false}{Continued twice}{Continued twice}, figure=16, label=16, href=figure.16*3
++TARGET: new target figure.16*2
++PREPARE: {figure}{false}{Continued twice}{Continued twice}, figure=16, label=16, href=figure.16*2
+ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued twice}}
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued twice], star=false
+-href=figure.16*3
++href=figure.16*2
+ ============================================================
+ ============================================================
+ TEST 21: caption* with a replaced @caption (class): no label, no entry
+@@ -362,4 +362,43 @@ MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Deferred star], star=true
+ figure=19
+ SWITCHES: star=false, step=true, target=true
+ ============================================================
++============================================================
++TEST 24: unique targets are counted per name
++============================================================
++BEFORE: {figure}{false}{NoValue}{Continued, first}, figure=19, linewidth=345.0pt
++TARGET: new target figure.19*1
++PREPARE: {figure}{false}{Continued, first}{Continued, first}, figure=19, label=19, href=figure.19*1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued, first}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued, first], star=false
++href=figure.19*1
++BEFORE: {table}{false}{NoValue}{Continued table}, figure=19, linewidth=345.0pt
++TARGET: new target table.1*1
++PREPARE: {table}{false}{Continued table}{Continued table}, figure=19, label=1, href=table.1*1
++ADDCONTENTSLINE: {lot}{table}{\protect \numberline {\csname thetable\endcsname }{\ignorespaces Continued table}}
++MAKECAPTION: [\csname fnum@table\endcsname ] [\ignorespaces Continued table], star=false
++href=table.1*1
++BEFORE: {figure}{false}{NoValue}{Continued, second}, figure=19, linewidth=345.0pt
++TARGET: new target figure.19*2
++PREPARE: {figure}{false}{Continued, second}{Continued, second}, figure=19, label=19, href=figure.19*2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued, second}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued, second], star=false
++href=figure.19*2
++============================================================
++============================================================
++TEST 25: unique target for a counter without theH
++============================================================
++BEFORE: {myfig}{false}{NoValue}{Continued myfig}, figure=19, linewidth=345.0pt
++TARGET: new target myfig.0*1
++PREPARE: {myfig}{false}{Continued myfig}{Continued myfig}, figure=19, label=0, href=myfig.0*1
++ADDCONTENTSLINE: {lom}{myfig}{\protect \numberline {\csname themyfig\endcsname }{\ignorespaces Continued myfig}}
++MAKECAPTION: [\csname fnum@myfig\endcsname ] [\ignorespaces Continued myfig], star=false
++href=myfig.0*1
++BEFORE: {myfig}{false}{NoValue}{Continued myfig again}, figure=19, linewidth=345.0pt
++TARGET: new target myfig.0*2
++PREPARE: {myfig}{false}{Continued myfig again}{Continued myfig again}, figure=19, label=0, href=myfig.0*2
++ADDCONTENTSLINE: {lom}{myfig}{\protect \numberline {\csname themyfig\endcsname }{\ignorespaces Continued myfig again}}
++MAKECAPTION: [\csname fnum@myfig\endcsname ] [\ignorespaces Continued myfig again], star=false
++href=myfig.0*2
++theHmyfig: \relax
++============================================================
+ [1] [2] (caption-interface-001.aux)
+diff --git a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+index a3f7e8d69..6abf67b63 100644
+--- a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
++++ b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+@@ -16,7 +16,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
+ TEST 2: captions in floats
+ ============================================================
+ Third: label=3, href=figure.3
+-Continued: label=3, href=figure.3*3
++Continued: label=3, href=figure.3*1
+ Fourth: label=4, href=figure.4
+ ============================================================
+ ============================================================
+@@ -37,7 +37,7 @@ ac: macro:->{1}{1}{First, continued}{figure.1*1}{}
+ acc: macro:->{1}{1}{First, continued again}{figure.1*2}{}
+ b: macro:->{2}{1}{Second}{figure.2}{}
+ c: macro:->{3}{1}{Third}{figure.3}{}
+-cc: macro:->{3}{1}{Third, continued}{figure.3*3}{}
++cc: macro:->{3}{1}{Third, continued}{figure.3*1}{}
+ d: macro:->{4}{1}{Fourth}{figure.4}{}
+ ============================================================
+ ============================================================

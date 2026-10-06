@@ -1,0 +1,82 @@
+% First aid for float: \caption* uses the kernel definition (float's
+% \caption does not know the star form); a restyled float type keeps the
+% caption code of its style, without label and without list entry;
+% float's optional argument after the caption still works; \caption
+% without star is unchanged, also after a \caption* in the same float;
+% the same for \newfloat and \restylefloat*.
+\input{regression-test}
+\documentclass{article}
+\usepackage{float}
+\floatstyle{ruled}
+\restylefloat{table}
+\floatstyle{boxed}
+\newfloat{program}{tbp}{lop}
+\floatstyle{plain}
+\newfloat{algo}{tbp}{loa}
+\restylefloat*{algo}
+\makeatletter
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+\def\showcapt{\showbox\@floatcapt}
+\def\showstate#1{\typeout{#1=\csname the#1\endcsname,
+  label=\@currentlabel, fnum=\expandafter\ifx\csname fnum@#1\endcsname
+  \@caption@nolabel \string\@caption@nolabel\else
+  \expandafter\meaning\csname fnum@#1\endcsname\fi,
+  ext=\csname ext@#1\endcsname, star=\if@captionstar true\else false\fi}}
+\makeatother
+\begin{document}
+\START
+\TEST{figure (not restyled): kernel caption*}{%
+  \begin{figure}[H]
+    \caption{Numbered figure}
+    \caption*{Starred figure}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{restyled table: style of float, no label, no list entry}{%
+  \begin{table}[H]
+    \caption*{Starred table}
+    \typeout{table=\thetable}
+    \showcapt
+  \end{table}}
+\TEST{restyled table: numbered caption unchanged}{%
+  \begin{table}[H]
+    \caption{Numbered table}
+    \typeout{table=\thetable}
+    \showcapt
+  \end{table}}
+\TEST{restyled table: caption* with the optional argument of float}{%
+  \begin{table}[H]
+    \caption*{Starred}[More]
+    \showcapt
+  \end{table}}
+\TEST{restyled table: numbered caption after caption*}{%
+  \begin{table}[H]
+    \caption*{Starred mixed}
+    \caption{Numbered mixed}
+    \showstate{table}
+    \showcapt
+  \end{table}}
+\TEST{figure (not restyled): numbered caption after caption*}{%
+  \begin{figure}[H]
+    \caption*{Starred mixed}
+    \caption{Numbered mixed}
+    \showstate{figure}
+  \end{figure}}
+\TEST{newfloat (boxed): caption* and numbered caption}{%
+  \begin{program}[H]
+    \caption*{Starred program}
+    \showstate{program}
+    \caption{Numbered program}
+    \showstate{program}
+    \showcapt
+  \end{program}}
+\TEST{restylefloat* (kernel caption code): caption* and numbered caption}{%
+  \begin{algo}[H]
+    \caption*{Starred algo}
+    \caption{Numbered algo}
+    \showstate{algo}
+    \showcapt
+  \end{algo}}
+\END

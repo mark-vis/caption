@@ -1,0 +1,729 @@
+From e9631c7f2281f9861b36b724f01bf63d2f098bb7 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Sun, 4 Oct 2026 01:53:34 +0200
+Subject: [PATCH 02/32] (d) \DeclareTaggingFloatType, generic caption names
+
+---
+ base/changes.txt                              |   4 +
+ base/lttagging.dtx                            |  60 +++++-
+ required/latex-lab/changes.txt                |   5 +
+ required/latex-lab/latex-lab-float.dtx        |  49 +++--
+ required/latex-lab/latex-lab-namespace.dtx    |  11 +-
+ .../float-010-outside.luatex.tlg              |   4 +-
+ .../testfiles-float/float-010-outside.tlg     |   4 +-
+ .../float-017-declare.luatex.tlg              | 175 ++++++++++++++++++
+ .../testfiles-float/float-017-declare.lvt     |  52 ++++++
+ .../testfiles-float/float-017-declare.tlg     | 175 ++++++++++++++++++
+ 10 files changed, 512 insertions(+), 27 deletions(-)
+ create mode 100644 required/latex-lab/testfiles-float/float-017-declare.luatex.tlg
+ create mode 100644 required/latex-lab/testfiles-float/float-017-declare.lvt
+ create mode 100644 required/latex-lab/testfiles-float/float-017-declare.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 24bdd58de..b2438f9a0 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -12,6 +12,10 @@ not part of the distribution.
+ 	Add the hooks float/begin and float/end (executed inside the
+ 	float box by \@xfloat, \@xdblfloat and \@endfloatbox)
+ 
++	* lttagging.dtx:
++	Add \DeclareTaggingFloatType; the list of float types for tagging
++	moves here from latex-lab-float
++
+ 2026-10-01 Joseph Wright  <Joseph.Wright@latex-project.org>
+ 
+ 	* ltfloats.dtx:
+diff --git a/base/lttagging.dtx b/base/lttagging.dtx
+index 1b7bf1f35..48f5afe4b 100644
+--- a/base/lttagging.dtx
++++ b/base/lttagging.dtx
+@@ -33,7 +33,7 @@
+ %<*driver>
+ % \fi
+ \ProvidesFile{lttagging.dtx}
+-             [2026-08-19 v1.1a LaTeX Kernel (tagging support)]
++             [2026-10-03 v1.1b LaTeX Kernel (tagging support)]
+ % \iffalse
+ \documentclass{l3in2edoc}
+ \GetFileInfo{lttagging.dtx}
+@@ -1292,6 +1292,64 @@
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \subsection{Float types}
++% \begin{variable}{\g_@@_float_types_seq}
++% \changes{v1.1b}{2026/10/03}{Variable moved here from latex-lab-float}
++%    The float types known to the tagging code. The float code
++%    (\pkg{latex-lab-float}) creates a container structure for each of
++%    them and uses the structure names \texttt{float/\meta{type}s},
++%    \texttt{float/\meta{type}}, \texttt{float/\meta{type}/caption} and
++%    \texttt{float/\meta{type}/label}. The names for \texttt{figure}
++%    and \texttt{table} are declared in \pkg{latex-lab-namespace}.
++%    \begin{macrocode}
++\ExplSyntaxOn
++\seq_new:N \g_@@_float_types_seq
++\seq_gput_right:Nn \g_@@_float_types_seq {figure}
++\seq_gput_right:Nn \g_@@_float_types_seq {table}
++%    \end{macrocode}
++% \end{variable}
++%
++% \begin{macro}{\DeclareTaggingFloatType}
++% \changes{v1.1b}{2026/10/03}{Command added}
++%    \cs{DeclareTaggingFloatType}\Arg{type} declares a new float type for
++%    tagging. \meta{type} is the value that \cs{@captype} has inside the
++%    float, the argument of \cs{@float}. Packages and classes that define
++%    float environments (\pkg{newfloat}, \pkg{float}, \pkg{tocbasic},
++%    \pkg{memoir}, \ldots) should use it for each new type. It can be used
++%    whether or not tagging is active, and more than once for the same
++%    type: a structure name that already has a role is not changed.
++%
++%    It should be used in the preamble, outside of a group. The type is
++%    recorded globally, but, as with \cs{NewStructureName} and
++%    \cs{AssignStructureRole}, the roles are assigned locally; after a
++%    group they are empty. Declaring the type again outside of the group
++%    assigns them again. Afterwards the roles of the four structure names
++%    can be changed with \cs{AssignStructureRole}.
++%    \begin{macrocode}
++\cs_new_protected:Npn \DeclareTaggingFloatType #1
++  {
++    \seq_if_in:NnF \g_@@_float_types_seq {#1}
++      { \seq_gput_right:Nn \g_@@_float_types_seq {#1} }
++    \@@_float_type_name:nn {float/#1s}         {Sect}
++    \@@_float_type_name:nn {float/#1}          {float}
++    \@@_float_type_name:nn {float/#1/caption}  {Caption}
++    \@@_float_type_name:nn {float/#1/label}    {Lbl}
++  }
++%    \end{macrocode}
++%    A name is created if it does not exist, and gets its default role if
++%    it has none (also when it was created inside a group that has ended).
++%    \begin{macrocode}
++\cs_new_protected:Npn \@@_float_type_name:nn #1#2
++  {
++    \tl_if_exist:cF { l_@@_name_#1_tl }
++      { \NewStructureName {#1} \tl_clear:c { l_@@_name_#1_tl } }
++    \tl_if_empty:cT { l_@@_name_#1_tl }
++      { \AssignStructureRole {#1} {#2} }
++  }
++\ExplSyntaxOff
++%    \end{macrocode}
++% \end{macro}
++%
+ %
+ % \section{For lttab.dtx parked here for now}
+ %
+diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
+index e3b750fef..48b6c663a 100644
+--- a/required/latex-lab/changes.txt
++++ b/required/latex-lab/changes.txt
+@@ -2,6 +2,11 @@
+ 
+ 	* latex-lab-float.dtx:
+ 	Execute the kernel hook float/begin in \@xfloat
++	Use \DeclareTaggingFloatType in the key float/new; captions in floats
++	of undeclared types use float/generic/caption and float/generic/label
++
++	* latex-lab-namespace.dtx:
++	Add the names float/generic/caption and float/generic/label
+ 
+ 2026-10-05  Frank Mittelbach  <Frank.Mittelbach@latex-project.org>
+ 
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index d9af1d6c9..5dba8d36d 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -206,22 +206,21 @@
+ %
+ % \begin{variable}{
+ %  \g_@@_float_sect_prop,
+-%  \g_@@_float_types_seq,
+ %  \@current@float@struct,
+ %  \g_@@_float_int
+ %   }
+-% These variables will hold the structure number for the float container
+-% and the list of float types. Currently only figure and table are supported
+-% TODO: interface to declare new float types.
++% These variables will hold the structure number for the float container.
++% The list of float types, \cs{g_@@_float_types_seq}, is declared in
++% lttagging, new types are added with \cs{DeclareTaggingFloatType}.
+ % To set the target for links we need also a unique counter.
+ % With tagging we could use the structure number, but
+ % the structure commands now are hidden inside tagging sockets
+ % so we use a dedicated counter.
+ %    \begin{macrocode}
+ \prop_new:N \g_@@_float_sect_prop
+-\seq_new:N  \g_@@_float_types_seq
+-\seq_gput_right:Nn \g_@@_float_types_seq {figure}
+-\seq_gput_right:Nn \g_@@_float_types_seq {table}
++%    \end{macrocode}
++% \changes{0.81q}{2026-10-03}{\cs{g_@@_float_types_seq} is now declared in lttagging}
++%    \begin{macrocode}
+ \tl_new:N\@current@float@struct
+ \int_new:N\g_@@_float_int
+ %    \end{macrocode}
+@@ -268,6 +267,7 @@
+ % This is all done with the following key. The value is the captype.
+ % \changes{0.81p}{2026-09-09}{Avoid that float/new errors if the type is already
+ % declared}
++% \changes{0.81q}{2026-10-03}{Use kernel command \cs{DeclareTaggingFloatType}}
+ %    \begin{macrocode}
+ \msg_new:nnn { tag }{ float-exist }
+  {
+@@ -283,16 +283,8 @@
+          \msg_info:nnn { tag } { float-exist }{#1}         
+        }
+        {
+-        \NewStructureName{float/#1s}
+-        \AssignStructureRole{float/#1s}{Sect}
+-        \NewStructureName{float/#1}
+-        \AssignStructureRole{float/#1}{float}
+-        \NewStructureName{float/#1/caption}
+-        \AssignStructureRole{float/#1/caption}{Caption}
+-        \NewStructureName{float/#1/label}
+-        \AssignStructureRole{float/#1/label}{Lbl}
+-        \seq_gput_right:Nn \g_@@_float_types_seq {#1}
+-       } 
++        \DeclareTaggingFloatType{#1}
++       }
+     }
+  }
+ %    \end{macrocode}
+@@ -720,6 +712,23 @@
+ \AssignSocketPlug{caption/label}{kernel}
+ %    \end{macrocode}
+ % \end{plugdecl}
++% \begin{macro}{\@@_float_name:n}
++% \changes{0.81q}{2026-10-03}{Fall back to generic names for unknown float types}
++% The symbolic name for the caption or the label of the current float type.
++% Unknown float types (not declared with \cs{DeclareTaggingFloatType}) get a
++% \texttt{float/generic} structure in \cs{@@_float_begin:}, so their caption
++% and label use \texttt{float/generic/caption} and \texttt{float/generic/label}.
++% Before, \cs{UseStructureName} gave an undefined control sequence here.
++%    \begin{macrocode}
++\cs_new:Npn \@@_float_name:n #1
++  {
++    float/
++    \cs_if_exist:cTF { l_@@_name_float/\@captype/#1_tl }
++      { \@captype } { generic }
++    /#1
++  }
++%    \end{macrocode}
++% \end{macro}
+ % \begin{plugdecl}{default}
+ % The caption begin socket takes an argument: the structure number of
+ % the parent float. If the argument is empty, the current structure is used.
+@@ -730,10 +739,10 @@
+   {
+      \tl_if_empty:eTF {#1}
+       {
+-        \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/caption},firstkid}
++        \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{caption}},firstkid}
+       }
+       {
+-        \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/caption},parent=#1,firstkid}
++        \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{caption}},parent=#1,firstkid}
+       }
+      \bool_set_true:N \l__tag_para_flattened_bool
+   }
+@@ -758,7 +767,7 @@
+ % suppress para tagging at the begin.
+ %    \begin{macrocode}
+      \tagpdfparaOff
+-     \tag_struct_begin:n{tag=\UseStructureName{float/\@captype/label}}
++     \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{label}}}
+      \tag_mc_begin:n{}
+   }
+ \AssignTaggingSocketPlug{caption/label/begin}{default}
+diff --git a/required/latex-lab/latex-lab-namespace.dtx b/required/latex-lab/latex-lab-namespace.dtx
+index b4513f453..18b2e2894 100644
+--- a/required/latex-lab/latex-lab-namespace.dtx
++++ b/required/latex-lab/latex-lab-namespace.dtx
+@@ -12,8 +12,8 @@
+ %    https://www.latex-project.org/lppl.txt
+ %
+ %<*package>
+-\def\ltlabnamesdate{2026-09-27}
+-\def\ltlabnamesversion{0.8r}
++\def\ltlabnamesdate{2026-10-03}
++\def\ltlabnamesversion{0.8s}
+ %</package>
+ %<*driver>
+ \DocumentMetadata{tagging=on,pdfstandard=ua-2}
+@@ -618,6 +618,13 @@ subparagraph-heading,  H6,pdf2,
+ %    \begin{macrocode}
+ \NewStructureName{float/generic}
+ \AssignStructureRole{float/generic}{float}
++%    \end{macrocode}
++% \changes{v0.8s}{2026-10-03}{Names for captions in floats of unknown type}
++%    \begin{macrocode}
++\NewStructureName{float/generic/caption}
++\AssignStructureRole{float/generic/caption}{Caption}
++\NewStructureName{float/generic/label}
++\AssignStructureRole{float/generic/label}{Lbl}
+ \NewStructureName{float/figures}
+ \AssignStructureRole{float/figures}{figures}
+ \NewStructureName{float/tables}
+diff --git a/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg b/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
+index b94c86e42..130fb929a 100644
+--- a/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
++++ b/required/latex-lab/testfiles-float/float-010-outside.luatex.tlg
+@@ -10,7 +10,7 @@ Package tagpdf Info: Parent-Child 'Document' --> 'Caption'.
+ Package tagpdf Warning: Parent-Child 'pdf2:Document' --> 'pdf2:Caption'.
+ (tagpdf)                Relation is not allowed! on line ...
+ (tagpdf)                struct 2, Document --> struct 6, Caption
+-tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {float/\@captype /caption},firstkid 
++tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {caption}},firstkid 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Caption}{Caption}}
+@@ -19,7 +19,7 @@ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer brac
+ Package tagpdf Info: Checking Parent-Child 'pdf2:Caption' --> 'pdf2:Lbl'
+ Package tagpdf Info: Parent-Child 'Caption' --> 'Lbl'.
+ (tagpdf)             Relation is 1 (='0..n') on line ...
+-tagpdf DEBUG Info: Struct 7 begin inserted with options: tag=\UseStructureName {float/\@captype /label} 
++tagpdf DEBUG Info: Struct 7 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {label}} 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Lbl}{Lbl}}
+diff --git a/required/latex-lab/testfiles-float/float-010-outside.tlg b/required/latex-lab/testfiles-float/float-010-outside.tlg
+index bac1508a6..36e8be391 100644
+--- a/required/latex-lab/testfiles-float/float-010-outside.tlg
++++ b/required/latex-lab/testfiles-float/float-010-outside.tlg
+@@ -10,7 +10,7 @@ Package tagpdf Info: Parent-Child 'Document' --> 'Caption'.
+ Package tagpdf Warning: Parent-Child 'pdf2:Document' --> 'pdf2:Caption'.
+ (tagpdf)                Relation is not allowed! on line ...
+ (tagpdf)                struct 2, Document --> struct 5, Caption
+-tagpdf DEBUG Info: Struct 5 begin inserted with options: tag=\UseStructureName {float/\@captype /caption},firstkid 
++tagpdf DEBUG Info: Struct 5 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {caption}},firstkid 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Caption}{Caption}}
+@@ -19,7 +19,7 @@ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer brac
+ Package tagpdf Info: Checking Parent-Child 'pdf2:Caption' --> 'pdf2:Lbl'
+ Package tagpdf Info: Parent-Child 'Caption' --> 'Lbl'.
+ (tagpdf)             Relation is 1 (='0..n') on line ...
+-tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {float/\@captype /label} 
++tagpdf DEBUG Info: Struct 6 begin inserted with options: tag=\UseStructureName {\__tag_float_name:n {label}} 
+ (tagpdf DEBUG)     [on line ...]
+ The sequence \g__tag_struct_tag_stack_seq contains the items (without outer braces):
+ >  {{Lbl}{Lbl}}
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg b/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg
+new file mode 100644
+index 000000000..4cb1b70ee
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.luatex.tlg
+@@ -0,0 +1,175 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Package tagpdf Info: Float type diagram is already setup for tagging.
++(tagpdf)             Ignoring 'float/new' on line ...
++chart caption role after the group: ''
++chart caption role after declaring again: 'Caption'
++Floatstructure:10
++Floatstructure:16
++Floatstructure:22
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-017-declare.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.008"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <float xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.016"
++      rolemaps-to="Aside"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.019"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.020"
++       >
++      <?MarkedContent page="1" ?>scheme 1: 
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.021"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A float type that was not declared
++     </text-block>
++    </Caption>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.017"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.018"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A scheme
++     </text-block>
++    </semantic-para>
++   </float>
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.028"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.029"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.006"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.010"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.013"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.014"
++        >
++       <?MarkedContent page="1" ?>diagram 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A declared float type
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.011"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.012"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A diagram
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.007"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.022"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.025"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.026"
++        >
++       <?MarkedContent page="1" ?>chart 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.027"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Declared in a group and again
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.023"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.024"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A chart
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-017-declare.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-017-declare.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~29 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.lvt b/required/latex-lab/testfiles-float/float-017-declare.lvt
+new file mode 100644
+index 000000000..fb1f329a0
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.lvt
+@@ -0,0 +1,52 @@
++% !Mode:: "TeX:DE:UTF-8:Main"
++% Proposal: \DeclareTaggingFloatType and generic caption names for unknown float types
++\DocumentMetadata{tagging=on,tagging-setup={role/user-NS=latex}}
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% two float types defined by hand, as newfloat, float, tocbasic, memoir do
++\def\newtestfloat#1{%
++  \newcounter{#1}%
++  \expandafter\def\csname fps@#1\endcsname{tbp}%
++  \expandafter\def\csname ftype@#1\endcsname{8}%
++  \expandafter\def\csname ext@#1\endcsname{lo#1}%
++  \expandafter\def\csname fnum@#1\endcsname{#1~\csname the#1\endcsname}%
++  \newenvironment{#1}{\@float{#1}}{\end@float}}
++\newtestfloat{diagram}
++\newtestfloat{scheme}
++\newtestfloat{chart}
++\makeatother
++\START
++\DeclareTaggingFloatType{diagram}
++\DeclareTaggingFloatType{diagram}   % second time: nothing happens
++\DeclareTaggingFloatType{figure}    % known type: nothing happens
++\tagpdfsetup{float/new=diagram} % info: already set up
++% declared inside a group: the roles are local and lost after the group,
++% a second declaration outside of the group assigns them again
++\begingroup \DeclareTaggingFloatType{chart}\endgroup
++\TYPE{chart caption role after the group: '\UseStructureName{float/chart/caption}'}
++\DeclareTaggingFloatType{chart}
++\TYPE{chart caption role after declaring again: '\UseStructureName{float/chart/caption}'}
++\OMIT
++\begin{document}
++\TIMO
++text
++
++\begin{diagram}
++A diagram
++\caption{A declared float type}
++\end{diagram}
++
++\begin{scheme}
++A scheme
++\caption{A float type that was not declared}
++\end{scheme}
++
++\begin{chart}
++A chart
++\caption{Declared in a group and again}
++\end{chart}
++
++text
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-017-declare.tlg b/required/latex-lab/testfiles-float/float-017-declare.tlg
+new file mode 100644
+index 000000000..27a2481e7
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-017-declare.tlg
+@@ -0,0 +1,175 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Package tagpdf Info: Float type diagram is already setup for tagging.
++(tagpdf)             Ignoring 'float/new' on line ...
++chart caption role after the group: ''
++chart caption role after declaring again: 'Caption'
++Floatstructure:9
++Floatstructure:15
++Floatstructure:21
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-017-declare.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.007"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.008"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <float xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.015"
++      rolemaps-to="Aside"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.018"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.019"
++       >
++      <?MarkedContent page="1" ?>scheme 1:
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.020"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A float type that was not declared
++     </text-block>
++    </Caption>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.016"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.017"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>A scheme
++     </text-block>
++    </semantic-para>
++   </float>
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.027"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.028"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>text
++    </text-block>
++   </semantic-para>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.005"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.012"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>diagram 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A declared float type
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.010"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A diagram
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++   <Sect xmlns="http://iso.org/pdf2/ssn"
++      id="ID.006"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.021"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.024"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.025"
++        >
++       <?MarkedContent page="1" ?>chart 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.026"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Declared in a group and again
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.022"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.023"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A chart
++      </text-block>
++     </semantic-para>
++    </float>
++   </Sect>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-017-declare.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-017-declare.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~28 structure objects
++(tagpdf)             with ~13 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root

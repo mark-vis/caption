@@ -1,0 +1,129 @@
+From 37cb2bcd722cc2bde949d158d254a4e388138f4c Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 12:33:06 +0200
+Subject: [PATCH 28/28] (b) v2, part b-3: \@kernel@caption@unique is undefined
+ after a roll-back
+
+Round-5 verification V5-2: after \RequirePackage[2026-06-01]{latexrelease}
+\@kernel@caption and \@kernel@caption@reset were undefined, but
+\@kernel@caption@unique stayed defined, because it was defined in the
+"caption interface" release block, which has no 0000/00/00 counterpart
+(hooks and sockets cannot be undeclared). Code that tests the command
+would have seen the interface on a rolled-back kernel.
+
+The code is now \@caption@uniquedo, which the kernel uses itself for its
+unique targets; \@kernel@caption@unique is let to it in the release
+block of the kernel copies \@kernel@caption and \@kernel@@caption, and
+made undefined in its 0000/00/00 part. The internals of the caption
+interface block stay defined after a roll-back, as before.
+
+Test: caption-interface-002 TEST 1 also shows \@kernel@caption@unique
+(undefined; on the old code: defined).
+---
+ base/ltfloat.dtx                         | 18 ++++++++++++++----
+ base/testfiles/caption-interface-002.lvt |  8 +++++---
+ base/testfiles/caption-interface-002.tlg |  2 +-
+ 3 files changed, 20 insertions(+), 8 deletions(-)
+
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 93aa7e3fc..dae57ceaa 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -553,7 +553,8 @@
+ %
+ % \begin{macro}{\@kernel@caption@step,\@kernel@caption@unique}
+ % \begin{macro}{\@caption@target,\@caption@newtarget,\@caption@floattarget,
+-%                \@caption@uniquetarget,\@caption@uniqueH,\@caption@noH}
++%                \@caption@uniquetarget,\@caption@uniquedo,\@caption@uniqueH,
++%                \@caption@noH}
+ %    \cs{@kernel@caption@step}\marg{counter} implements the contract of
+ %    the socket \texttt{caption/step}. It is not \cs{refstepcounter},
+ %    because the counter is not always stepped and the target not always
+@@ -611,7 +612,7 @@
+   {\@caption@uniquetarget{#1}}%
+   \UseTaggingSocket{recordtarget}}
+ \def\@caption@uniquetarget#1{%
+-  \@kernel@caption@unique{#1}{\UseSocket{refstepcounter/target}{#1}}}
++  \@caption@uniquedo{#1}{\UseSocket{refstepcounter/target}{#1}}}
+ %    \end{macrocode}
+ % \changes{v1.2k}{2026/10/06}{\cs{@kernel@caption@unique} added}
+ %    \cs{@kernel@caption@unique}\marg{counter}\marg{code} executes
+@@ -644,8 +645,13 @@
+ %      undefined again). \meta{code} must not use the command for the
+ %      same counter.
+ %    \end{itemize}
++%    The code is \cs{@caption@uniquedo}, which the kernel uses itself;
++%    \cs{@kernel@caption@unique} is defined as it together with
++%    \cs{@kernel@caption} (see there), so that after a roll-back with
++%    \pkg{latexrelease} to an earlier date it is undefined, as the
++%    interface it belongs to.
+ %    \begin{macrocode}
+-\long\def\@kernel@caption@unique#1#2{%
++\long\def\@caption@uniquedo#1#2{%
+   \ifcsname theH#1\endcsname
+     \expandafter\let\csname @caption@unique@#1\expandafter\endcsname
+       \csname theH#1\endcsname
+@@ -1278,7 +1284,9 @@
+ %
+ %    They are defined only if the kernel has the caption interface: after
+ %    a roll-back with \pkg{latexrelease} to an earlier date they are
+-%    undefined, and a roll-forward defines them again. Therefore
++%    undefined, and a roll-forward defines them again. The same holds for
++%    \cs{@kernel@caption@unique} (the documented name of
++%    \cs{@caption@uniquedo}, see above) and \cs{@kernel@caption@reset}. Therefore
+ %    |\ifdefined\@kernel@caption| is the test for the interface, for
+ %    releases, roll-back, roll-forward and development formats alike.
+ %    There is no test whether \cs{caption} still is the kernel's: a
+@@ -1290,12 +1298,14 @@
+ %<latexrelease>                 {\@kernel@caption}{caption interface copies}%
+ \let\@kernel@caption\caption
+ \let\@kernel@@caption\@caption
++\let\@kernel@caption@unique\@caption@uniquedo
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+ %<latexrelease>                 {\@kernel@caption}{caption interface copies}%
+ %<latexrelease>\let\@kernel@caption\@undefined
+ %<latexrelease>\let\@kernel@@caption\@undefined
++%<latexrelease>\let\@kernel@caption@unique\@undefined
+ %<latexrelease>\EndIncludeInRelease
+ %<*2ekernel>
+ %    \end{macrocode}
+diff --git a/base/testfiles/caption-interface-002.lvt b/base/testfiles/caption-interface-002.lvt
+index 532cdc8ee..f47daed1a 100644
+--- a/base/testfiles/caption-interface-002.lvt
++++ b/base/testfiles/caption-interface-002.lvt
+@@ -1,7 +1,7 @@
+ % Roll-back of the caption interface (proposal (b)): with latexrelease
+ % 2026-06-01 the old \caption and \@caption are back, the kernel copies
+-% \@kernel@caption, \@kernel@@caption and \@kernel@caption@reset are
+-% undefined, the hooks
++% \@kernel@caption, \@kernel@@caption, \@kernel@caption@reset and
++% \@kernel@caption@unique are undefined, the hooks
+ % are not executed, and the guarded declarations give no errors.
+ \RequirePackage[2026-06-01]{latexrelease}
+ \documentclass{article}
+@@ -12,7 +12,9 @@
+     defined\else undefined\fi, \string\@kernel@@caption:
+     \ifdefined\@kernel@@caption defined\else undefined\fi,
+     \string\@kernel@caption@reset:
+-    \ifdefined\@kernel@caption@reset defined\else undefined\fi}}
++    \ifdefined\@kernel@caption@reset defined\else undefined\fi,
++    \string\@kernel@caption@unique:
++    \ifdefined\@kernel@caption@unique defined\else undefined\fi}}
+ \AddToHookWithArguments{caption/before}{\typeout{BEFORE: #1}}
+ \AddToHookWithArguments{caption/prepare}{\typeout{PREPARE: #1}}
+ \let\ORImakecaption\@makecaption
+diff --git a/base/testfiles/caption-interface-002.tlg b/base/testfiles/caption-interface-002.tlg
+index 61c4511f4..be847a022 100644
+--- a/base/testfiles/caption-interface-002.tlg
++++ b/base/testfiles/caption-interface-002.tlg
+@@ -3,7 +3,7 @@ Don't change this file in any respect.
+ ============================================================
+ TEST 1: kernel copies after the roll-back
+ ============================================================
+-\@kernel@caption: undefined, \@kernel@@caption: undefined, \@kernel@caption@reset: undefined
++\@kernel@caption: undefined, \@kernel@@caption: undefined, \@kernel@caption@reset: undefined, \@kernel@caption@unique: undefined
+ ============================================================
+ ============================================================
+ TEST 2: caption after the roll-back: old code, no hooks

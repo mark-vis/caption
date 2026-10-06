@@ -1,0 +1,798 @@
+From f120956fe5d9455cd6260b398287d17689bcc70e Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
+Date: Mon, 5 Oct 2026 22:32:58 +0200
+Subject: [PATCH 11/32] (b) v2, part b-3: \caption* with a replaced \@caption,
+ no class change
+
+\caption* skipped the step and then called \@caption. Classes and
+packages that replace \@caption by a definition that does not know the
+star (llncs, mwart/mwrep/mwbk, jpsj2, turabian-thesis, ...) then printed
+the label with the number of the previous caption and wrote a list entry
+("Fig. 1. First / Fig. 1. Starred", list entry "1 Starred"), worse than
+the old garbage (review finding H2).
+
+Now \caption* calls \@caption through \@caption@star, which lets
+\fnum@<type> be \@caption@nolabel and makes \addcontentsline a no-op
+while \@caption runs. A replaced \@caption that uses these two commands
+as the kernel did then gives a caption without label and without list
+entry, in the layout of the class. The kernel \@caption undoes the
+settings at its start (\@caption@star@restore), so hooks and plugs see
+the normal definitions; \@caption@star undoes them after the call
+otherwise. \if@captionstar is not reset after a replaced \@caption, so
+a deferred kernel \@caption (threeparttable) still sees the star.
+
+The label for \caption* is \@caption@nolabel instead of an empty
+argument: it typesets nothing and removes a colon that follows it
+directly. So \@makecaption definitions of the form #1: #2 (the
+standard classes and the many classes that copied them) show neither
+label nor separator without any change. Other separators stay; such a
+\@makecaption should test \if@captionstar.
+
+The change of classes.dtx from (b) v1 (no ": " for an empty label) is
+reverted: any change of the standard \@makecaption breaks packages that
+compare it with the standard definition. babel-french then no longer
+replaces the separator, so French documents with pdfLaTeX got
+"Figure 1: text" instead of "Figure 1 - text" (caption suite,
+test/babel/french-0, -4, -5); caption3 reports an unknown class.
+
+Packages that replace \caption itself (hyperref without
+\DocumentMetadata, float, beamer) bypass the kernel; documented.
+
+Documentation: ltfloat.dtx (\caption* with classes and packages, the
+label \@caption@nolabel), latex-lab-float.dtx (comment on the label),
+draft sections for usrguide (Captions without a number) and clsguide
+(Captions and \caption*).
+
+Tests: caption-interface-001: article's \@makecaption with the label of
+\caption*, \caption* with a class-like \@caption, with a wrapper of the
+kernel \@caption and with a deferred kernel \@caption. float-024:
+\caption* with hyperref's plugs.
+float-025/026 (from (c)): the class \@makecaption gets the label
+\@caption@nolabel for \caption*.
+---
+ base/changes.txt                              |  13 +-
+ base/classes.dtx                              |   9 +-
+ base/doc/clsguide.tex                         |  45 ++++++
+ base/doc/usrguide.tex                         |  23 +++
+ base/ltfloat.dtx                              | 137 ++++++++++++++++--
+ base/testfiles/caption-interface-001.lvt      |  76 +++++++++-
+ base/testfiles/caption-interface-001.tlg      |  78 +++++++++-
+ required/latex-lab/latex-lab-float.dtx        |   3 +-
+ .../float-024-caption-continued.lvt           |   7 +-
+ .../float-024-caption-continued.tlg           |  10 +-
+ .../float-025-makecaption-label.tlg           |   2 +-
+ .../float-026-makecaption-voids.tlg           |   2 +-
+ 12 files changed, 365 insertions(+), 40 deletions(-)
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 4d521faba..70ed628cd 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -29,6 +29,16 @@ not part of the distribution.
+ 	name (\theH<counter> with the suffix *<n> for refstepcounter/target),
+ 	never a second target with the name of the last stepped caption
+ 
++	* ltfloat.dtx:
++	\caption* passes \@caption@nolabel as label to \@makecaption: it
++	typesets nothing and removes a colon directly after it, so the
++	standard classes (unchanged) and classes that copied their
++	\@makecaption show neither label nor separator. With an \@caption
++	that a class or package has replaced (llncs, mwcls, ...),
++	\fnum@<type> is \@caption@nolabel and \addcontentsline does nothing
++	while that \@caption runs: no label with the number of the previous
++	caption and no list entry
++
+ 	* ltfloat.dtx:
+ 	\@caption stores the list text in \@currentlabelname (title for
+ 	named references)
+@@ -42,9 +52,6 @@ not part of the distribution.
+ 	Document that caption/label/begin and caption/label/end can be used
+ 	inside the caption paragraph
+ 
+-	* classes.dtx:
+-	No label separator in \@makecaption if the label is empty
+-
+ 2026-10-01 Joseph Wright  <Joseph.Wright@latex-project.org>
+ 
+ 	* ltfloats.dtx:
+diff --git a/base/classes.dtx b/base/classes.dtx
+index 170ab7d13..6a83ef734 100644
+--- a/base/classes.dtx
++++ b/base/classes.dtx
+@@ -53,7 +53,7 @@
+ %<*driver>
+ \ProvidesFile{classes.drv}
+ %</driver>
+-              [2026-10-03 v1.4o
++              [2026-06-04 v1.4n
+ %<article|report|book> Standard LaTeX document class]
+ %<10pt|11pt|12pt>      Standard LaTeX file (size option)]
+ %    \end{macrocode}
+@@ -3558,17 +3558,14 @@
+ %    therefore we first typeset it in a temporary box.
+ % \changes{v1.2q}{1994/05/29}{Use \cs{sbox}\cs{@tempboxa} instead of
+ %    \cs{setbox}\cs{@tempboxa}\cs{hbox} to make this color safe}
+-% \changes{v1.4o}{2026/10/03}{No label and separator if the label is
+-%    empty (\cs{caption*})}
+-%    If the label is empty (\cs{caption*}) we omit the separator too.
+ %    \begin{macrocode}
+-  \sbox\@tempboxa{\if\relax\detokenize{#1}\relax\else#1: \fi#2}%
++  \sbox\@tempboxa{#1: #2}%
+ %    \end{macrocode}
+ %    We can the measure its width. It that is larger than the current
+ %    |\hsize| we typeset the caption as an ordinary paragraph.
+ %    \begin{macrocode}
+   \ifdim \wd\@tempboxa >\hsize
+-    \if\relax\detokenize{#1}\relax\else#1: \fi#2\par
++    #1: #2\par
+ %    \end{macrocode}
+ %    If the caption fits, we center it. Because this uses an |\hbox|
+ %    directly in vertical mode, it does not execute the |\everypar|
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index bf2acc5b4..30db685dd 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1517,6 +1517,51 @@ by \cs{refstepcounter}.
+ \end{decl}
+ This changes the name of the next target that will be created.
+ 
++\subsection{Captions and \cs{caption*}}
++
++\LaTeX{} provides \cs{caption*} for captions without a number (see
++\texttt{usrguide}). It uses the class's \cs{@makecaption}, and the kernel
++offers hooks and sockets so that classes and packages do not need to
++redefine \cs{caption} or \cs{@caption} (see the documentation of
++\texttt{ltfloat.dtx}). For classes this means:
++\begin{itemize}
++\item \cs{@makecaption}\arg{label}\arg{text} is also used for
++  \cs{caption*}. Then the switch \cs{if@captionstar} is true and
++  \meta{label} is a command that typesets nothing and removes a colon
++  that follows it directly. So a \cs{@makecaption} that typesets
++  \verb|#1: #2|, as the standard classes do, needs no change. A class
++  with another separator should omit the label \emph{and} the separator
++  if the switch is true, for example:
++\begin{verbatim}
++\sbox\@tempboxa{\if@captionstar\else#1. \fi#2}%
++\end{verbatim}
++  Test the switch directly (not with \cs{ifx} against \cs{iftrue}, which
++  would unbalance a conditional when the code is in a skipped branch). A
++  class that wants to work with older formats can provide the switch
++  first:
++\begin{verbatim}
++\@ifundefined{if@captionstar}{\newif\if@captionstar}{}
++\end{verbatim}
++\item A class that redefines \cs{@caption} (for example to change the
++  list entry or the spacing) should preferably use the hooks and sockets
++  of the caption interface instead (hooks \texttt{caption/before},
++  \texttt{caption/prepare}; sockets \texttt{caption/listentry},
++  \texttt{caption/typeset}). An
++  existing redefinition that typesets the label with
++  \cs{fnum@}\meta{type} and writes the list entry with
++  \cs{addcontentsline}, as the kernel did before, gives a correct
++  \cs{caption*} without changes: for \cs{caption*} the kernel lets
++  \cs{fnum@}\meta{type} be the label described above and makes
++  \cs{addcontentsline} a no-op while it calls \cs{@caption}. A redefinition can also test \cs{if@captionstar}
++  itself.
++\item A class or package that redefines \cs{caption} itself takes over
++  the star as well: unless it handles it (no counter step, no list entry,
++  an empty label for \cs{@makecaption} with \cs{if@captionstar} true),
++  \verb|\caption*{Text}| gives a numbered caption with the text `*' and a
++  list entry, followed by `Text'. It is better to keep the kernel
++  definition and to use the hooks and sockets.
++\end{itemize}
++
+ 
+ \subsection{Querying document command argument specifications}
+ 
+diff --git a/base/doc/usrguide.tex b/base/doc/usrguide.tex
+index 7b4f351b1..13d322b74 100644
+--- a/base/doc/usrguide.tex
++++ b/base/doc/usrguide.tex
+@@ -1524,6 +1524,29 @@ respectively
+ \end{itemize}
+ The naming here follows the pattern established by OpenType math parameters.
+ 
++\section{Captions without a number}
++
++\begin{decl}
++  |\caption*| \oarg{opt} \arg{text}
++\end{decl}
++Where \cs{caption} can be used (inside a float, for example), \cs{caption*}
++typesets \meta{text} as a caption without a label: the counter of the float
++is not stepped, nothing is written to the list of figures, tables, etc., and
++there is no number and no link target for a \cs{label}. The optional argument
++is accepted for symmetry with \cs{caption}; the kernel does not use it, but
++packages may.
++
++The caption has the layout of the document class. The standard classes omit
++the label and its separator. A class or package that uses another separator
++than a colon and has not yet been updated for \cs{caption*} may print that
++separator before the text (for example `. Text'); it still gives no number
++and no list entry. Packages
++that replace \cs{caption} itself (at present, for example, \pkg{hyperref}
++without \cs{DocumentMetadata}, \pkg{float} and \pkg{beamer}) do not know
++\cs{caption*} yet: with them \verb|\caption*{Text}| gives, as before, a
++numbered caption with the text `*' and a list entry, followed by `Text'.
++The \pkg{caption} package supports \cs{caption*} with all of them.
++
+ \section{Support for problem solving}
+ 
+ \begin{decl}
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 501447f27..0c5554ae7 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -266,6 +266,47 @@
+ %    result is the same as with the definitions of \LaTeX{} before 2026,
+ %    except that \cs{caption*} is available.
+ %
++% \paragraph{\cs{caption*} with classes and packages.}
++%    What \cs{caption*} gives depends on the definitions that are active:
++%    \begin{itemize}
++%    \item With the kernel \cs{caption} and \cs{@caption} (also if a
++%      package wraps them and calls the kernel definitions, as
++%      \cls{memoir} and \pkg{nameref} do): no step, no target, no list
++%      entry, and \cs{@makecaption} is called with the label
++%      \cs{@caption@nolabel} while \cs{if@captionstar} is true.
++%    \item With the kernel \cs{caption} and an \cs{@caption} that a class
++%      or package has replaced by a definition that does not know the
++%      star (\cls{llncs}, \cls{mwart}, \cls{jpsj2}, \ldots): the kernel
++%      lets \cs{fnum@}\meta{type} be \cs{@caption@nolabel} and makes
++%      \cs{addcontentsline} a no-op while that \cs{@caption} runs (see
++%      \cs{@caption@star}). Such a definition, if it uses these two
++%      commands as the kernel did, then also gives a caption without
++%      label and without list entry, in the layout of the class. If it
++%      defers the typesetting to a later point (\pkg{threeparttable} does
++%      that for the \cs{@caption} that was active before), the deferred
++%      code runs without these settings; with the kernel \cs{@caption}
++%      that is no problem, because \cs{if@captionstar} is still true then.
++%    \item The class's \cs{@makecaption} decides how the caption looks.
++%      \cs{@caption@nolabel} typesets nothing and removes a colon that
++%      directly follows it, so a \cs{@makecaption} that typesets
++%      |#1: #2|, as the standard classes and many classes derived from
++%      them do, shows neither label nor separator without any change. A
++%      \cs{@makecaption} with another separator should omit the label
++%      \emph{and} the separator if \cs{if@captionstar} is true (the
++%      tagging code does that); one that does not prints its separator
++%      before the text (for example ``. Text''). The standard classes are
++%      not changed, because packages compare \cs{@makecaption} with their
++%      definition (for example \pkg{babel-french}, which replaces the
++%      separator for French only if \cs{@makecaption} is the standard one).
++%    \item A package or class that replaces \cs{caption} itself bypasses
++%      all of this, for example \pkg{float}, \cls{beamer}, and
++%      \pkg{hyperref} if there is no \cs{DocumentMetadata}: its
++%      \cs{caption} takes the star as the text of a numbered caption, as
++%      before. Such code has to be changed (for example by keeping the
++%      kernel \cs{caption} and using the hooks and sockets described
++%      here); the kernel cannot do it.
++%    \end{itemize}
++%
+ %    The declarations are also written to \texttt{latexrelease}, guarded,
+ %    so that rolling forward from an older format works. After a roll-back
+ %    they stay defined but are not used.
+@@ -403,8 +444,8 @@
+ %    outside of its group are valid after the caption, so it should only
+ %    make them on purpose. \cs{if@captionstar} is valid while it runs.
+ %    A plug that typesets the caption with \cs{@makecaption} should pass
+-%    an empty first argument for \cs{caption*}, so that classes and the
+-%    tagging code behave as with the default plug.
++%    \cs{@caption@nolabel} as first argument for \cs{caption*}, so that
++%    classes and the tagging code behave as with the default plug.
+ %
+ %    The default plug \plug{kernel} uses \cs{@kernel@caption@typeset}. A
+ %    package that typesets captions completely (e.g., \pkg{caption}) or
+@@ -428,7 +469,12 @@
+ %    processed: from the start of \cs{caption*} until the end of
+ %    \cs{@caption}, so also in the hooks, in the plugs of
+ %    \texttt{caption/typeset} and in \cs{@makecaption}. In that case the first
+-%    argument of \cs{@makecaption} is empty. Code that calls \cs{@caption}
++%    argument of \cs{@makecaption} is \cs{@caption@nolabel} (or, if
++%    \cs{@caption} has been replaced, \cs{fnum@}\meta{type}, which is then
++%    \cs{@caption@nolabel}), and a \cs{@makecaption} can test this switch
++%    to omit the label and its separator. If \cs{@caption} is not
++%    the kernel's, the switch stays true until the next \cs{caption} or
++%    the end of the current group. Code that calls \cs{@caption}
+ %    directly can set it true before the call.
+ %
+ %    \cs{if@captionstep} and \cs{if@captiontarget} are true outside of
+@@ -533,8 +579,9 @@
+ % \begin{macro}{\@kernel@caption@typeset}
+ %    \cs{@kernel@caption@typeset}\marg{type}\marg{star}\marg{text} is the
+ %    typesetting of the kernel: the code of \cs{@caption} before 2026,
+-%    with an empty label for \cs{caption*}. It is documented, so that a
+-%    plug of \texttt{caption/typeset} can fall back to it.
++%    with the label \cs{@caption@nolabel} for \cs{caption*}. It is
++%    documented, so that a plug of \texttt{caption/typeset} can fall back
++%    to it.
+ %    \begin{macrocode}
+ \long\def\@kernel@caption@typeset#1#2#3{%
+   \begingroup
+@@ -565,13 +612,30 @@
+ %    \begin{macrocode}
+     \normalsize
+     \IfBooleanTF{#2}%
+-      {\@makecaption{}}%
++      {\@makecaption{\@caption@nolabel}}%
+       {\@makecaption{\csname fnum@#1\endcsname}}%
+       {\ignorespaces #3}\par
+   \endgroup}
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \begin{macro}{\@caption@nolabel,\@caption@nolabel@colon}
++% \changes{v1.2k}{2026/10/05}{Macros added}
++%    \cs{@caption@nolabel} is the label that \cs{caption*} passes to
++%    \cs{@makecaption}. It typesets nothing. If a colon follows it
++%    directly (spaces are skipped), the colon and the spaces after it
++%    are removed as well, so a \cs{@makecaption} that typesets |#1: #2|
++%    (the standard classes and many others) gives the text without label
++%    and without separator. Any other separator is kept; such a
++%    \cs{@makecaption} has to test \cs{if@captionstar}. The command is
++%    robust, so that it survives \cs{edef} and case changing of the label.
++%    \begin{macrocode}
++\protected\def\@caption@nolabel{%
++  \kernel@ifnextchar:\@caption@nolabel@colon\@empty}
++\def\@caption@nolabel@colon:{\ignorespaces}
++%    \end{macrocode}
++% \end{macro}
++%
+ %    \begin{macrocode}
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+@@ -580,6 +644,7 @@
+ %
+ % \begin{macro}{\caption}
+ % \begin{macro}{\@caption@args,\@caption@read,\@caption@process}
++% \begin{macro}{\@caption@star,\@caption@star@restore}
+ % \begin{macro}{\@caption@skip,\@caption@skip@star,\@caption@skip@args,
+ %                \@caption@skip@opt}
+ %
+@@ -602,13 +667,21 @@
+ %    The star form \cs{caption*} typesets a caption without a label:
+ %    it does not step the counter, sets no target and writes no list
+ %    entry. An optional argument is accepted; it is only passed to the
+-%    hook \hook{caption/before}.
++%    hook \hook{caption/before} (and to \cs{@caption} as list text, which
++%    the kernel \cs{@caption} only passes to \hook{caption/prepare}).
++% \changes{v1.2k}{2026/10/05}
++%    {\cs{caption*} also gives no label and no list entry if \cs{@caption}
++%     has been replaced by a definition that does not know the star}
+ %
+ %    The star is read with \cs{@ifstar} and the optional argument with
+ %    \cs{kernel@ifnextchar}, so spaces before them are skipped, as with
+ %    \cs{@dblarg} before. The type passed on is the expansion of
+ %    \cs{@captype}. User text is never inside a conditional that \TeX{}
+-%    might skip, and \cs{@caption} is the last token, as before.
++%    might skip. For \cs{caption}, \cs{@caption} is the last token, as
++%    before (\pkg{float}'s \cs{float@caption}, for example, looks for an
++%    optional argument after it). For \cs{caption*} it is followed by the
++%    code of \cs{@caption@star} that undoes its settings; this is new
++%    syntax, so no existing code relies on the last token there.
+ %    \begin{macrocode}
+ %</2ekernel>
+ %<*2ekernel|latexrelease>
+@@ -642,12 +715,45 @@
+   \else
+     \expandafter\@secondoftwo
+   \fi
+-  {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanTrue}{#2}{#3}}%
++  {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanTrue}{#2}{#3}%
++   \IfNoValueTF{#2}%
++     {\@caption@star{#1}{#3}{#3}}%
++     {\@caption@star{#1}{#2}{#3}}}%
+   {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanFalse}{#2}{#3}%
+-   \UseSocket{caption/step}{#1}}%
+-  \IfNoValueTF{#2}%
+-    {\@caption{#1}[{#3}]{#3}}%
+-    {\@caption{#1}[{#2}]{#3}}}
++   \UseSocket{caption/step}{#1}%
++   \IfNoValueTF{#2}%
++     {\@caption{#1}[{#3}]{#3}}%
++     {\@caption{#1}[{#2}]{#3}}}}
++%    \end{macrocode}
++%    \cs{@caption@star}\marg{type}\marg{list text}\marg{text} calls
++%    \cs{@caption} for \cs{caption*}. The kernel \cs{@caption} knows the
++%    star, but a class or package may have replaced \cs{@caption} by a
++%    definition that does not (\cls{llncs}, \cls{mwart} and others):
++%    it would write a list entry and typeset the label with the number
++%    of the previous caption. So while \cs{@caption} runs,
++%    \cs{fnum@}\meta{type} is \cs{@caption@nolabel} and
++%    \cs{addcontentsline} does nothing: such a definition then gives a
++%    caption without label and without list entry, in the layout of the
++%    class (its \cs{@makecaption} gets the same label as from the kernel,
++%    and \cs{if@captionstar} is true). The kernel
++%    \cs{@caption} undoes this at its start with \cs{@caption@star@restore}
++%    (so the hooks and plugs see the normal definitions), and
++%    \cs{@caption@star} undoes it after the call if that has not happened.
++%    \cs{@caption@star@restore} is \cs{relax} otherwise.
++%    \begin{macrocode}
++\long\def\@caption@star#1#2#3{%
++  \expandafter\let\expandafter\@caption@star@fnum
++    \csname fnum@#1\endcsname
++  \let\@caption@star@addcontentsline\addcontentsline
++  \def\@caption@star@restore{%
++    \expandafter\let\csname fnum@#1\endcsname\@caption@star@fnum
++    \let\addcontentsline\@caption@star@addcontentsline
++    \let\@caption@star@restore\relax}%
++  \expandafter\let\csname fnum@#1\endcsname\@caption@nolabel
++  \let\addcontentsline\@gobblethree
++  \@caption{#1}[{#2}]{#3}%
++  \@caption@star@restore}
++\let\@caption@star@restore\relax
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+@@ -668,6 +774,7 @@
+ % \end{macro}
+ % \end{macro}
+ % \end{macro}
++% \end{macro}
+ %
+ % \begin{macro}{\@caption}
+ % \begin{macro}{\@caption@body}
+@@ -677,7 +784,8 @@
+ %     {Call \cs{@setminpage} if needed. latex/2318}
+ % \changes{v1.2k}{2026/10/05}
+ %     {Hook \texttt{caption/prepare}; sockets \texttt{caption/listentry}
+-%      and \texttt{caption/typeset}; empty label for \cs{caption*}}
++%      and \texttt{caption/typeset}; label \cs{@caption@nolabel} for
++%      \cs{caption*}}
+ % \changes{v1.2k}{2026/10/05}
+ %     {Store the list text in \cs{@currentlabelname}}
+ %    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
+@@ -700,6 +808,7 @@
+ %<latexrelease>                 {\@caption}{star form, list entry socket}%
+ \long\def\@caption#1[#2]#3{%
+   \par
++  \@caption@star@restore
+   \if@captionstar
+     \expandafter\@firstoftwo
+   \else
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+index 5ea354bc3..2720264dd 100644
+--- a/base/testfiles/caption-interface-001.lvt
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -38,7 +38,8 @@
+ \AddToHookWithArguments{caption/prepare}[test]{%
+   \showbool{#2}%
+   \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
+-    figure=\thefigure, label=\@currentlabel, href=\@currentHref}}
++    figure=\thefigure, label=\@currentlabel, href=\@currentHref}%
++  \csname testprepare\endcsname}
+ % a listentry plug that shows its three arguments
+ \NewSocketPlug{caption/listentry}{test}{%
+   \typeout{LISTENTRY: {#1}{\detokenize{#2}}{\detokenize{#3}}}}
+@@ -65,9 +66,40 @@
+ \def\settype#1{\def\@captype{#1}}
+ \def\directcaption{\@caption}
+ \def\starton{\@captionstartrue}
++\def\nolabel{\@caption@nolabel}
+ \def\showcopies{%
+   \typeout{caption: \ifx\caption\@kernel@caption kernel\else other\fi,
+     @caption: \ifx\@caption\@kernel@@caption kernel\else other\fi}}
++% replacements of \@caption: as in a class that does not know \caption*
++% (the definition of llncs), a wrapper of the kernel definition (as in
++% memoir or nameref), and a definition that defers the kernel definition
++% (as threeparttable)
++\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
++  ext@#1\endcsname}{#1}{\protect\numberline{\csname
++  the#1\endcsname}{\ignorespaces #2}}\begingroup
++    \@parboxrestore
++    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++  \endgroup}
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \@kernel@@caption{#1}[{#2}]{#3}}
++\long\def\defercaption#1[#2]#3{%
++  \gdef\deferred{\@kernel@@caption{#1}[{#2}]{#3}}}
++\def\useclasscaption{\let\@caption\classcaption}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++\def\usedefercaption{\let\@caption\defercaption}
++\def\showlabelexpansion{%
++  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
++    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
++      true\else false\fi}}}
++\def\showrestored{%
++  \typeout{after: fnum=\meaning\fnum@figure, addcontentsline:
++    \ifx\addcontentsline\@gobblethree no-op\else normal\fi}}
++\def\testpreparestar{%
++  \def\testprepare{\typeout{PREPARE sees: fnum=\meaning\fnum@figure,
++    addcontentsline: \ifx\addcontentsline\@gobblethree
++    no-op\else normal\fi}}}
++\def\staroff{\@captionstarfalse}
+ \makeatother
+ \begin{document}
+ \START
+@@ -80,7 +112,7 @@
+   \begin{figure}
+     \caption{Normal with kernel list entry}
+   \end{figure}}
+-\TEST{star caption: no step, no list entry, empty label}{%
++\TEST{star caption: no step, no list entry, no label}{%
+   \begin{figure}
+     \caption*{Star}
+     \typeout{figure=\thefigure}
+@@ -176,10 +208,12 @@
+   \end{figure}}
+ \TEST{kernel copies}{%
+   \showcopies}
+-\TEST{article makecaption with empty label: no separator}{%
+-  \setbox0=\vbox{\hsize=10cm \ORImakecaption{}{Text}}%
++\TEST{article makecaption with the label of caption*: no separator}{%
++  \setbox0=\vbox{\hsize=10cm \starton\ORImakecaption{\nolabel}{Text}}%
+   \showbox0
+   \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
++  \showbox0
++  \setbox0=\hbox{\nolabel. Text}% other separators are kept
+   \showbox0}
+ \TEST{caption outside float: error, arguments skipped}{%
+   \setbox0=\vbox{\caption[Opt]{Outside}}%
+@@ -211,4 +245,38 @@
+     \caption{Continued twice}
+     \showhref
+   \end{figure}}
++\TEST{caption* with a replaced @caption (class): no label, no entry}{%
++  \begin{figure}
++    \useclasscaption
++    \showlabelexpansion
++    \caption{First}
++    \caption*{Starred}
++    \typeout{figure=\thefigure}
++    \showswitches
++    \showrestored
++    \caption*[Opt]{Starred with option}
++    \showrestored
++    \caption{Second}
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
++\TEST{caption* with a wrapper of the kernel @caption}{%
++  \begin{figure}
++    \usewrappercaption
++    \testpreparestar
++    \caption*{Starred}
++    \typeout{figure=\thefigure}
++    \showswitches
++    \showrestored
++    \caption{Normal}
++  \end{figure}}
++\TEST{caption* with a deferred kernel @caption}{%
++  \begin{figure}
++    \usedefercaption
++    \caption*{Deferred star}
++    \showrestored
++    \deferred
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
+ \end{document}
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+index 0c4a8c328..d57ee5954 100644
+--- a/base/testfiles/caption-interface-001.tlg
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -16,11 +16,11 @@ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal with kernel list entry], star=false
+ ============================================================
+ ============================================================
+-TEST 2: star caption: no step, no list entry, empty label
++TEST 2: star caption: no step, no list entry, no label
+ ============================================================
+ BEFORE: {figure}{true}{NoValue}{Star}, figure=2, linewidth=345.0pt
+ PREPARE: {figure}{true}{Star}{Star}, figure=2, label=, href=figure.2
+-MAKECAPTION: [] [\ignorespaces Star], star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star], star=true
+ figure=2
+ SWITCHES: star=false, step=true, target=true
+ ============================================================
+@@ -29,7 +29,7 @@ TEST 3: star with optional argument (only given to the hook)
+ ============================================================
+ BEFORE: {figure}{true}{[x]}{Star with optional argument}, figure=2, linewidth=345.0pt
+ PREPARE: {figure}{true}{x}{Star with optional argument}, figure=2, label=, href=figure.2
+-MAKECAPTION: [] [\ignorespaces Star with optional argument], star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star with optional argument], star=true
+ figure=2
+ ============================================================
+ ============================================================
+@@ -163,7 +163,7 @@ local: set by the typeset plug
+ BEFORE: {figure}{true}{NoValue}{Typeset plug, star}, figure=16, linewidth=85.35826pt
+ PREPARE: {figure}{true}{Typeset plug, star}{Typeset plug, star}, figure=16, label=16, href=figure.16
+ TYPESET: {figure}{true}{Typeset plug, star}, linewidth=85.35826pt, star=true
+-MAKECAPTION: [] [\ignorespaces Typeset plug, star], star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Typeset plug, star], star=true
+ LaTeX Font Info:    External font `cmex10' loaded for size
+ (Font)              <7> on input line ....
+ LaTeX Font Info:    External font `cmex10' loaded for size
+@@ -176,7 +176,7 @@ PREPARE: {figure}{false}{L}{T}, figure=16, label=, href=figure.16
+ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces L}}
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces T], star=false
+ PREPARE: {figure}{true}{L2}{T2 star}, figure=16, label=, href=figure.16
+-MAKECAPTION: [] [\ignorespaces T2 star], star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces T2 star], star=true
+ SWITCHES: star=false, step=true, target=true
+ ============================================================
+ ============================================================
+@@ -185,7 +185,7 @@ TEST 14: kernel copies
+ caption: kernel, @caption: kernel
+ ============================================================
+ ============================================================
+-TEST 15: article makecaption with empty label: no separator
++TEST 15: article makecaption with the label of caption*: no separator
+ ============================================================
+ > \box...=
+ \vbox(16.83331+0.0)x284.52756
+@@ -201,7 +201,7 @@ TEST 15: article makecaption with empty label: no separator
+ ..\glue 0.0 plus 1.0fil
+ .\glue 0.0
+ ! OK.
+-<argument> ...\ORImakecaption {}{Text}}\showbox 0 
++<argument> ...aption {\nolabel }{Text}}\showbox 0 
+                                                   \setbox 0=\vbox {\hsize =1...
+ l. ...  \showbox0}
+ > \box...=
+@@ -226,6 +226,19 @@ l. ...  \showbox0}
+ ..\glue 0.0 plus 1.0fil
+ .\glue 0.0
+ ! OK.
++<argument> ...akecaption {Label}{Text}}\showbox 0 
++                                                  \setbox 0=\hbox {\nolabel ...
++l. ...  \showbox0}
++> \box...=
++\hbox(6.83331+0.0)x27.22226
++.\OT1/cmr/m/n/10 .
++.\glue 4.44444 plus 4.99997 minus 0.37036
++.\OT1/cmr/m/n/10 T
++.\kern-0.83334
++.\OT1/cmr/m/n/10 e
++.\OT1/cmr/m/n/10 x
++.\OT1/cmr/m/n/10 t
++! OK.
+ <to be read again> 
+                    \endgroup 
+ l. ...  \showbox0}
+@@ -298,4 +311,55 @@ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued twice], star=false
+ href=figure.16*3
+ ============================================================
++============================================================
++TEST 21: caption* with a replaced @caption (class): no label, no entry
++============================================================
++BEFORE: {figure}{false}{NoValue}{First}, figure=16, linewidth=345.0pt
++TARGET: new target figure.17
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces First}}
++MAKECAPTION: label=[Figure\nobreakspace 17], star=false
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=17, linewidth=345.0pt
++MAKECAPTION: label=[\fnum@figure ], star=true
++figure=17
++SWITCHES: star=true, step=true, target=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++BEFORE: {figure}{true}{[Opt]}{Starred with option}, figure=17, linewidth=345.0pt
++MAKECAPTION: label=[\fnum@figure ], star=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++BEFORE: {figure}{false}{NoValue}{Second}, figure=17, linewidth=345.0pt
++TARGET: new target figure.18
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Second}}
++MAKECAPTION: label=[Figure\nobreakspace 18], star=false
++figure=18
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 22: caption* with a wrapper of the kernel @caption
++============================================================
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=18, linewidth=345.0pt
++WRAPPER: fnum=\protected macro:->\kernel@ifnextchar :\@caption@nolabel@colon \@empty 
++PREPARE: {figure}{true}{Starred}{Starred}, figure=18, label=, href=figure.18
++PREPARE sees: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
++figure=18
++SWITCHES: star=false, step=true, target=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++BEFORE: {figure}{false}{NoValue}{Normal}, figure=18, linewidth=345.0pt
++TARGET: new target figure.19
++WRAPPER: fnum=macro:->\figurename \nobreakspace \thefigure 
++PREPARE: {figure}{false}{Normal}{Normal}, figure=19, label=19, href=figure.19
++PREPARE sees: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Normal}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
++============================================================
++============================================================
++TEST 23: caption* with a deferred kernel @caption
++============================================================
++BEFORE: {figure}{true}{NoValue}{Deferred star}, figure=19, linewidth=345.0pt
++after: fnum=macro:->\figurename \nobreakspace \thefigure , addcontentsline: normal
++PREPARE: {figure}{true}{Deferred star}{Deferred star}, figure=19, label=, href=figure.19
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Deferred star], star=true
++figure=19
++SWITCHES: star=false, step=true, target=true
++============================================================
+ [1] [2] (caption-interface-001.aux)
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index 6f724b927..afa8994fa 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -1101,7 +1101,8 @@
+ %    \begin{macrocode}
+       \bool_set_true:N \l_@@_caption_label_beforepar_bool
+ %    \end{macrocode}
+-% \cs{caption*} has no label (the first argument is empty), so the label
++% \cs{caption*} has no label (\cs{if@captionstar} is true and the first
++% argument is \cs{@caption@nolabel}, which typesets nothing), so the label
+ % sockets are disabled locally, and the label tagging sockets get the plugs
+ % \plug{nolabel}.
+ % \changes{0.81q}{2026-10-03}{Support for \cs{caption*}}
+diff --git a/required/latex-lab/testfiles-float/float-024-caption-continued.lvt b/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
+index c8426640d..8104aed1d 100644
+--- a/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
++++ b/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
+@@ -9,7 +9,8 @@
+ % make a second target with the name of the last stepped caption (that
+ % gave "destination with the same identifier" and links to the first
+ % caption): it gets a target with a unique name, and its \label
+-% records the number of the counter and that target.
++% records the number of the counter and that target. \caption* makes
++% no target and no list entry.
+ \input{regression-test}
+ \documentclass{article}
+ \makeatletter
+@@ -55,6 +56,10 @@
+     \let\testbefore\targetoff
+     \caption{Fourth, continued, no target}\showhref{No target}
+   \end{figure}}
++\TEST{caption*: no step, no target}{%
++  \begin{figure}[h]
++    \caption*{Starred}\showhref{Starred}
++  \end{figure}}
+ \TEST{labels}{%
+   \showref{a}\showref{ac}\showref{acc}\showref{b}%
+   \showref{c}\showref{cc}\showref{d}}
+diff --git a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+index 8d95f959f..a3f7e8d69 100644
+--- a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
++++ b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+@@ -25,7 +25,12 @@ TEST 3: no step and no target: href unchanged
+ No target: label=4, href=figure.4
+ ============================================================
+ ============================================================
+-TEST 4: labels
++TEST 4: caption*: no step, no target
++============================================================
++Starred: label=, href=figure.4
++============================================================
++============================================================
++TEST 5: labels
+ ============================================================
+ a: macro:->{1}{1}{First}{figure.1}{}
+ ac: macro:->{1}{1}{First, continued}{figure.1*1}{}
+@@ -36,9 +41,10 @@ cc: macro:->{3}{1}{Third, continued}{figure.3*3}{}
+ d: macro:->{4}{1}{Fourth}{figure.4}{}
+ ============================================================
+ ============================================================
+-TEST 5: destinations (no duplicate)
++TEST 6: destinations (no duplicate)
+ ============================================================
+ LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
+ [1
+ ] [2]
+ ============================================================
+diff --git a/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg b/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg
+index 744451bfd..a87c25e7d 100644
+--- a/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg
++++ b/required/latex-lab/testfiles-float/float-025-makecaption-label.tlg
+@@ -9,5 +9,5 @@ TEST 1: The class definition survives
+ TEST 2: Numbered caption and caption*
+ ============================================================
+ CLASS MAKECAPTION: \csname fnum@figure\endcsname 
+-CLASS MAKECAPTION: 
++CLASS MAKECAPTION: \@caption@nolabel 
+ ============================================================
+diff --git a/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg b/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg
+index 744451bfd..a87c25e7d 100644
+--- a/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg
++++ b/required/latex-lab/testfiles-float/float-026-makecaption-voids.tlg
+@@ -9,5 +9,5 @@ TEST 1: The class definition survives
+ TEST 2: Numbered caption and caption*
+ ============================================================
+ CLASS MAKECAPTION: \csname fnum@figure\endcsname 
+-CLASS MAKECAPTION: 
++CLASS MAKECAPTION: \@caption@nolabel 
+ ============================================================

@@ -1,0 +1,198 @@
+From 0bed11127e79a1dcdfd1804e8edd3516970f3929 Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
+Date: Mon, 5 Oct 2026 13:42:34 +0200
+Subject: [PATCH 09/32] (b) v2, optional O2: skip the arguments of \caption
+ outside a float
+
+After the error "\caption outside float", \caption now skips the star,
+the optional and the mandatory argument. Before, only the following
+group was gobbled, so the caption text was typeset. The rest of
+\caption is still removed expandably and the skipping command is
+protected, so \caption outside a float still expands without errors in
+an expansion context; github-robust-0123 now shows
+\@caption@skip@star before the argument. tlb2815 is unchanged (it
+defines its own \caption).
+---
+ base/changes.txt                             |  3 +++
+ base/ltfloat.dtx                             | 19 ++++++++++++++++--
+ base/testfiles/caption-interface-001.lvt     | 10 ++++++----
+ base/testfiles/caption-interface-001.tlg     | 21 ++++++++++++++------
+ base/testfiles/github-robust-0123.luatex.tlg |  2 +-
+ base/testfiles/github-robust-0123.tlg        |  2 +-
+ base/testfiles/github-robust-0123.xetex.tlg  |  2 +-
+ 7 files changed, 44 insertions(+), 15 deletions(-)
+
+diff --git a/base/changes.txt b/base/changes.txt
+index a557197a8..39e4aafb4 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -27,6 +27,9 @@ not part of the distribution.
+ 	\@caption stores the list text in \@currentlabelname (title for
+ 	named references)
+ 
++	* ltfloat.dtx:
++	\caption outside a float skips its star and arguments after the error
++
+ 	* lttagging.dtx:
+ 	Add tagging sockets subfloat/box, subfloat/begin and subfloat/end;
+ 	\DeclareTaggingFloatType also declares float/<type>/sub.
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 7423ee41b..da5ea08ef 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -539,13 +539,21 @@
+ %
+ % \begin{macro}{\caption}
+ % \begin{macro}{\@caption@args,\@caption@read,\@caption@process}
++% \begin{macro}{\@caption@skip,\@caption@skip@star,\@caption@skip@args,
++%                \@caption@skip@opt}
+ %
+ %    This is set to be an error message outside a float since no
+ %    captype is defined there; this may need to be changed by some
+-%    classes.
++%    classes. After the error the star and the arguments are skipped
++%    (before, the caption text was typeset). \cs{@caption@skip} removes
++%    the rest of \cs{caption} (as \cs{@gobble} did before) and
++%    \cs{@caption@skip@star} is protected, so that \cs{caption} outside a
++%    float still expands without errors in an expansion context.
+ % \changes{v1.1u}{1999/04/19}
+ %    {Made caption an error outside a float: latex/2815}
+ % \changes{v1.2k}{2026/10/05}
++%    {Outside a float, skip the star and the arguments after the error}
++% \changes{v1.2k}{2026/10/05}
+ %    {Add star form; read the arguments without \cs{@dblarg}; hook
+ %     \texttt{caption/before}; step the counter through the socket
+ %     \texttt{caption/step}}
+@@ -568,13 +576,19 @@
+ \def\caption{%
+    \ifx\@captype\@undefined
+      \@latex@error{\noexpand\caption outside float}\@ehd
+-     \expandafter\@gobble
++     \expandafter\@caption@skip
+    \else
+      \expandafter\@firstofone
+    \fi
+    {\@ifstar{\@captionstartrue\@caption@args}%
+             {\@captionstarfalse\@caption@args}}%
+ }
++\long\def\@caption@skip#1{\@caption@skip@star}
++\protected\def\@caption@skip@star{%
++  \@ifstar\@caption@skip@args\@caption@skip@args}
++\def\@caption@skip@args{%
++  \kernel@ifnextchar[\@caption@skip@opt{\@caption@skip@opt[]}}
++\long\def\@caption@skip@opt[#1]#2{}
+ \def\@caption@args{%
+   \kernel@ifnextchar[\@caption@read{\@caption@read[\NoValue]}}
+ \long\def\@caption@read[#1]#2{%
+@@ -612,6 +626,7 @@
+ %    \end{macrocode}
+ % \end{macro}
+ % \end{macro}
++% \end{macro}
+ %
+ % \begin{macro}{\@caption}
+ % \begin{macro}{\@caption@body}
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+index aaa8b81c1..207f43c38 100644
+--- a/base/testfiles/caption-interface-001.lvt
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -179,8 +179,10 @@
+   \showbox0
+   \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
+   \showbox0}
+-\TEST{caption outside float: error as before}{%
+-  \caption{Outside}}
+-\TEST{caption* outside float: error as before}{%
+-  \caption*{Outside}}
++\TEST{caption outside float: error, arguments skipped}{%
++  \setbox0=\vbox{\caption[Opt]{Outside}}%
++  \showbox0 }
++\TEST{caption* outside float: error, arguments skipped}{%
++  \setbox0=\vbox{\caption*{Outside}}%
++  \showbox0 }
+ \end{document}
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+index 785d64073..c6dcdc1eb 100644
+--- a/base/testfiles/caption-interface-001.tlg
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -229,26 +229,35 @@ l. ...  \showbox0}
+ l. ...  \showbox0}
+ ============================================================
+ ============================================================
+-TEST 16: caption outside float: error as before
++TEST 16: caption outside float: error, arguments skipped
+ ============================================================
+ ! LaTeX Error: \caption outside float.
+ See the LaTeX manual or LaTeX Companion for explanation.
+ Type  H <return>  for immediate help.
+  ...                                              
+-l. ...  \caption{Outside}}
++l. ...  \showbox0 }
+ You're in trouble here.  Try typing  <return>  to proceed.
+ If that doesn't work, type  X <return>  to quit.
++> \box...=
++\vbox(0.0+0.0)x0.0
++! OK.
++<argument> ...{\caption [Opt]{Outside}}\showbox 0 
++l. ...  \showbox0 }
+ ============================================================
+ ============================================================
+-TEST 17: caption* outside float: error as before
++TEST 17: caption* outside float: error, arguments skipped
+ ============================================================
+ ! LaTeX Error: \caption outside float.
+ See the LaTeX manual or LaTeX Companion for explanation.
+ Type  H <return>  for immediate help.
+  ...                                              
+-l. ...  \caption*{Outside}}
++l. ...  \showbox0 }
+ You're in trouble here.  Try typing  <return>  to proceed.
+ If that doesn't work, type  X <return>  to quit.
++> \box...=
++\vbox(0.0+0.0)x0.0
++! OK.
++<argument> ...box {\caption *{Outside}}\showbox 0 
++l. ...  \showbox0 }
+ ============================================================
+-[1
+-] [2] (caption-interface-001.aux)
++[1] [2] (caption-interface-001.aux)
+diff --git a/base/testfiles/github-robust-0123.luatex.tlg b/base/testfiles/github-robust-0123.luatex.tlg
+index 167170d84..6f1a45cd9 100644
+--- a/base/testfiles/github-robust-0123.luatex.tlg
++++ b/base/testfiles/github-robust-0123.luatex.tlg
+@@ -162,7 +162,7 @@ l. ...\mruntest{ccc}
+ ---------------------------------------
+ \bibstyle{foo} -> 
+ ---------------------------------------
+-\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}{foo}
++\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}\@caption@skip@star {foo}
+ ---------------------------------------
+ \documentclass -> \GenericError {               }{LaTeX Error: Can be used only in preamble}{See the LaTeX manual or LaTeX Companion for explanation.}{Your command was ignored.\MessageBreak Type  I <command> <return>  to replace it with another command,\MessageBreak or  <return>  to continue without it.}
+ ---------------------------------------
+diff --git a/base/testfiles/github-robust-0123.tlg b/base/testfiles/github-robust-0123.tlg
+index 8cd784c89..e992bdd73 100644
+--- a/base/testfiles/github-robust-0123.tlg
++++ b/base/testfiles/github-robust-0123.tlg
+@@ -162,7 +162,7 @@ l. ...\mruntest{ccc}
+ ---------------------------------------
+ \bibstyle{foo} -> 
+ ---------------------------------------
+-\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}{foo}
++\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}\@caption@skip@star {foo}
+ ---------------------------------------
+ \documentclass -> \GenericError {               }{LaTeX Error: Can be used only in preamble}{See the LaTeX manual or LaTeX Companion for explanation.}{Your command was ignored.\MessageBreak Type  I <command> <return>  to replace it with another command,\MessageBreak or  <return>  to continue without it.}
+ ---------------------------------------
+diff --git a/base/testfiles/github-robust-0123.xetex.tlg b/base/testfiles/github-robust-0123.xetex.tlg
+index 1a9848710..bbed3abeb 100644
+--- a/base/testfiles/github-robust-0123.xetex.tlg
++++ b/base/testfiles/github-robust-0123.xetex.tlg
+@@ -162,7 +162,7 @@ l. ...\mruntest{ccc}
+ ---------------------------------------
+ \bibstyle{foo} -> 
+ ---------------------------------------
+-\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}{foo}
++\caption{foo} -> \GenericError {               }{LaTeX Error: \caption outside float}{See the LaTeX manual or LaTeX Companion for explanation.}{You're in trouble here.  Try typing  <return>  to proceed.\MessageBreak If that doesn't work, type  X <return>  to quit.}\@caption@skip@star {foo}
+ ---------------------------------------
+ \documentclass -> \GenericError {               }{LaTeX Error: Can be used only in preamble}{See the LaTeX manual or LaTeX Companion for explanation.}{Your command was ignored.\MessageBreak Type  I <command> <return>  to replace it with another command,\MessageBreak or  <return>  to continue without it.}
+ ---------------------------------------

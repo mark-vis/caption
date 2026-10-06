@@ -1,0 +1,107 @@
+% Test of \@kernel@caption@unique (proposal (b)): the unique name of a
+% caption that does not step its counter, for code that makes its own
+% target (as the caption package does with \@captiontargetfalse and
+% \hyper@makecurrent in caption/prepare): the names are counted together
+% with the kernel's own unique targets, without gaps, \theH<counter> is
+% restored afterwards, and assignments in the code survive.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% show the targets made by the step
+\NewSocketPlug{refstepcounter/target}{test}{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{TARGET: new target \@currentHref}}
+\AssignSocketPlug{refstepcounter/target}{test}
+% code that only needs the name (as \hyper@makecurrent), with a local
+% assignment
+\def\ownname#1{%
+  \@kernel@caption@unique{#1}{%
+    \edef\ownhref{#1.\csname theH#1\endcsname}%
+    \typeout{OWN NAME: \ownhref}}}
+% a client: no kernel target, its own name in caption/prepare, if the
+% counter is not stepped (by other code)
+\AddToHookWithArguments{caption/before}[test]{%
+  \csname testbefore\endcsname}
+\AddToHookWithArguments{caption/prepare}[test]{%
+  \csname testprepare\endcsname}
+\def\clientprepare{\def\testprepare{%
+  \if@captionstep\else\ownname{figure}\fi}}
+\def\clientbefore{\def\testbefore{\@captiontargetfalse
+  \csname othercode\endcsname}}
+\def\stepoff{\@captionstepfalse}
+\def\showhref{\typeout{href=\@currentHref}}
+\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
+\def\settype#1{\def\@captype{#1}}
+\def\beforename{\@captionstepfalse\@captiontargetfalse\ownname{figure}}
+% a counter without \theH<counter>
+\newcount\c@myfig
+\def\themyfig{\arabic{myfig}}
+\def\p@myfig{}
+\def\fnum@myfig{My \themyfig}
+\def\ext@myfig{lom}
+\gdef\@currentHref{none}
+\makeatother
+\begin{document}
+\START
+\TEST{outside of captions: new numbers, theH restored}{%
+  \setcounter{figure}{9}%
+  \ownname{figure}%
+  \ownname{figure}%
+  \showtheH
+  \setcounter{figure}{0}}
+\TEST{client in caption/prepare: names counted with the kernel's}{%
+  \begin{figure}
+    \caption{Stepped}
+    \caption{Stepped again}
+    \showhref
+    \clientbefore\clientprepare
+    \let\othercode\stepoff
+    \caption{Continued by other code (client)}
+    \showhref
+    \typeout{own: \ownhref}%
+    \let\testbefore\stepoff
+    \let\testprepare\relax
+    \caption{Continued by other code (kernel)}
+    \showhref
+    \clientbefore\clientprepare
+    \caption{Continued by other code (client again)}
+    \showtheH
+  \end{figure}}
+\TEST{caption* before: the number it reserved is given back, no gap}{%
+  \begin{figure}
+    \caption{Stepped}
+    \showhref
+    \caption*{Starred}
+    \clientbefore\clientprepare
+    \let\othercode\stepoff
+    \caption{Continued by other code (client)}
+    \let\testbefore\stepoff
+    \let\testprepare\relax
+    \caption{Continued by other code (kernel)}
+    \showhref
+  \end{figure}}
+\TEST{use in caption/before: the same counting}{%
+  \begin{figure}
+    \caption{Stepped}
+    \let\testbefore\beforename
+    \caption{Continued, name taken in caption/before}
+    \let\testbefore\stepoff
+    \caption{Continued (kernel)}
+    \showhref
+    \showtheH
+  \end{figure}}
+\TEST{local assignments in the code survive}{%
+  \begingroup
+    \def\ownhref{old}%
+    \ownname{figure}%
+    \typeout{after: \ownhref}%
+  \endgroup}
+\TEST{counter without theH: undefined again afterwards}{%
+  \begin{figure}
+    \settype{myfig}%
+    \ownname{myfig}%
+    \ownname{myfig}%
+    \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else
+      undefined\fi}%
+  \end{figure}}
+\END

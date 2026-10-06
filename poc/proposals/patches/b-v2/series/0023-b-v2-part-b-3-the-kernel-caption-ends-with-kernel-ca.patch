@@ -1,0 +1,80 @@
+From af15deba7e807396b36eb774a679654d00250c6c Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 10:39:21 +0200
+Subject: [PATCH 23/28] (b) v2, part b-3: the kernel \@caption ends with
+ \@kernel@caption@reset
+
+Round-4 findings R4-L3/R4V-F5: ltfloat called \@kernel@caption@reset
+the one command that ends the settings of a caption, but the kernel
+\@caption still reset the three switches itself at its end. It now ends
+with \@kernel@caption@reset. The settings of \@caption@nostep@defs are
+already undone at the start of \@caption, so the restore in it is
+\relax there and the behaviour is the same; the wording says so.
+---
+ base/ltfloat.dtx | 25 ++++++++++++++-----------
+ 1 file changed, 14 insertions(+), 11 deletions(-)
+
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 9eb96d9f3..29feee4a7 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -538,8 +538,9 @@
+ %      record one for tagging, and \cs{@currentHref} is unchanged; the code
+ %      makes its own target.
+ %    \end{itemize}
+-%    The three switches are reset at the end of \cs{@caption}, so nothing
+-%    is passed on to a later caption.
++%    The three switches are reset at the end of \cs{@caption} (with
++%    \cs{@kernel@caption@reset}), so nothing is passed on to a later
++%    caption.
+ %
+ %    (\cs{@ifundefined} and not \cs{ifx} because a skipped \cs{if...}
+ %    would unbalance the conditional.)
+@@ -1121,7 +1122,9 @@
+ %    \cs{@caption} may have used it for a target), sets
+ %    \cs{if@captionstar} false and \cs{if@captionstep} and
+ %    \cs{if@captiontarget} true, which is the state outside of a caption.
+-%    The kernel \cs{caption} starts with it. It is the one command for
++%    The kernel \cs{caption} starts with it and the kernel \cs{@caption}
++%    ends with it, so it is the only code that ends these settings. It is
++%    the command for
+ %    code that keeps its own \cs{caption} and passes only \cs{caption*}
+ %    to the kernel (for example with
+ %    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|, as the first aid
+@@ -1174,7 +1177,8 @@
+ % \changes{v1.2k}{2026/10/05}
+ %     {Store the list text in \cs{@currentlabelname}}
+ % \changes{v1.2k}{2026/10/06}
+-%     {Undo the settings for a replaced \cs{@caption} before the \cs{par}}
++%     {Undo the settings for a replaced \cs{@caption} before the \cs{par};
++%      end with \cs{@kernel@caption@reset}}
+ %    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
+ %    signature, so code that wraps or replaces it keeps working.
+ %    The typesetting (with \cs{@parboxrestore} and \cs{@makecaption})
+@@ -1182,10 +1186,11 @@
+ %    \cs{@kernel@caption@typeset}. At the start the settings of
+ %    \cs{@caption@nostep@defs} are undone, before the \cs{par}, so that
+ %    the paragraph hooks, the output routine and the hooks and plugs of
+-%    the caption see the normal definitions. At the end the switches are
+-%    reset, so that code which calls \cs{@caption} or the socket
+-%    \texttt{caption/step} directly (without \cs{caption}) gets a normal
+-%    caption.
++%    the caption see the normal definitions. At the end
++%    \cs{@kernel@caption@reset} resets the switches (the settings are
++%    already undone by then), so that code which calls \cs{@caption} or
++%    the socket \texttt{caption/step} directly (without \cs{caption}) gets
++%    a normal caption.
+ %
+ %    For named references, the list text of a caption (not of
+ %    \cs{caption*}) is stored in \cs{@currentlabelname}, so that a
+@@ -1208,9 +1213,7 @@
+   {\@caption@body{#1}{\BooleanTrue}}%
+   {\@caption@body{#1}{\BooleanFalse}}%
+   {#2}{#3}%
+-  \@captionstarfalse
+-  \@captionsteptrue
+-  \@captiontargettrue}
++  \@kernel@caption@reset}
+ \long\def\@caption@body#1#2#3#4{%
+   \IfBooleanF{#2}{\def\@currentlabelname{#3}}%
+   \UseHookWithArguments{caption/prepare}{4}{#1}{#2}{#3}{#4}%

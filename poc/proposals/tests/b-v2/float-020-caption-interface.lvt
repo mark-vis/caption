@@ -1,0 +1,60 @@
+% Proposal (b): \caption*, the socket caption/step, the float target
+% and the sub-float sockets with tagging (and hyperref)
+\DocumentMetadata{lang=en,tagging=on}
+\input{regression-test}
+\documentclass{article}
+\usepackage{hyperref}
+\makeatletter
+% a minimal sub-caption, as a package like subcaption would do it
+\newcounter{subfigure}[figure]
+\renewcommand\thesubfigure{\alph{subfigure}}
+\def\fnum@subfigure{(\thesubfigure)}
+\def\ext@subfigure{lof}
+\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
+\newcommand\subcap[1]{%
+  \UseSocket{caption/step}{subfigure}%
+  \typeout{sub target: \@currentHref}%
+  \@caption{subfigure}[#1]{#1}}
+% sub-floats: a minipage environment and a \parbox
+\newenvironment{subfloat}[1]
+  {\UseTaggingSocket{subfloat/box}\begin{minipage}{#1}}
+  {\end{minipage}}
+\newcommand\subbox[2]{%
+  \begingroup
+    \UseTaggingSocket{subfloat/box}%
+    \parbox{.2\linewidth}{#2\subcap{#1}}%
+  \endgroup}
+\hbadness=10000 % no underfull boxes in the narrow sub-floats
+\newcommand\showtarget{\typeout{figure=\thefigure, target=\@currentHref}}
+\makeatother
+\begin{document}
+\START
+\begin{figure}[h]
+  \caption{Numbered}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \caption*{Star: no Lbl, no number}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \begin{subfloat}{.2\linewidth}
+    sub content A\footnote{Footnote A}
+    \subcap{Sub A}\label{suba}%
+  \end{subfloat}
+  \begin{subfloat}{.2\linewidth}
+    sub content B
+    \begin{minipage}{.5\linewidth}nested\end{minipage}
+    \caption*{Sub B, unnumbered}%
+  \end{subfloat}
+  \subbox{Sub C}{sub content C}
+  \begin{minipage}{.2\linewidth}
+    \UseTaggingSocket{subfloat/begin}%
+    sub content D
+    \subcap{Sub D}%
+    \UseTaggingSocket{subfloat/end}%
+  \end{minipage}
+  \begin{minipage}{.1\linewidth}plain\end{minipage}
+  \caption{Main}\showtarget
+\end{figure}
+See \ref{suba}.
+\SHOWPDFTAGS
+\end{document}

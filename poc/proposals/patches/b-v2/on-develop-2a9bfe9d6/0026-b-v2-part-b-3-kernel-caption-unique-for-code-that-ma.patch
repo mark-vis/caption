@@ -1,0 +1,321 @@
+From c3ba66bc7930768e4dddac3ec4938c82c3910fe4 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 10:38:20 +0200
+Subject: [PATCH 26/32] (b) v2, part b-3: \@kernel@caption@unique for code that
+ makes its own target
+
+Round-4 finding R4-M3: the caption package (client path) needs the
+unique name of a caption that other code leaves unstepped, but makes
+its anchor itself in caption/prepare (with \@captiontargetfalse and
+\hyper@makecurrent). It called the internal \@caption@uniqueH, saved and
+restored \theH<type> itself, and relied on the kernel giving the number
+reserved by \@caption@nostep@defs back before caption/prepare.
+
+\@kernel@caption@unique{<counter>}{<code>} is now the documented
+command for this: it executes <code> while \theH<counter> has the
+suffix *<n> with the next <n> for that name (the same counting as the
+kernel's own unique targets), and restores \theH<counter> afterwards
+(also an undefined one). The contract is in ltfloat.dtx: every use
+takes a new number; in the caption hooks and plugs no number is
+reserved, so there are no gaps (the give-back is the kernel's business
+now, not the client's). No group is added, so local assignments in
+<code> survive (hyperref's \@currentHref with localanchorname).
+
+The kernel's own \@caption@uniquetarget uses it as well, so it no longer
+makes the target inside a group; the names are unchanged.
+
+Test: caption-interface-003 (new): names in caption/prepare and in
+caption/before counted with the kernel's targets, the number of a
+\caption* before is given back, \theH restored, a counter without
+\theH, local assignments kept.
+---
+ base/changes.txt                         |   3 +-
+ base/ltfloat.dtx                         |  68 +++++++++++---
+ base/testfiles/caption-interface-003.lvt | 107 +++++++++++++++++++++++
+ base/testfiles/caption-interface-003.tlg |  54 ++++++++++++
+ 4 files changed, 220 insertions(+), 12 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-003.lvt
+ create mode 100644 base/testfiles/caption-interface-003.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 8e11d46cc..4e656a61c 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -29,7 +29,8 @@ not part of the distribution.
+ 	name (\theH<counter> with the suffix *<n> for refstepcounter/target,
+ 	<n> counted per name: figure.1*1, figure.1*2, ...; \the<counter> if
+ 	\theH<counter> is undefined), never a second target with the name of
+-	the last stepped caption
++	the last stepped caption; \@kernel@caption@unique{<counter>}{<code>}
++	gives code that makes its own target (caption) the same names
+ 
+ 	* ltfloat.dtx:
+ 	\caption* passes \@caption@nolabel as label to \@makecaption
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 8fbbc5998..9eb96d9f3 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -550,9 +550,9 @@
+ %    \end{macrocode}
+ % \end{macro}
+ %
+-% \begin{macro}{\@kernel@caption@step}
++% \begin{macro}{\@kernel@caption@step,\@kernel@caption@unique}
+ % \begin{macro}{\@caption@target,\@caption@newtarget,\@caption@floattarget,
+-%                \@caption@uniquetarget,\@caption@uniqueH}
++%                \@caption@uniquetarget,\@caption@uniqueH,\@caption@noH}
+ %    \cs{@kernel@caption@step}\marg{counter} implements the contract of
+ %    the socket \texttt{caption/step}. It is not \cs{refstepcounter},
+ %    because the counter is not always stepped and the target not always
+@@ -576,10 +576,9 @@
+ %    \pkg{latex-lab-float} does that). If it is defined, not \cs{relax}
+ %    and not empty, the caption uses this target, otherwise a new one is
+ %    made as by \cs{refstepcounter}; if the counter was not stepped,
+-%    \cs{@caption@uniquetarget} makes it inside a group in which
+-%    \cs{@caption@uniqueH} has given \cs{theH}\meta{counter} the suffix
+-%    |*|\meta{n}, because a target named after the unchanged counter
+-%    would be a duplicate. \cs{@ifundefined}
++%    \cs{@caption@uniquetarget} makes it with a unique name (with
++%    \cs{@kernel@caption@unique}), because a target named after the
++%    unchanged counter would be a duplicate. \cs{@ifundefined}
+ %    is used and not
+ %    \cs{ifcsname}, so that a name that has been made \cs{relax} by a
+ %    \cs{csname} test counts as undefined. As the type is part of the name,
+@@ -611,12 +610,59 @@
+   {\@caption@uniquetarget{#1}}%
+   \UseTaggingSocket{recordtarget}}
+ \def\@caption@uniquetarget#1{%
+-  \begingroup
+-    \@caption@uniqueH{#1}%
+-    \UseSocket{refstepcounter/target}{#1}%
+-  \endgroup}
++  \@kernel@caption@unique{#1}{\UseSocket{refstepcounter/target}{#1}}}
++%    \end{macrocode}
++% \changes{v1.2k}{2026/10/06}{\cs{@kernel@caption@unique} added}
++%    \cs{@kernel@caption@unique}\marg{counter}\marg{code} executes
++%    \meta{code} while \cs{theH}\meta{counter} gives the unique name of a
++%    caption that does not step its counter: |*|\meta{n} is appended to
++%    it, with the next \meta{n} for this name. The numbers are the same
++%    as those of the kernel's own targets for such captions, so a name
++%    made in this way and a kernel target never collide. It is
++%    documented for code that makes the target of a caption itself or
++%    only needs its name (for example the \pkg{caption} package, which
++%    sets \cs{@captiontargetfalse} and makes its anchor in the hook
++%    \hook{caption/prepare} with
++%    |\@kernel@caption@unique{|\meta{type}|}{\hyper@makecurrent{|\meta{type}|}}|),
++%    so that it does not have to know how the names are counted:
++%    \begin{itemize}
++%    \item Every use takes a new number. Code that wants one name for
++%      one caption uses it once and keeps the result (e.g.,
++%      \cs{@currentHref}).
++%    \item In the hooks \hook{caption/before} and \hook{caption/prepare}
++%      and in the plugs of the caption sockets (and outside of captions)
++%      \cs{theH}\meta{counter} has its normal meaning, and no number is
++%      reserved, so the numbers have no gaps. (A number that the kernel
++%      reserves for a replaced \cs{@caption}, see
++%      \cs{@caption@nostep@defs}, is given back at the start of the kernel
++%      \cs{@caption}, before \hook{caption/prepare}.)
++%    \item The command adds no group: assignments in \meta{code} survive,
++%      also local ones (such as \cs{@currentHref} with the \pkg{hyperref}
++%      option \texttt{localanchorname}). Afterwards
++%      \cs{theH}\meta{counter} has its previous meaning again (or is
++%      undefined again). \meta{code} must not use the command for the
++%      same counter.
++%    \end{itemize}
++%    \begin{macrocode}
++\long\def\@kernel@caption@unique#1#2{%
++  \ifcsname theH#1\endcsname
++    \expandafter\let\csname @caption@unique@#1\expandafter\endcsname
++      \csname theH#1\endcsname
++  \else
++    \expandafter\let\csname @caption@unique@#1\endcsname\@caption@noH
++  \fi
++  \@caption@uniqueH{#1}%
++  #2%
++  \expandafter\ifx\csname @caption@unique@#1\endcsname\@caption@noH
++    \expandafter\let\csname theH#1\endcsname\@undefined
++  \else
++    \expandafter\let\csname theH#1\expandafter\endcsname
++      \csname @caption@unique@#1\endcsname
++  \fi}
++\def\@caption@noH{\@caption@noH}
+ %    \end{macrocode}
+-%    \cs{@caption@uniqueH}\marg{counter} redefines \cs{theH}\meta{counter}
++%    \cs{@caption@uniqueH}\marg{counter} (internal; use
++%    \cs{@kernel@caption@unique}) redefines \cs{theH}\meta{counter}
+ %    locally as its previous meaning (kept in
+ %    \cs{@caption@H@}\meta{counter}, or \cs{the}\meta{counter} if
+ %    \cs{theH}\meta{counter} is undefined) followed by |*|\meta{n}. The
+diff --git a/base/testfiles/caption-interface-003.lvt b/base/testfiles/caption-interface-003.lvt
+new file mode 100644
+index 000000000..1dd28972f
+--- /dev/null
++++ b/base/testfiles/caption-interface-003.lvt
+@@ -0,0 +1,107 @@
++% Test of \@kernel@caption@unique (proposal (b)): the unique name of a
++% caption that does not step its counter, for code that makes its own
++% target (as the caption package does with \@captiontargetfalse and
++% \hyper@makecurrent in caption/prepare): the names are counted together
++% with the kernel's own unique targets, without gaps, \theH<counter> is
++% restored afterwards, and assignments in the code survive.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++% code that only needs the name (as \hyper@makecurrent), with a local
++% assignment
++\def\ownname#1{%
++  \@kernel@caption@unique{#1}{%
++    \edef\ownhref{#1.\csname theH#1\endcsname}%
++    \typeout{OWN NAME: \ownhref}}}
++% a client: no kernel target, its own name in caption/prepare, if the
++% counter is not stepped (by other code)
++\AddToHookWithArguments{caption/before}[test]{%
++  \csname testbefore\endcsname}
++\AddToHookWithArguments{caption/prepare}[test]{%
++  \csname testprepare\endcsname}
++\def\clientprepare{\def\testprepare{%
++  \if@captionstep\else\ownname{figure}\fi}}
++\def\clientbefore{\def\testbefore{\@captiontargetfalse
++  \csname othercode\endcsname}}
++\def\stepoff{\@captionstepfalse}
++\def\showhref{\typeout{href=\@currentHref}}
++\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
++\def\settype#1{\def\@captype{#1}}
++\def\beforename{\@captionstepfalse\@captiontargetfalse\ownname{figure}}
++% a counter without \theH<counter>
++\newcount\c@myfig
++\def\themyfig{\arabic{myfig}}
++\def\p@myfig{}
++\def\fnum@myfig{My \themyfig}
++\def\ext@myfig{lom}
++\gdef\@currentHref{none}
++\makeatother
++\begin{document}
++\START
++\TEST{outside of captions: new numbers, theH restored}{%
++  \setcounter{figure}{9}%
++  \ownname{figure}%
++  \ownname{figure}%
++  \showtheH
++  \setcounter{figure}{0}}
++\TEST{client in caption/prepare: names counted with the kernel's}{%
++  \begin{figure}
++    \caption{Stepped}
++    \caption{Stepped again}
++    \showhref
++    \clientbefore\clientprepare
++    \let\othercode\stepoff
++    \caption{Continued by other code (client)}
++    \showhref
++    \typeout{own: \ownhref}%
++    \let\testbefore\stepoff
++    \let\testprepare\relax
++    \caption{Continued by other code (kernel)}
++    \showhref
++    \clientbefore\clientprepare
++    \caption{Continued by other code (client again)}
++    \showtheH
++  \end{figure}}
++\TEST{caption* before: the number it reserved is given back, no gap}{%
++  \begin{figure}
++    \caption{Stepped}
++    \showhref
++    \caption*{Starred}
++    \clientbefore\clientprepare
++    \let\othercode\stepoff
++    \caption{Continued by other code (client)}
++    \let\testbefore\stepoff
++    \let\testprepare\relax
++    \caption{Continued by other code (kernel)}
++    \showhref
++  \end{figure}}
++\TEST{use in caption/before: the same counting}{%
++  \begin{figure}
++    \caption{Stepped}
++    \let\testbefore\beforename
++    \caption{Continued, name taken in caption/before}
++    \let\testbefore\stepoff
++    \caption{Continued (kernel)}
++    \showhref
++    \showtheH
++  \end{figure}}
++\TEST{local assignments in the code survive}{%
++  \begingroup
++    \def\ownhref{old}%
++    \ownname{figure}%
++    \typeout{after: \ownhref}%
++  \endgroup}
++\TEST{counter without theH: undefined again afterwards}{%
++  \begin{figure}
++    \settype{myfig}%
++    \ownname{myfig}%
++    \ownname{myfig}%
++    \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else
++      undefined\fi}%
++  \end{figure}}
++\END
+diff --git a/base/testfiles/caption-interface-003.tlg b/base/testfiles/caption-interface-003.tlg
+new file mode 100644
+index 000000000..1f1321694
+--- /dev/null
++++ b/base/testfiles/caption-interface-003.tlg
+@@ -0,0 +1,54 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: outside of captions: new numbers, theH restored
++============================================================
++OWN NAME: figure.9*1
++OWN NAME: figure.9*2
++theHfigure: macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 2: client in caption/prepare: names counted with the kernel's
++============================================================
++TARGET: new target figure.1
++TARGET: new target figure.2
++href=figure.2
++OWN NAME: figure.2*1
++href=figure.2
++own: figure.2*1
++TARGET: new target figure.2*2
++href=figure.2*2
++OWN NAME: figure.2*3
++theHfigure: macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 3: caption* before: the number it reserved is given back, no gap
++============================================================
++TARGET: new target figure.3
++href=figure.3
++OWN NAME: figure.3*1
++TARGET: new target figure.3*2
++href=figure.3*2
++============================================================
++============================================================
++TEST 4: use in caption/before: the same counting
++============================================================
++TARGET: new target figure.4
++OWN NAME: figure.4*1
++TARGET: new target figure.4*2
++href=figure.4*2
++theHfigure: macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 5: local assignments in the code survive
++============================================================
++OWN NAME: figure.4*3
++after: figure.4*3
++============================================================
++============================================================
++TEST 6: counter without theH: undefined again afterwards
++============================================================
++OWN NAME: myfig.0*1
++OWN NAME: myfig.0*2
++theHmyfig: undefined
++============================================================

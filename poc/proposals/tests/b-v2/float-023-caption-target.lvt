@@ -1,0 +1,60 @@
+% Proposal (b): the float target \@floatHref@<type> used by the kernel
+% plug of caption/step (tagging and hyperref): figure captions use the
+% target at the start of the float, captions after float/split the new
+% target (before, they used a target that is never made), a table caption
+% inside a figure and a caption outside of floats get targets of their own.
+% \nameref gives the caption text (list text), not the last heading.
+% A caption that does not step the counter (continued float) uses the
+% float target inside a float and a target with a unique name outside
+% of floats, never a second target with the name of the last stepped
+% caption.
+\DocumentMetadata{lang=en,tagging=on}
+\input{regression-test}
+\documentclass{article}
+\usepackage{hyperref}
+\makeatletter
+\newcommand\captionof[1]{\def\@captype{#1}\caption}
+\newcommand\showtarget{\typeout{\@captype: target=\@currentHref,
+  float target=\ifcsname @floatHref@\@captype\endcsname
+     \csname @floatHref@\@captype\endcsname\else(none)\fi}}
+\newif\ifcontinued
+\AddToHookWithArguments{caption/before}{\ifcontinued\@captionstepfalse\fi}
+\makeatother
+\begin{document}
+\START
+\listoffigures
+\begin{figure}[h]
+  \centering X
+  \caption{First}\label{a}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \centering Y
+  \caption{Before the split}\label{b1}\showtarget
+  \tagpdfsetup{float/split}
+  Z
+  \caption{After the split}\label{b2}\showtarget
+\end{figure}
+\begin{figure}[h]
+  \centering W
+  \captionof{table}{Table in a figure}\label{t}\showtarget
+  \captionof{figure}{Figure after it}\label{c}\showtarget
+  \caption*{Starred}\showtarget
+\end{figure}
+\begin{minipage}{4cm}
+  \captionof{figure}{Outside of floats}\label{o}\showtarget
+\end{minipage}
+
+\noindent\begin{minipage}{8cm}
+  \continuedtrue
+  \captionof{figure}{Outside of floats, continued}\label{oc}\showtarget
+\end{minipage}
+\begin{figure}[h]
+  \continuedtrue
+  \centering V
+  \caption{In a float, continued}\label{fc}\showtarget
+\end{figure}
+
+Refs \ref{a} \ref{b1} \ref{b2} \ref{t} \ref{c} \ref{o} \ref{oc} \ref{fc}.
+Names: \nameref{a}, \nameref{b2}, \nameref{t}, \nameref{o}.
+\SHOWPDFTAGS
+\end{document}

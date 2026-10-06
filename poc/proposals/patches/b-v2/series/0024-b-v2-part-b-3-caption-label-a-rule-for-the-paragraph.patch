@@ -1,0 +1,161 @@
+From aad6823eeac7b9ffdbf2be172f2b8a516c2cb2d0 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 10:49:21 +0200
+Subject: [PATCH 24/28] (b) v2, part b-3: \caption* label: a rule for the
+ paragraph, not a list
+
+Round-4 finding R4-L1 (R4V-F1): the label of \caption* started the
+paragraph only before an explicit list of tokens (\\, \newline,
+\vadjust, \@), so other primitives after the label acted in vertical
+mode: in a \vbox, #1\unskip: #2 removed \abovecaptionskip (16.94pt ->
+6.94pt), #1\kern3pt #2 gave a vertical kern, #1\hbox{ -- }#2 a box on
+its own line. No \@makecaption of TeX Live has these after #1.
+
+Now there is a rule: the paragraph is started before the primitives
+whose meaning depends on the mode (\kern, \penalty, \hbox, \box, \copy,
+\raise, \lower, \vadjust) and before \\, \newline and \@; not before
+\par, \vskip, a space or a macro. The ones that print something warn,
+as other material after the label does (\penalty, \vadjust and \@ do
+not). \unskip, \unkern and \unpenalty directly after the label are
+removed: they are meant for the end of the label, which is empty.
+
+Test: caption-interface-001 TEST 30, four shapes in vertical mode
+(\unskip with a colon, \kern, \hbox, \penalty); on the old code the
+first three give other heights and the last one warns.
+---
+ base/ltfloat.dtx                         | 41 +++++++++++++++++++-----
+ base/testfiles/caption-interface-001.lvt | 10 +++++-
+ base/testfiles/caption-interface-001.tlg | 12 +++++++
+ 3 files changed, 54 insertions(+), 9 deletions(-)
+
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 29feee4a7..3bcd24f18 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -757,6 +757,9 @@
+ % \changes{v1.2k}{2026/10/06}{Start the paragraph only after removed
+ %    material and before a line break (\cs{newline}), \cs{vadjust} and
+ %    \cs{@}, not before other material}
++% \changes{v1.2k}{2026/10/06}{Start the paragraph also before the other
++%    primitives whose meaning depends on the mode; remove \cs{unskip},
++%    \cs{unkern} and \cs{unpenalty} directly after the label}
+ %    \cs{@caption@nolabel} is the label that \cs{caption*} passes to
+ %    \cs{@makecaption}. The contract for \cs{@makecaption} is only that
+ %    \cs{if@captionstar} is true and that the label is not empty but
+@@ -790,7 +793,7 @@
+ %    \item If, in the group of the label, the label or the removed
+ %      material is followed by anything else than the text (which starts
+ %      with \cs{ignorespaces}), \cs{par}, \cs{relax}, \cs{@},
+-%      \cs{vadjust}, the end of a conditional, the end of a box that
++%      \cs{vadjust}, \cs{penalty}, the end of a conditional, the end of a box that
+ %      measures the label (\cs{sbox},
+ %      \cs{settowidth}) or, after a removed separator, a group (which can
+ %      contain the text), it is taken as material that is printed before
+@@ -810,10 +813,22 @@
+ %      a separator after it is printed silently as well
+ %      (|#1\relax\hskip1em|, and |#1\protect\sep| while typesetting, where
+ %      \cs{protect} is \cs{relax}).
+-%    \item Before \verb|\\|, \cs{newline}, \cs{vadjust} and \cs{@} the
+-%      paragraph is always started, so that they do not give an error in
+-%      vertical mode (\verb|\\| and \cs{newline} also warn, as they print
+-%      an empty line).
++%    \item \cs{unskip}, \cs{unkern} and \cs{unpenalty} directly after the
++%      label or the removed material are removed as well: they are meant
++%      for the end of the label, which is empty, and in vertical mode
++%      they would remove vertical material instead (such as
++%      \cs{abovecaptionskip}).
++%    \item The rule for the paragraph: it is started before the
++%      primitives whose meaning depends on the mode (\cs{kern},
++%      \cs{penalty}, \cs{hbox}, \cs{box}, \cs{copy}, \cs{raise},
++%      \cs{lower}, \cs{vadjust}) and before \verb|\\|, \cs{newline} and
++%      \cs{@}, so that they act in horizontal mode, as after a label, and
++%      do not give an error in vertical mode. It is not started before
++%      \cs{par}, \cs{vskip}, a space or a macro (macros are not looked
++%      into). \cs{kern}, \cs{hbox}, \cs{box}, \cs{copy}, \cs{raise},
++%      \cs{lower}, \verb|\\| and \cs{newline} also warn, as they print
++%      space, material or an empty line before the text; \cs{penalty},
++%      \cs{vadjust} and \cs{@} do not.
+ %    \end{itemize}
+ %    Nothing of the text is removed, because the text passed to
+ %    \cs{@makecaption} starts with \cs{ignorespaces}. All of this is
+@@ -847,6 +862,9 @@
+   \ifx\@let@token\egroup\@caption@nolabel@group#1\fi
+   \ifx\@let@token\check@icr\@caption@nolabel@group#1\fi
+   \ifx\@let@token\maybe@ic\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unskip\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unkern\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unpenalty\@caption@nolabel@drop#1\fi
+   \ifx\@let@token:\@caption@nolabel@punct#1\fi
+   \ifx\@let@token.\@caption@nolabel@punct#1\fi
+   \ifx\@let@token~\@caption@nolabel@space#1\fi
+@@ -877,9 +895,9 @@
+ %    something was removed; a group is such a token only after a
+ %    removed separator (\cs{@caption@nolabel@brace}). The end of a conditional is recognized by
+ %    its meaning as a string, so that no \cs{fi} appears in a test.
+-%    \cs{vadjust} and \cs{@} always start the paragraph
+-%    (\cs{@caption@nolabel@hmode}), \verb|\\| and \cs{newline} also warn
+-%    (\cs{@caption@nolabel@line}).
++%    \cs{penalty}, \cs{vadjust} and \cs{@} always start the paragraph
++%    (\cs{@caption@nolabel@hmode}); the other mode-dependent primitives,
++%    \verb|\\| and \cs{newline} also warn (\cs{@caption@nolabel@line}).
+ %    Anything else (\cs{@caption@nolabel@other}) is printed: in states
+ %    |P| and |S| this warns; only in state |S| it starts the paragraph.
+ %    \begin{macrocode}
+@@ -891,6 +909,13 @@
+   \ifx\@let@token\relax\let\@caption@nolabel@next\@caption@nolabel@clean\fi
+   \ifx\@let@token\@\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
+   \ifx\@let@token\vadjust\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
++  \ifx\@let@token\penalty\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
++  \ifx\@let@token\kern\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\hbox\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\box\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\copy\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\raise\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\lower\let\@caption@nolabel@next\@caption@nolabel@line\fi
+   \ifx\@let@token\color@endgroup
+     \let\@caption@nolabel@next\@caption@nolabel@clean\fi
+   \ifx\@let@token\ResumeTagging
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+index a24ad0dd3..d334461ae 100644
+--- a/base/testfiles/caption-interface-001.lvt
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -454,7 +454,15 @@
+     {\noindent\vadjust{\penalty 7 }Text}%
+     {\nolabel\vadjust{\penalty 7 }\ignorespaces Text}%
+   \hshape{relax and hskip (known gap: printed, no warning)}%
+-    {\nolabel\relax\hskip 1em\ignorespaces Text}}
++    {\nolabel\relax\hskip 1em\ignorespaces Text}%
++  \vshapeto{unskip after the label (removed, vertical skip kept)}%
++    {\vskip 10pt \noindent Text}{\vskip 10pt \nolabel\unskip: \ignorespaces Text}%
++  \vshapeto{kern (horizontal, warning)}%
++    {\noindent\kern 3pt Text}{\nolabel\kern 3pt \ignorespaces Text}%
++  \vshapeto{hbox (in the paragraph, warning)}%
++    {\noindent\hbox{ -- }Text}{\nolabel\hbox{ -- }\ignorespaces Text}%
++  \vshapeto{penalty (horizontal, no warning)}%
++    {\noindent\penalty 7 Text}{\nolabel\penalty 7 \ignorespaces Text}}
+ \TEST{kernel@caption@reset: ends the settings of caption*}{%
+   \begin{figure}
+     \useclasscaption
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+index cc5f4318c..9a09a8561 100644
+--- a/base/testfiles/caption-interface-001.tlg
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -578,6 +578,18 @@ VSHAPE spacefactor (no error): clean, no warning
+ VSHAPE vadjust (no error): as reference, no warning
+ SHAPE relax and hskip (known gap: printed, no warning): width 30.00005pt(text 20.00003pt)
+ .... no warning
++VSHAPE unskip after the label (removed, vertical skip kept): as reference, no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE kern (horizontal, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE hbox (in the paragraph, warning): as reference, warning
++VSHAPE penalty (horizontal, no warning): as reference, no warning
+ ============================================================
+ ============================================================
+ TEST 31: kernel@caption@reset: ends the settings of caption*

@@ -1,0 +1,80 @@
+From 08c22efbd61561ce4cfaf5639500428699f068ef Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 02:16:19 +0200
+Subject: [PATCH 20/32] (b) v2, part b-3: an undefined \theH<type> stays
+ undefined
+
+\@caption@nostep@defs saved \theH<type> with \csname, which made an
+undefined \theH<type> \relax; the restore then left it \relax in the
+float. It is now saved as undefined when \ifcsname is false. (Round-2
+finding R2-L3: TEST 25 recorded "theHmyfig: \relax".)
+
+Test: caption-interface-001 TEST 25 tests with \ifcsname (its own
+\csname made the name \relax as well) and now shows "undefined".
+---
+ base/ltfloat.dtx                         | 13 +++++++++++--
+ base/testfiles/caption-interface-001.lvt |  2 +-
+ base/testfiles/caption-interface-001.tlg |  2 +-
+ 3 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index eb7e8e21e..bf1fb8050 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -896,6 +896,8 @@
+ %     (also for a deferred \cs{@caption}), \cs{ext@}\meta{type} instead of
+ %     \cs{addcontentsline}, unique \cs{theH}\meta{type} also for a caption
+ %     that does not step}
++% \changes{v1.2k}{2026/10/06}
++%    {An undefined \cs{theH}\meta{type} is not made \cs{relax}}
+ %
+ %    The star is read with \cs{@ifstar} and the optional argument with
+ %    \cs{kernel@ifnextchar}, so spaces before them are skipped, as with
+@@ -980,12 +982,19 @@
+ %    caption above the table), and \cs{@caption} stays the last token of
+ %    \cs{caption} (\pkg{float} looks for an optional argument after it).
+ %    \cs{addcontentsline} itself is not changed, so an
+-%    \verb|\addcontentsline{lof}...| after \cs{caption*} works. The
++%    \verb|\addcontentsline{lof}...| after \cs{caption*} works. An
++%    undefined \cs{theH}\meta{type} is saved as undefined (\cs{ifcsname}
++%    does not make it \cs{relax}), so that it is undefined again after
++%    the restore. The
+ %    kernel \cs{@caption} also gives the number of the unique suffix
+ %    back (\cs{@caption@nostep@giveback}), since nothing used it there.
+ %    \begin{macrocode}
+ \def\@caption@nostep@defs#1{%
+-  \expandafter\let\expandafter\@caption@saved@H\csname theH#1\endcsname
++  \ifcsname theH#1\endcsname
++    \expandafter\let\expandafter\@caption@saved@H\csname theH#1\endcsname
++  \else
++    \let\@caption@saved@H\@undefined
++  \fi
+   \if@captionstar
+     \expandafter\let\expandafter\@caption@saved@fnum
+       \csname fnum@#1\endcsname
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+index ce7092f61..90eb1ffae 100644
+--- a/base/testfiles/caption-interface-001.lvt
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -338,7 +338,7 @@
+     \showhref
+     \caption{Continued myfig again}
+     \showhref
+-    \typeout{theHmyfig: \expandafter\meaning\csname theHmyfig\endcsname}
++    \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else undefined\fi}
+   \end{figure}}
+ \TEST{label of caption*: separators removed in common forms}{%
+   \shape{colon}{\nolabel: \ignorespaces Text}%
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+index 542dabff7..740cb3d20 100644
+--- a/base/testfiles/caption-interface-001.tlg
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -405,7 +405,7 @@ PREPARE: {myfig}{false}{Continued myfig again}{Continued myfig again}, figure=19
+ ADDCONTENTSLINE: {lom}{myfig}{\protect \numberline {\csname themyfig\endcsname }{\ignorespaces Continued myfig again}}
+ MAKECAPTION: [\csname fnum@myfig\endcsname ] [\ignorespaces Continued myfig again], star=false
+ href=myfig.0*2
+-theHmyfig: \relax
++theHmyfig: undefined
+ ============================================================
+ ============================================================
+ TEST 26: label of caption*: separators removed in common forms
