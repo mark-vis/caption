@@ -2017,19 +2017,22 @@
 %    \begin{macrocode}
 \let\@makecaption\caption@makecaption
 %    \end{macrocode}
-% \changes{v3.8}{2026/10/05}{Code of \texttt{latex-lab} which redefines \cs{@makecaption} removed (PoC)}
-% Newer \texttt{latex-lab} float code (with the socket \texttt{caption/separator},
-% see |\caption@iflabelsockets|) adds its definition of |\@makecaption| to the hook
-% \texttt{begindocument} with the label \texttt{latex-lab/float/makecaption}.
+% \changes{v3.8}{2026/10/05}{Code of \texttt{latex-lab} which redefines \cs{@makecaption} disabled (PoC)}
+% The \texttt{latex-lab} float code adds its definition of |\@makecaption| to the hook
+% \texttt{begindocument} with the label \texttt{latex-lab-testphase-float}; newer
+% versions (with the socket \texttt{caption/separator}, see |\caption@iflabelsockets|)
+% document this label.
 % If our tagging support is active (see |\caption@tagging@begin|), our |\@makecaption|
-% tags the caption with the kernel sockets, so we remove this code instead of
+% tags the caption with the kernel sockets, so we disable this code instead of
 % overwriting its result at |\begin{document}| again (see |\caption@redefine|).
-% (Without |\DocumentMetadata| the socket does not exist, and \cs{RemoveFromHook}
-% would issue a warning.)
+% We use a \texttt{voids} rule and not \cs{RemoveFromHook}, because some classes
+% (e.g., \cls{acmart}) remove that code themselves, and removing it a second time would
+% give a warning; the rule then does nothing. The rule needs code of our own in the hook.
 %    \begin{macrocode}
 \ifx\caption@tagging@begin\@empty \else
   \caption@iflabelsockets
-    {\RemoveFromHook{begindocument}[latex-lab/float/makecaption]}%
+    {\AddToHook{begindocument}[caption]{}%
+     \DeclareHookRule{begindocument}{caption}{voids}{latex-lab-testphase-float}}%
     {}%
 \fi
 %    \end{macrocode}
