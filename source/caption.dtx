@@ -4702,6 +4702,7 @@
 %
 % \begin{macro}{\caption@client@makecurrentHref}
 % \changes{v3.8}{2026/10/06}{This macro added (PoC)}
+% \changes{v3.8}{2026/10/06}{Uses the kernel command \cs{@kernel@caption@unique} (PoC)}
 %  |\caption@client@makecurrentHref|\marg{type}\par
 %  If we use the caption interface of the kernel, other code can tell the kernel in the hook
 %  \texttt{caption/before} not to step the counter (|\@captionstepfalse|, e.g.~for a
@@ -4715,13 +4716,17 @@
 %  |\caption| for which |\@captype| has been defined by hand, and inside floats not handled by
 %  \texttt{latex-lab} if the option \opt{hypcap} is not active.) In this case we give
 %  |\theH|\meta{type} the same unique suffix
-%  |*|\meta{n} as the kernel does for its own target (with |\@caption@uniqueH|, so the
-%  names are counted together with the kernel's, e.g.~\texttt{figure.3*1}), and restore
-%  |\theH|\meta{type} afterwards. If we have decided ourselves that the counter should not
+%  |*|\meta{n} as the kernel does for its own target, with the kernel command
+%  |\@kernel@caption@unique|\marg{type}\marg{code}: it executes |\hyper@makecurrent| while
+%  |\theH|\meta{type} has the next unique suffix (the names are counted together with the
+%  kernel's, e.g.~\texttt{figure.3*1}) and restores |\theH|\meta{type} afterwards. (How the
+%  kernel counts the names, and when it gives a number back that it has reserved, is
+%  the kernel's business; in the hook \texttt{caption/prepare} the names have no gaps.)
+%  If we have decided ourselves that the counter should not
 %  be stepped (see |\caption@client@nostep|), nothing changes: our |\continuedfloat| has
-%  already given |\theH|\meta{type} a suffix of its own. (Older kernels with the caption
-%  interface but without |\@caption@uniqueH| do not exist, but we make sure that we use
-%  our own unique name there: \texttt{\meta{type}.caption.\meta{number}}, as
+%  already given |\theH|\meta{type} a suffix of its own. (With a kernel that has the caption
+%  interface but not |\@kernel@caption@unique|, i.e.~an earlier proof-of-concept kernel, we
+%  use our own unique name: \texttt{\meta{type}.caption.\meta{number}}, as
 %  |\caption@makestart| does.)
 %    \begin{macrocode}
     \caption@ifclient{%
@@ -4734,19 +4739,11 @@
         \fi
           {\hyper@makecurrent{#1}}%
           {\caption@client@uniqueHref{#1}}}%
-      \caption@ifundefined\@caption@uniqueH{%
+      \caption@ifundefined\@kernel@caption@unique{%
         \def\caption@client@uniqueHref{\caption@makestart}%
       }{%
         \def\caption@client@uniqueHref#1{%
-          \ifcsname theH#1\endcsname
-            \expandafter\let\expandafter\caption@client@savedH
-              \csname theH#1\endcsname
-          \else
-            \let\caption@client@savedH\@undefined
-          \fi
-          \@caption@uniqueH{#1}%
-          \hyper@makecurrent{#1}%
-          \expandafter\let\csname theH#1\endcsname\caption@client@savedH}%
+          \@kernel@caption@unique{#1}{\hyper@makecurrent{#1}}}%
       }%
     }{}%
 %    \end{macrocode}
