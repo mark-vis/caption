@@ -112,10 +112,13 @@ The series patches differ from the stand-alone ones in these points:
   series keeps (d)'s line.
 
 All patches include the expected updates of existing `.tlg` files, saved with
-`l3build save`: four `tlb-latexrelease-rollback-*` tests (new `Applying/Skipping` lines
-from (a) and (b), for pdfTeX, LuaTeX and XeTeX), 16 tests of `config-lthooks` (the two
-new hooks in hook listings, from (a)) and `float-010-outside` (a tagpdf debug line, from
-(d)). In each case the only difference is the added lines, or the two changed debug
+`l3build save`: the `tlb-latexrelease-rollback-*` tests and the other tests that list
+every release block (`tlb-rollback-004-often`, `tlb-rollback-005`, `github-0479-often`;
+new `Applying/Skipping` lines from (a) and (b), for pdfTeX, LuaTeX and XeTeX), the tests
+of `config-lthooks` and `config-lthooks2` that list all hooks (the two new hooks, from
+(a)) and `float-010-outside` (a tagpdf debug line, from (d)). (Before 2026-10-06 the
+series lacked the updates of 13 roll-back tests and of `lthooks2-002`/`-005`, so the full
+base suite failed on every patch; see "Full base suite" below.) In each case the only difference is the added lines, or the two changed debug
 lines. The new `float-017-declare` `.tlg` files have `<PDF version="2.0">` like the
 other `.tlg` files (see "Verification").
 
@@ -1121,9 +1124,11 @@ No change to kernel code is needed.
      PoC produces today.
 4. **A documented label for latex-lab's `\@makecaption`.** The `begindocument` code that
    replaces `\@makecaption` keeps the label it has today, the package's default label
-   `latex-lab-testphase-float`; the patch documents it, says that it must not change
-   (acmart, mitthesis, asmeconf and asmejour already remove the code by this label) and
-   that it is the only code of latex-lab-float in `begindocument`.
+   `latex-lab-testphase-float`; the patch documents it and says that it is kept for
+   compatibility, because acmart, mitthesis, asmeconf and asmejour already remove the
+   code by this label. A dedicated interface may replace it when the code moves into the
+   kernel; other code that latex-lab-float adds to `begindocument` should use a label of
+   its own, so that it is not removed or voided together with this code.
    - A package that provides its own `\@makecaption` with tagging (built on the sockets
      `caption/begin`, `caption/end`, `caption/label/begin`, `caption/label/end` and
      `para/begin`/`para/end`) can keep its definition, instead of overwriting latex-lab's
@@ -1228,7 +1233,9 @@ change, and the 2026-10-06 runs below show that the rest of the output did not e
   (`\RemoveFromHook{begindocument}[latex-lab-testphase-float]` in the preamble), and
   `float-026-makecaption-voids` disables it with a `voids` rule. In both, the class's own
   `\@makecaption` survives `\begin{document}` and is used for `\caption` and
-  `\caption*`, without a warning. Both fail with the renamed label.
+  `\caption*`, without a warning. Both fail with the renamed label. In `float-025`, `\START` comes before
+  the removal, so a "Cannot remove chunk" warning (as with a wrong label) shows up as a
+  difference (checked 2026-10-06).
 - Other latex-lab tests that use captions: `config-block firstaid-listings` (assigns
   `noop` to `caption/label`); `config-table-pdftex` / `config-table-luatex` with
   `table-012-caption`, `table-013-longtable-hyperref` and `table-021-longtable`;
@@ -1365,7 +1372,8 @@ so older formats and older latex-lab versions take the old path
    for a package to keep its own `\@makecaption`, or would you rather have a flag, or
    have latex-lab not redefine `\@makecaption` at all once the class code has the
    sockets? The label stays `latex-lab-testphase-float` because classes already use it;
-   documenting it makes that name permanent, although it says "testphase".
+   the patch documents it as kept for compatibility (not as a permanent name), until a
+   dedicated interface replaces it.
 
 ---
 
@@ -1737,6 +1745,24 @@ and the new tests 017, 020, 021 and 022 (whose
 (`float-025` and `float-026` print no structure and pass). They
 may need to be saved again on your setup.
 
+### Full base suite (2026-10-06)
+
+Each commit of the series ((a); (a)+(d); (a)+(d)+(b); all four) and the stand-alone (b)
+and (d), each as a `git archive` of its own commit on develop 829e56a15, with the
+corrected `.tlg` files and (c) in its final form (the label kept, with the
+compatibility wording and the `float-025` warning check):
+- base, default configuration, all tests (600 on develop and with (d) alone, 601–603 with the other patches) in
+  pdfTeX, LuaTeX and XeTeX: all pass;
+- base `config-lthooks`, `config-lthooks2`: all pass; for the four series states also
+  `config-1run`, `config-TU`, `config-doc`, `config-legacy`, `config-ltcmd`,
+  `config-ltmarks`, `config-lttemplates`: all pass;
+- firstaid (`build`, `config-TU`): all pass;
+- latex-lab `config-float`: only the tests that print the structure differ, and only in
+  the `<PDF version="2.0">` line (see above); `float-025` and `float-026` pass.
+
+Unpatched develop gives the same results (the base and firstaid suites pass,
+`config-float` differs only in `firstaid-float-H-2`, in that line).
+
 ### l3build
 
 | Check | develop 829e56a15 | combined (a)+(d)+(b)+(c) |
@@ -1778,8 +1804,8 @@ newfloat v1.2a. Three runs each (two for the simpler ones).
 
 ### What was not verified
 
-- The full l3build test suites of base and latex-lab (only the configurations and tests
-  listed above), and XeTeX apart from saving the rollback `.tlg` files.
+- The full latex-lab test suite (only the configurations listed above; the full base
+  suite was run on each patch, see "Full base suite").
 - PDF/UA validation (veraPDF, PAC) of any of the tagged output.
 - A caption.sty that uses (a), (b) and (c) together. The client code exists as three
   separate pieces (`patches/caption-floathooks.diff`, `mwe/captionclient.sty` and

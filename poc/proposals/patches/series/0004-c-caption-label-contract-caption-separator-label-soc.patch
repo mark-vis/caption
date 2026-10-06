@@ -1,4 +1,4 @@
-From 5e0a9fc885d8134bf7c2536836930b4451b23186 Mon Sep 17 00:00:00 2001
+From 8a937c6005aea4553bf0cadbc437db23a7c9743e Mon Sep 17 00:00:00 2001
 From: mark-vis <118430440+mark-vis@users.noreply.github.com>
 Date: Sun, 4 Oct 2026 01:54:52 +0200
 Subject: [PATCH 4/4] (c) caption/label contract, caption/separator, label
@@ -8,7 +8,7 @@ Subject: [PATCH 4/4] (c) caption/label contract, caption/separator, label
  base/changes.txt                              |   4 +-
  base/lttagging.dtx                            |  10 +-
  required/latex-lab/changes.txt                |  10 ++
- required/latex-lab/latex-lab-float.dtx        | 101 +++++++++++--
+ required/latex-lab/latex-lab-float.dtx        | 105 ++++++++++++--
  required/latex-lab/latex-lab-listings.dtx     |   8 +-
  .../float-021-caption-label.luatex.tlg        | 127 ++++++++++++++++
  .../float-021-caption-label.lvt               |  33 +++++
@@ -16,11 +16,11 @@ Subject: [PATCH 4/4] (c) caption/label contract, caption/separator, label
  .../float-022-caption-separator.luatex.tlg    | 135 ++++++++++++++++++
  .../float-022-caption-separator.lvt           |  25 ++++
  .../float-022-caption-separator.tlg           | 135 ++++++++++++++++++
- .../float-025-makecaption-label.lvt           |  23 +++
+ .../float-025-makecaption-label.lvt           |  29 ++++
  .../float-025-makecaption-label.tlg           |  13 ++
  .../float-026-makecaption-voids.lvt           |  24 ++++
  .../float-026-makecaption-voids.tlg           |  13 ++
- 15 files changed, 771 insertions(+), 18 deletions(-)
+ 15 files changed, 781 insertions(+), 18 deletions(-)
  create mode 100644 required/latex-lab/testfiles-float/float-021-caption-label.luatex.tlg
  create mode 100644 required/latex-lab/testfiles-float/float-021-caption-label.lvt
  create mode 100644 required/latex-lab/testfiles-float/float-021-caption-label.tlg
@@ -95,7 +95,7 @@ index 498cb0d7f..f71612e2b 100644
  
  	* latex-lab-block.dtx (subsubsection{The \insttype{thmstyle} instances they use}):
 diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
-index 2a50f4c44..eed80ce0c 100644
+index 2a50f4c44..d65ab5f84 100644
 --- a/required/latex-lab/latex-lab-float.dtx
 +++ b/required/latex-lab/latex-lab-float.dtx
 @@ -691,16 +691,41 @@
@@ -207,16 +207,20 @@ index 2a50f4c44..eed80ce0c 100644
    }
  \AssignTaggingSocketPlug{caption/label/end}{default}
  %    \end{macrocode}
-@@ -852,9 +904,29 @@
+@@ -852,9 +904,33 @@
  % \cs{@makecaption} is defined by the classes so we overwrite it for now
  % at begin document.
  % \changes{0.81k}{2025-10-11}{Add command hook explicitly to avoid patching error, tagging issue 998}
 +% \changes{0.81q}{2026-10-03}{Document the label \texttt{latex-lab-testphase-float}
 +%   of this code}
 +% The code is added with the label \texttt{latex-lab-testphase-float}
-+% (the default label of this package). Classes already use this label
-+% to remove the code, e.g., \cls{acmart}, so it must not change. It is
-+% the only code of this package in the hook \hook{begindocument}. A
++% (the default label of this package). This label is kept for
++% compatibility, because classes already use it to remove the code
++% (\cls{acmart}, \cls{asmejour}, \cls{asmeconf}, \cls{mitthesis}); a
++% dedicated interface may replace it when this code moves into the
++% kernel. Other code that this package adds to \hook{begindocument}
++% should use an explicit label of its own, so that it is not removed or
++% voided together with this code. A
 +% class or package which provides its own \cs{@makecaption} with tagging
 +% support (using the sockets \texttt{caption/begin}, \texttt{caption/end},
 +% \texttt{caption/label/begin}, \texttt{caption/label/end} and
@@ -238,7 +242,7 @@ index 2a50f4c44..eed80ce0c 100644
    {
      \long\def\@makecaption#1#2{%
        \UseHookWithArguments{cmd/@makecaption/before}{2}{#1}{#2}%
-@@ -867,6 +939,7 @@
+@@ -867,6 +943,7 @@
        \legacy_if:nT { @captionstar }
          {
            \AssignSocketPlug{caption/label}{noop}
@@ -246,7 +250,7 @@ index 2a50f4c44..eed80ce0c 100644
            \AssignTaggingSocketPlug{caption/label/begin}{noop}
            \AssignTaggingSocketPlug{caption/label/end}{noop}
          }
-@@ -875,7 +948,7 @@
+@@ -875,7 +952,7 @@
  % \changes{0.81l}{2025-10-17}{Measure \texttt{caption/label} socket instead of hard-coded colon and space, tagging issue 935}
  %    \begin{macrocode}
        \SuspendTagging{\@makecaption}
@@ -255,7 +259,7 @@ index 2a50f4c44..eed80ce0c 100644
        \ResumeTagging{\@makecaption}
  %    \end{macrocode}
  % We pass \cs{@current@float@struct} as parent structure
-@@ -887,6 +960,7 @@
+@@ -887,6 +964,7 @@
        \UseSocket{caption/label}{#1}
        \UseTaggingSocket{caption/label/end}
        \UseTaggingSocket{para/begin}
@@ -263,7 +267,7 @@ index 2a50f4c44..eed80ce0c 100644
            #2
        \par
        \else
-@@ -899,6 +973,7 @@
+@@ -899,6 +977,7 @@
           \UseSocket{caption/label}{#1}
           \UseTaggingSocket{caption/label/end}
           \UseTaggingSocket{para/begin}
@@ -925,24 +929,30 @@ index 000000000..29b52d103
 +Package tagpdf Info: writing Root
 diff --git a/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt b/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt
 new file mode 100644
-index 000000000..57c3084f3
+index 000000000..9df7ecc4a
 --- /dev/null
 +++ b/required/latex-lab/testfiles-float/float-025-makecaption-label.lvt
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,29 @@
 +% The code of latex-lab-float that redefines \@makecaption at
 +% \begin{document} has the label latex-lab-testphase-float. Classes
 +% (acmart, mitthesis, asmeconf, asmejour) remove it by this label to
-+% keep their own \@makecaption, so the label must not change: the class
-+% definition below must survive, without a warning, also for \caption*.
++% keep their own \@makecaption, so the label is kept for compatibility:
++% the class definition below must survive, without a warning, also for
++% \caption*.
++% \START comes before the removal, so that a "Cannot remove chunk" warning
++% (given by \RemoveFromHook, since the code exists already) is in the log;
++% the messages of \begin{document} are omitted.
 +\DocumentMetadata{lang=en}
 +\input{regression-test}
 +\documentclass{article}
++\START
 +\makeatletter
 +\long\def\@makecaption#1#2{\typeout{CLASS MAKECAPTION: \detokenize{#1}}#1. #2\par}
 +\RemoveFromHook{begindocument}[latex-lab-testphase-float]
 +\makeatother
++\OMIT
 +\begin{document}
-+\START
++\TIMO
 +\makeatletter
 +\TEST{The class definition survives}{\typeout{\meaning\@makecaption}}
 +\makeatother
