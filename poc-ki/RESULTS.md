@@ -2,6 +2,15 @@
 
 Date: 2026-10-05. POC = this directory. Nothing was pushed or posted.
 
+> **Taken with the renamed label (2026-10-06).** Every measurement in sections 1–6 on the
+> patched kernel (`kernel/`) was taken with the first version of proposal (c), which moved
+> latex-lab's `begindocument` code for `\@makecaption` to the new hook label
+> `latex-lab/float/makecaption`, and with a client that removed it by that label. That
+> rename broke acmart, mitthesis, asmeconf and asmejour (they remove the code by the old
+> label `latex-lab-testphase-float`). The kernel series and the client were changed on
+> 2026-10-06; section 7 has the re-measurement. The measurements on TeX Live and on
+> unpatched develop are not affected.
+
 ## 1. Integration
 
 - New worktree `cap-poc/` on branch `poc-kernel-interfaces` (was caption-v3.7, 122696d).
@@ -42,7 +51,7 @@ formats, for example missing hyphenation patterns. v3.7 and the PoC have them al
 | ref-tl vs poc-tl | **0 / 78** |
 | ref-stock vs poc-stock | **0 / 78** |
 
-## 3. Patched kernel (`kernel/`, series 0001–0004)
+## 3. Patched kernel (`kernel/`, series 0001–0004; renamed label, see section 7)
 
 ### Corpus totals (summed over the 78 jobs)
 
@@ -222,6 +231,48 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
   - lualatex memory statistics.
   - tag-hyp-all/tagging t.pdf: the random tagpdf namespace UUID has one hex digit fewer, which shifts the xref offsets. Objects compared one by one show no other difference.
 - **review-tagging / review-interfaces checks:** rerun as listed per finding above. step-plug (#12) and robust-caption (#17) are unchanged, as expected for proposal gaps.
+
+## 7. Update 2026-10-06: proposal (c) keeps the hook label (found while revising proposal (b))
+
+- Kernel: latex2e branch `poc-kernel-interfaces` (local, not pushed; backup of the old head
+  8143551c8 in `poc-kernel-interfaces-r3backup`). The fix of poc-b2 90fe37d7c was squashed
+  into the (c) commit, now **5e0a9fc88**: latex-lab-float adds the code with the label
+  `latex-lab-testphase-float` again and documents it (with a `voids` rule as the preferred
+  way to disable it); new tests `float-025-makecaption-label`, `float-026-makecaption-voids`
+  (their `.tlg` saved again for the v1 `\caption*`, which passes an empty label).
+  `kernel-patches/0004-*.patch` regenerated with `git format-patch`; 0001–0003 unchanged.
+  Built as `poc-env/kernel-r4` (formats and inputs; compared with `poc-env/kernel`, only
+  `latex-lab-float.dtx`/`latex-lab-testphase-float.sty` differ, plus the branch's
+  `latexrelease.sty`, which `kernel/` lacked).
+- Client: caption.dtx (commit eb35223 on this branch) disables the code with
+  `\AddToHook{begindocument}[caption]{}` +
+  `\DeclareHookRule{begindocument}{caption}{voids}{latex-lab-testphase-float}` instead of
+  `\RemoveFromHook{begindocument}[latex-lab/float/makecaption]` (as caption poc-b2 0712913).
+  Built as `poc-env/sty-poc-ki-r4`; only `caption.sty` differs from `poc-env/sty-poc-ki`.
+- l3build (latex-lab, exports of the branch before and after): `config-float`,
+  `config-table-pdftex`, `config-table-luatex`, `config-block` give the same `.diff` files with
+  the same content (`<PDF>` line only); float-025/026 pass in both engines and fail on the old
+  (c).
+- Classes (pdfLaTeX, 3 runs; acmart, mitthesis, asmeconf, asmejour × plain,
+  `\DocumentMetadata{lang=en}` with and without hyperref, `tagging=on`, each with and without
+  caption; 23 documents): on `kernel/` the five acmart documents with `\DocumentMetadata` and
+  the two asmeconf documents with `tagging=on` gave "Cannot remove chunk
+  'latex-lab-testphase-float'" (with sty-poc-ki and with TL's caption), and acmart printed
+  "Fig. 1: First / Fig. 1: Starred" without the client; mitthesis and asmejour gave the same
+  output on `kernel/` and `kernel-r4`. On `kernel-r4`, with TL's caption and with `sty-poc-ki-r4`: no "Cannot remove
+  chunk" in any job, captions as on kernel-stock and TL ("Fig. 1. First / Starred"); the
+  remaining differences to kernel-stock (asmejour/mitthesis `\caption*` does not step, one
+  more `Lbl` under tagging in acmart/asmeconf, acmart 14 instead of 10 tagging errors) are the
+  same on `kernel/` and on `kernel-r4`.
+- Corpus (78 jobs, 3 runs): sty-poc-ki on `kernel/` against sty-poc-ki-r4 on `kernel-r4`:
+  **0 / 78** differ (status, errors, warnings, text, aux, lists, out, struct); the same on TL
+  and on kernel-stock (sty-poc-ki against sty-poc-ki-r4). Totals on kernel-r4 as in section 6:
+  errors 39, caption W 24, tagpdf W 49, hyperref W 0, other W 9.
+- Caption suite (310 tests, pdfLaTeX + LuaLaTeX): a518ec6 + sty-poc-ki on `kernel/` against
+  eb35223 + sty-poc-ki-r4 on `kernel-r4`: failure lists identical (27 / 13), 258 / 256 common
+  PDFs, text/positions differ only in issue_77 (the time), 0 `.aux` differences, structure
+  trees of the 286 PDFs under `test/` identical.
+- Scripts and outputs: `poc-env/b2-revision/scripts/r4-fix/m3-label/` (SUMMARY.txt there).
 
 ## Files
 - `cap-poc/` worktree (branch poc-kernel-interfaces, HEAD b9111ce after the review round; ce43fdf before); `sty-poc/` the build.
