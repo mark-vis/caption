@@ -15,7 +15,7 @@ DRAFT, 2026-10-04. Everything here is written against latex2e `develop` at
 | `patches/standalone/d-tagging-float-types.patch` | (d) alone: series 0002 plus the version line of latex-lab-float |
 | `patches/caption-floathooks.diff` | caption side of (a), against the generated caption.sty v3.6p |
 | `patches/newfloat-v1.2a.diff` | newfloat side of (d), against newfloat.dtx v1.2 (TeX Live 2026); newfloat lives in its own repository, https://gitlab.com/axelsommerfeldt/newfloat |
-| `tests/` | the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface` (b), `float-021-caption-label`, `float-022-caption-separator`, `float-025-makecaption-label`, `float-026-makecaption-voids` (c) |
+| `tests/` | the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface`, `float-028-caption-star-wide` (b), `float-021-caption-label`, `float-022-caption-separator`, `float-025-makecaption-label`, `float-026-makecaption-voids`, `float-027-caption-in-box` (c) |
 | `mwe/` | the test documents and sketches (see below) |
 | `scripts/` | scripts that reproduce the checks |
 

@@ -67,6 +67,9 @@ In a combined release each file gets one new version: ltfloat v1.2k, lttagging v
 classes v1.4o, latex-lab-float 0.81q, latex-lab-namespace 0.8s, latex-lab-listings
 0.80b, all dated 2026-10-03. In the series, the first patch that touches a file changes
 its version line; the stand-alone patches of (a), (b) and (d) each change it themselves.
+One exception: (c) changes latex-lab-float once more, to 0.81r of 2026-10-06, for the
+`threeparttable` fix of 2026-10-06 (its `\changes` entries have that version); for a
+real release these would be merged into one version.
 The `\changes` dates follow each file's own convention (yyyy/mm/dd in base, yyyy-mm-dd
 in latex-lab).
 
@@ -617,9 +620,14 @@ Details:
 - `\caption*[x]{text}`: the optional argument is accepted and ignored.
 - `\@makecaption` gets an empty first argument for `\caption*`. The standard classes
   (classes.dtx) then drop the ": " (`\if\relax\detokenize{#1}\relax`). latex-lab's
-  `\@makecaption` tests `\if@captionstar` and makes the label sockets `noop`, as
+  `\@makecaption` tests `\if@captionstar` and makes the label socket `noop`, as
   latex-lab-listings already does for listing titles (latex-lab-listings.dtx:203-209).
-  With (c), it also makes `caption/separator` `noop`.
+  With (c), it also makes `caption/separator` `noop`. The label tagging sockets get new
+  plugs `nolabel` (no `Lbl`; they start the paragraph without para tagging, as the
+  default plugs do). Changed 2026-10-06: the first version made them `noop`, so a
+  `\caption*` wider than the line was started as a paragraph by its text after the
+  `para/begin` socket: a `P` inside a `P` and the tagpdf error "para hooks differ" at the
+  end, in any tagged document (`float-028-caption-star-wide`, see section 4).
 - `caption/listentry` gets the optional argument exactly as given. The kernel plug still
   writes an empty entry for `[]` (no change); caption's plug writes none.
 - `caption/step` replaces latex-lab's redefinition of `\caption`. latex-lab's plug sets
@@ -793,7 +801,9 @@ float types instead of using (d)'s `\__tag_float_name:n`):
 \AssignTaggingSocketPlug{subfloat/end}{default}
 ```
 
-and its `\@makecaption` makes the label sockets `noop` when `\if@captionstar` is true.
+and its `\@makecaption` makes the label socket `noop` and gives the label tagging sockets
+the new plugs `nolabel` (`\tagpdfparaOff` at the begin; `\leavevmode\tagpdfparaOn` at the
+end) when `\if@captionstar` is true.
 
 ### 4. Verification
 
@@ -824,6 +834,12 @@ combined patch are in the last section).
   table-013-longtable-hyperref (table-021-longtable)`, `tlb-context-001`) give the same
   results as on the unpatched clone. The test `float-tagging-off` matters here: it caught
   my first attempt, which used a tagging socket for the step (see section 2).
+- **New latex-lab test** `float-028-caption-star-wide.lvt` (2026-10-06; pdfTeX and LuaTeX
+  `.tlg`): a `\caption*` wider than the line, a short one and a wide numbered caption,
+  with the counts of the para hooks printed before the end (the tagpdf error at the end
+  is not in the test log). It gives 3 begin and 3 end, and one `P` per caption; with
+  the first version (`noop` plugs) 4 begin and 3 end, a `P` inside a `P` and the tagpdf
+  error.
 - **New latex-lab test** `float-020-caption-interface.lvt` (pdfTeX and LuaTeX `.tlg`),
   with hyperref and tagging:
   - a normal caption: target `figure.struct.5`, `Caption` > `Lbl "Figure 1:"`, `P`;
@@ -958,7 +974,7 @@ Patch: series 0004 (`poc/proposals/patches/series/0004-*.patch`), on top of (b):
 handles `\caption*`. There is no stand-alone version; without (b) only the `\caption*`
 lines would have to go. Tests: `poc/proposals/tests/float-021-caption-label.*`,
 `float-022-caption-separator.*`, `float-025-makecaption-label.*`,
-`float-026-makecaption-voids.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
+`float-026-makecaption-voids.*`, `float-027-caption-in-box.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
 `mwe/caption-sty-remove.tex`.
 
 > **Changed 2026-10-06 (item 4).** The first version of (c) moved latex-lab's
@@ -1115,11 +1131,18 @@ No change to kernel code is needed.
 3. **`caption/label/begin` and `caption/label/end` also work inside the paragraph.** This
    extends the lttagging contract quoted above; it does not change it. The patch also
    updates the lttagging documentation.
-   - If an MC chunk is open (`\tag_mc_if_in:TF`), begin interrupts it with
+   - If an MC chunk is open (`\tag_mc_if_in:TF`, see the next point), begin interrupts it with
      `\tag_mc_end_push:` instead of calling `\tagpdfparaOff`, and end continues it with
      `\tag_mc_begin_pop:n{}`.
-   - In latex-lab's own `\@makecaption` no chunk is open at that point, so its output
-     stays the same.
+   - An open chunk counts only if the caller has not said that it uses the sockets
+     before the paragraph: latex-lab's own `\@makecaption` sets
+     `\l__tag_caption_label_beforepar_bool` (locally, reset at its end), so its output
+     stays the same. Changed 2026-10-06: the first version took any open chunk as the
+     chunk of the caption paragraph. A caption in a box inside another paragraph
+     (`threeparttable` puts the table and its caption into a `\vtop` after `\noindent`)
+     then neither switched para tagging off nor started its own paragraph, and every
+     caption in a tagged `threeparttable` gave the tagpdf error "para hooks differ",
+     which develop does not give (test `float-027-caption-in-box`).
    - Inside a paragraph, `Lbl` becomes a child of the caption's `P`, which is what the
      PoC produces today.
 4. **A documented label for latex-lab's `\@makecaption`.** The `begindocument` code that
@@ -1180,9 +1203,18 @@ latex-lab-float (the contract is documented in the patch):
  }
 ...
 \bool_new:N \g_@@_caption_label_inpar_bool
+\bool_new:N \l_@@_caption_label_beforepar_bool   % set by \@makecaption (2026-10-06)
+\prg_new_conditional:Npnn \@@_caption_label_if_inpar: { TF }
+  {
+    \bool_lazy_and:nnTF
+      { ! \l_@@_caption_label_beforepar_bool }
+      { \tag_mc_if_in_p: }
+      { \prg_return_true: }
+      { \prg_return_false: }
+  }
 \NewTaggingSocketPlug{caption/label/begin}{default}
   {
-    \tag_mc_if_in:TF
+    \@@_caption_label_if_inpar:TF
       {
         \bool_gset_true:N \g_@@_caption_label_inpar_bool
         \tag_mc_end_push:
@@ -1196,10 +1228,14 @@ latex-lab-float (the contract is documented in the patch):
   }
 % caption/label/end: \tag_mc_end: \tag_struct_end:, then
 %   \tag_mc_begin_pop:n{} if the label was inside a paragraph, else \tagpdfparaOn
+% the plugs nolabel of (b) (for \caption*) get the same test; inside a paragraph
+%   they do nothing
 ...
 \AddToHook{begindocument}[latex-lab-testphase-float]   % label unchanged, now documented
   {
     \long\def\@makecaption#1#2{%
+      ...
+      \bool_set_true:N \l_@@_caption_label_beforepar_bool   % (false again at the end)
       ...
       \sbox\@tempboxa{\UseSocket{caption/label}{#1}\UseSocket{caption/separator}#2}%
       ...
@@ -1305,6 +1341,15 @@ change, and the 2026-10-06 runs below show that the rest of the output did not e
   warning. "sock" vs the original PoC code with private tagpdf calls: identical as well.
   (These modified PoC files are not part of `poc/proposals`, and these runs were not
   repeated on the combined patch or with the label kept.)
+
+- 2026-10-06, tagged `threeparttable` (`\DocumentMetadata{tagging=on}`, article, no
+  caption package; captions above and below the table, wrapped, `\caption*`; pdfLaTeX and
+  LuaLaTeX): 0 errors, as on develop (the first version of (c) gave one tagpdf error per
+  document, "para hooks differ"); the structure of numbered captions equals develop's
+  (`pdfinfo -struct-text`). With `tablenotes`, develop's own tagpdf error ("text-block"
+  para hooks) remains; it is not caused by the proposals. New test
+  `float-027-caption-in-box.lvt` (captions in a `\vtop` after `\noindent`: short,
+  wrapped, `\caption*`); the first version gives the error there.
 
 **Not verified:** PDF/UA validation (veraPDF/PAC); `labelsep=newline` with the caption3
 plug (the contract forbids `\\`, see the open questions); latex-lab-table's longtable
@@ -1746,6 +1791,13 @@ and the new tests 017, 020, 021 and 022 (whose
 may need to be saved again on your setup.
 
 ### Full base suite (2026-10-06)
+
+(Rerun after the second change of 2026-10-06, the `nolabel` plugs in (b) and the
+`threeparttable` fix in (c), for the changed patches: (a)+(d)+(b) and the whole series
+(603 base tests each; the whole series also with the 7 other base configurations) and
+the stand-alone (b) (601). Results as below. (a), (a)+(d) and the stand-alone (d) did not
+change and were not rerun. `config-float` now also has `float-028` (from (b)) and
+`float-027` (from (c)); both pass.)
 
 Each commit of the series ((a); (a)+(d); (a)+(d)+(b); all four) and the stand-alone (b)
 and (d), each as a `git archive` of its own commit on develop 829e56a15, with the

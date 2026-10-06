@@ -2850,10 +2850,18 @@ index 7680394e5..ec57a13e5 100644
  Already applied: [....-..-..] float order in 2-column on input line ....
  Skipping: [....-..-..] Explicit par for marginpar on input line ....
 diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
-index d0152f5b9..f71612e2b 100644
+index d0152f5b9..ccdb863f5 100644
 --- a/required/latex-lab/changes.txt
 +++ b/required/latex-lab/changes.txt
-@@ -1,3 +1,30 @@
+@@ -1,3 +1,39 @@
++2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
++
++	* latex-lab-float.dtx:
++	The label tagging sockets are taken to be inside the caption
++	paragraph only if \@makecaption has not said that it uses them
++	before the paragraph (a caption in threeparttable, which is inside
++	another paragraph, gave unbalanced para hooks)
++
 +2026-10-03  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
 +
 +	* latex-lab-float.dtx:
@@ -2866,7 +2874,8 @@ index d0152f5b9..f71612e2b 100644
 +
 +	* latex-lab-float.dtx:
 +	Use the kernel socket caption/step instead of redefining \caption,
-+	support \caption*, plugs for the sockets subfloat/begin and subfloat/end
++	support \caption* (with the new plugs nolabel of the label tagging
++	sockets), plugs for the sockets subfloat/begin and subfloat/end
 +
 +	* latex-lab-namespace.dtx:
 +	Structure names float/<type>/sub for sub-floats
@@ -2885,7 +2894,7 @@ index d0152f5b9..f71612e2b 100644
  
  	* latex-lab-block.dtx (subsubsection{The \insttype{thmstyle} instances they use}):
 diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
-index 216c24151..d65ab5f84 100644
+index 216c24151..f9337b4b2 100644
 --- a/required/latex-lab/latex-lab-float.dtx
 +++ b/required/latex-lab/latex-lab-float.dtx
 @@ -15,8 +15,8 @@
@@ -2894,8 +2903,8 @@ index 216c24151..d65ab5f84 100644
  %
 -\def\ltlabfloatdate{2026-09-09}
 -\def\ltlabfloatversion{0.81p}
-+\def\ltlabfloatdate{2026-10-03}
-+\def\ltlabfloatversion{0.81q}
++\def\ltlabfloatdate{2026-10-06}
++\def\ltlabfloatversion{0.81r}
  %<*driver>
  \DocumentMetadata{tagging=on,pdfstandard=ua-2}
  \documentclass{l3in2edoc}
@@ -3085,22 +3094,39 @@ index 216c24151..d65ab5f84 100644
        }
       \bool_set_true:N \l__tag_para_flattened_bool
    }
-@@ -743,14 +800,29 @@
+@@ -743,14 +800,47 @@
  % \end{plugdecl}
  %
  % \begin{plugdecl}{default (tagsupport/caption/label/begin)}
--%    \begin{macrocode}
 +% \changes{0.81q}{2026-10-03}{Allow the label sockets inside a paragraph}
 +% The label sockets can be used before the paragraph of the caption
 +% starts (as in \cs{@makecaption}) or inside it, when a marked content
 +% chunk of the paragraph is open (as in the \pkg{caption} package, which
 +% typesets the label as part of the caption paragraph). In the second case the
 +% chunk is interrupted for the label and continued after it.
-+%    \begin{macrocode}
++% \changes{0.81r}{2026-10-06}{The label sockets are inside a paragraph only if
++%   the caller has not said that they are used before it}
++% An open chunk alone does not show that the label is inside the caption
++% paragraph: the caption can be typeset in a box inside another paragraph
++% (\pkg{threeparttable} puts the whole table into a \cs{vtop} after a
++% \cs{noindent}). So code that uses the sockets before the paragraph sets
++% \cs{l_@@_caption_label_beforepar_bool} true (locally), as \cs{@makecaption}
++% below does; only otherwise an open chunk is taken as the chunk of the
++% caption paragraph.
+ %    \begin{macrocode}
 +\bool_new:N \g_@@_caption_label_inpar_bool
++\bool_new:N \l_@@_caption_label_beforepar_bool
++\prg_new_conditional:Npnn \@@_caption_label_if_inpar: { TF }
++  {
++    \bool_lazy_and:nnTF
++      { ! \l_@@_caption_label_beforepar_bool }
++      { \tag_mc_if_in_p: }
++      { \prg_return_true: }
++      { \prg_return_false: }
++  }
  \NewTaggingSocketPlug{caption/label/begin}{default}
    {
-+    \tag_mc_if_in:TF
++    \@@_caption_label_if_inpar:TF
 +      {
 +        \bool_gset_true:N \g_@@_caption_label_inpar_bool
 +        \tag_mc_end_push:
@@ -3118,7 +3144,7 @@ index 216c24151..d65ab5f84 100644
       \tag_mc_begin:n{}
    }
  \AssignTaggingSocketPlug{caption/label/begin}{default}
-@@ -763,61 +835,124 @@
+@@ -763,61 +853,165 @@
    {
      \tag_mc_end:
      \tag_struct_end:
@@ -3135,7 +3161,17 @@ index 216c24151..d65ab5f84 100644
 -%
 -% With hyperref that means that the \cs{refstepcounter} now can affect spacing so we
 -% change that to the kernel refstepcounter:
--%    \begin{macrocode}
++% \begin{plugdecl}{nolabel (tagsupport/caption/label/begin)}
++% \begin{plugdecl}{nolabel (tagsupport/caption/label/end)}
++% \changes{0.81q}{2026-10-05}{Plugs \texttt{nolabel} for \cs{caption*}}
++% For a caption without a label (\cs{caption*}): no \texttt{Lbl} structure,
++% but the paragraph is handled as with a label. If the sockets are used
++% before the caption paragraph starts, the paragraph is started without
++% para tagging, so that the following \texttt{para/begin} socket starts the
++% only \texttt{P} (with the plugs \plug{noop} the paragraph would be started
++% by the caption text after \texttt{para/begin}, which gave a second
++% \texttt{P} and unbalanced para hooks). Inside the paragraph they do nothing.
+ %    \begin{macrocode}
 -\def\caption{%
 -   \ifx\@captype\@undefined
 -     \@latex@error{\noexpand\caption\c_space_tl outside~float}\@ehd
@@ -3144,6 +3180,32 @@ index 216c24151..d65ab5f84 100644
 -%    \end{macrocode}
 -% if a caption is used outside a float no
 -% target has been set and \cs{@current@float@struct} is empty
+-%    \begin{macrocode}
+-     \tl_if_empty:NTF\@current@float@struct
++\NewTaggingSocketPlug{caption/label/begin}{nolabel}
++  {
++    \@@_caption_label_if_inpar:TF
++      { \bool_gset_true:N \g_@@_caption_label_inpar_bool }
+       {
+-        \refstepcounter\@captype
++        \bool_gset_false:N \g_@@_caption_label_inpar_bool
++        \tagpdfparaOff
+       }
++  }
++\NewTaggingSocketPlug{caption/label/end}{nolabel}
++  {
++    \bool_if:NF \g_@@_caption_label_inpar_bool
+       {
+-        \@kernel@refstepcounter\@captype
++        \leavevmode
++        \tagpdfparaOn
++      }
++  }
+ %    \end{macrocode}
+-% we need to reset the target for \cs{addcontentsline}.
++% \end{plugdecl}
++% \end{plugdecl}
++%
 +% \subsubsection{Stepping the counter}
 +%
 +% With hyperref the \cs{refstepcounter} now can affect spacing so we
@@ -3160,9 +3222,9 @@ index 216c24151..d65ab5f84 100644
 +% a sub-float the structure number is that of the sub-float, which has no
 +% target, so there we use the normal \cs{refstepcounter} too.
 +% Otherwise we need to reset the target for \cs{addcontentsline}.
-+% We use \cs{@captype} to support autoref.
+ % We use \cs{@captype} to support autoref.
  %    \begin{macrocode}
--     \tl_if_empty:NTF\@current@float@struct
+-        \xdef\@currentHref{\@captype.struct.\@current@float@struct}%
 +\bool_new:N \l_@@_subfloat_bool
 +\NewSocketPlug{caption/step}{latex-lab}
 +  {
@@ -3170,18 +3232,17 @@ index 216c24151..d65ab5f84 100644
 +      { \tl_if_empty_p:N \@current@float@struct }
 +      { \l_@@_subfloat_bool }
 +      { \refstepcounter {#1} }
-       {
--        \refstepcounter\@captype
++      {
 +        \@kernel@refstepcounter {#1}
 +        \xdef\@currentHref{\@captype.struct.\@current@float@struct}
        }
--      {
--        \@kernel@refstepcounter\@captype
+-     \expandafter\@firstofone
+-   \fi
+-   {\@dblarg{\@caption\@captype}}%
+-}
 +  }
 +\AssignSocketPlug{caption/step}{latex-lab}
- %    \end{macrocode}
--% we need to reset the target for \cs{addcontentsline}.
--% We use \cs{@captype} to support autoref.
++%    \end{macrocode}
 +% \end{plugdecl}
 +%
 +% \subsubsection{Sub-floats}
@@ -3192,13 +3253,7 @@ index 216c24151..d65ab5f84 100644
 +% \texttt{float/generic/sub} for unknown float types.
 +% Its structure number is stored in \cs{@current@float@struct}, so that
 +% the caption of the sub-float becomes its first kid.
- %    \begin{macrocode}
--        \xdef\@currentHref{\@captype.struct.\@current@float@struct}%
--      }
--     \expandafter\@firstofone
--   \fi
--   {\@dblarg{\@caption\@captype}}%
--}
++%    \begin{macrocode}
 +\NewTaggingSocketPlug{subfloat/begin}{default}
 +  {
 +    \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{sub}}}
@@ -3250,16 +3305,25 @@ index 216c24151..d65ab5f84 100644
        \UseHookWithArguments{cmd/@makecaption/before}{2}{#1}{#2}%
        \vskip\abovecaptionskip
  %    \end{macrocode}
++% The label sockets are used before the caption paragraph (see above).
++% \changes{0.81r}{2026-10-06}{Say that the label sockets are used before the
++%   paragraph: a caption in \pkg{threeparttable} gave unbalanced para hooks}
++%    \begin{macrocode}
++      \bool_set_true:N \l_@@_caption_label_beforepar_bool
++%    \end{macrocode}
 +% \cs{caption*} has no label (the first argument is empty), so the label
-+% sockets are disabled locally.
++% sockets are disabled locally, and the label tagging sockets get the plugs
++% \plug{nolabel}.
 +% \changes{0.81q}{2026-10-03}{Support for \cs{caption*}}
++% \changes{0.81q}{2026-10-05}{Use the plugs \texttt{nolabel}: \cs{caption*} gave
++%   unbalanced para hooks if the caption was wider than the line}
 +%    \begin{macrocode}
 +      \legacy_if:nT { @captionstar }
 +        {
 +          \AssignSocketPlug{caption/label}{noop}
 +          \AssignSocketPlug{caption/separator}{noop}
-+          \AssignTaggingSocketPlug{caption/label/begin}{noop}
-+          \AssignTaggingSocketPlug{caption/label/end}{noop}
++          \AssignTaggingSocketPlug{caption/label/begin}{nolabel}
++          \AssignTaggingSocketPlug{caption/label/end}{nolabel}
 +        }
 +%    \end{macrocode}
  % We don't want tagging when storing the caption for the singleline check.
@@ -3271,7 +3335,7 @@ index 216c24151..d65ab5f84 100644
        \ResumeTagging{\@makecaption}
  %    \end{macrocode}
  % We pass \cs{@current@float@struct} as parent structure
-@@ -829,6 +964,7 @@
+@@ -829,6 +1023,7 @@
        \UseSocket{caption/label}{#1}
        \UseTaggingSocket{caption/label/end}
        \UseTaggingSocket{para/begin}
@@ -3279,7 +3343,7 @@ index 216c24151..d65ab5f84 100644
            #2
        \par
        \else
-@@ -841,6 +977,7 @@
+@@ -841,11 +1036,13 @@
           \UseSocket{caption/label}{#1}
           \UseTaggingSocket{caption/label/end}
           \UseTaggingSocket{para/begin}
@@ -3287,6 +3351,12 @@ index 216c24151..d65ab5f84 100644
            #2
           \UseTaggingSocket{para/end}
           \hfil}%
+        \fi
+       \UseTaggingSocket{caption/end}
++      \bool_set_false:N \l_@@_caption_label_beforepar_bool
+       \vskip\belowcaptionskip}
+   }
+ %    \end{macrocode}
 diff --git a/required/latex-lab/latex-lab-listings.dtx b/required/latex-lab/latex-lab-listings.dtx
 index 6c14a0257..a85c356a7 100644
 --- a/required/latex-lab/latex-lab-listings.dtx
@@ -5054,3 +5124,566 @@ index 000000000..cf5a88682
 +CLASS MAKECAPTION: \csname fnum@\@captype \endcsname 
 +CLASS MAKECAPTION: 
 +============================================================
+diff --git a/required/latex-lab/testfiles-float/float-027-caption-in-box.luatex.tlg b/required/latex-lab/testfiles-float/float-027-caption-in-box.luatex.tlg
+new file mode 100644
+index 000000000..22635a5f9
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-027-caption-in-box.luatex.tlg
+@@ -0,0 +1,136 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++Floatstructure:12
++Floatstructure:18
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-027-caption-in-box.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.005"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.009"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.010"
++        >
++       <?MarkedContent page="1" ?>Table 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.007"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.012"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.015"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.016"
++        >
++       <?MarkedContent page="1" ?>Table 2: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.017"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A caption that is wider than the box and wraps
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.013"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.018"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.021"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.022"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Starred
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.019"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.020"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-027-caption-in-box.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-027-caption-in-box.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~22 structure objects
++(tagpdf)             with ~10 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-027-caption-in-box.lvt b/required/latex-lab/testfiles-float/float-027-caption-in-box.lvt
+new file mode 100644
+index 000000000..f83ab6405
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-027-caption-in-box.lvt
+@@ -0,0 +1,27 @@
++% Captions typeset by the \@makecaption of latex-lab in a box inside
++% another paragraph, as threeparttable does (it puts the table and its
++% caption into a \vtop after \noindent): an open marked content chunk of
++% the outer paragraph must not be taken as the chunk of the caption
++% paragraph. Before, the label sockets then left the para hooks
++% unbalanced (tagpdf error "para hooks differ" at the end).
++% The structure of the numbered captions and the warnings about nested
++% marked content are the same as before the caption interface (latex-lab
++% does not support a caption in a box inside a paragraph; the outer
++% paragraph contains the caption text again).
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\begin{document}
++\START
++\begin{table}[h]\centering
++  \noindent\vtop{\hsize=4cm \caption{Short}\par}
++\end{table}
++\begin{table}[h]\centering
++  \noindent\vtop{\hsize=4cm \caption{A caption that is wider than the box
++    and wraps}\par}
++\end{table}
++\begin{table}[h]\centering
++  \noindent\vtop{\hsize=4cm \caption*{Starred}\par}
++\end{table}
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-027-caption-in-box.tlg b/required/latex-lab/testfiles-float/float-027-caption-in-box.tlg
+new file mode 100644
+index 000000000..973c41af6
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-027-caption-in-box.tlg
+@@ -0,0 +1,143 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++Package tagpdf Warning: nested marked content found - mcid 1
++Package tagpdf Warning: there is no mc to end at 3
++Floatstructure:11
++Package tagpdf Warning: nested marked content found - mcid 4
++Package tagpdf Warning: there is no mc to end at 6
++Floatstructure:17
++Package tagpdf Warning: nested marked content found - mcid 7
++Package tagpdf Warning: there is no mc to end at 8
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-027-caption-in-box.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.008"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.009"
++        >
++       <?MarkedContent page="1" ?>Table 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.010"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.006"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.007"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Table 1:Short
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.011"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.014"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.015"
++        >
++       <?MarkedContent page="1" ?>Table 2:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.016"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A caption thatis wider than the box andwraps
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.012"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.013"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Table 2:A caption thatis wider than the box andwraps
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.017"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.020"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.021"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Starred
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.018"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.019"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Starred
++      </text-block>
++     </semantic-para>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-027-caption-in-box.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-027-caption-in-box.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~21 structure objects
++(tagpdf)             with ~10 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg b/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg
+new file mode 100644
+index 000000000..2d30690e9
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg
+@@ -0,0 +1,95 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++Floatstructure:9
++Floatstructure:12
++para hooks (text-block): 0 begin, 0 end
++para hooks (semantic): 3 begin, 3 end
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-028-caption-star-wide.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.005"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.007"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A starred caption that is wider than the line, so that it is typeset as a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.010"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short starred
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.012"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.013"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.014"
++        >
++       <?MarkedContent page="1" ?>Table 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A numbered caption that is wider than the line, so that it is typeset as a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-028-caption-star-wide.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-028-caption-star-wide.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~15 structure objects
++(tagpdf)             with ~6 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt b/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt
+new file mode 100644
+index 000000000..584a3a1b9
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt
+@@ -0,0 +1,31 @@
++% \caption* that is wider than the line, so that the \@makecaption of
++% latex-lab typesets it as a paragraph and not in a box of the line width:
++% the paragraph must get one P (the one of the para/begin socket), not a
++% second one from the para hooks. With the plugs noop of the label tagging
++% sockets the para hooks were unbalanced (tagpdf error "para hooks differ"
++% at the end, which is not in the test log, so the counts are shown). A
++% short \caption* and a wide numbered caption for comparison.
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\begin{document}
++\START
++\begin{table}[h]\centering
++  \caption*{A starred caption that is wider than the line, so that it is
++    typeset as a paragraph and not in a box of the line width}
++\end{table}
++\begin{table}[h]\centering
++  \caption*{Short starred}
++\end{table}
++\begin{table}[h]\centering
++  \caption{A numbered caption that is wider than the line, so that it is
++    typeset as a paragraph and not in a box of the line width}
++\end{table}
++\ExplSyntaxOn
++\typeout{para~hooks~(text-block):~\int_use:N \g__tag_para_main_begin_int
++  \space begin,~\int_use:N \g__tag_para_main_end_int \space end}
++\typeout{para~hooks~(semantic):~\int_use:N \g__tag_para_begin_int
++  \space begin,~\int_use:N \g__tag_para_end_int \space end}
++\ExplSyntaxOff
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg b/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
+new file mode 100644
+index 000000000..cd6ad1c17
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
+@@ -0,0 +1,95 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++Floatstructure:8
++Floatstructure:11
++para hooks (text-block): 0 begin, 0 end
++para hooks (semantic): 3 begin, 3 end
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-028-caption-star-wide.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.006"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.007"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A starred caption that is wider than the line, so that it is typeset as a paragraphand not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.008"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.009"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.010"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short starred
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.011"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.012"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>Table 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A numbered caption that is wider than the line, so that it is typesetas a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-028-caption-star-wide.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-028-caption-star-wide.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~14 structure objects
++(tagpdf)             with ~6 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
