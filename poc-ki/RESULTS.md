@@ -274,6 +274,30 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
   trees of the 286 PDFs under `test/` identical.
 - Scripts and outputs: `poc-env/b2-revision/scripts/r4-fix/m3-label/` (SUMMARY.txt there).
 
+## 8. Update 2026-10-06 (round 5): the series passes the full base suite; (c) in its final form
+
+- Kernel: latex2e branch `poc-kernel-interfaces` rewritten again (local, not pushed; backup
+  of 5e0a9fc88 in `poc-kernel-interfaces-r4backup`), head **8a937c600**:
+  - (a) and (b) now carry the `.tlg` lines of their release blocks and hooks in the base
+    tests that list all of them (13 roll-back tests in pdfTeX, LuaTeX and XeTeX,
+    `lthooks2-002`, `lthooks2-005`). These updates existed only on the (b) v2 branch, so
+    before this the full base suite failed on every patch of the series.
+  - (c) also contains the round-3 fixup of the (b) v2 branch (62eec6829): the label
+    `latex-lab-testphase-float` is documented as kept for compatibility (not as "must not
+    change"), and `float-025` has `\START` before `\RemoveFromHook`, so a "Cannot remove
+    chunk" warning shows up as a difference.
+  - `kernel-patches/0001`–`0004` regenerated with `git format-patch`.
+- l3build on a `git archive` of each of the four commits: base (default configuration, all
+  tests, three engines), `config-lthooks`, `config-lthooks2` and the other base
+  configurations, firstaid (`build`, `config-TU`): all pass; latex-lab `config-float`: only
+  the tests that print the structure differ, in the local `<PDF>` line.
+- Built as `poc-env/kernel-r5`: inputs identical to `kernel-r4` except
+  `latex-lab-float.dtx` (documentation only); base sources identical. Corpus (78 jobs,
+  3 runs) with `sty-poc-ki-r4`: kernel-r4 against kernel-r5 **0 / 78** differ; totals
+  errors 39, caption W 24, tagpdf W 49, hyperref W 0, other W 9 (as in section 7). The
+  caption client (`eb35223`) is unchanged and still pairs with `kernel-r4`/`kernel-r5`, not
+  with `kernel/`.
+
 ## Files
 - `cap-poc/` worktree (branch poc-kernel-interfaces, HEAD b9111ce after the review round; ce43fdf before); `sty-poc/` the build.
 - `suite/` trees, runs (`run-tl`, `run-stock`, `run-patched`), `cmpsuite-poc.py`, `cmp-{tl,stock,patched}.txt`.
