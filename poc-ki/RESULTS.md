@@ -298,6 +298,29 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
   caption client (`eb35223`) is unchanged and still pairs with `kernel-r4`/`kernel-r5`, not
   with `kernel/`.
 
+## 9. Update 2026-10-06 (round 5, repair): no new tagpdf errors for wide `\caption*` and threeparttable
+
+- latex2e `poc-kernel-interfaces` rewritten again (head `de50ef859`; backup ref
+  `poc-kernel-interfaces-r5prep` = `8a937c600`); (a) and (d) unchanged.
+  - (b): latex-lab's `\@makecaption` gives the label tagging sockets the plugs `nolabel`
+    for `\caption*` instead of `noop` (with `noop` a `\caption*` wider than the line gave
+    a `P` inside a `P` and the tagpdf error "para hooks differ"). New test `float-028`.
+  - (c): an open marked content chunk counts as the caption paragraph only if the caller
+    has not said that it uses the label sockets before the paragraph, as latex-lab's
+    `\@makecaption` now does. Before, every caption in a tagged threeparttable gave the
+    tagpdf error, which develop does not give. New test `float-027`.
+  - Both changes come from the (b) v2 branch, which now builds on this (c) unchanged.
+  - `kernel-patches/0003` and `0004` regenerated (0001/0002 unchanged).
+- l3build on `git archive`s of (a)+(d)+(b) and of the whole series: base (603 tests, three
+  engines), `config-lthooks`, `config-lthooks2`, firstaid; for the series also the 7 other
+  base configurations: all pass; latex-lab `config-float`: only the local `<PDF>` line.
+- Rebuilt `poc-env/kernel-r5`: only `latex-lab-float.dtx` and `latex-lab-testphase-float.sty`
+  differ. Tagged threeparttable and `\caption*` documents (20 documents, pdfLaTeX and
+  LuaLaTeX): the error counts of develop (0, or develop's own `tablenotes` error);
+  structure trees equal to the (b) v2 kernel in all 40 runs, and to develop in all runs
+  without `\caption*`. Corpus (78 jobs) with `sty-poc-ki-r4`: old against new `kernel-r5`
+  **0 / 78** differ (4 jobs that timed out under load were rerun).
+
 ## Files
 - `cap-poc/` worktree (branch poc-kernel-interfaces, HEAD b9111ce after the review round; ce43fdf before); `sty-poc/` the build.
 - `suite/` trees, runs (`run-tl`, `run-stock`, `run-patched`), `cmpsuite-poc.py`, `cmp-{tl,stock,patched}.txt`.
