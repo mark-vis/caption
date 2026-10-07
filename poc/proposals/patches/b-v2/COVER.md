@@ -1,17 +1,26 @@
-> **Copy for `poc/proposals/patches/b-v2/` (2026-10-07).** The cover letter of the series as
+> **Copy for `poc/proposals/patches/b-v2/` (2026-10-08).** The cover letter of the series as
 > written in the PoC environment (`poc-env/b2-revision/scripts/r5/split2/COVER.md`). Paths such
-> as `series/`, `repair2/logs/...` and `split2/meta/...` are relative to that folder; only
-> `series/`, `O1.patch` and `O2-standalone.patch` are copied here. Open after the third review
-> (review r6-3, R63-M1): the bullet below that calls b-3b and b-3c droppable is wrong. The
-> float first aid of b-3f for restyled floats (ruled/plain/boxed, algorithm.sty, `\newfloat`)
-> and the hyperref sketch A rely on the settings of b-3c, and b-3c needs b-3b. The correction
-> (text only, in this letter and in the messages of 0006 and 0008) has not been made yet.
+> as `series-r3text/`, `logs/...`, `repair2/logs/...` and `split2/meta/...` are relative to that
+> folder; here the patches of `series-r3text/` are in `series/`, next to `O1.patch` and
+> `O2-standalone.patch`. This version includes the text fixes of review round 6.3 (R63-M1, L1, L2):
+> only commit messages and one usrguide source comment changed.
 
 # Caption hooks and sockets: the patch series
 
 Local branch `b2-split` of the latex2e clone: 14 commits on develop **2a9bfe9d6** (2026-10-06),
-head **449aa8e30**. Not pushed and not posted. The patches are in `series/` (git format-patch);
-`git am series/*.patch` on 2a9bfe9d6 gives the tree of every commit (`repair2/logs/series-am-check.txt`).
+head **dd54d64b9**. Not pushed and not posted. The patches are in `series-r3text/` (git format-patch);
+`git am series-r3text/*.patch` on 2a9bfe9d6 gives the tree of every commit
+(`logs/series-r3text-am-check.txt`).
+
+Text revision after review round 6.3 (2026-10-08; the previous head 449aa8e30 is kept as
+`b2-split-r3textbackup`, its export in `series/`): only commit messages changed, plus one source
+comment in `usrguide.tex` in the last commit. The trees of commits 1-13 are identical to those of
+round 6.3; the last commit differs only in that comment (`logs/series-r3text-hashmap.txt`).
+Per-commit CI after the text revision (`poc-env/ci/results/dd54d64b98fb.txt`): std PASS on all 14
+(commits 1-13 from the tree cache), lab PASS on the head.
+Changes: the dependencies of b-3b/b-3c are stated (b-3f and the hyperref route need them; R63-M1),
+the series asks hyperref for one change (sketch A; R63-L1), and the messages no longer refer to
+earlier versions of the proposal or to "the series" (R63-L2).
 Separate files: `O1.patch` (optional, on top of the head) and `O2-standalone.patch` (the `\caption`
 outside-a-float fix alone on develop, with its own `.tlg` files).
 
@@ -24,19 +33,19 @@ with the socket `caption/typeset` it needs); on the earlier kernels it falls bac
 |---|---|---|
 | (a) | 2e1246c7c | Add hooks float/begin and float/end |
 | (d) | bebf5fccc | Add \DeclareTaggingFloatType and generic caption names |
-| O2 | c30a91bb1 | Skip the arguments of \caption outside a float |
-| b-3a | 07b5a8817 | Add \caption*, hook caption/before and socket caption/step |
-| b-3b | 979d62f7b | Give captions that do not step their counter a unique target |
-| b-3c | 05e6d4f6d | Support \caption* with an \@caption that a class replaced |
-| b-3d | a2775b254 | Remove the usual separator after the label of \caption* |
-| b-3f | 304c6fd2e | firstaid: \caption* with the float package |
-| b-1 | 2edb486e2 | latex-lab: float target \@floatHref@<type> |
-| b-4 | 271f6728c | Add hook caption/prepare and socket caption/listentry |
-| (c) | 5b6eb6b66 | latex-lab: label contract, caption/separator, in-paragraph labels |
-| b-5 | d7f0671a9 | Add socket caption/typeset and the kernel copy \@kernel@@caption |
-| b-6 | ab41c6600 | Add tagging sockets for sub-floats |
-| announce | 449aa8e30 | Document \caption* in usrguide; draft LaTeX News entries |
-| O1 (optional, O1.patch) | 5576f6bb3 | Set \@currentlabelname for captions (title for named references) |
+| O2 | 28bd304c8 | Skip the arguments of \caption outside a float |
+| b-3a | 721622eec | Add \caption*, hook caption/before and socket caption/step |
+| b-3b | aff8c2a32 | Give captions that do not step their counter a unique target |
+| b-3c | 2e60929aa | Support \caption* with an \@caption that a class replaced |
+| b-3d | a65bb571f | Remove the usual separator after the label of \caption* |
+| b-3f | 3bfd34630 | firstaid: \caption* with the float package |
+| b-1 | 40458f577 | latex-lab: float target \@floatHref@<type> |
+| b-4 | 413a65cd4 | Add hook caption/prepare and socket caption/listentry |
+| (c) | ef48558d2 | latex-lab: label contract, caption/separator, in-paragraph labels |
+| b-5 | ebac3521e | Add socket caption/typeset and the kernel copy \@kernel@@caption |
+| b-6 | 8f83a89b2 | Add tagging sockets for sub-floats |
+| announce | dd54d64b9 | Document \caption* in usrguide; draft LaTeX News entries |
+| O1 (optional, O1.patch; branch on the old head, the patch applies unchanged on the new one) | 5576f6bb3 | Set \@currentlabelname for captions (title for named references) |
 | O2 alone (O2-standalone.patch) | 98c6642b6 | Skip the arguments of \caption outside a float |
 
 Order and what can be dropped:
@@ -49,16 +58,23 @@ Order and what can be dropped:
   `\@kernel@caption*` and starts its numbered caption with `\@kernel@caption@reset`; none of this
   depends on the request-for-comments parts b-5 and b-6 (but see b-3c/b-3d for a replaced
   `\@caption` and the separator).
-- b-3b (unique targets) and b-3c (a replaced `\@caption`) can be dropped from the end of the b-3
-  group: nothing later uses their commands except `\@kernel@caption@unique` (the caption client).
-  The tests of later parts assume them, so dropping one means regenerating some `.tlg` files.
+- b-3b (unique targets) and b-3c (a replaced `\@caption`) are **not** optional. No later part calls
+  b-3c's macros, but later parts rely on their effect: b-3c needs b-3b (`\@caption@uniqueH`); the
+  float first aid (b-3f) lets float's caption code act as a replaced `\@caption` in restyled floats
+  (`algorithm.sty`, every `\newfloat` and `\restylefloat` type), so without b-3c `\caption*{Starred}`
+  in a ruled algorithm gives "Algorithm 1 Starred" (the previous number) with a list entry; hyperref
+  sketch A (below) needs b-3b and b-3c, because classic hyperref replaces `\@caption` too (without
+  b-3c: "Figure 1: Starred", a list entry and a duplicate destination); and the caption client needs
+  `\@kernel@caption@unique` from b-3b. So b-3a to b-3d are one unit for a `\caption*` that works with
+  the standard classes, float.sty and hyperref. A smaller first step would be b-3a + b-3d (standard
+  classes, tagging) without float.sty and hyperref support; then b-3f must wait as well.
 - b-3d (the separator look-ahead) is **not** a free choice. Without it every class that does not
   test `\if@captionstar` prints its separator before the text of `\caption*`: the standard classes
   article, report and book give ": Text" (while the same document with
   `\DocumentMetadata{tagging=on}` gives "Text", because latex-lab's `\@makecaption` tests the
   switch), llncs, IEEEtran and mwart give their separator, and the float first aid (b-3f) gives
-  ": Text" for float's plain style. The alternative is that `classes.dtx` tests the switch. That was
-  (b) v1 and was withdrawn: babel-french installs its French separator only if `\@makecaption` is
+  ": Text" for float's plain style. The alternative is that `classes.dtx` tests the switch. Its cost:
+  babel-french installs its French separator only if `\@makecaption` is
   `\STD@makecaption`, and caption3 recognises the standard classes by the same comparison, so any
   change to the standard `\@makecaption` gives "Figure 1: text" instead of "Figure 1 -- text" in
   French pdfLaTeX documents (caption's test/babel/french-0, -4, -5) and an "unknown class" in
@@ -68,6 +84,9 @@ Order and what can be dropped:
   the socket `caption/typeset` and the copy `\@kernel@@caption` of `\@caption`.
 - The last commit (usrguide section and LaTeX News draft) is meant to be applied only when hyperref
   supports `\caption*` (see below).
+- What can really be left out: b-3f as a whole (then `\caption*` with float.sty keeps the output of
+  develop), b-4 to b-6, (c) and b-1 if the team takes them on develop instead, and the announce
+  commit. b-3a to b-3d cannot be split further without the costs named above.
 
 Release date (PLACEHOLDER): all `\IncludeInRelease` blocks use `2026/11/01`, the date develop already
 uses for its next release. `\changes` entries, file dates and `changes.txt` use 2026-10-06 (the
@@ -88,10 +107,15 @@ fail under tagging, as on develop), #1487 (several captions in one float: b-1's 
 hyperref: classic hyperref (without `\DocumentMetadata`) replaces `\caption`, so `\caption*` still
 gives "Figure 1: * Text" there, as on develop. O2 does not change hyperref's or float.sty's own
 `\caption` outside a float either. Two hyperref sketches were tested in the proposal rounds
-(PROPOSAL-b-v2.md 2.6.5). Sketch A (hyperref keeps its `\caption`, sends only the star to
-`\@kernel@caption*` and starts its numbered `\caption` with `\@kernel@caption@reset`) no longer
-needs b-5, but it needs b-3a to b-3d: classic hyperref also replaces `\@caption`, which b-3c
-handles, and b-3d removes the separator. Rerun (`repair2/logs/hyp-sketchA.txt`): on the b-3f
+(PROPOSAL-b-v2.md 2.6.5). The series asks hyperref for one change, sketch A: when
+`\@kernel@caption` is defined, hyperref keeps its `\caption` for numbered captions, sends only the
+star to `\@kernel@caption*` and starts its numbered `\caption` with `\@kernel@caption@reset` (the
+announce commit's message and the usrguide source comment say the same). Sketch A does not need b-5,
+but it needs b-3a to b-3d: classic hyperref also replaces `\@caption`, which b-3c handles (with the
+unique names of b-3b), and b-3d removes the separator. The alternative, sketch B (hyperref skips its
+caption patches, `\hyper@nopatch@caption`), is not proposed: it gives mwart 2 duplicate destinations
+for numbered captions, and the nameref title of a caption would then have to come from the kernel
+(O1, which is not in the series). Rerun (`repair2/logs/hyp-sketchA.txt`): on the b-3f
 kernel and on the new head all 20 documents are identical to the previous head; on the b-3a kernel
 alone the 10 sketch documents give "Figure 1: Starred" with a list entry and a duplicate
 destination (the 10 without the sketch are unchanged).
@@ -136,6 +160,8 @@ plugs, no duplicate destinations).
 For llncs, mwcls, jpsj2, threeparttable ...: `\fnum@<type>`, `\ext@<type>`, `\theH<type>` set for
 `\caption*` until the next `\caption` or the end of the group; `\@kernel@caption@reset` ends this.
 `\if@captionstar` also stays true until then (the message names this trade-off).
+Needs b-3b; needed by b-3f (restyled floats) and hyperref sketch A (see "Order" above; review 6.3
+`crit6-3/mwe/alg.tex`: without b-3c a ruled `algorithm` gives "Algorithm 1 Starred" with a list entry).
 Test: `caption-interface-004`; float-024 gets a class `\@caption` with its own target.
 
 ## b-3d Remove the usual separator after the label of \caption*
@@ -146,8 +172,8 @@ does, so the article layout is recorded as "Text" without a warning).
 
 ## b-3f firstaid: \caption* with the float package
 float.sty's `\caption` does not know the star; the first aid lets `\caption*` use `\@kernel@caption*`
-(test `\ifdefined\@kernel@caption`) and keeps restyled floats in their style. Relies on b-3d for
-float's plain style. Tests: firstaid `firstaid-float-caption`, `-hyperref`.
+(test `\ifdefined\@kernel@caption`) and keeps restyled floats in their style. Relies on b-3c for
+restyled floats (float's caption code is a replaced `\@caption`) and on b-3d for float's plain style. Tests: firstaid `firstaid-float-caption`, `-hyperref`.
 
 ## b-1 latex-lab: float target \@floatHref@<type>
 Fixes two develop bugs in tagged floats (the caption after `float/split`, a table caption in a figure

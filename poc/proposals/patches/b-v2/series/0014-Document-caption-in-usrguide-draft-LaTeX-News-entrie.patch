@@ -1,13 +1,19 @@
-From 449aa8e30af597531881c4a09ea957d08e83eba8 Mon Sep 17 00:00:00 2001
+From dd54d64b98fb129542958763cf9000bc335540ca Mon Sep 17 00:00:00 2001
 From: mark-vis <118430440+mark-vis@users.noreply.github.com>
 Date: Wed, 7 Oct 2026 06:22:36 +0200
 Subject: [PATCH 14/14] Document \caption* in usrguide; draft LaTeX News
  entries
 
 This commit is meant to be applied last and only when hyperref supports
-\caption* (it should not replace \caption when \@kernel@caption is
-defined): with hyperref without \DocumentMetadata, the most common
-setup, \caption* still gives a numbered caption with the text "*".
+\caption*: hyperref without \DocumentMetadata, the most common setup,
+replaces \caption, so \caption* still gives a numbered caption with
+the text "*". The change asked of hyperref, when \@kernel@caption is
+defined: keep its \caption for numbered captions, pass only the star to
+\@kernel@caption*, and start each numbered caption with
+\@kernel@caption@reset. (Not patching the caption commands at all,
+\hyper@nopatch@caption, was tested and is not proposed: it gives
+duplicate destinations with mwart, and the nameref title of a caption
+would then have to come from the kernel.)
 
 usrguide gets the section "Captions without a number" (with a source
 comment that says this) and clsguide refers to it. ltnews44 gets draft
@@ -25,8 +31,8 @@ The issue and the guides typeset without errors.
  base/changes.txt      |   3 ++
  base/doc/clsguide.tex |   8 ++--
  base/doc/ltnews44.tex | 109 ++++++++++++++++++++++++++++++++++++++++++
- base/doc/usrguide.tex |  29 ++++++++++-
- 4 files changed, 144 insertions(+), 5 deletions(-)
+ base/doc/usrguide.tex |  30 +++++++++++-
+ 4 files changed, 145 insertions(+), 5 deletions(-)
 
 diff --git a/base/changes.txt b/base/changes.txt
 index c198adfb8..61b7905ed 100644
@@ -203,7 +209,7 @@ index 9b36ab832..27b05da8e 100644
  
  \subsection{Drop special handling for \LuaTeX\ in \cs{genfrac}}
 diff --git a/base/doc/usrguide.tex b/base/doc/usrguide.tex
-index 7b4f351b1..05c0773b3 100644
+index 7b4f351b1..5482a69ff 100644
 --- a/base/doc/usrguide.tex
 +++ b/base/doc/usrguide.tex
 @@ -44,7 +44,7 @@
@@ -215,15 +221,16 @@ index 7b4f351b1..05c0773b3 100644
  
  \NewDocumentCommand\cs{m}{\texttt{\textbackslash\detokenize{#1}}}
  \NewDocumentCommand\marg{m}{\arg{#1}}
-@@ -1524,6 +1524,33 @@ respectively
+@@ -1524,6 +1524,34 @@ respectively
  \end{itemize}
  The naming here follows the pattern established by OpenType math parameters.
  
-+% Publish this section only together with support in hyperref (hyperref
-+% should not replace \caption on kernels with the caption interface,
-+% i.e., \hyper@nopatch@caption when \@kernel@caption is defined). Until
-+% then \caption* gives the old output with hyperref without
-+% \DocumentMetadata, the most common setup.
++% Publish this section only together with support in hyperref: when
++% \@kernel@caption is defined, hyperref keeps its \caption for numbered
++% captions, passes only the star to \@kernel@caption*, and starts each
++% numbered caption with \@kernel@caption@reset. Until then \caption*
++% gives the old output with hyperref without \DocumentMetadata, the most
++% common setup.
 +\section{Captions without a number}
 +
 +\begin{decl}
