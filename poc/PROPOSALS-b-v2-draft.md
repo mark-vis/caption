@@ -9,7 +9,7 @@
 Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
 - `series/0001-0014`: (a), (d), O2 and (b) in parts, with (c) after b-4, as 14 commits on
   latex2e develop **2a9bfe9d6** (2026-10-06); `git am` gives latex2e branch `b2-split`, head
-  449aa8e30. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
+  dd54d64b9. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
   b-6, and `classes.dtx` is not changed. The 28-patch prototype on top of the version-1 series
   and its replay on 2a9bfe9d6 are in the git history of this folder.
 - `O1.patch` (optional, on top of the series) and `O2-standalone.patch` (O2 alone on develop,
@@ -155,18 +155,18 @@ latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; not push
 |---|---|---|---|---|
 | 0001 | (a) | 2e1246c7c | hooks `float/begin`/`float/end` | tlb-float-hooks-001, -002-rollback |
 | 0002 | (d) | bebf5fccc | `\DeclareTaggingFloatType`, generic caption names | float-017 |
-| 0003 | O2 | c30a91bb1 | skip the arguments after "`\caption` outside float" | caption-outside-001 |
-| 0004 | b-3a | 07b5a8817 | `\caption` reads its arguments, `\caption*`, `caption/before`, `caption/step` with the switches, `\@kernel@caption` (the interface test), `\@kernel@caption@reset`; latex-lab without its own `\caption` | caption-interface-001, -002, float-028 |
-| 0005 | b-3b | 979d62f7b | unique targets for unstepped captions, `\@kernel@caption@unique` | caption-interface-003, float-024 |
-| 0006 | b-3c | 05e6d4f6d | `\caption*` with a replaced `\@caption` (llncs, mwcls, threeparttable) | caption-interface-004 |
-| 0007 | b-3d | a2775b254 | separator look-ahead of `\@caption@nolabel` | caption-interface-005 |
-| 0008 | b-3f | 304c6fd2e | first aid: `\caption*` with float.sty | firstaid-float-caption, -hyperref |
-| 0009 | b-1 | 2edb486e2 | latex-lab: float target per type (fixes the two latex-lab bugs) | float-023, float-004 |
-| 0010 | b-4 | 271f6728c | `caption/prepare`, 3-argument `caption/listentry` | caption-interface-006 |
-| 0011 | (c) | 5b6eb6b66 | section (c); also latex3/latex2e#2022 (empty label) | float-021, -022, -025, -026, -027, -029, -030 |
-| 0012 | b-5 | d7f0671a9 | `caption/typeset`, `\@kernel@@caption` (request for comments) | caption-interface-007 |
-| 0013 | b-6 | ab41c6600 | `subfloat/box` (request for comments) | float-020 |
-| 0014 | announce | 449aa8e30 | usrguide section and ltnews44 draft; to apply only with hyperref support for `\caption*` | — |
+| 0003 | O2 | 28bd304c8 | skip the arguments after "`\caption` outside float" | caption-outside-001 |
+| 0004 | b-3a | 721622eec | `\caption` reads its arguments, `\caption*`, `caption/before`, `caption/step` with the switches, `\@kernel@caption` (the interface test), `\@kernel@caption@reset`; latex-lab without its own `\caption` | caption-interface-001, -002, float-028 |
+| 0005 | b-3b | aff8c2a32 | unique targets for unstepped captions, `\@kernel@caption@unique` | caption-interface-003, float-024 |
+| 0006 | b-3c | 2e60929aa | `\caption*` with a replaced `\@caption` (llncs, mwcls, threeparttable) | caption-interface-004 |
+| 0007 | b-3d | a65bb571f | separator look-ahead of `\@caption@nolabel` | caption-interface-005 |
+| 0008 | b-3f | 3bfd34630 | first aid: `\caption*` with float.sty | firstaid-float-caption, -hyperref |
+| 0009 | b-1 | 40458f577 | latex-lab: float target per type (fixes the two latex-lab bugs) | float-023, float-004 |
+| 0010 | b-4 | 413a65cd4 | `caption/prepare`, 3-argument `caption/listentry` | caption-interface-006 |
+| 0011 | (c) | ef48558d2 | section (c); also latex3/latex2e#2022 (empty label) | float-021, -022, -025, -026, -027, -029, -030 |
+| 0012 | b-5 | ebac3521e | `caption/typeset`, `\@kernel@@caption` (request for comments) | caption-interface-007 |
+| 0013 | b-6 | 8f83a89b2 | `subfloat/box` (request for comments) | float-020 |
+| 0014 | announce | dd54d64b9 | usrguide section and ltnews44 draft; to apply only with hyperref support for `\caption*` | — |
 | O1.patch | O1 | 5576f6bb3 | nameref title in `\@caption` (optional) | caption-interface-008 |
 
 What is optional: b-5 and b-6 are requests for comments; O1 is optional; the last commit waits for
