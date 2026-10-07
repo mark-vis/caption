@@ -1,0 +1,165 @@
+% Test of the hook caption/prepare
+% (executed by \@caption for every caption, also for \caption* and direct
+% calls) and the socket caption/listentry with three arguments (not used
+% for \caption*), the definitions they see after a caption handled by a
+% wrapper of the kernel \@caption, and \@kernel@caption@unique used in
+% caption/prepare by code that makes its own target. The roll-back is
+% tested in caption-interface-002.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% the kernel definition of \@caption, for the wrapper
+\let\kernelatcaption\@caption
+% show the arguments \@makecaption gets
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
+    star=\if@captionstar true\else false\fi}%
+  \ORImakecaption{#1}{#2}}
+% show what is written to the list
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+% show the targets made by the step
+\NewSocketPlug{refstepcounter/target}{test}{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{TARGET: new target \@currentHref}}
+\AssignSocketPlug{refstepcounter/target}{test}
+% the hooks
+\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
+\AddToHookWithArguments{caption/before}[test]{%
+  \csname testbefore\endcsname}
+\AddToHookWithArguments{caption/prepare}[test]{%
+  \showbool{#2}%
+  \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
+    figure=\thefigure, label=\@currentlabel, href=\@currentHref}%
+  \csname testprepare\endcsname}
+% a listentry plug that shows its three arguments
+\NewSocketPlug{caption/listentry}{test}{%
+  \typeout{LISTENTRY: {#1}{\detokenize{#2}}{\detokenize{#3}}}}
+\gdef\@currentHref{none}
+% helpers for the tests (\makeatletter does not work inside \TEST)
+\def\stepoff{\@captionstepfalse}
+\def\targetoff{\@captiontargetfalse}
+\def\sethref#1{\gdef\@currentHref{#1}}
+\def\showhref{\typeout{href=\@currentHref}}
+\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
+\def\directcaption{\@caption}
+\def\starton{\@captionstartrue}
+\def\showswitches{%
+  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
+    step=\if@captionstep true\else false\fi,
+    target=\if@captiontarget true\else false\fi}}
+% a wrapper of the kernel \@caption (as in memoir or nameref)
+\long\def\wrappercaption#1[#2]#3{%
+  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
+  \kernelatcaption{#1}[{#2}]{#3}}
+\def\usewrappercaption{\let\@caption\wrappercaption}
+\def\showrestored{%
+  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
+    theH=\meaning\theHfigure}}
+\def\testpreparestar{%
+  \def\testprepare{\typeout{PREPARE sees: fnum=\meaning\fnum@figure,
+    ext=\meaning\ext@figure, theH=\meaning\theHfigure}}}
+% code that only needs the name (as \hyper@makecurrent), with a local
+% assignment
+\def\ownname#1{%
+  \@kernel@caption@unique{#1}{%
+    \edef\ownhref{#1.\csname theH#1\endcsname}%
+    \typeout{OWN NAME: \ownhref}}}
+% a client: no kernel target, its own name in caption/prepare, if the
+% counter is not stepped (by other code)
+\def\clientprepare{\def\testprepare{%
+  \if@captionstep\else\ownname{figure}\fi}}
+\def\clientbefore{\def\testbefore{\@captiontargetfalse
+  \csname othercode\endcsname}}
+\makeatother
+\begin{document}
+\START
+\TEST{normal caption: prepare, list entry plug with three arguments}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/listentry}{test}%
+    \caption{Normal}
+    \caption[Short]{Long}
+  \end{figure}
+  \begin{figure}
+    \caption[Short]{Normal with kernel list entry}
+  \end{figure}}
+\TEST{star caption: prepare, no list entry}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/listentry}{test}%
+    \caption*{Star}
+    \caption*[x]{Star with optional argument}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{empty optional argument: kernel plug writes an empty entry}{%
+  \begin{figure}
+    \caption[]{Empty optional argument}
+    \caption[{}]{Braced empty optional argument}
+  \end{figure}}
+\TEST{hook and plug arguments with \#}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/listentry}{test}%
+    \caption[A \# B]{C \# D}
+  \end{figure}}
+\TEST{prepare after a continued caption and without target}{%
+  \begin{figure}
+    \let\testbefore\stepoff
+    \caption{Continued}
+    \sethref{OLD}%
+    \let\testbefore\targetoff
+    \caption{No target}
+  \end{figure}}
+\TEST{direct call of @caption: prepare and list entry}{%
+  \begin{figure}
+    \directcaption{figure}[L]{T}
+    \starton
+    \directcaption{figure}[L2]{T2 star}
+    \showswitches
+  \end{figure}}
+\TEST{caption* with a wrapper of the kernel @caption: prepare sees the
+  normal definitions}{%
+  \begin{figure}
+    \usewrappercaption
+    \testpreparestar
+    \caption*{Starred}
+    \typeout{figure=\thefigure}
+    \showswitches
+    \showrestored
+    \caption{Normal}
+  \end{figure}}
+\TEST{client in caption/prepare: names counted with the kernel's}{%
+  \begin{figure}
+    \let\testprepare\relax
+    \caption{Stepped}
+    \caption{Stepped again}
+    \showhref
+    \clientbefore\clientprepare
+    \let\othercode\stepoff
+    \caption{Continued by other code (client)}
+    \showhref
+    \typeout{own: \ownhref}%
+    \let\testbefore\stepoff
+    \let\testprepare\relax
+    \caption{Continued by other code (kernel)}
+    \showhref
+    \clientbefore\clientprepare
+    \caption{Continued by other code (client again)}
+    \showtheH
+  \end{figure}}
+\TEST{caption* before: the number it reserved is given back, no gap}{%
+  \begin{figure}
+    \let\testprepare\relax
+    \caption{Stepped}
+    \showhref
+    \caption*{Starred}
+    \clientbefore\clientprepare
+    \let\othercode\stepoff
+    \caption{Continued by other code (client)}
+    \let\testbefore\stepoff
+    \let\testprepare\relax
+    \caption{Continued by other code (kernel)}
+    \showhref
+  \end{figure}}
+\END

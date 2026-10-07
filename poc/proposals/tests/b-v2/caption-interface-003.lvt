@@ -1,9 +1,10 @@
-% Test of \@kernel@caption@unique (proposal (b)): the unique name of a
-% caption that does not step its counter, for code that makes its own
-% target (as the caption package does with \@captiontargetfalse and
-% \hyper@makecurrent in caption/prepare): the names are counted together
-% with the kernel's own unique targets, without gaps, \theH<counter> is
-% restored afterwards, and assignments in the code survive.
+% Test of the unique names of captions that do not step their counter:
+% the kernel's own targets (counted per name, also for a counter without
+% \theH<counter>) and \@kernel@caption@unique for code that makes its own
+% target (with \@captiontargetfalse and, e.g., \hyper@makecurrent): the
+% names are counted together with the kernel's targets, without gaps,
+% \theH<counter> is restored afterwards, and assignments in the code
+% survive. With a replaced \@caption see caption-interface-004.
 \input{regression-test}
 \documentclass{article}
 \makeatletter
@@ -18,16 +19,8 @@
   \@kernel@caption@unique{#1}{%
     \edef\ownhref{#1.\csname theH#1\endcsname}%
     \typeout{OWN NAME: \ownhref}}}
-% a client: no kernel target, its own name in caption/prepare, if the
-% counter is not stepped (by other code)
 \AddToHookWithArguments{caption/before}[test]{%
   \csname testbefore\endcsname}
-\AddToHookWithArguments{caption/prepare}[test]{%
-  \csname testprepare\endcsname}
-\def\clientprepare{\def\testprepare{%
-  \if@captionstep\else\ownname{figure}\fi}}
-\def\clientbefore{\def\testbefore{\@captiontargetfalse
-  \csname othercode\endcsname}}
 \def\stepoff{\@captionstepfalse}
 \def\showhref{\typeout{href=\@currentHref}}
 \def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
@@ -40,6 +33,13 @@
 \def\fnum@myfig{My \themyfig}
 \def\ext@myfig{lom}
 \gdef\@currentHref{none}
+% a replaced \@caption (as llncs or mwart: no star, no switches), which
+% makes its target from \theH<type>
+\long\def\replacedcaption#1[#2]#3{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{REPLACED: #3, target \@currentHref}}
+\def\usereplaced{\let\@caption\replacedcaption}
+\def\showunique{\@kernel@caption@unique{figure}{\showtheH}}
 \makeatother
 \begin{document}
 \START
@@ -49,37 +49,6 @@
   \ownname{figure}%
   \showtheH
   \setcounter{figure}{0}}
-\TEST{client in caption/prepare: names counted with the kernel's}{%
-  \begin{figure}
-    \caption{Stepped}
-    \caption{Stepped again}
-    \showhref
-    \clientbefore\clientprepare
-    \let\othercode\stepoff
-    \caption{Continued by other code (client)}
-    \showhref
-    \typeout{own: \ownhref}%
-    \let\testbefore\stepoff
-    \let\testprepare\relax
-    \caption{Continued by other code (kernel)}
-    \showhref
-    \clientbefore\clientprepare
-    \caption{Continued by other code (client again)}
-    \showtheH
-  \end{figure}}
-\TEST{caption* before: the number it reserved is given back, no gap}{%
-  \begin{figure}
-    \caption{Stepped}
-    \showhref
-    \caption*{Starred}
-    \clientbefore\clientprepare
-    \let\othercode\stepoff
-    \caption{Continued by other code (client)}
-    \let\testbefore\stepoff
-    \let\testprepare\relax
-    \caption{Continued by other code (kernel)}
-    \showhref
-  \end{figure}}
 \TEST{use in caption/before: the same counting}{%
   \begin{figure}
     \caption{Stepped}
@@ -103,5 +72,43 @@
     \ownname{myfig}%
     \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else
       undefined\fi}%
+  \end{figure}}
+\TEST{continued caption: target with a unique name}{%
+  \begin{figure}
+    \caption{Stepped}
+    \let\testbefore\stepoff
+    \caption{Continued}
+    \showhref
+    \let\testbefore\relax
+  \end{figure}}
+\TEST{two continued captions: two different unique targets}{%
+  \begin{figure}
+    \let\testbefore\stepoff
+    \caption{Continued once}
+    \showhref
+    \caption{Continued twice}
+    \showhref
+  \end{figure}}
+\TEST{unique targets are counted per name}{%
+  \begin{figure}
+    \let\testbefore\stepoff
+    \caption{Continued, first}
+    \showhref
+    \settype{table}%
+    \caption{Continued table}
+    \showhref
+    \settype{figure}%
+    \caption{Continued, second}
+    \showhref
+  \end{figure}}
+\TEST{unique target for a counter without theH}{%
+  \begin{figure}
+    \settype{myfig}%
+    \let\testbefore\stepoff
+    \caption{Continued myfig}
+    \showhref
+    \caption{Continued myfig again}
+    \showhref
+    \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else undefined\fi}
   \end{figure}}
 \END

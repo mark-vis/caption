@@ -13,13 +13,13 @@ DRAFT, 2026-10-04. Everything here is written against latex2e `develop` at
 | `patches/standalone/a-float-hooks.patch` | (a) alone (identical to series 0001) |
 | `patches/standalone/b-caption-interface.patch` | (b) alone: declares `float/<type>/sub` in the `float/new` key and does not use (d)'s helper |
 | `patches/standalone/d-tagging-float-types.patch` | (d) alone: series 0002 plus the version line of latex-lab-float |
-| `patches/b-v2/series/0001-…0028-*.patch` | (b) version 2: 28 patches on top of the four series patches (on 829e56a15 + series 0001-0004 they give latex2e branch `poc-b2`, head 37cb2bcd7); `patches/b-v2/kernel-b2.patch` is the same as one diff |
-| `patches/b-v2/on-develop-2a9bfe9d6/*.patch` | the four series patches and the 28 v2 patches replayed on develop 2a9bfe9d6 (2026-10-06), where the 829e56a15 patches conflict in `required/latex-lab/changes.txt` |
-| `patches/b-v2/caption-client.diff` | caption as a client of (b) version 2 (`source/caption.dtx`, `source/subcaption.dtx`), against the caption PoC a518ec6 (branch `poc-kernel-interfaces`) |
+| `patches/b-v2/series/0001-…0014-*.patch` | the reviewable series (2026-10-07): (a), (d), O2, (b) in parts b-3a, b-3b, b-3c, b-3d, b-3f, b-1, b-4, then (c), b-5, b-6 and a last commit with the usrguide section and the ltnews44 draft; `git am` on latex2e develop 2a9bfe9d6 gives branch `b2-split` (head 449aa8e30). Cover letter: `patches/b-v2/COVER.md`. The earlier 28-patch prototype (on top of the four series patches) and its replay on 2a9bfe9d6 are in the git history |
+| `patches/b-v2/O1.patch`, `patches/b-v2/O2-standalone.patch` | O1 (optional nameref title, on top of the series) and O2 alone on develop 2a9bfe9d6 (with its own `.tlg` files) |
+| `patches/b-v2/caption-client.diff` | caption as a client of (b) version 2 (`source/caption.dtx`, `source/subcaption.dtx`, caption `poc-b2` f5b2370), against the caption PoC a518ec6 (branch `poc-kernel-interfaces`); the client path needs `\@kernel@@caption` (part b-5) |
 | `patches/caption-floathooks.diff` | caption side of (a), against the generated caption.sty v3.6p |
 | `patches/newfloat-v1.2a.diff` | newfloat side of (d), against newfloat.dtx v1.2 (TeX Live 2026); newfloat lives in its own repository, https://gitlab.com/axelsommerfeldt/newfloat |
 | `tests/` | the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface`, `float-028-caption-star-wide` (b), `float-021-caption-label`, `float-022-caption-separator`, `float-025-makecaption-label`, `float-026-makecaption-voids`, `float-027-caption-in-box` (c) |
-| `tests/b-v2/` | the tests of (b) version 2 (copies from 37cb2bcd7): base `caption-interface-001`, `-002`, `-003`; latex-lab `float-020`, `float-023`, `float-024`; firstaid `firstaid-float-caption`, `-hyperref`. The v1 copies of `caption-interface-001` and `float-020` stay in `tests/` |
+| `tests/b-v2/` | the new tests of the series (copies from `b2-split` 449aa8e30, and `caption-interface-008` from O1): base `tlb-float-hooks-001`, `-002-rollback`, `caption-outside-001`, `caption-interface-001` to `-008`; latex-lab `float-017` and `float-020` to `float-030`; firstaid `firstaid-float-caption`, `-hyperref`. The v1 copies stay in `tests/` |
 | `mwe/` | the test documents and sketches (see below) |
 | `scripts/` | scripts that reproduce the checks |
 

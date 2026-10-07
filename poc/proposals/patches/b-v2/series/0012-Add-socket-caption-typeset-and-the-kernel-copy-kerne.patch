@@ -1,0 +1,572 @@
+From d7f0671a9ceae4d0f75e7df8a74925fd3271669e Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 17:03:59 +0200
+Subject: [PATCH 12/14] Add socket caption/typeset and the kernel copy
+ \@kernel@@caption
+
+\@caption now typesets every caption through the new socket
+caption/typeset {type}{star}{text} (\BooleanTrue for \caption*, the
+text without \ignorespaces), after the list entry. The default plug
+kernel calls \@kernel@caption@typeset, the typesetting of before (with
+the label \@caption@nolabel for \caption*), so the output does not
+change. A plug runs at the group level of the caller of \@caption (in a
+float the group of the float, with its \linewidth), before
+\@parboxrestore, and does its own grouping; \if@captionstar is valid
+while it runs. A package that typesets captions completely (e.g.,
+caption) assigns its own plug and can fall back to
+\@kernel@caption@typeset, which is now documented for that purpose.
+
+Request for comments: the kernel copy \@kernel@@caption of \@caption
+(next to \@kernel@caption, the copy of \caption, which is there since
+the first part of the interface). A package that has always replaced
+\caption and \@caption, typically at \begin{document}, can restore
+both instead and then use the hooks and sockets; code that wraps
+\@caption can call it. It is defined in the release block "caption
+interface copies", so after a roll-back with latexrelease it is
+undefined like \@kernel@caption. \ifdefined\@kernel@caption stays the
+test for the interface. Open questions for the team: whether this copy
+is wanted at all (instead of only the hooks and sockets) and its name.
+With this part the caption package takes its client path (it tests
+\@kernel@@caption, because it needs caption/typeset).
+
+Documentation: the socket in the steps list, its socketdecl/plugdecl,
+\if@captionstar (valid in the plugs of caption/typeset), \@caption and
+\@caption@nostep@defs (hooks and plugs see the normal definitions);
+clsguide lists caption/typeset among the sockets for classes that
+redefine \@caption.
+
+New test caption-interface-007 (default plug, a plug that falls back to
+the kernel at the level of the float, a plug that typesets itself,
+direct calls of \@caption, restoring the copies after a replacement, a
+wrapper of \@kernel@@caption, own \caption with \@kernel@caption*);
+caption-interface-002 checks that \@kernel@@caption is undefined after
+a roll-back.
+---
+ base/changes.txt                         |   6 +
+ base/doc/clsguide.tex                    |   6 +-
+ base/ltfloat.dtx                         |  82 ++++++++++---
+ base/testfiles/caption-interface-002.lvt |   9 +-
+ base/testfiles/caption-interface-002.tlg |   2 +-
+ base/testfiles/caption-interface-007.lvt | 147 +++++++++++++++++++++++
+ base/testfiles/caption-interface-007.tlg | 107 +++++++++++++++++
+ 7 files changed, 332 insertions(+), 27 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-007.lvt
+ create mode 100644 base/testfiles/caption-interface-007.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 2453f61b3..f861682d4 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,12 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx, clsguide.tex:
++	Caption interface: socket caption/typeset {type}{star}{text}
++	(plug kernel: \@kernel@caption@typeset, the typesetting of before),
++	used by \@caption for every caption; kernel copy \@kernel@@caption
++	of \@caption (undefined after a roll-back, as \@kernel@caption)
++
+ 	* lttagging.dtx:
+ 	Document that caption/label/begin and caption/label/end can be used
+ 	inside the caption paragraph
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index a37213048..1f8543797 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1552,9 +1552,9 @@ so that classes and packages do not need to redefine
+ \end{verbatim}
+ \item A class that redefines \cs{@caption} (for example to change the
+   list entry or the spacing) should preferably use the hooks and sockets
+-  of the caption interface instead, where they cover the change (for
+-  example the socket \texttt{caption/listentry} for the list entry; see
+-  the documentation of \texttt{ltfloat.dtx}). An
++  of the caption interface instead (hooks \texttt{caption/before},
++  \texttt{caption/prepare}; sockets \texttt{caption/listentry},
++  \texttt{caption/typeset}). An
+   existing redefinition that typesets the label with
+   \cs{fnum@}\meta{type}, writes the list entry with
+   \verb|\addcontentsline{\csname ext@|\meta{type}\verb|\endcsname}|
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 049dd32b2..d48ad463f 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -238,6 +238,7 @@
+ %    \cs{if@captiontarget}}
+ % \changes{v1.2k}{2026-10-06}{Hook \texttt{caption/prepare}, socket
+ %    \texttt{caption/listentry}}
++% \changes{v1.2k}{2026-10-06}{Socket \texttt{caption/typeset}}
+ %    \cs{caption}\oarg{list text}\marg{text} and
+ %    \cs{caption*}\oarg{opt}\marg{text} process a caption in the
+ %    following steps (inside a float, \meta{type} is the expansion of
+@@ -259,8 +260,8 @@
+ %      not given). It does a \cs{par}, executes the hook
+ %      \hook{caption/prepare}, writes the list entry with the socket
+ %      \texttt{caption/listentry} (not for \cs{caption*}), typesets the
+-%      caption with \cs{@makecaption} and
+-%      resets the switches \cs{if@captionstar}, \cs{if@captionstep} and
++%      caption with the socket \texttt{caption/typeset} and resets the
++%      switches \cs{if@captionstar}, \cs{if@captionstep} and
+ %      \cs{if@captiontarget} to their defaults.
+ %    \end{enumerate}
+ %    Code that calls \cs{@caption} directly (e.g., for sub-captions) gets
+@@ -464,11 +465,44 @@
+ %    \end{macrocode}
+ % \end{plugdecl}
+ %
++% \begin{socketdecl}{caption/typeset}
++%    This socket typesets the caption. It is used by \cs{@caption} for
++%    every caption, after the list entry. The arguments are the caption
++%    type, \cs{BooleanTrue} for \cs{caption*} or \cs{BooleanFalse}
++%    otherwise, and the caption text (without \cs{ignorespaces}).
++%
++%    A plug is used at the group level of the caller of \cs{@caption}
++%    (in a float the group of the float, with its \cs{linewidth}), outside
++%    of any group the kernel makes, and \cs{@parboxrestore} has not been
++%    executed yet. It has to do its own grouping; settings that it makes
++%    outside of its group are valid after the caption, so it should only
++%    make them on purpose. \cs{if@captionstar} is valid while it runs.
++%    A plug that typesets the caption with \cs{@makecaption} should pass
++%    \cs{@caption@nolabel} as first argument for \cs{caption*}, so that
++%    classes and the tagging code behave as with the default plug.
++%
++%    The default plug \plug{kernel} uses \cs{@kernel@caption@typeset}. A
++%    package that typesets captions completely (e.g., \pkg{caption}) or
++%    that has to redirect them can assign its own plug; there is one
++%    owner, the last assignment wins. A plug can fall back to
++%    \cs{@kernel@caption@typeset}.
++% \end{socketdecl}
++% \begin{plugdecl}{kernel (caption/typeset)}
++%    \begin{macrocode}
++\IfSocketExistsF{caption/typeset}{%
++  \NewSocket{caption/typeset}{3}%
++  \NewSocketPlug{caption/typeset}{kernel}
++    {\@kernel@caption@typeset{#1}{#2}{#3}}%
++  \AssignSocketPlug{caption/typeset}{kernel}%
++}
++%    \end{macrocode}
++% \end{plugdecl}
++%
+ % \begin{macro}{\if@captionstar,\if@captionstep,\if@captiontarget}
+ %    \cs{if@captionstar} is true while a caption made by \cs{caption*} is
+ %    processed: from the start of \cs{caption*} until the end of
+-%    \cs{@caption}, so also in the caption hooks and in \cs{@makecaption}.
+-%    In that case the first
++%    \cs{@caption}, so also in the hooks, in the plugs of
++%    \texttt{caption/typeset} and in \cs{@makecaption}. In that case the first
+ %    argument of \cs{@makecaption} is \cs{@caption@nolabel} (or, if
+ %    \cs{@caption} has been replaced, \cs{fnum@}\meta{type}, which is then
+ %    \cs{@caption@nolabel}), and a \cs{@makecaption} can test this switch
+@@ -588,9 +622,9 @@
+ %    as those of the kernel's own targets for such captions, so a name
+ %    made in this way and a kernel target never collide. It is
+ %    documented for code that makes the target of a caption itself or
+-%    only needs its name (for example code that sets
+-%    \cs{@captiontargetfalse} in the hook \hook{caption/before} and makes
+-%    the anchor in the hook \hook{caption/prepare} with
++%    only needs its name (for example the \pkg{caption} package, which
++%    sets \cs{@captiontargetfalse} and makes its anchor in the hook
++%    \hook{caption/prepare} with
+ %    |\@kernel@caption@unique{|\meta{type}|}{\hyper@makecurrent{|\meta{type}|}}|),
+ %    so that it does not have to know how the names are counted:
+ %    \begin{itemize}
+@@ -696,7 +730,9 @@
+ % \begin{macro}{\@kernel@caption@typeset}
+ %    \cs{@kernel@caption@typeset}\marg{type}\marg{star}\marg{text} is the
+ %    typesetting of the kernel: the code of \cs{@caption} before 2026,
+-%    with the label \cs{@caption@nolabel} for \cs{caption*}.
++%    with the label \cs{@caption@nolabel} for \cs{caption*}. It is
++%    documented, so that a plug of \texttt{caption/typeset} can fall back
++%    to it.
+ %    \begin{macrocode}
+ \long\def\@kernel@caption@typeset#1#2#3{%
+   \begingroup
+@@ -1056,9 +1092,8 @@
+ %    gives a caption without label, without list entry and without a
+ %    duplicate target, in the layout of the class. The settings are
+ %    local and last until \cs{@caption@nostep@restore} is executed: at
+-%    the start of the kernel \cs{@caption} (so its hook, list entry and
+-%    typesetting see the normal definitions), at the start of the next
+-%    \cs{caption}
++%    the start of the kernel \cs{@caption} (so its hooks and plugs see
++%    the normal definitions), at the start of the next \cs{caption}
+ %    (with \cs{@kernel@caption@reset}), or at the end of the group; why,
+ %    is explained below.
+ %    \cs{addcontentsline} itself is not changed, so an
+@@ -1186,14 +1221,16 @@
+ % \changes{v1.2k}{2026-10-06}
+ %     {Hook \texttt{caption/prepare}; list entry with the socket
+ %      \texttt{caption/listentry}}
++% \changes{v1.2k}{2026-10-06}
++%     {Typesetting with the socket \texttt{caption/typeset}}
+ %    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
+ %    signature, so code that wraps or replaces it keeps working.
+ %    The typesetting (with \cs{@parboxrestore} and \cs{@makecaption})
+-%    is now done by \cs{@kernel@caption@typeset}. At the start the
+-%    settings of \cs{@caption@nostep@defs} are undone, before the
+-%    \cs{par}, so that the paragraph hooks, the output routine, the hook
+-%    \hook{caption/prepare}, the list entry and the typesetting see the
+-%    normal definitions. At the end
++%    is now done by the plug of \texttt{caption/typeset}, see
++%    \cs{@kernel@caption@typeset}. At the start the settings of
++%    \cs{@caption@nostep@defs} are undone, before the \cs{par}, so that
++%    the paragraph hooks, the output routine and the hooks and plugs of
++%    the caption see the normal definitions. At the end
+ %    \cs{@kernel@caption@reset} resets the switches (the settings are
+ %    already undone by then), so that code which calls \cs{@caption} or
+ %    the socket \texttt{caption/step} directly (without \cs{caption}) gets
+@@ -1219,7 +1256,7 @@
+ \long\def\@caption@body#1#2#3#4{%
+   \UseHookWithArguments{caption/prepare}{4}{#1}{#2}{#3}{#4}%
+   \IfBooleanF{#2}{\UseSocket{caption/listentry}{#1}{#3}{#4}}%
+-  \@kernel@caption@typeset{#1}{#2}{#4}}
++  \UseSocket{caption/typeset}{#1}{#2}{#4}}
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+@@ -1242,16 +1279,21 @@
+ % \end{macro}
+ % \end{macro}
+ %
+-% \begin{macro}{\@kernel@caption,\@kernel@caption@unique}
++% \begin{macro}{\@kernel@caption,\@kernel@caption@unique,\@kernel@@caption}
+ % \changes{v1.2k}{2026-10-06}{Macro \cs{@kernel@caption} added}
+ % \changes{v1.2k}{2026-10-06}{Macro \cs{@kernel@caption@unique} added}
++% \changes{v1.2k}{2026-10-06}{Macro \cs{@kernel@@caption} added}
+ %    \cs{@kernel@caption} is a copy of the kernel definition of
+ %    \cs{caption} (the naming follows \cs{@kernel@refstepcounter}). Code
+ %    that keeps its own \cs{caption} can pass \cs{caption*} to it (with
+ %    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|), and code that
+ %    has replaced \cs{caption} can restore it.
+ %    \cs{@kernel@caption@unique} is the documented name of
+-%    \cs{@caption@uniquedo} (see above).
++%    \cs{@caption@uniquedo} (see above). \cs{@kernel@@caption} is a copy
++%    of the kernel definition of \cs{@caption}: a package that has always
++%    replaced \cs{caption} and \cs{@caption} (e.g., at
++%    |\begin{document}|) can restore both and then use the hooks and
++%    sockets above.
+ %
+ %    They are defined only if the kernel has the caption interface: after
+ %    a roll-back with \pkg{latexrelease} to an earlier date they are
+@@ -1268,12 +1310,14 @@
+ %<latexrelease>                 {\@kernel@caption}{caption interface copies}%
+ \let\@kernel@caption\caption
+ \let\@kernel@caption@unique\@caption@uniquedo
++\let\@kernel@@caption\@caption
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+ %<latexrelease>                 {\@kernel@caption}{caption interface copies}%
+ %<latexrelease>\let\@kernel@caption\@undefined
+ %<latexrelease>\let\@kernel@caption@unique\@undefined
++%<latexrelease>\let\@kernel@@caption\@undefined
+ %<latexrelease>\EndIncludeInRelease
+ %<*2ekernel>
+ %    \end{macrocode}
+diff --git a/base/testfiles/caption-interface-002.lvt b/base/testfiles/caption-interface-002.lvt
+index b2647855b..d0e66d6ce 100644
+--- a/base/testfiles/caption-interface-002.lvt
++++ b/base/testfiles/caption-interface-002.lvt
+@@ -1,15 +1,16 @@
+ % Roll-back of the caption interface: with latexrelease 2026-06-01 the
+ % old \caption and \@caption are back, \@kernel@caption,
+-% \@kernel@caption@reset and \@kernel@caption@unique are undefined, the
+-% hooks are not executed, and
++% \@kernel@@caption, \@kernel@caption@reset and \@kernel@caption@unique
++% are undefined, the hooks are not executed, and
+ % the guarded declarations give no errors.
+ \RequirePackage[2026-06-01]{latexrelease}
+ \documentclass{article}
+ \input{regression-test}
+ \makeatletter
+ \def\showcommands{%
+-  \typeout{\string\@kernel@caption:
+-    \ifdefined\@kernel@caption defined\else undefined\fi,
++  \typeout{\string\@kernel@caption: \ifdefined\@kernel@caption
++    defined\else undefined\fi, \string\@kernel@@caption:
++    \ifdefined\@kernel@@caption defined\else undefined\fi,
+     \string\@kernel@caption@reset:
+     \ifdefined\@kernel@caption@reset defined\else undefined\fi,
+     \string\@kernel@caption@unique:
+diff --git a/base/testfiles/caption-interface-002.tlg b/base/testfiles/caption-interface-002.tlg
+index 454013ddc..b38249811 100644
+--- a/base/testfiles/caption-interface-002.tlg
++++ b/base/testfiles/caption-interface-002.tlg
+@@ -3,7 +3,7 @@ Don't change this file in any respect.
+ ============================================================
+ TEST 1: interface commands after the roll-back
+ ============================================================
+-\@kernel@caption: undefined, \@kernel@caption@reset: undefined, \@kernel@caption@unique: undefined
++\@kernel@caption: undefined, \@kernel@@caption: undefined, \@kernel@caption@reset: undefined, \@kernel@caption@unique: undefined
+ ============================================================
+ ============================================================
+ TEST 2: caption after the roll-back: old code, no hooks
+diff --git a/base/testfiles/caption-interface-007.lvt b/base/testfiles/caption-interface-007.lvt
+new file mode 100644
+index 000000000..d5c101c96
+--- /dev/null
++++ b/base/testfiles/caption-interface-007.lvt
+@@ -0,0 +1,147 @@
++% Test of the socket caption/typeset
++% (arguments, group level of the caller, \if@captionstar, a plug that
++% falls back to \@kernel@caption@typeset and one that typesets itself,
++% direct calls of \@caption) and the kernel copies \@kernel@caption and
++% \@kernel@@caption (as used by a package that has replaced \caption and
++% \@caption and restores them, by a wrapper and by code that keeps its
++% own \caption). The roll-back is tested in caption-interface-002.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++\def\showswitches{%
++  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
++    step=\if@captionstep true\else false\fi,
++    target=\if@captiontarget true\else false\fi}}
++% the hooks
++\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
++\long\def\showopt#1{\IfNoValueTF{#1}%
++  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
++\AddToHookWithArguments{caption/before}[test]{%
++  \showbool{#2}\showopt{#3}%
++  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
++    figure=\thefigure, linewidth=\the\linewidth}}
++\AddToHookWithArguments{caption/prepare}[test]{%
++  \showbool{#2}%
++  \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
++    figure=\thefigure, label=\@currentlabel, href=\@currentHref}}
++% a typeset plug that shows its arguments and the line width, makes a
++% local definition and then uses the kernel typesetting
++\NewSocketPlug{caption/typeset}{test}{%
++  \showbool{#2}%
++  \typeout{TYPESET: {#1}{\tmpstar}{\detokenize{#3}},
++    linewidth=\the\linewidth, star=\if@captionstar true\else false\fi}%
++  \def\testlocal{set by the typeset plug}%
++  \@kernel@caption@typeset{#1}{#2}{#3}}
++% a typeset plug that typesets the caption itself (as a package that
++% typesets captions completely), in its own group
++\NewSocketPlug{caption/typeset}{own}{%
++  \typeout{OWN TYPESET: {#1}\IfBooleanTF{#2}{{star}}{{no star}}}%
++  \begingroup
++    \@parboxrestore
++    \IfBooleanTF{#2}%
++      {\noindent #3\par}%
++      {\noindent\csname fnum@#1\endcsname\ --\ #3\par}%
++  \endgroup}
++\gdef\@currentHref{none}
++% helpers for the tests (\makeatletter does not work inside \TEST)
++\def\directcaption{\@caption}
++\def\starton{\@captionstartrue}
++\def\showcopies{%
++  \typeout{caption: \ifx\caption\@kernel@caption kernel\else other\fi,
++    @caption: \ifx\@caption\@kernel@@caption kernel\else other\fi}}
++% a package that replaces \caption and \@caption (as the caption package
++% did before 2026) and later restores the kernel copies
++\long\def\pkgcaption{\typeout{PACKAGE CAPTION}\@gobble}
++\long\def\pkgatcaption#1[#2]#3{\typeout{PACKAGE @CAPTION}}
++\def\replacecaption{\let\caption\pkgcaption \let\@caption\pkgatcaption}
++\def\restorecaption{\let\caption\@kernel@caption
++  \let\@caption\@kernel@@caption}
++% a wrapper of the kernel \@caption (as in memoir or nameref)
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \@kernel@@caption{#1}[{#2}]{#3}}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++% a package that keeps its own \caption (here the definition of LaTeX
++% before 2026) and passes only \caption* to the kernel
++\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
++\def\useowncaption{\def\caption{\@ifstar{\@kernel@caption*}%
++  {\@kernel@caption@reset\owncaption}}}
++\makeatother
++\begin{document}
++\START
++\TEST{default plug: kernel typesetting}{%
++  \begin{figure}
++    \caption{Kernel typeset}
++    \caption*{Kernel typeset, star}
++  \end{figure}}
++\TEST{typeset plug at the level of the float}{%
++  \begin{figure}
++    \begin{minipage}{3cm}
++      \AssignSocketPlug{caption/typeset}{test}%
++      \caption{Typeset plug}
++      \typeout{local: \testlocal}
++      \caption*{Typeset plug, star}
++    \end{minipage}
++  \end{figure}}
++\TEST{typeset plug that typesets itself}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/typeset}{own}%
++    \caption{Own typeset}
++    \caption*{Own typeset, star}
++    \showswitches
++  \end{figure}}
++\TEST{direct call of @caption: typeset plug}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/typeset}{test}%
++    \directcaption{figure}[L]{T}
++    \starton
++    \directcaption{figure}[L2]{T2 star}
++    \showswitches
++  \end{figure}}
++\TEST{kernel copies}{%
++  \showcopies
++  \replacecaption
++  \showcopies
++  \begin{figure}
++    \caption{Replaced}
++  \end{figure}
++  \restorecaption
++  \showcopies
++  \begin{figure}
++    \caption{Restored}
++    \caption*{Restored, star}
++  \end{figure}}
++\TEST{wrapper of the kernel copy of @caption}{%
++  \begin{figure}
++    \usewrappercaption
++    \showcopies
++    \caption{Wrapped}
++    \caption*{Wrapped, star}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{own caption, only the star from the kernel copy}{%
++  \begin{figure}
++    \useowncaption
++    \showcopies
++    \caption{Own}
++    \caption*{Own, star}
++    \caption{Own again}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\END
+diff --git a/base/testfiles/caption-interface-007.tlg b/base/testfiles/caption-interface-007.tlg
+new file mode 100644
+index 000000000..4522c9fd0
+--- /dev/null
++++ b/base/testfiles/caption-interface-007.tlg
+@@ -0,0 +1,107 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: default plug: kernel typesetting
++============================================================
++BEFORE: {figure}{false}{NoValue}{Kernel typeset}, figure=0, linewidth=345.0pt
++TARGET: new target figure.1
++PREPARE: {figure}{false}{Kernel typeset}{Kernel typeset}, figure=1, label=1, href=figure.1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Kernel typeset}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Kernel typeset], star=false
++BEFORE: {figure}{true}{NoValue}{Kernel typeset, star}, figure=1, linewidth=345.0pt
++PREPARE: {figure}{true}{Kernel typeset, star}{Kernel typeset, star}, figure=1, label=1, href=figure.1
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Kernel typeset, star], star=true
++============================================================
++============================================================
++TEST 2: typeset plug at the level of the float
++============================================================
++BEFORE: {figure}{false}{NoValue}{Typeset plug}, figure=1, linewidth=85.35826pt
++TARGET: new target figure.2
++PREPARE: {figure}{false}{Typeset plug}{Typeset plug}, figure=2, label=2, href=figure.2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Typeset plug}}
++TYPESET: {figure}{false}{Typeset plug}, linewidth=85.35826pt, star=false
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Typeset plug], star=false
++local: set by the typeset plug
++BEFORE: {figure}{true}{NoValue}{Typeset plug, star}, figure=2, linewidth=85.35826pt
++PREPARE: {figure}{true}{Typeset plug, star}{Typeset plug, star}, figure=2, label=2, href=figure.2
++TYPESET: {figure}{true}{Typeset plug, star}, linewidth=85.35826pt, star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Typeset plug, star], star=true
++LaTeX Font Info:    External font `cmex10' loaded for size
++(Font)              <7> on input line ....
++LaTeX Font Info:    External font `cmex10' loaded for size
++(Font)              <5> on input line ....
++============================================================
++============================================================
++TEST 3: typeset plug that typesets itself
++============================================================
++BEFORE: {figure}{false}{NoValue}{Own typeset}, figure=2, linewidth=345.0pt
++TARGET: new target figure.3
++PREPARE: {figure}{false}{Own typeset}{Own typeset}, figure=3, label=3, href=figure.3
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Own typeset}}
++OWN TYPESET: {figure}{no star}
++BEFORE: {figure}{true}{NoValue}{Own typeset, star}, figure=3, linewidth=345.0pt
++PREPARE: {figure}{true}{Own typeset, star}{Own typeset, star}, figure=3, label=3, href=figure.3
++OWN TYPESET: {figure}{star}
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 4: direct call of @caption: typeset plug
++============================================================
++PREPARE: {figure}{false}{L}{T}, figure=3, label=, href=figure.3
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces L}}
++TYPESET: {figure}{false}{T}, linewidth=345.0pt, star=false
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces T], star=false
++PREPARE: {figure}{true}{L2}{T2 star}, figure=3, label=, href=figure.3
++TYPESET: {figure}{true}{T2 star}, linewidth=345.0pt, star=true
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces T2 star], star=true
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 5: kernel copies
++============================================================
++caption: kernel, @caption: kernel
++caption: other, @caption: other
++PACKAGE CAPTION
++caption: kernel, @caption: kernel
++BEFORE: {figure}{false}{NoValue}{Restored}, figure=3, linewidth=345.0pt
++TARGET: new target figure.4
++PREPARE: {figure}{false}{Restored}{Restored}, figure=4, label=4, href=figure.4
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Restored}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Restored], star=false
++BEFORE: {figure}{true}{NoValue}{Restored, star}, figure=4, linewidth=345.0pt
++PREPARE: {figure}{true}{Restored, star}{Restored, star}, figure=4, label=4, href=figure.4
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Restored, star], star=true
++============================================================
++============================================================
++TEST 6: wrapper of the kernel copy of @caption
++============================================================
++caption: kernel, @caption: other
++BEFORE: {figure}{false}{NoValue}{Wrapped}, figure=4, linewidth=345.0pt
++TARGET: new target figure.5
++WRAPPER: fnum=macro:->\figurename \nobreakspace \thefigure 
++PREPARE: {figure}{false}{Wrapped}{Wrapped}, figure=5, label=5, href=figure.5
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Wrapped}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Wrapped], star=false
++BEFORE: {figure}{true}{NoValue}{Wrapped, star}, figure=5, linewidth=345.0pt
++WRAPPER: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi 
++PREPARE: {figure}{true}{Wrapped, star}{Wrapped, star}, figure=5, label=5, href=figure.5
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Wrapped, star], star=true
++figure=5
++============================================================
++============================================================
++TEST 7: own caption, only the star from the kernel copy
++============================================================
++caption: other, @caption: kernel
++TARGET: new target figure.6
++PREPARE: {figure}{false}{Own}{Own}, figure=6, label=6, href=figure.6
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Own}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Own], star=false
++BEFORE: {figure}{true}{NoValue}{Own, star}, figure=6, linewidth=345.0pt
++PREPARE: {figure}{true}{Own, star}{Own, star}, figure=6, label=6, href=figure.6
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Own, star], star=true
++TARGET: new target figure.7
++PREPARE: {figure}{false}{Own again}{Own again}, figure=7, label=7, href=figure.7
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Own again}}
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Own again], star=false
++figure=7
++============================================================
+-- 
+2.50.1 (Apple Git-155)
+

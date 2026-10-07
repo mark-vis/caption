@@ -1,0 +1,2160 @@
+From ab41c660084b2441c3719be68aefc836669a9927 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 22:19:51 +0200
+Subject: [PATCH 13/14] Add tagging sockets for sub-floats
+
+Request for comments: a tagging interface for sub-floats (sub-figures,
+sub-tables with their own caption, as made by subcaption).
+latex-lab-float said that these "will be implemented as simple Part with
+their own Caption"; this commit proposes how packages can ask for that.
+
+lttagging declares three tagging sockets without arguments (the float
+type is \@captype):
+
+- subfloat/box: "the next minipage or \parbox is a sub-float". That box
+  gets the structure float/<type>/sub (role Part) instead of its Div,
+  and a caption inside it becomes its first kid. It is used directly
+  before the box and acts only once: boxes nested in the sub-float and
+  later boxes, also in the same group, are normal. No group is needed:
+  the settings of the sub-float end with the box.
+- subfloat/begin and subfloat/end: open and close the structure of a
+  sub-float that is not a single box (in vertical mode, inside the box).
+
+\DeclareTaggingFloatType also declares float/<type>/sub (role Part),
+and latex-lab-namespace has float/figure/sub, float/table/sub and
+float/generic/sub.
+
+The plugs in latex-lab-float start the structure, set
+\@current@float@struct to its number and set the float target
+\@floatHref@<type> to empty locally, so that the sub-caption gets a
+target of its own instead of the target of the float. The plug of
+subfloat/box assigns (locally) the plugs subfloat to minipage/before
+and parbox/before, which restore the previous plugs and start the
+sub-float structure in place of the Div. Each use of subfloat/box
+takes a new number, which the first box uses up, so a later box in the
+same group gets the previous plug (a minipage restores the plugs only
+inside its own group). It does nothing if the tagging code of
+latex-lab-minipage is not active. The first two lines of these plugs
+repeat the kernel plugs of latex-lab-minipage (a comment there says
+so). The plug of parbox/before runs at the group level of the caller,
+so for a \parbox it also saves \@current@float@struct, the float target
+and the plug of parbox/after, and assigns (locally) a plug subfloat to
+parbox/after that restores them after the box; otherwise a \caption of
+the float after an ungrouped \parbox sub-float would become a kid of
+the sub-float and make its own target. A minipage needs no such step,
+because its plug runs inside the group of the environment.
+
+Open questions for the team: whether sub-floats belong in the kernel
+interface at all, the names of the sockets and structures, the role
+Part, and whether subfloat/box (which relies on the plugs of the
+minipage and parbox sockets) is acceptable or only begin/end should be
+offered.
+
+Without tagging nothing changes. New latex-lab test float-020 (\caption
+and \caption* in floats with hyperref, sub-floats as minipage
+environment with a footnote, nested minipage and \caption*, as \parbox,
+with begin/end inside a minipage, and a normal minipage after them;
+only the first of several boxes after subfloat/box, with and without a
+group, is a sub-float; a \caption after an ungrouped \parbox sub-float
+with a normal and a nested \parbox sub-float inside belongs to the
+float and uses the float target).
+---
+ base/changes.txt                              |   5 +
+ base/lttagging.dtx                            |  56 +-
+ required/latex-lab/changes.txt                |  12 +
+ required/latex-lab/latex-lab-float.dtx        | 246 +++++-
+ required/latex-lab/latex-lab-minipage.dtx     |   4 +-
+ required/latex-lab/latex-lab-namespace.dtx    |  10 +
+ .../float-020-caption-interface.luatex.tlg    | 750 +++++++++++++++++
+ .../float-020-caption-interface.lvt           |  93 +++
+ .../float-020-caption-interface.tlg           | 778 ++++++++++++++++++
+ 9 files changed, 1942 insertions(+), 12 deletions(-)
+ create mode 100644 required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg
+ create mode 100644 required/latex-lab/testfiles-float/float-020-caption-interface.lvt
+ create mode 100644 required/latex-lab/testfiles-float/float-020-caption-interface.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index f861682d4..c198adfb8 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,11 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* lttagging.dtx:
++	Add tagging sockets subfloat/box, subfloat/begin and subfloat/end
++	for sub-floats; \DeclareTaggingFloatType also declares
++	float/<type>/sub (role Part)
++
+ 	* ltfloat.dtx, clsguide.tex:
+ 	Caption interface: socket caption/typeset {type}{star}{text}
+ 	(plug kernel: \@kernel@caption@typeset, the typesetting of before),
+diff --git a/base/lttagging.dtx b/base/lttagging.dtx
+index db26fec82..d997f2b3d 100644
+--- a/base/lttagging.dtx
++++ b/base/lttagging.dtx
+@@ -1012,6 +1012,53 @@
+ %    \end{macrocode}
+ % \end{taggingsocketdecl}
+ %
++% \begin{taggingsocketdecl}{subfloat/box}
++% \changes{v1.1b}{2026-10-06}{Sockets \texttt{subfloat/box},
++%    \texttt{subfloat/begin} and \texttt{subfloat/end} for sub-floats added}
++%  This socket is meant for packages which build sub-figures,
++%  sub-tables, etc.\ inside a float (e.g., \pkg{subcaption}) as a
++%  single \env{minipage} or \cs{parbox}. It says ``the next
++%  \env{minipage} or \cs{parbox} is a sub-float'': that box then gets
++%  the structure of the sub-float (\texttt{float/\meta{type}/sub}, role
++%  \texttt{Part}) \emph{instead of} its own structure, and a caption
++%  inside the box becomes its first kid. Its begin plug also sets
++%  \cs{@current@float@struct} (locally) to the number of this structure
++%  and the float target \cs{@floatHref@}\meta{type} to empty.
++%
++%  The socket has no arguments; the float type is \cs{@captype}. It
++%  should be used directly before the box (for example at the start of
++%  the sub-float environment): it is not checked what comes between, the
++%  next \env{minipage} or \cs{parbox} in the current group becomes the
++%  sub-float (outside a float with the structure
++%  \texttt{float/generic/sub}). It acts only once: boxes nested inside
++%  the sub-float, and later boxes, also in the same group, are normal.
++%  The settings of \cs{@current@float@struct} and
++%  \cs{@floatHref@}\meta{type} end with the box, so a caption after it
++%  belongs to the float again; no group is needed. Sub-floats can be
++%  nested. Without tagging (or if the tagging code for
++%  \env{minipage} and \cs{parbox} is not active) it does nothing.
++%    \begin{macrocode}
++\NewTaggingSocket{subfloat/box}{0}
++%    \end{macrocode}
++% \end{taggingsocketdecl}
++%
++% \begin{taggingsocketdecl}{subfloat/begin,
++%                    subfloat/end}
++%  These sockets are meant for sub-floats that are not a single
++%  \env{minipage} or \cs{parbox} (otherwise see \texttt{subfloat/box}).
++%  They open and close the structure of the sub-float. The begin socket
++%  should also set \cs{@current@float@struct} (locally) to the number
++%  of this structure, so that a caption inside the sub-float uses it
++%  as parent, and the float target \cs{@floatHref@}\meta{type} to empty,
++%  so that the sub-caption gets a target of its own.
++%  They have no arguments; the float type is \cs{@captype}.
++%  They should be used in vertical mode, inside the box of the sub-float.
++%    \begin{macrocode}
++\NewTaggingSocket{subfloat/begin}{0}
++\NewTaggingSocket{subfloat/end}{0}
++%    \end{macrocode}
++% \end{taggingsocketdecl}
++%
+ %
+ % \subsection{Tagging support for output routines}
+ %
+@@ -1306,8 +1353,10 @@
+ %    The float types known to the tagging code. The float code
+ %    (\pkg{latex-lab-float}) creates a container structure for each of
+ %    them and uses the structure names \texttt{float/\meta{type}s},
+-%    \texttt{float/\meta{type}}, \texttt{float/\meta{type}/caption} and
+-%    \texttt{float/\meta{type}/label}. The names for \texttt{figure}
++%    \texttt{float/\meta{type}}, \texttt{float/\meta{type}/caption},
++%    \texttt{float/\meta{type}/label} and \texttt{float/\meta{type}/sub}
++%    (for sub-floats, used by the sockets \texttt{subfloat/box} and
++%    \texttt{subfloat/begin}). The names for \texttt{figure}
+ %    and \texttt{table} are declared in \pkg{latex-lab-namespace}.
+ %    \begin{macrocode}
+ \ExplSyntaxOn
+@@ -1331,7 +1380,7 @@
+ %    recorded globally, but, as with \cs{NewStructureName} and
+ %    \cs{AssignStructureRole}, the roles are assigned locally; after a
+ %    group they are empty. Declaring the type again outside of the group
+-%    assigns them again. Afterwards the roles of the four structure names
++%    assigns them again. Afterwards the roles of the five structure names
+ %    can be changed with \cs{AssignStructureRole}.
+ %    \begin{macrocode}
+ \cs_new_protected:Npn \DeclareTaggingFloatType #1
+@@ -1342,6 +1391,7 @@
+     \@@_float_type_name:nn {float/#1}          {float}
+     \@@_float_type_name:nn {float/#1/caption}  {Caption}
+     \@@_float_type_name:nn {float/#1/label}    {Lbl}
++    \@@_float_type_name:nn {float/#1/sub}      {Part}
+   }
+ %    \end{macrocode}
+ %    A name is created if it does not exist, and gets its default role if
+diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
+index 0a85e6d07..9a678a438 100644
+--- a/required/latex-lab/changes.txt
++++ b/required/latex-lab/changes.txt
+@@ -1,5 +1,17 @@
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* latex-lab-float.dtx:
++	Plugs for the tagging sockets subfloat/box, subfloat/begin and
++	subfloat/end: a sub-float becomes a Part (instead of the Div of its
++	minipage or parbox) with its caption as first kid, and its caption
++	gets a target of its own (\@floatHref@<type> is empty in it)
++
++	* latex-lab-namespace.dtx:
++	Structure names float/<type>/sub for sub-floats
++
++	* latex-lab-minipage.dtx:
++	Comment on the subfloat plugs of minipage/before and parbox/before
++
+ 	* latex-lab-float.dtx:
+ 	Document the contract of the caption/label socket, add socket
+ 	caption/separator and plugs label-only and colon (no separator for
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index 077adbdf5..03244cef8 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -96,8 +96,13 @@
+ % move it to the begin of the structure. If a float has two captions the author
+ % has to insert a command which splits the float in two.
+ %
+-% Subfigures and subcaptions are currently not handled, but will be implemented
+-% as simple \texttt{Part} with their own \texttt{Caption}.
++% Subfigures and subcaptions are not handled by the kernel. Packages which
++% provide them (e.g., \pkg{subcaption}) can use the tagging socket
++% \texttt{subfloat/box} directly before the \env{minipage} or \cs{parbox} of
++% the sub-float (or the sockets \texttt{subfloat/begin} and
++% \texttt{subfloat/end} for sub-floats that are not a single box): the box
++% then becomes a \texttt{Part} (instead of a \texttt{Div}), and a caption
++% inside becomes its first kid.
+ %
+ % Unknown float types are put into a generic structure when they are encountered in the
+ % source. To add support for a new float type the \texttt{float/new} key described below can
+@@ -186,8 +191,9 @@
+ % it holds the link target of the current float of type \meta{type}. The code
+ % sets it locally inside the float box, right after the target is made:
+ % to \meta{type}\texttt{.struct.}\meta{n} at the start of the float and to
+-% \texttt{floatstructure.}\meta{n} after \texttt{float/split}. The kernel
+-% never sets it; the default plug of the
++% \texttt{floatstructure.}\meta{n} after \texttt{float/split}. Sub-floats set it
++% to empty locally (see the tagging sockets \texttt{subfloat/box} and
++% \texttt{subfloat/begin}). The kernel never sets it; the default plug of the
+ % socket \texttt{caption/step} uses it as the target of the caption. As the name
+ % contains the type, a \texttt{table} caption inside a \texttt{figure} and the step
+ % of a sub-caption counter (e.g., \texttt{subfigure}) do not use the target of the
+@@ -782,10 +788,13 @@
+ % \end{plugdecl}
+ % \begin{macro}{\@@_float_name:n}
+ % \changes{0.81q}{2026-10-06}{Fall back to generic names for unknown float types}
+-% The symbolic name for the caption or the label of the current float type.
++% The symbolic name for the caption, the label or a sub-float of the
++% current float type (the argument is \texttt{caption}, \texttt{label} or
++% \texttt{sub}).
+ % Unknown float types (not declared with \cs{DeclareTaggingFloatType}) get a
+-% \texttt{float/generic} structure in \cs{@@_float_begin:}, so their caption
+-% and label use \texttt{float/generic/caption} and \texttt{float/generic/label}.
++% \texttt{float/generic} structure in \cs{@@_float_begin:}, so their caption,
++% label and sub-floats use \texttt{float/generic/caption},
++% \texttt{float/generic/label} and \texttt{float/generic/sub}.
+ % Before, \cs{UseStructureName} gave an undefined control sequence here.
+ % \changes{0.81q}{2026-10-06}{Generic names also if \cs{@captype} is undefined}
+ % The generic names are also used if \cs{@captype} is undefined, e.g., for
+@@ -947,9 +956,230 @@
+ % begin of the float. The default plug of the kernel socket \texttt{caption/step}
+ % uses \cs{@floatHref@}\meta{type}, which we set at the start of the float and in
+ % \texttt{float/split}, so neither a plug nor a redefinition of \cs{caption} is
+-% needed. Outside of floats the name is undefined,
++% needed. Outside of floats and in sub-floats the name is undefined or empty,
+ % and the caption makes its own target as with \cs{refstepcounter}.
+ %
++% \subsubsection{Sub-floats}
++% \changes{0.81q}{2026-10-06}{Plugs for the sockets \texttt{subfloat/box},
++%   \texttt{subfloat/begin} and \texttt{subfloat/end}}
++% A sub-float (a sub-figure etc.\ with its own caption) gets the structure
++% \texttt{float/\meta{type}/sub} (role \texttt{Part}), or
++% \texttt{float/generic/sub} for unknown float types.
++% \begin{macro}{\@@_subfloat_start:}
++% Its structure number is stored in \cs{@current@float@struct}, so that
++% the caption of the sub-float becomes its first kid. The float target is
++% set to empty, so that the caption of the sub-float makes a target of its own.
++%    \begin{macrocode}
++\cs_new_protected:Npn \@@_subfloat_start:
++  {
++    \tag_struct_begin:n{tag=\UseStructureName{\@@_float_name:n{sub}}}
++    \tl_set:Ne \@current@float@struct {\tag_get:n{struct_num}}
++    \cs_if_exist:NT \@captype
++      { \cs_set_eq:cN { @floatHref@ \@captype } \c_empty_tl }
++  }
++%    \end{macrocode}
++% \end{macro}
++% \begin{plugdecl}{default (tagsupport/subfloat/begin)}
++% \begin{plugdecl}{default (tagsupport/subfloat/end)}
++%    \begin{macrocode}
++\NewTaggingSocketPlug{subfloat/begin}{default}
++  {
++    \@@_subfloat_start:
++  }
++\AssignTaggingSocketPlug{subfloat/begin}{default}
++\NewTaggingSocketPlug{subfloat/end}{default}
++  {
++    \tag_struct_end:
++  }
++\AssignTaggingSocketPlug{subfloat/end}{default}
++%    \end{macrocode}
++% \end{plugdecl}
++% \end{plugdecl}
++%
++% \begin{variable}{\l_@@_subfloat_mp_tl,\l_@@_subfloat_pb_tl}
++% \begin{macro}{\@@_subfloat_restore:}
++% The plugs of the sockets \texttt{minipage/before} and \texttt{parbox/before}
++% that were assigned before \texttt{subfloat/box} was used. They are
++% restored by the boxes (see below), so that boxes nested in the sub-float
++% are normal.
++%    \begin{macrocode}
++\tl_new:N \l_@@_subfloat_mp_tl
++\tl_new:N \l_@@_subfloat_pb_tl
++\cs_new_protected:Npn \@@_subfloat_restore:
++  {
++    \exp_args:NnV \AssignTaggingSocketPlug {minipage/before} \l_@@_subfloat_mp_tl
++    \exp_args:NnV \AssignTaggingSocketPlug {parbox/before}   \l_@@_subfloat_pb_tl
++  }
++%    \end{macrocode}
++% \end{macro}
++% \end{variable}
++%
++% \begin{variable}{\l_@@_subfloat_struct_tl,\l_@@_subfloat_href_tl,
++%                  \l_@@_subfloat_hrefname_tl,\l_@@_subfloat_level_tl,
++%                  \l_@@_subfloat_pa_tl}
++% \begin{macro}{\@@_subfloat_save:}
++% The plug of \texttt{parbox/before} is used at the group level of the caller
++% of \cs{parbox}, outside of the box, so the settings of
++% \cs{@@_subfloat_start:} would last after the box until the end of the
++% caller's group (in practice the float), and a later \cs{caption} of the float
++% would become a kid of the sub-float and make its own target. So for a
++% \cs{parbox}, \cs{@@_subfloat_save:} stores the meanings of
++% \cs{@current@float@struct} and \cs{@floatHref@}\meta{type} (they can be
++% undefined), the name of the latter, the group level, and the plug of
++% \texttt{parbox/after}, and assigns (locally) the plug \plug{subfloat} to
++% \texttt{parbox/after}, which restores them after the box. (A \env{minipage}
++% does not need this: its plug runs inside the group of the environment.)
++%    \begin{macrocode}
++\tl_new:N \l_@@_subfloat_hrefname_tl
++\tl_new:N \l_@@_subfloat_level_tl
++\tl_new:N \l_@@_subfloat_pa_tl
++\cs_new_protected:Npn \@@_subfloat_save:
++  {
++    \cs_set_eq:NN \l_@@_subfloat_struct_tl \@current@float@struct
++    \tl_set:Ne \l_@@_subfloat_hrefname_tl
++      { \cs_if_exist:NT \@captype { @floatHref@ \@captype } }
++    \tl_if_empty:NF \l_@@_subfloat_hrefname_tl
++      { \cs_set_eq:Nc \l_@@_subfloat_href_tl { \l_@@_subfloat_hrefname_tl } }
++    \tl_set:Ne \l_@@_subfloat_level_tl { \int_use:N \tex_currentgrouplevel:D }
++    \bool_if:nF
++      { \socket_if_plug_assigned_p:nn {tagsupport/parbox/after} {subfloat} }
++      {
++        \socket_get_plug:nN {tagsupport/parbox/after} \l_@@_subfloat_pa_tl
++        \AssignTaggingSocketPlug{parbox/after}{subfloat}
++      }
++  }
++%    \end{macrocode}
++% \end{macro}
++% \end{variable}
++%
++% \begin{plugdecl}{subfloat (tagsupport/parbox/after)}
++% The plug restores the previous plug of \texttt{parbox/after} (locally) and
++% uses it, so the structure is closed as for a normal box. If it is used at the
++% group level of \cs{@@_subfloat_save:}, it is the end of the sub-float, and
++% the saved meanings are restored. At a deeper level it is the end of a box
++% inside the sub-float, which inherited the plug: then the restored plug is
++% only valid inside the sub-float, and nothing else is done.
++%    \begin{macrocode}
++\NewTaggingSocketPlug{parbox/after}{subfloat}
++  {
++    \exp_args:NnV \AssignTaggingSocketPlug {parbox/after} \l_@@_subfloat_pa_tl
++    \UseTaggingSocket{parbox/after}
++    \int_compare:nNnT
++      { \tex_currentgrouplevel:D } = { \l_@@_subfloat_level_tl }
++      {
++        \cs_set_eq:NN \@current@float@struct \l_@@_subfloat_struct_tl
++        \tl_if_empty:NF \l_@@_subfloat_hrefname_tl
++          {
++            \cs_set_eq:cN { \l_@@_subfloat_hrefname_tl }
++              \l_@@_subfloat_href_tl
++          }
++      }
++  }
++%    \end{macrocode}
++% \end{plugdecl}
++%
++% \begin{variable}{\g_@@_subfloat_tl,\l_@@_subfloat_tl}
++% \begin{macro}[TF]{\@@_subfloat_if_first:}
++% Every use of \texttt{subfloat/box} takes a new number (globally) and keeps
++% it locally; the first box after it uses the number up (globally, as the box
++% may be inside a group that ends before the next box). So only that box
++% becomes the sub-float, also if the plugs \plug{subfloat} are still assigned
++% after it: a \env{minipage} restores the previous plugs only inside its own
++% group, so without the test a second \env{minipage} in the same group would
++% become a sub-float as well. (Token lists and not integers, so that no
++% register is allocated.)
++%    \begin{macrocode}
++\tl_new:N \g_@@_subfloat_tl
++\tl_gset:Nn \g_@@_subfloat_tl { 0 }
++\tl_new:N \l_@@_subfloat_tl
++\prg_new_protected_conditional:Npnn \@@_subfloat_if_first: { TF }
++  {
++    \cs_if_exist:cTF { @@_subfloat_used_ \l_@@_subfloat_tl : }
++      { \prg_return_false: }
++      {
++        \cs_gset_eq:cN { @@_subfloat_used_ \l_@@_subfloat_tl : }
++          \prg_do_nothing:
++        \prg_return_true:
++      }
++  }
++%    \end{macrocode}
++% \end{macro}
++% \end{variable}
++%
++% \begin{plugdecl}{default (tagsupport/subfloat/box)}
++% The sub-float is the structure of the next \env{minipage} or \cs{parbox}:
++% the plug assigns (locally) the plugs \plug{subfloat} to the sockets
++% \texttt{minipage/before} and \texttt{parbox/before} and takes a new number
++% for that box. Their counterparts
++% \texttt{minipage/after} and \texttt{parbox/after} close the structure as for
++% a normal box. If \plug{subfloat} is already assigned (the socket was used
++% before in the same group), only the number is new. Nothing is done if the
++% plug of \texttt{minipage/after} is \plug{noop} (the tagging code of
++% \pkg{latex-lab-minipage} is not active, so the structure would not be
++% closed).
++%    \begin{macrocode}
++\NewTaggingSocketPlug{subfloat/box}{default}
++  {
++    \bool_if:nF
++      { \socket_if_plug_assigned_p:nn {tagsupport/minipage/after} {noop} }
++      {
++        \bool_if:nF
++          { \socket_if_plug_assigned_p:nn {tagsupport/minipage/before} {subfloat} }
++          {
++            \socket_get_plug:nN {tagsupport/minipage/before} \l_@@_subfloat_mp_tl
++            \socket_get_plug:nN {tagsupport/parbox/before}   \l_@@_subfloat_pb_tl
++            \AssignTaggingSocketPlug{minipage/before}{subfloat}
++            \AssignTaggingSocketPlug{parbox/before}{subfloat}
++          }
++        \tl_gset:Ne \g_@@_subfloat_tl { \int_eval:n { \g_@@_subfloat_tl + 1 } }
++        \tl_set_eq:NN \l_@@_subfloat_tl \g_@@_subfloat_tl
++      }
++  }
++\AssignTaggingSocketPlug{subfloat/box}{default}
++%    \end{macrocode}
++% \end{plugdecl}
++%
++% \begin{plugdecl}{subfloat (tagsupport/minipage/before)}
++% \begin{plugdecl}{subfloat (tagsupport/parbox/before)}
++% These plugs restore the previous plugs (locally, at the level of the box).
++% If the number of \texttt{subfloat/box} has not been used yet, they then
++% start the structure of the sub-float instead of the \texttt{Div} of the box.
++% The first two lines (closing the open text-unit and pushing the marked
++% content) must stay identical to the \plug{kernel} plugs of these sockets in
++% \pkg{latex-lab-minipage}. Otherwise (a later box in the same group) they use
++% the restored plug, so the box is normal. For a \cs{parbox} the restore is
++% done at the level of the caller, so later boxes have the previous plugs
++% anyway, and \cs{@@_subfloat_save:} makes sure that the settings of the
++% sub-float end with the box; for a \env{minipage} it is done inside the group
++% of the environment, and the test of the number makes the later boxes normal.
++%    \begin{macrocode}
++\NewTaggingSocketPlug{minipage/before}{subfloat}
++  {
++    \@@_subfloat_restore:
++    \@@_subfloat_if_first:TF
++      {
++        \tag_mc_end_push:
++        \bool_if:NT \l__tag_para_bool {\tag_struct_end:}
++        \@@_subfloat_start:
++      }
++      { \UseTaggingSocket{minipage/before} }
++  }
++\NewTaggingSocketPlug{parbox/before}{subfloat}
++  {
++    \@@_subfloat_restore:
++    \@@_subfloat_if_first:TF
++      {
++        \tag_mc_end_push:
++        \bool_if:NT \l__tag_para_bool {\tag_struct_end:}
++        \@@_subfloat_save:
++        \@@_subfloat_start:
++      }
++      { \UseTaggingSocket{parbox/before} }
++  }
++%    \end{macrocode}
++% \end{plugdecl}
++% \end{plugdecl}
++%
+ % \begin{macro}{\@makecaption}
+ % \cs{@makecaption} is defined by the classes so we overwrite it for now
+ % at begin document.
+diff --git a/required/latex-lab/latex-lab-minipage.dtx b/required/latex-lab/latex-lab-minipage.dtx
+index 25c03bb77..b4ed3cdc7 100644
+--- a/required/latex-lab/latex-lab-minipage.dtx
++++ b/required/latex-lab/latex-lab-minipage.dtx
+@@ -204,7 +204,9 @@
+   {
+ %    \end{macrocode}
+ % As there was a \cs{leavevmode} before that is a P/text open that we have to close
+-% if para tagging is active:
++% if para tagging is active (the plugs \plug{subfloat} of the sockets
++% \texttt{minipage/before} and \texttt{parbox/before} in \pkg{latex-lab-float}
++% repeat these two lines, keep them identical):
+ %    \begin{macrocode}
+     \tag_mc_end_push:
+     \bool_if:NT \l__tag_para_bool {\tag_struct_end:}
+diff --git a/required/latex-lab/latex-lab-namespace.dtx b/required/latex-lab/latex-lab-namespace.dtx
+index 2e21571e9..cf06e3f50 100644
+--- a/required/latex-lab/latex-lab-namespace.dtx
++++ b/required/latex-lab/latex-lab-namespace.dtx
+@@ -642,6 +642,16 @@ subparagraph-heading,  H6,pdf2,
+ \NewStructureName{float/table/label}
+ \AssignStructureRole{float/table/label}{Lbl}
+ %    \end{macrocode}
++% Sub-floats (sub-figures etc.\ with their own caption).
++% \changes{v0.8s}{2026-10-06}{Names for sub-floats added}
++%    \begin{macrocode}
++\NewStructureName{float/generic/sub}
++\AssignStructureRole{float/generic/sub}{Part}
++\NewStructureName{float/figure/sub}
++\AssignStructureRole{float/figure/sub}{Part}
++\NewStructureName{float/table/sub}
++\AssignStructureRole{float/table/sub}{Part}
++%    \end{macrocode}
+ %
+ % \subsubsection{Footnotes}
+ %
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg b/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg
+new file mode 100644
+index 000000000..bd348e576
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.luatex.tlg
+@@ -0,0 +1,750 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++figure=1, target=figure.struct.6
++Floatstructure:10
++figure=1, target=figure.struct.10
++Floatstructure:13
++sub target: subfigure.1.1
++Package hyperref Info: bookmark level for unknown subfigure defaults to 0 on input line ....
++sub target: subfigure.1.2
++sub target: subfigure.1.3
++figure=2, target=figure.struct.13
++Floatstructure:66
++Floatstructure:99
++sub target: subfigure.2.1
++sub target: subfigure.2.2
++figure=3, target=figure.struct.99
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-020-caption-interface.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.0002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.0063"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0064"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>See 
++     <Link xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0065"
++       >
++      <?MarkedContent page="1" ?>a
++      <?ReferencedObject type="Annot" page="1" ?>
++     </Link>
++     <?MarkedContent page="1" ?>. 
++    </text-block>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.0004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0007"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0008"
++        >
++       <?MarkedContent page="1" ?>Figure 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0009"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0010"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0011"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0012"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Star: no Lbl, no number
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0013"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0060"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0061"
++        >
++       <?MarkedContent page="1" ?>Figure 2: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0062"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Main
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0014"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0016"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0027"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0028"
++          >
++         <?MarkedContent page="1" ?>(a): 
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0029"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub A
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0017"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0018"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content A
++         <footnotemark xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0019"
++            rolemaps-to="Lbl"
++            referenced-as="2"
++           >
++           <?References objects="1" ?>
++          <Link xmlns="http://iso.org/pdf2/ssn"
++             id="ID.0020"
++            >
++           <?MarkedContent page="1" ?>
++           <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0021"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextPosition="Sup"
++              rolemaps-to="Span"
++             >
++            <?MarkedContent page="1" ?>a
++           </text-fragment>
++           <?MarkedContent page="1" ?>
++           <?ReferencedObject type="Annot" page="1" ?>
++          </Link>
++         </footnotemark>
++         <footnote xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0022"
++            rolemaps-to="FENote"
++            referenced-as="1"
++           >
++           <?References objects="2" ?>
++          <footnotelabel xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0025"
++             rolemaps-to="Lbl"
++            >
++           <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0026"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextPosition="Sup"
++              rolemaps-to="Span"
++             >
++            <?MarkedContent page="1" ?>a
++           </text-fragment>
++          </footnotelabel>
++          <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0023"
++             rolemaps-to="Part"
++            >
++           <text-block xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0024"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextAlign="Justify"
++              rolemaps-to="P"
++             >
++            <?MarkedContent page="1" ?>
++            <?MarkedContent page="1" ?>Footnote A
++           </text-block>
++          </semantic-para>
++         </footnote>
++         <?MarkedContent page="1" ?>
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0030"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0031"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0038"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0039"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub B, unnum
++         <?MarkedContent page="1" ?>bered
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0032"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0033"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content B 
++        </text-block>
++        <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0034"
++           rolemaps-to="Div"
++          >
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0035"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0036"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="1" ?>nested
++          </text-block>
++         </semantic-para>
++        </text-minipage>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0037"
++           rolemaps-to="P"
++          >
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0040"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0041"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0044"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0045"
++          >
++         <?MarkedContent page="1" ?>(b): 
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0046"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub C
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0042"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0043"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content C
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0047"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0048"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0049"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0052"
++          >
++         <Lbl xmlns="http://iso.org/pdf2/ssn"
++            id="ID.0053"
++           >
++          <?MarkedContent page="1" ?>(c): 
++         </Lbl>
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0054"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub D
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0050"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0051"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content D 
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0055"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0056"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0057"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0058"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>plain
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0059"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0066"
++       rolemaps-to="Aside"
++      >
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0067"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0068"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0069"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0070"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0071"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0072"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0073"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0074"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0075"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>second
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0076"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0077"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0078"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0079"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>third
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0080"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0081"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0082"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0083"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0084"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0085"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>parbox first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0086"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0087"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0088"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0089"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>parbox second
++        </text-block>
++       </semantic-para>
++      </text-parbox>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0090"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0091"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0092"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0093"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>no group first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0094"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0095"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0096"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0097"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>no group second
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0098"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0099"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0124"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0125"
++        >
++       <?MarkedContent page="2" ?>Figure 3: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0126"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>After the parbox
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0100"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0101"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0102"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0116"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0117"
++          >
++         <?MarkedContent page="2" ?>(b): 
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0118"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>Sub E
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0103"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0104"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>sub content E 
++        </text-block>
++        <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0105"
++           rolemaps-to="Div"
++          >
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0106"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0107"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>inner
++          </text-block>
++         </semantic-para>
++        </text-parbox>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0108"
++           rolemaps-to="P"
++          >
++        </text-block>
++        <Part xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0109"
++          >
++         <Caption xmlns="http://iso.org/pdf2/ssn"
++            id="ID.0112"
++           >
++          <Lbl xmlns="http://iso.org/pdf2/ssn"
++             id="ID.0113"
++            >
++           <?MarkedContent page="2" ?>(a): 
++          </Lbl>
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0114"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>Sub F
++          </text-block>
++         </Caption>
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0110"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0111"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>nested
++          </text-block>
++         </semantic-para>
++        </Part>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0115"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0119"
++         rolemaps-to="P"
++        >
++      </text-block>
++      <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0120"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0121"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0122"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>after E
++        </text-block>
++       </semantic-para>
++      </text-parbox>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0123"
++         rolemaps-to="P"
++        >
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-020-caption-interface.xml (end) ---------
++============================================================
++LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-020-caption-interface.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~126 structure objects
++(tagpdf)             with ~79 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.lvt b/required/latex-lab/testfiles-float/float-020-caption-interface.lvt
+new file mode 100644
+index 000000000..304ac4672
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.lvt
+@@ -0,0 +1,93 @@
++% \caption*, the socket caption/step, the float target and the
++% sub-float sockets with tagging (and hyperref)
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\usepackage{hyperref}
++\makeatletter
++% a minimal sub-caption, as a package like subcaption would do it
++\newcounter{subfigure}[figure]
++\renewcommand\thesubfigure{\alph{subfigure}}
++\def\fnum@subfigure{(\thesubfigure)}
++\def\ext@subfigure{lof}
++\def\l@subfigure{\@dottedtocline{2}{3.8em}{2.5em}}
++\newcommand\subcap[1]{%
++  \UseSocket{caption/step}{subfigure}%
++  \typeout{sub target: \@currentHref}%
++  \@caption{subfigure}[#1]{#1}}
++% sub-floats: a minipage environment and a \parbox
++\newenvironment{subfloat}[1]
++  {\UseTaggingSocket{subfloat/box}\begin{minipage}{#1}}
++  {\end{minipage}}
++\newcommand\subbox[2]{%
++  \begingroup
++    \UseTaggingSocket{subfloat/box}%
++    \parbox{.2\linewidth}{#2\subcap{#1}}%
++  \endgroup}
++\hbadness=10000 % no underfull boxes in the narrow sub-floats
++\newcommand\showtarget{\typeout{figure=\thefigure, target=\@currentHref}}
++\makeatother
++\begin{document}
++\START
++\begin{figure}[h]
++  \caption{Numbered}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \caption*{Star: no Lbl, no number}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \begin{subfloat}{.2\linewidth}
++    sub content A\footnote{Footnote A}
++    \subcap{Sub A}\label{suba}%
++  \end{subfloat}
++  \begin{subfloat}{.2\linewidth}
++    sub content B
++    \begin{minipage}{.5\linewidth}nested\end{minipage}
++    \caption*{Sub B, unnumbered}%
++  \end{subfloat}
++  \subbox{Sub C}{sub content C}
++  \begin{minipage}{.2\linewidth}
++    \UseTaggingSocket{subfloat/begin}%
++    sub content D
++    \subcap{Sub D}%
++    \UseTaggingSocket{subfloat/end}%
++  \end{minipage}
++  \begin{minipage}{.1\linewidth}plain\end{minipage}
++  \caption{Main}\showtarget
++\end{figure}
++See \ref{suba}.
++% subfloat/box acts on the next box only: of two minipages after it in the
++% same group only the first is a sub-float (Part), the second and a third
++% one after the group are normal (Div); the same without a group, for a
++% \parbox and for a minipage
++\begin{figure}[h]
++  \begingroup
++    \UseTaggingSocket{subfloat/box}%
++    \begin{minipage}{.2\linewidth}first\end{minipage}
++    \begin{minipage}{.2\linewidth}second\end{minipage}
++  \endgroup
++  \begin{minipage}{.2\linewidth}third\end{minipage}
++  \par
++  \UseTaggingSocket{subfloat/box}%
++  \parbox{.2\linewidth}{parbox first}
++  \parbox{.2\linewidth}{parbox second}
++  \UseTaggingSocket{subfloat/box}%
++  \begin{minipage}{.2\linewidth}no group first\end{minipage}
++  \begin{minipage}{.2\linewidth}no group second\end{minipage}
++\end{figure}
++% a \parbox sub-float without a group: its settings end with the box, so
++% the caption after it belongs to the float and uses the float target; a
++% normal \parbox inside it and one after it are normal, a nested \parbox
++% sub-float is a Part inside the Part
++\begin{figure}[h]
++  \UseTaggingSocket{subfloat/box}%
++  \parbox{.4\linewidth}{sub content E
++    \parbox{.3\linewidth}{inner}
++    \UseTaggingSocket{subfloat/box}%
++    \parbox{.5\linewidth}{nested\subcap{Sub F}}%
++    \subcap{Sub E}}
++  \parbox{.2\linewidth}{after E}
++  \caption{After the parbox}\showtarget
++\end{figure}
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-020-caption-interface.tlg b/required/latex-lab/testfiles-float/float-020-caption-interface.tlg
+new file mode 100644
+index 000000000..79797e248
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-020-caption-interface.tlg
+@@ -0,0 +1,778 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++figure=1, target=figure.struct.5
++Floatstructure:9
++figure=1, target=figure.struct.9
++Floatstructure:12
++sub target: subfigure.1.1
++Package hyperref Info: bookmark level for unknown subfigure defaults to 0 on input line ....
++sub target: subfigure.1.2
++sub target: subfigure.1.3
++figure=2, target=figure.struct.12
++Floatstructure:65
++Floatstructure:98
++sub target: subfigure.2.1
++sub target: subfigure.2.2
++figure=3, target=figure.struct.98
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-020-caption-interface.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.0002"
++    >
++   <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.0062"
++      rolemaps-to="Part"
++     >
++    <text-block xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0063"
++       xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++       Layout:TextAlign="Justify"
++       rolemaps-to="P"
++      >
++     <?MarkedContent page="1" ?>See
++     <Link xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0064"
++       >
++      <?MarkedContent page="1" ?>a
++      <?ReferencedObject type="Annot" page="1" ?>
++     </Link>
++     <?MarkedContent page="1" ?>.
++     <?MarkedContent page="1" ?>
++     <?MarkedContent page="1" ?>
++    </text-block>
++   </semantic-para>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.0003"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0006"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0007"
++        >
++       <?MarkedContent page="1" ?>Figure 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Numbered
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0010"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Star: no Lbl, no number
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0012"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0059"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0060"
++        >
++       <?MarkedContent page="1" ?>Figure 2:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0061"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Main
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0013"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0015"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0026"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0027"
++          >
++         <?MarkedContent page="1" ?>(a):
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0028"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub A
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0016"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0017"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content A
++         <footnotemark xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0018"
++            rolemaps-to="Lbl"
++            referenced-as="2"
++           >
++           <?References objects="1" ?>
++          <?MarkedContent page="1" ?>
++          <Link xmlns="http://iso.org/pdf2/ssn"
++             id="ID.0019"
++            >
++           <?MarkedContent page="1" ?>
++           <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0020"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextPosition="Sup"
++              rolemaps-to="Span"
++             >
++            <?MarkedContent page="1" ?>a
++           </text-fragment>
++           <?MarkedContent page="1" ?>
++           <?ReferencedObject type="Annot" page="1" ?>
++          </Link>
++          <?MarkedContent page="1" ?>
++         </footnotemark>
++         <?MarkedContent page="1" ?>
++         <footnote xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0021"
++            rolemaps-to="FENote"
++            referenced-as="1"
++           >
++           <?References objects="2" ?>
++          <footnotelabel xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0024"
++             rolemaps-to="Lbl"
++            >
++           <?MarkedContent page="1" ?>
++           <text-fragment xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0025"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextPosition="Sup"
++              rolemaps-to="Span"
++             >
++            <?MarkedContent page="1" ?>a
++           </text-fragment>
++           <?MarkedContent page="1" ?>
++          </footnotelabel>
++          <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0022"
++             rolemaps-to="Part"
++            >
++           <text-block xmlns="https://www.latex-project.org/ns/dflt"
++              id="ID.0023"
++              xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++              Layout:TextAlign="Justify"
++              rolemaps-to="P"
++             >
++            <?MarkedContent page="1" ?>
++            <?MarkedContent page="1" ?>
++            <?MarkedContent page="1" ?>Footnote A
++            <?MarkedContent page="1" ?>
++           </text-block>
++          </semantic-para>
++         </footnote>
++         <?MarkedContent page="1" ?>
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0029"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0030"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0037"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0038"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub B, unnum-bered
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0031"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0032"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content B
++        </text-block>
++        <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0033"
++           rolemaps-to="Div"
++          >
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0034"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0035"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="1" ?>nested
++          </text-block>
++         </semantic-para>
++        </text-minipage>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0036"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0039"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0040"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0043"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0044"
++          >
++         <?MarkedContent page="1" ?>(b):
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0045"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>Sub C
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0041"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0042"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>sub content C
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0046"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0047"
++         rolemaps-to="Div"
++        >
++       <Part xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0048"
++         >
++        <Caption xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0051"
++          >
++         <Lbl xmlns="http://iso.org/pdf2/ssn"
++            id="ID.0052"
++           >
++          <?MarkedContent page="1" ?>(c):
++         </Lbl>
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0053"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>Sub D
++         </text-block>
++        </Caption>
++        <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0049"
++           rolemaps-to="Part"
++          >
++         <text-block xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0050"
++            xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++            Layout:TextAlign="Justify"
++            rolemaps-to="P"
++           >
++          <?MarkedContent page="1" ?>sub content D
++         </text-block>
++        </semantic-para>
++       </Part>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0054"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0055"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0056"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0057"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="1" ?>plain
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0058"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0065"
++       rolemaps-to="Aside"
++      >
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0066"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0067"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0068"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0069"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0070"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0071"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0072"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0073"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0074"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>second
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0075"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0076"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0077"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0078"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>third
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0079"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++     </semantic-para>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0080"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0081"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0082"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0083"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0084"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>parbox first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0085"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0086"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0087"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0088"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>parbox second
++        </text-block>
++       </semantic-para>
++      </text-parbox>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0089"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0090"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0091"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0092"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>no group first
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0093"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0094"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0095"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0096"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>no group second
++        </text-block>
++       </semantic-para>
++      </text-minipage>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0097"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.0098"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.0123"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0124"
++        >
++       <?MarkedContent page="2" ?>Figure 3:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0125"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>After the parbox
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.0099"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0100"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Justify"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <Part xmlns="http://iso.org/pdf2/ssn"
++         id="ID.0101"
++        >
++       <Caption xmlns="http://iso.org/pdf2/ssn"
++          id="ID.0115"
++         >
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0116"
++          >
++         <?MarkedContent page="2" ?>(b):
++        </Lbl>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0117"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>Sub E
++        </text-block>
++       </Caption>
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0102"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0103"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>sub content E
++        </text-block>
++        <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0104"
++           rolemaps-to="Div"
++          >
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0105"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0106"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>inner
++          </text-block>
++         </semantic-para>
++        </text-parbox>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0107"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>
++        </text-block>
++        <Part xmlns="http://iso.org/pdf2/ssn"
++           id="ID.0108"
++          >
++         <Caption xmlns="http://iso.org/pdf2/ssn"
++            id="ID.0111"
++           >
++          <Lbl xmlns="http://iso.org/pdf2/ssn"
++             id="ID.0112"
++            >
++           <?MarkedContent page="2" ?>(a):
++          </Lbl>
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0113"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>Sub F
++          </text-block>
++         </Caption>
++         <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++            id="ID.0109"
++            rolemaps-to="Part"
++           >
++          <text-block xmlns="https://www.latex-project.org/ns/dflt"
++             id="ID.0110"
++             xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++             Layout:TextAlign="Justify"
++             rolemaps-to="P"
++            >
++           <?MarkedContent page="2" ?>nested
++          </text-block>
++         </semantic-para>
++        </Part>
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0114"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>
++        </text-block>
++       </semantic-para>
++      </Part>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0118"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++      <text-parbox xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0119"
++         rolemaps-to="Div"
++        >
++       <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.0120"
++          rolemaps-to="Part"
++         >
++        <text-block xmlns="https://www.latex-project.org/ns/dflt"
++           id="ID.0121"
++           xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++           Layout:TextAlign="Justify"
++           rolemaps-to="P"
++          >
++         <?MarkedContent page="2" ?>after E
++        </text-block>
++       </semantic-para>
++      </text-parbox>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.0122"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-020-caption-interface.xml (end) ---------
++============================================================
++LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-020-caption-interface.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~125 structure objects
++(tagpdf)             with ~79 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+-- 
+2.50.1 (Apple Git-155)
+

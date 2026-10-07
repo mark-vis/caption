@@ -1,0 +1,147 @@
+% Test of the socket caption/typeset
+% (arguments, group level of the caller, \if@captionstar, a plug that
+% falls back to \@kernel@caption@typeset and one that typesets itself,
+% direct calls of \@caption) and the kernel copies \@kernel@caption and
+% \@kernel@@caption (as used by a package that has replaced \caption and
+% \@caption and restores them, by a wrapper and by code that keeps its
+% own \caption). The roll-back is tested in caption-interface-002.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% show the arguments \@makecaption gets
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
+    star=\if@captionstar true\else false\fi}%
+  \ORImakecaption{#1}{#2}}
+% show what is written to the list
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+% show the targets made by the step
+\NewSocketPlug{refstepcounter/target}{test}{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{TARGET: new target \@currentHref}}
+\AssignSocketPlug{refstepcounter/target}{test}
+\def\showswitches{%
+  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
+    step=\if@captionstep true\else false\fi,
+    target=\if@captiontarget true\else false\fi}}
+% the hooks
+\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
+\long\def\showopt#1{\IfNoValueTF{#1}%
+  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
+\AddToHookWithArguments{caption/before}[test]{%
+  \showbool{#2}\showopt{#3}%
+  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
+    figure=\thefigure, linewidth=\the\linewidth}}
+\AddToHookWithArguments{caption/prepare}[test]{%
+  \showbool{#2}%
+  \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
+    figure=\thefigure, label=\@currentlabel, href=\@currentHref}}
+% a typeset plug that shows its arguments and the line width, makes a
+% local definition and then uses the kernel typesetting
+\NewSocketPlug{caption/typeset}{test}{%
+  \showbool{#2}%
+  \typeout{TYPESET: {#1}{\tmpstar}{\detokenize{#3}},
+    linewidth=\the\linewidth, star=\if@captionstar true\else false\fi}%
+  \def\testlocal{set by the typeset plug}%
+  \@kernel@caption@typeset{#1}{#2}{#3}}
+% a typeset plug that typesets the caption itself (as a package that
+% typesets captions completely), in its own group
+\NewSocketPlug{caption/typeset}{own}{%
+  \typeout{OWN TYPESET: {#1}\IfBooleanTF{#2}{{star}}{{no star}}}%
+  \begingroup
+    \@parboxrestore
+    \IfBooleanTF{#2}%
+      {\noindent #3\par}%
+      {\noindent\csname fnum@#1\endcsname\ --\ #3\par}%
+  \endgroup}
+\gdef\@currentHref{none}
+% helpers for the tests (\makeatletter does not work inside \TEST)
+\def\directcaption{\@caption}
+\def\starton{\@captionstartrue}
+\def\showcopies{%
+  \typeout{caption: \ifx\caption\@kernel@caption kernel\else other\fi,
+    @caption: \ifx\@caption\@kernel@@caption kernel\else other\fi}}
+% a package that replaces \caption and \@caption (as the caption package
+% did before 2026) and later restores the kernel copies
+\long\def\pkgcaption{\typeout{PACKAGE CAPTION}\@gobble}
+\long\def\pkgatcaption#1[#2]#3{\typeout{PACKAGE @CAPTION}}
+\def\replacecaption{\let\caption\pkgcaption \let\@caption\pkgatcaption}
+\def\restorecaption{\let\caption\@kernel@caption
+  \let\@caption\@kernel@@caption}
+% a wrapper of the kernel \@caption (as in memoir or nameref)
+\long\def\wrappercaption#1[#2]#3{%
+  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
+  \@kernel@@caption{#1}[{#2}]{#3}}
+\def\usewrappercaption{\let\@caption\wrappercaption}
+% a package that keeps its own \caption (here the definition of LaTeX
+% before 2026) and passes only \caption* to the kernel
+\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
+\def\useowncaption{\def\caption{\@ifstar{\@kernel@caption*}%
+  {\@kernel@caption@reset\owncaption}}}
+\makeatother
+\begin{document}
+\START
+\TEST{default plug: kernel typesetting}{%
+  \begin{figure}
+    \caption{Kernel typeset}
+    \caption*{Kernel typeset, star}
+  \end{figure}}
+\TEST{typeset plug at the level of the float}{%
+  \begin{figure}
+    \begin{minipage}{3cm}
+      \AssignSocketPlug{caption/typeset}{test}%
+      \caption{Typeset plug}
+      \typeout{local: \testlocal}
+      \caption*{Typeset plug, star}
+    \end{minipage}
+  \end{figure}}
+\TEST{typeset plug that typesets itself}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/typeset}{own}%
+    \caption{Own typeset}
+    \caption*{Own typeset, star}
+    \showswitches
+  \end{figure}}
+\TEST{direct call of @caption: typeset plug}{%
+  \begin{figure}
+    \AssignSocketPlug{caption/typeset}{test}%
+    \directcaption{figure}[L]{T}
+    \starton
+    \directcaption{figure}[L2]{T2 star}
+    \showswitches
+  \end{figure}}
+\TEST{kernel copies}{%
+  \showcopies
+  \replacecaption
+  \showcopies
+  \begin{figure}
+    \caption{Replaced}
+  \end{figure}
+  \restorecaption
+  \showcopies
+  \begin{figure}
+    \caption{Restored}
+    \caption*{Restored, star}
+  \end{figure}}
+\TEST{wrapper of the kernel copy of @caption}{%
+  \begin{figure}
+    \usewrappercaption
+    \showcopies
+    \caption{Wrapped}
+    \caption*{Wrapped, star}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{own caption, only the star from the kernel copy}{%
+  \begin{figure}
+    \useowncaption
+    \showcopies
+    \caption{Own}
+    \caption*{Own, star}
+    \caption{Own again}
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\END

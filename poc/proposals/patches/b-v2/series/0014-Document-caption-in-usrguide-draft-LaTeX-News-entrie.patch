@@ -1,0 +1,254 @@
+From 449aa8e30af597531881c4a09ea957d08e83eba8 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 06:22:36 +0200
+Subject: [PATCH 14/14] Document \caption* in usrguide; draft LaTeX News
+ entries
+
+This commit is meant to be applied last and only when hyperref supports
+\caption* (it should not replace \caption when \@kernel@caption is
+defined): with hyperref without \DocumentMetadata, the most common
+setup, \caption* still gives a numbered caption with the text "*".
+
+usrguide gets the section "Captions without a number" (with a source
+comment that says this) and clsguide refers to it. ltnews44 gets draft
+entries for the caption interface: "Captions in tagged floats" (with
+latex3/latex2e#2022), "Captions without a number: \caption*", "Hooks and
+sockets for floats and captions", "\caption outside a float" and
+"\caption* with the float package". They assume the 2026-11-01 release,
+the placeholder date of the \IncludeInRelease blocks; the sentences on
+the socket caption/typeset, the copy \@kernel@@caption and the sub-float
+sockets are marked as requests for comments. The team may prefer to
+write LaTeX News itself; then only the usrguide part is needed.
+
+The issue and the guides typeset without errors.
+---
+ base/changes.txt      |   3 ++
+ base/doc/clsguide.tex |   8 ++--
+ base/doc/ltnews44.tex | 109 ++++++++++++++++++++++++++++++++++++++++++
+ base/doc/usrguide.tex |  29 ++++++++++-
+ 4 files changed, 144 insertions(+), 5 deletions(-)
+
+diff --git a/base/changes.txt b/base/changes.txt
+index c198adfb8..61b7905ed 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,9 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* usrguide.tex, clsguide.tex:
++	Document \caption* for users
++
+ 	* lttagging.dtx:
+ 	Add tagging sockets subfloat/box, subfloat/begin and subfloat/end
+ 	for sub-floats; \DeclareTaggingFloatType also declares
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index 1f8543797..727ad9bf9 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1519,10 +1519,10 @@ This changes the name of the next target that will be created.
+ 
+ \subsection{Captions and \cs{caption*}}
+ 
+-\LaTeX{} provides \cs{caption*} for captions without a number. It uses
+-the class's \cs{@makecaption}, and the kernel offers hooks and sockets
+-so that classes and packages do not need to redefine
+-\cs{caption} or \cs{@caption} (see the documentation of
++\LaTeX{} provides \cs{caption*} for captions without a number (see
++\texttt{usrguide}). It uses the class's \cs{@makecaption}, and the kernel
++offers hooks and sockets so that classes and packages do not need to
++redefine \cs{caption} or \cs{@caption} (see the documentation of
+ \texttt{ltfloat.dtx}). For classes this means:
+ \begin{itemize}
+ \item \cs{@makecaption}\arg{label}\arg{text} is also used for
+diff --git a/base/doc/ltnews44.tex b/base/doc/ltnews44.tex
+index 9b36ab832..27b05da8e 100644
+--- a/base/doc/ltnews44.tex
++++ b/base/doc/ltnews44.tex
+@@ -713,6 +713,42 @@ command has been removed.
+ 
+ 
+ 
++% DRAFT: the entries marked "caption interface" below. They assume the
++% changes are in the 2026-11-01 release, the date of their
++% \IncludeInRelease blocks; for a later release move them to that issue.
++% Drop the sentences marked "request for comments" if the socket
++% caption/typeset with the kernel copies or the sub-float sockets are not
++% merged. Publish the \caption* entry only together with support in
++% hyperref (see the comment in usrguide).
++
++% caption interface (tagging)
++\subsection{Captions in tagged floats}
++
++The tagging code for floats no longer redefines \cs{caption}; it uses the
++new caption interface of the kernel (see below), and it now stores the
++link target of a float in \cs{@floatHref@}\meta{type}. Before, the
++second caption of a float split with the \key{float/split} key and a
++\texttt{table} caption inside a \texttt{figure} referred to link targets
++that did not exist.
++
++Float types that are not known to the tagging code now get generic
++structure names for their captions and labels, and packages that define
++float environments can declare their types with
++\cs{DeclareTaggingFloatType}\Arg{type}. The contract of the socket
++\texttt{caption/label} is now documented, and a new socket
++\texttt{caption/separator} allows the separator after the label to be
++tagged as part of the caption text instead of the label. A label that
++prints nothing no longer gives unbalanced paragraph tags in a wide
++caption.
++\githubissue{2022}
++%
++% request for comments (sub-float sockets):
++The new tagging sockets \texttt{subfloat/box}, \texttt{subfloat/begin} and
++\texttt{subfloat/end} let packages such as \pkg{subcaption} tag a
++sub-figure or sub-table as a \struct{Part} with its own caption.
++
++
++
+ \section{New or improved commands}
+ 
+ \subsection{Testing if a certain template is defined}
+@@ -787,6 +823,58 @@ be unchanged.
+ 
+ 
+ 
++% caption interface (\caption*)
++\subsection{Captions without a number: \cs{caption*}}
++
++Where \cs{caption} can be used, \cs{caption*}\texttt{[}\meta{opt}\texttt{]}\Arg{text} now
++typesets \meta{text} as a caption without a label: the counter is not
++stepped, nothing is written to the list of figures or tables, and no link
++target is made. The caption has the layout of the document class: the
++class's \cs{@makecaption} is called with a label that prints nothing and
++removes a colon or a period and the space after it, so the standard
++classes and many classes derived from them need no change. Classes that
++print the separator in some other way can test the new switch
++\cs{if@captionstar}; \texttt{clsguide} describes what they should do.
++Packages and classes that replace \cs{caption} itself (for example
++\pkg{hyperref} without \cs{DocumentMetadata}, or \cls{beamer}) do not
++know the star form yet and give a numbered caption with the text `*', as
++before.
++
++
++% caption interface (hooks and sockets)
++\subsection{Hooks and sockets for floats and captions}
++
++Packages that change floats or captions had to redefine internal
++commands such as \cs{@xfloat}, \cs{caption} or \cs{@caption}, which made
++them hard to combine. The kernel now provides
++\begin{itemize}
++\item the hooks \hook{float/begin} and \hook{float/end}, executed inside
++  the box of every float, with the float type and a star for
++  double-column floats as arguments;
++\item the hook \hook{caption/before}, executed after \cs{caption} has
++  read its arguments and before the counter is stepped, and the hook
++  \hook{caption/prepare}, executed by \cs{@caption} for every caption
++  once \cs{@currentlabel} is set;
++\item the sockets \texttt{caption/step} (stepping the counter and making
++  the link target) and \texttt{caption/listentry} (the entry in the list
++  of figures, tables, etc.);
++\item \cs{@kernel@caption}, a copy of the kernel \cs{caption}, for code
++  that keeps its own \cs{caption} and passes \cs{caption*} to the
++  kernel (it is also the test whether the interface is there);
++% request for comments (caption/typeset, \@kernel@@caption):
++\item the socket \texttt{caption/typeset}, and the copy
++  \cs{@kernel@@caption} of the kernel \cs{@caption}, so that a package
++  that has always replaced \cs{caption} and \cs{@caption} can restore
++  both and use the hooks and sockets instead.
++\end{itemize}
++With the default plugs the output does not change. A caption whose
++counter is not stepped (for example the caption of a continued float)
++gets the target of its float or a target with a unique name, never a
++second target with the name of the previous caption. The interface is
++described in \texttt{ltfloat.dtx}.
++
++
++
+ \section{Code improvements}
+ 
+ \subsection{Support for \cs{UseName} in template key bindings}
+@@ -848,6 +936,15 @@ request was made. This has now been corrected.
+ 
+ 
+ 
++% caption interface (\caption outside a float)
++\subsection{\cs{caption} outside a float}
++
++\cs{caption} outside a float gives an error, but its optional and
++mandatory arguments were then typeset as ordinary text. They are now
++skipped, together with a star.
++
++
++
+ \section{First aids}
+ 
+ \subsection{Fix \cls{amsbook} running headers}
+@@ -876,6 +973,18 @@ the long run the proper fix belongs in \pkg{subcaption} itself.
+ 
+ 
+ 
++% caption interface (float first aid)
++\subsection{\cs{caption*} with the \pkg{float} package}
++
++The \pkg{float} package replaces \cs{caption} by a definition that does
++not know the star form, so \verb|\caption*{Text}| gave a numbered caption
++with the text `*' and a list entry. As \pkg{float} is no longer
++maintained, \pkg{latex-firstaid} now lets \cs{caption*} use the kernel
++definition when \pkg{float} is loaded. Floats restyled by \pkg{float}
++keep the layout of their style.
++
++
++
+ \section{Changes to packages in the \pkg{amsmath} category}
+ 
+ \subsection{Drop special handling for \LuaTeX\ in \cs{genfrac}}
+diff --git a/base/doc/usrguide.tex b/base/doc/usrguide.tex
+index 7b4f351b1..05c0773b3 100644
+--- a/base/doc/usrguide.tex
++++ b/base/doc/usrguide.tex
+@@ -44,7 +44,7 @@
+     \texttt{usrguide.tex} for full details.}%
+ }
+ 
+-\date{2026-09-07}
++\date{2026-10-06}
+ 
+ \NewDocumentCommand\cs{m}{\texttt{\textbackslash\detokenize{#1}}}
+ \NewDocumentCommand\marg{m}{\arg{#1}}
+@@ -1524,6 +1524,33 @@ respectively
+ \end{itemize}
+ The naming here follows the pattern established by OpenType math parameters.
+ 
++% Publish this section only together with support in hyperref (hyperref
++% should not replace \caption on kernels with the caption interface,
++% i.e., \hyper@nopatch@caption when \@kernel@caption is defined). Until
++% then \caption* gives the old output with hyperref without
++% \DocumentMetadata, the most common setup.
++\section{Captions without a number}
++
++\begin{decl}
++  |\caption*| \oarg{opt} \arg{text}
++\end{decl}
++Where \cs{caption} can be used (inside a float, for example), \cs{caption*}
++typesets \meta{text} as a caption without a label: the counter of the float
++is not stepped, nothing is written to the list of figures, tables, etc., and
++no link target is made. There is nothing for a \cs{label} to refer to, so do
++not use \cs{label} after \cs{caption*} (as after \cs{section*}, it would
++record whatever was set last). The optional argument is accepted for symmetry with
++\cs{caption}; the kernel does not use it, but packages may.
++
++The caption has the layout of the document class. The standard classes and
++many others omit the label and its separator (a colon or a period). A class
++or package that defines the separator in another way and has not yet been
++updated for \cs{caption*} prints it before the text; in most cases \LaTeX{}
++then warns once. Classes and packages that replace \cs{caption} itself may
++not support the star form yet: with them \verb|\caption*{Text}| gives, as
++before, a numbered caption with the text `*' and a list entry, followed by
++`Text'.
++
+ \section{Support for problem solving}
+ 
+ \begin{decl}
+-- 
+2.50.1 (Apple Git-155)
+

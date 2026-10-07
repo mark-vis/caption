@@ -1,0 +1,1570 @@
+From 2edb486e21159db5333e2a0763ca901c7bb096b9 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Tue, 6 Oct 2026 19:24:18 +0200
+Subject: [PATCH 09/14] latex-lab: float target \@floatHref@<type>
+
+latex-lab-float gave some captions in tagged floats a link target that
+is never made, because its plug of caption/step rebuilt the name from
+\@captype and \@current@float@struct when the caption was stepped:
+
+- after \tagpdfsetup{float/split} the target of the split is
+  floatstructure.<n>, but the caption used <type>.struct.<n> with the
+  new number ("name{figure.struct.<n>} has been referenced but does not
+  exist");
+- a table caption inside a figure (\def\@captype{table}) used
+  table.struct.<n>, which does not exist either.
+
+The float code now stores the target in \@floatHref@<type>, locally
+inside the float box: at the start of the float (\@currentHref after
+\MakeLinkTarget*, so a renaming by target/setname/after is respected;
+before the hook float/begin) and after float/split. The kernel plug of
+caption/step already uses it, so the plug latex-lab is removed. As the
+type is part of the name, a table caption inside a figure gets a target
+of its own (table.1), and so does a caption outside of floats, where the
+name is undefined. \@floatHref@<type> is documented as the float target
+that other code (e.g., the caption package) may read.
+
+The structure-name helper also falls back to float/generic when
+\@captype is undefined (\@makecaption used outside of floats by
+packages gave an undefined control sequence).
+
+Tests: new latex-lab float-023 (targets at the float start, after
+float/split, table caption in a figure, \caption* in a float, captions
+outside of floats, continued captions in and outside of floats,
+\@makecaption with \@captype undefined); float-004 (a caption after
+float/split) now links to floatstructure.<n>.
+---
+ required/latex-lab/changes.txt                |   8 +
+ required/latex-lab/latex-lab-float.dtx        |  83 ++-
+ .../testfiles-float/float-004.luatex.tlg      |   6 +-
+ .../latex-lab/testfiles-float/float-004.tlg   |   6 +-
+ .../float-023-caption-target.luatex.tlg       | 597 +++++++++++++++++
+ .../float-023-caption-target.lvt              |  66 ++
+ .../float-023-caption-target.tlg              | 623 ++++++++++++++++++
+ 7 files changed, 1349 insertions(+), 40 deletions(-)
+ create mode 100644 required/latex-lab/testfiles-float/float-023-caption-target.luatex.tlg
+ create mode 100644 required/latex-lab/testfiles-float/float-023-caption-target.lvt
+ create mode 100644 required/latex-lab/testfiles-float/float-023-caption-target.tlg
+
+diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
+index a9cb1116e..5924d4012 100644
+--- a/required/latex-lab/changes.txt
++++ b/required/latex-lab/changes.txt
+@@ -1,5 +1,13 @@
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* latex-lab-float.dtx:
++	Store the float target in \@floatHref@<type> at the float start and
++	in float/split, and remove the plug latex-lab of caption/step (the
++	kernel plug uses the float target): a caption after float/split used
++	a target that is never made, a table caption inside a figure the
++	target table.struct.<n>, which does not exist either; generic
++	structure names also if \@captype is undefined
++
+ 	* latex-lab-float.dtx:
+ 	No longer redefine \caption: a plug of the kernel socket
+ 	caption/step gives captions in floats the target at the start of the
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index 3eef25ce5..c541c7618 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -107,8 +107,8 @@
+ % \pkg{hyperref} doesn't patch the caption commands anymore if \cs{DocumentMetadata} is used.
+ % The code here has to add a target for links. To improve the linking behavior,
+ % it add this target at the begin of the float (and at the begin of split if the float is split)
+-% and uses a plug of the kernel socket \texttt{caption/step}, so that a link to a
+-% caption label will go to this target.
++% and stores its name in \cs{@floatHref@}\meta{type}, so that the kernel \cs{caption}
++% uses it and a link to a caption label will go to this target.
+ %
+ % \section{Keys}
+ %
+@@ -180,6 +180,22 @@
+ % caption).
+ % \end{function}
+ %
++% \begin{function}{\@floatHref@<type>}
++% \changes{0.81q}{2026-10-06}{Document the float target}
++% If \cs{@floatHref@}\meta{type} is defined, not \cs{relax} and not empty,
++% it holds the link target of the current float of type \meta{type}. The code
++% sets it locally inside the float box, right after the target is made:
++% to \meta{type}\texttt{.struct.}\meta{n} at the start of the float and to
++% \texttt{floatstructure.}\meta{n} after \texttt{float/split}. The kernel
++% never sets it; the default plug of the
++% socket \texttt{caption/step} uses it as the target of the caption. As the name
++% contains the type, a \texttt{table} caption inside a \texttt{figure} and the step
++% of a sub-caption counter (e.g., \texttt{subfigure}) do not use the target of the
++% figure. Other code that needs the float target (e.g., the \pkg{caption} package)
++% should read it in the same way (with \cs{@ifundefined}, not only with
++% \cs{csname}, which would make an undefined name \cs{relax}).
++% \end{function}
++%
+ % \begin{function}{\@makecaption}
+ % \cs{@makecaption} is defined by the classes so we overwrite it for now
+ % at begin document.
+@@ -419,6 +435,14 @@
+       \@@_float_init:
+       \UseTaggingSocket{float/begin}
+       \MakeLinkTarget*{floatstructure.\@current@float@struct}
++%    \end{macrocode}
++% \changes{0.81q}{2026-10-06}{Set the float target \cs{@floatHref@}\meta{type}:
++%   a caption after the split used a target that does not exist}
++% The following captions use the new target (before, they used
++% \meta{type}\texttt{.struct.}\meta{n} with the new number, a target that
++% is never made).
++%    \begin{macrocode}
++      \cs_set_eq:cN { @floatHref@ \@captype } \@currentHref
+     }
+  }
+ %    \end{macrocode}
+@@ -625,6 +649,13 @@
+ %    \begin{macrocode}
+         \MakeLinkTarget*{\@captype.struct.\@current@float@struct}%
+ %    \end{macrocode}
++% \changes{0.81q}{2026-10-06}{Set the float target \cs{@floatHref@}\meta{type}}
++% Its name is stored for the captions of the float (\cs{@currentHref} and not the
++% literal name, so that a renaming by \texttt{target/setname/after} is respected).
++% This is done before the hook \hook{float/begin}, so that code in the hook sees it.
++%    \begin{macrocode}
++        \expandafter\let\csname @floatHref@\@captype\endcsname\@currentHref
++%    \end{macrocode}
+ % \changes{0.81q}{2026-10-06}{Execute the kernel hook \texttt{float/begin}}
+ % Then the kernel hook \hook{float/begin}, so that code in the hook
+ % is inside the float structure and after the link target.
+@@ -720,12 +751,19 @@
+ % \texttt{float/generic} structure in \cs{@@_float_begin:}, so their caption
+ % and label use \texttt{float/generic/caption} and \texttt{float/generic/label}.
+ % Before, \cs{UseStructureName} gave an undefined control sequence here.
++% \changes{0.81q}{2026-10-06}{Generic names also if \cs{@captype} is undefined}
++% The generic names are also used if \cs{@captype} is undefined, e.g., for
++% captions outside of floats made by packages.
+ %    \begin{macrocode}
+ \cs_new:Npn \@@_float_name:n #1
+   {
+     float/
+-    \cs_if_exist:cTF { l_@@_name_float/\@captype/#1_tl }
+-      { \@captype } { generic }
++    \cs_if_exist:NTF \@captype
++      {
++        \cs_if_exist:cTF { l_@@_name_float/\@captype/#1_tl }
++          { \@captype } { generic }
++      }
++      { generic }
+     /#1
+   }
+ %    \end{macrocode}
+@@ -812,38 +850,15 @@
+ %
+ % \subsubsection{Stepping the counter}
+ %
+-% \changes{0.81q}{2026-10-06}{Use the kernel socket \texttt{caption/step}
+-%   instead of redefining \cs{caption}}
++% \changes{0.81q}{2026-10-06}{No plug for the kernel socket \texttt{caption/step}
++%   and no redefinition of \cs{caption}: the kernel plug uses the float target}
+ % With hyperref the \cs{refstepcounter} now can affect spacing, so the caption
+ % should not make a new target inside a float but use the target at the
+-% begin of the float. The kernel \cs{caption} steps the counter through the
+-% socket \texttt{caption/step}, so we only need a plug and no longer redefine
+-% \cs{caption}. It is a normal socket and not a tagging socket, because the
+-% float target is also used if tagging is not active.
+-% \begin{plugdecl}{latex-lab (caption/step)}
+-% If a caption is used outside a float no
+-% target has been set and \cs{@current@float@struct} is empty, so the
+-% kernel plug makes a target as \cs{refstepcounter} does. Otherwise the
+-% caption uses the target at the begin of the float (we use \cs{@captype}
+-% to support autoref): the plug stores its name, locally, as the float
+-% target \cs{@floatHref@}\meta{type} that the kernel plug uses, and then
+-% uses the kernel plug. This is only done for the counter of the float
+-% type (\cs{@captype}), as the redefinition of \cs{caption} did before;
+-% other code that uses the socket for another counter (e.g., for a
+-% sub-caption) gets the kernel plug.
+-%    \begin{macrocode}
+-\NewSocketPlug{caption/step}{latex-lab}
+-  {
+-    \tl_if_empty:NF \@current@float@struct
+-      {
+-        \str_if_eq:eeT { #1 } { \cs_if_exist_use:N \@captype }
+-          { \cs_set_nopar:cpe { @floatHref@ #1 } { \@captype.struct.\@current@float@struct } }
+-      }
+-    \@kernel@caption@step {#1}
+-  }
+-\AssignSocketPlug{caption/step}{latex-lab}
+-%    \end{macrocode}
+-% \end{plugdecl}
++% begin of the float. The default plug of the kernel socket \texttt{caption/step}
++% uses \cs{@floatHref@}\meta{type}, which we set at the start of the float and in
++% \texttt{float/split}, so neither a plug nor a redefinition of \cs{caption} is
++% needed. Outside of floats the name is undefined,
++% and the caption makes its own target as with \cs{refstepcounter}.
+ %
+ % \begin{macro}{\@makecaption}
+ % \cs{@makecaption} is defined by the classes so we overwrite it for now
+diff --git a/required/latex-lab/testfiles-float/float-004.luatex.tlg b/required/latex-lab/testfiles-float/float-004.luatex.tlg
+index f5a51e4a4..50da6fc4d 100644
+--- a/required/latex-lab/testfiles-float/float-004.luatex.tlg
++++ b/required/latex-lab/testfiles-float/float-004.luatex.tlg
+@@ -874,7 +874,7 @@ Completed box being shipped out [1]
+ .....\glue(\spaceskip) 0.00333 plus 1.66666 minus 1.11111
+ .....\pdfliteral page <lua data reference ...>
+ .....\pdfliteral page <lua data reference ...>
+-.....\pdfstartlink(*+*)x* attr{/Border [0 0 1] /H /I /C [0.701176 0.4 0.414118]  /LTEX_position /isolated/StructParent 4} action struct name{figure.struct.39} goto name{figure.struct.39}
++.....\pdfstartlink(*+*)x* attr{/Border [0 0 1] /H /I /C [0.701176 0.4 0.414118]  /LTEX_position /isolated/StructParent 4} action struct name{floatstructure.39} goto name{floatstructure.39}
+ .....\OT1/cmr/m/n/10 3
+ .....\pdfendlink
+ .....\pdfliteral page <lua data reference ...>
+@@ -1725,7 +1725,7 @@ Completed box being shipped out [2]
+ .......\glue(\rightskip) 0.0
+ ......\pdfliteral page <lua data reference ...>
+ ......\pdfliteral page <lua data reference ...>
+-......\write1{\@writefile{lof}{\protect \contentsline {figure}{\protect \numberline {3}{\ignorespaces The second page from the PDF}}{\thepage }{figure.struct.39}\protected@file@percent }}
++......\write1{\@writefile{lof}{\protect \contentsline {figure}{\protect \numberline {3}{\ignorespaces The second page from the PDF}}{\thepage }{floatstructure.39}\protected@file@percent }}
+ ......\glue 10.0
+ ......\glue(\baselineskip) 5.05556
+ ......\hbox(6.94444+1.94444)x345.0, glue set 81.61096fil, direction TLT
+@@ -1788,7 +1788,7 @@ Completed box being shipped out [2]
+ ......\glue 0.0
+ ......\pdfliteral page <lua data reference ...>
+ ......\pdfliteral page <lua data reference ...>
+-......\write1{\newlabel{d}{{3}{\thepage }{Introduction}{figure.struct.39}{}}}
++......\write1{\newlabel{d}{{3}{\thepage }{Introduction}{floatstructure.39}{}}}
+ ......\glue 0.0
+ ....\glue 0.0 plus 1.0fil
+ ...\pdflinkstate 1
+diff --git a/required/latex-lab/testfiles-float/float-004.tlg b/required/latex-lab/testfiles-float/float-004.tlg
+index d8273be01..a9d551af3 100644
+--- a/required/latex-lab/testfiles-float/float-004.tlg
++++ b/required/latex-lab/testfiles-float/float-004.tlg
+@@ -823,7 +823,7 @@ Completed box being shipped out [1]
+ .....\pdfliteral page{EMC}
+ .....\write1{\new@label@record{mcid-9}{{tagabspage}{\__property_code_tagabspage: }{tagmcabs}{9}{tagmcid}{\__property_code_tagmcid: }}}
+ .....\pdfliteral shipout page{/Link <</MCID \flag_height:n {__tag/mcid}\flag_raise:n {__tag/mcid} >> BDC}
+-.....\pdfstartlink(*+*)x* attr{/Border [0 0 1] /H /I /C [0.701176 0.4 0.414118] /StructParent 4 } action goto name{figure.struct.38}
++.....\pdfstartlink(*+*)x* attr{/Border [0 0 1] /H /I /C [0.701176 0.4 0.414118] /StructParent 4 } action goto name{floatstructure.38}
+ .....\T1/cmr/m/n/10 3
+ .....\pdfendlink
+ .....\write1{\new@label@record{@tag@objr@page@4}{{tagabspage}{\__property_code_tagabspage: }}}
+@@ -1601,7 +1601,7 @@ Completed box being shipped out [2]
+ ......\marks4{b+,30,40,text-block,,,}
+ ......\marks4{e-,30,40,}
+ ......\marks4{e+,30,40,}
+-......\write1{\@writefile{lof}{\protect \contentsline {figure}{\protect \numberline {3}{\ignorespaces The second page from the PDF}}{\thepage }{figure.struct.38}\protected@file@percent }}
++......\write1{\@writefile{lof}{\protect \contentsline {figure}{\protect \numberline {3}{\ignorespaces The second page from the PDF}}{\thepage }{floatstructure.38}\protected@file@percent }}
+ ......\glue 10.0
+ ......\glue(\baselineskip) 5.1128
+ ......\hbox(6.8872+1.94397)x345.0, glue set 81.6333fil
+@@ -1661,7 +1661,7 @@ Completed box being shipped out [2]
+ ......\marks4{e-,32,44,}
+ ......\marks4{e+,32,44,}
+ ......\glue 0.0
+-......\write1{\newlabel{d}{{3}{\thepage }{Introduction}{figure.struct.38}{}}}
++......\write1{\newlabel{d}{{3}{\thepage }{Introduction}{floatstructure.38}{}}}
+ ......\glue 0.0
+ ....\glue 0.0 plus 1.0fil
+ ...\pdfrunninglinkoff
+diff --git a/required/latex-lab/testfiles-float/float-023-caption-target.luatex.tlg b/required/latex-lab/testfiles-float/float-023-caption-target.luatex.tlg
+new file mode 100644
+index 000000000..3f76b36ed
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-023-caption-target.luatex.tlg
+@@ -0,0 +1,597 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++(float-023-caption-target.lof)
++\tf@lof=\write...
++Floatstructure:37
++figure: target=figure.struct.37, float target=figure.struct.37
++Floatstructure:43
++figure: target=figure.struct.43, float target=figure.struct.43
++Floatstructure:49
++figure: target=floatstructure.49, float target=floatstructure.49
++Floatstructure:55
++table: target=table.1, float target=(none)
++figure: target=figure.struct.55, float target=figure.struct.55
++figure: target=figure.struct.55, float target=figure.struct.55
++figure: target=figure.5, float target=(none)
++figure: target=figure.5*1, float target=(none)
++Floatstructure:80
++figure: target=figure.struct.80, float target=figure.struct.80
++LaTeX Warning: `h' float specifier changed to `ht'.
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-023-caption-target.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <section xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.006"
++      rolemaps-to="Sect"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.096"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.097"
++       >
++      <?MarkedContent page="1" ?>Label: 
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.098"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>No float type
++     </text-block>
++    </Caption>
++    <section-heading xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.007"
++       title="List of Figures"
++       rolemaps-to="H1"
++      >
++     <?MarkedContent page="1" ?>List of Figures
++    </section-heading>
++    <TOC xmlns="http://iso.org/pdf/ssn"
++       id="ID.008"
++       title="lof"
++      >
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.009"
++        title="First"
++       >
++       <?References objects="1" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.010"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.011"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.012"
++          >
++         <?MarkedContent page="1" ?>1
++        </Lbl>
++        <?MarkedContent page="1" ?>First
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.013"
++        title="Before the split"
++       >
++       <?References objects="2" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.014"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.015"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.016"
++          >
++         <?MarkedContent page="1" ?>2
++        </Lbl>
++        <?MarkedContent page="1" ?>Before the split
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.017"
++        title="After the split"
++       >
++       <?References objects="3" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.018"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.019"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.020"
++          >
++         <?MarkedContent page="1" ?>3
++        </Lbl>
++        <?MarkedContent page="1" ?>After the split
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.021"
++        title="Figure after it"
++       >
++       <?References objects="4" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.022"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.023"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.024"
++          >
++         <?MarkedContent page="1" ?>4
++        </Lbl>
++        <?MarkedContent page="1" ?>Figure after it
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.025"
++        title="Outside of floats"
++       >
++       <?References objects="5" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.026"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.027"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.028"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>Outside of floats
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.029"
++        title="Outside of floats, continued"
++       >
++       <?References objects="6" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.030"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.031"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.032"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>Outside of floats, continued
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.033"
++        title="In a float, continued"
++       >
++       <?References objects="7" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.034"
++        >
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.035"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.036"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>In a float, continued
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>2
++      </Reference>
++     </TOCI>
++    </TOC>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.066"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.067"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++     </text-block>
++     <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.068"
++        rolemaps-to="Div"
++        referenced-as="5"
++       >
++      <Caption xmlns="http://iso.org/pdf2/ssn"
++         id="ID.069"
++        >
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.070"
++         >
++        <?MarkedContent page="1" ?>Figure 5: 
++       </Lbl>
++       <text-block xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.071"
++          xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++          Layout:TextAlign="Justify"
++          rolemaps-to="P"
++         >
++        <?MarkedContent page="1" ?>Outside of floats
++       </text-block>
++      </Caption>
++     </text-minipage>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.072"
++        rolemaps-to="P"
++       >
++     </text-block>
++    </semantic-para>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.073"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.074"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++     </text-block>
++     <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.075"
++        rolemaps-to="Div"
++        referenced-as="6"
++       >
++      <Caption xmlns="http://iso.org/pdf2/ssn"
++         id="ID.076"
++        >
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.077"
++         >
++        <?MarkedContent page="1" ?>Figure 5: 
++       </Lbl>
++       <text-block xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.078"
++          xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++          Layout:TextAlign="Justify"
++          rolemaps-to="P"
++         >
++        <?MarkedContent page="1" ?>Outside of floats, continued
++       </text-block>
++      </Caption>
++     </text-minipage>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.079"
++        rolemaps-to="P"
++       >
++     </text-block>
++    </semantic-para>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.086"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.087"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>Refs 
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.088"
++        >
++       <?MarkedContent page="1" ?>1
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.089"
++        >
++       <?MarkedContent page="1" ?>2
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.090"
++        >
++       <?MarkedContent page="1" ?>3
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.091"
++        >
++       <?MarkedContent page="1" ?>1
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.092"
++        >
++       <?MarkedContent page="1" ?>4
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.093"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.094"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.095"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>.
++     </text-block>
++    </semantic-para>
++   </section>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.037"
++       rolemaps-to="Aside"
++       referenced-as="1"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.040"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.041"
++        >
++       <?MarkedContent page="1" ?>Figure 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.042"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>First
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.038"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.039"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>X
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.043"
++       rolemaps-to="Aside"
++       referenced-as="2"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.046"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.047"
++        >
++       <?MarkedContent page="1" ?>Figure 2: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.048"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Before the split
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.044"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.045"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Y
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.049"
++       rolemaps-to="Aside"
++       referenced-as="3"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.052"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.053"
++        >
++       <?MarkedContent page="1" ?>Figure 3: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.054"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>After the split
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.050"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.051"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Z
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.055"
++       rolemaps-to="Aside"
++       referenced-as="4"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.064"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.065"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Starred
++      </text-block>
++     </Caption>
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.061"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.062"
++        >
++       <?MarkedContent page="1" ?>Figure 4: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.063"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Figure after it
++      </text-block>
++     </Caption>
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.058"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.059"
++        >
++       <?MarkedContent page="1" ?>Table 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.060"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Table in a figure
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.056"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.057"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>W 
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.080"
++       rolemaps-to="Aside"
++       referenced-as="7"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.083"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.084"
++        >
++       <?MarkedContent page="2" ?>Figure 5: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.085"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>In a float, continued
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.081"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.082"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>V
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-023-caption-target.xml (end) ---------
++============================================================
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-023-caption-target.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~98 structure objects
++(tagpdf)             with ~100 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-023-caption-target.lvt b/required/latex-lab/testfiles-float/float-023-caption-target.lvt
+new file mode 100644
+index 000000000..1489dbfde
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-023-caption-target.lvt
+@@ -0,0 +1,66 @@
++% The float target \@floatHref@<type> used by the kernel
++% plug of caption/step (tagging and hyperref): figure captions use the
++% target at the start of the float, captions after float/split the new
++% target (before, they used a target that is never made), a table caption
++% inside a figure (before: table.struct.<n>, which is never made either)
++% and a caption outside of floats get targets of their own.
++% A caption that does not step the counter (continued float) uses the
++% float target inside a float and a target with a unique name outside
++% of floats, never a second target with the name of the last stepped
++% caption.
++% \@makecaption with \@captype undefined (as packages use it outside of
++% floats) uses the generic structure names (before: undefined control
++% sequence).
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\usepackage{hyperref}
++\makeatletter
++\newcommand\captionof[1]{\def\@captype{#1}\caption}
++\newcommand\showtarget{\typeout{\@captype: target=\@currentHref,
++  float target=\ifcsname @floatHref@\@captype\endcsname
++     \csname @floatHref@\@captype\endcsname\else(none)\fi}}
++\newif\ifcontinued
++\AddToHookWithArguments{caption/before}{\ifcontinued\@captionstepfalse\fi}
++\newcommand\nocaptype{\begingroup\let\@captype\@undefined
++  \@makecaption{Label}{No float type}\endgroup}
++\makeatother
++\begin{document}
++\START
++\listoffigures
++\begin{figure}[h]
++  \centering X
++  \caption{First}\label{a}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \centering Y
++  \caption{Before the split}\label{b1}\showtarget
++  \tagpdfsetup{float/split}
++  Z
++  \caption{After the split}\label{b2}\showtarget
++\end{figure}
++\begin{figure}[h]
++  \centering W
++  \captionof{table}{Table in a figure}\label{t}\showtarget
++  \captionof{figure}{Figure after it}\label{c}\showtarget
++  \caption*{Starred}\showtarget
++\end{figure}
++\begin{minipage}{4cm}
++  \captionof{figure}{Outside of floats}\label{o}\showtarget
++\end{minipage}
++
++\noindent\begin{minipage}{8cm}
++  \continuedtrue
++  \captionof{figure}{Outside of floats, continued}\label{oc}\showtarget
++\end{minipage}
++\begin{figure}[h]
++  \continuedtrue
++  \centering V
++  \caption{In a float, continued}\label{fc}\showtarget
++\end{figure}
++
++Refs \ref{a} \ref{b1} \ref{b2} \ref{t} \ref{c} \ref{o} \ref{oc} \ref{fc}.
++
++\nocaptype
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-023-caption-target.tlg b/required/latex-lab/testfiles-float/float-023-caption-target.tlg
+new file mode 100644
+index 000000000..768eef587
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-023-caption-target.tlg
+@@ -0,0 +1,623 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++(float-023-caption-target.lof)
++\tf@lof=\write...
++Floatstructure:36
++figure: target=figure.struct.36, float target=figure.struct.36
++Floatstructure:42
++figure: target=figure.struct.42, float target=figure.struct.42
++Floatstructure:48
++figure: target=floatstructure.48, float target=floatstructure.48
++Floatstructure:54
++table: target=table.1, float target=(none)
++figure: target=figure.struct.54, float target=figure.struct.54
++figure: target=figure.struct.54, float target=figure.struct.54
++figure: target=figure.5, float target=(none)
++figure: target=figure.5*1, float target=(none)
++Floatstructure:79
++figure: target=figure.struct.79, float target=figure.struct.79
++LaTeX Warning: `h' float specifier changed to `ht'.
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-023-caption-target.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <section xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.005"
++      rolemaps-to="Sect"
++     >
++    <Caption xmlns="http://iso.org/pdf2/ssn"
++       id="ID.095"
++      >
++     <Lbl xmlns="http://iso.org/pdf2/ssn"
++        id="ID.096"
++       >
++      <?MarkedContent page="1" ?>Label:
++     </Lbl>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.097"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>No float type
++     </text-block>
++    </Caption>
++    <section-heading xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       title="List of Figures"
++       rolemaps-to="H1"
++      >
++     <?MarkedContent page="1" ?>List of Figures
++    </section-heading>
++    <TOC xmlns="http://iso.org/pdf/ssn"
++       id="ID.007"
++       title="lof"
++      >
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.008"
++        title="First"
++       >
++       <?References objects="1" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.009"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.010"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.011"
++          >
++         <?MarkedContent page="1" ?>1
++        </Lbl>
++        <?MarkedContent page="1" ?>First
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.012"
++        title="Before the split"
++       >
++       <?References objects="2" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.014"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.015"
++          >
++         <?MarkedContent page="1" ?>2
++        </Lbl>
++        <?MarkedContent page="1" ?>Before the split
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.016"
++        title="After the split"
++       >
++       <?References objects="3" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.017"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.018"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.019"
++          >
++         <?MarkedContent page="1" ?>3
++        </Lbl>
++        <?MarkedContent page="1" ?>After the split
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.020"
++        title="Figure after it"
++       >
++       <?References objects="4" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.021"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.022"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.023"
++          >
++         <?MarkedContent page="1" ?>4
++        </Lbl>
++        <?MarkedContent page="1" ?>Figure after it
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.024"
++        title="Outside of floats"
++       >
++       <?References objects="5" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.025"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.026"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.027"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>Outside of floats
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.028"
++        title="Outside of floats, continued"
++       >
++       <?References objects="6" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.029"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.030"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.031"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>Outside of floats, continued
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>1
++      </Reference>
++     </TOCI>
++     <TOCI xmlns="http://iso.org/pdf/ssn"
++        id="ID.032"
++        title="In a float, continued"
++       >
++       <?References objects="7" ?>
++      <Reference xmlns="http://iso.org/pdf/ssn"
++         id="ID.033"
++        >
++       <?MarkedContent page="1" ?>
++       <Link xmlns="http://iso.org/pdf2/ssn"
++          id="ID.034"
++         >
++        <?MarkedContent page="1" ?>
++        <Lbl xmlns="http://iso.org/pdf2/ssn"
++           id="ID.035"
++          >
++         <?MarkedContent page="1" ?>5
++        </Lbl>
++        <?MarkedContent page="1" ?>In a float, continued
++        <?ReferencedObject type="Annot" page="1" ?>
++       </Link>
++       <?MarkedContent page="1" ?>
++       <?MarkedContent page="1" ?>2
++      </Reference>
++     </TOCI>
++    </TOC>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.065"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.066"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>
++     </text-block>
++     <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.067"
++        rolemaps-to="Div"
++        referenced-as="5"
++       >
++      <Caption xmlns="http://iso.org/pdf2/ssn"
++         id="ID.068"
++        >
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.069"
++         >
++        <?MarkedContent page="1" ?>Figure 5:
++       </Lbl>
++       <text-block xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.070"
++          xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++          Layout:TextAlign="Justify"
++          rolemaps-to="P"
++         >
++        <?MarkedContent page="1" ?>Outside of floats
++       </text-block>
++      </Caption>
++     </text-minipage>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.071"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>
++     </text-block>
++    </semantic-para>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.072"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.073"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>
++     </text-block>
++     <text-minipage xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.074"
++        rolemaps-to="Div"
++        referenced-as="6"
++       >
++      <Caption xmlns="http://iso.org/pdf2/ssn"
++         id="ID.075"
++        >
++       <Lbl xmlns="http://iso.org/pdf2/ssn"
++          id="ID.076"
++         >
++        <?MarkedContent page="1" ?>Figure 5:
++       </Lbl>
++       <text-block xmlns="https://www.latex-project.org/ns/dflt"
++          id="ID.077"
++          xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++          Layout:TextAlign="Justify"
++          rolemaps-to="P"
++         >
++        <?MarkedContent page="1" ?>Outside of floats, continued
++       </text-block>
++      </Caption>
++     </text-minipage>
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.078"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>
++      <?MarkedContent page="1" ?>
++     </text-block>
++    </semantic-para>
++    <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.085"
++       rolemaps-to="Part"
++      >
++     <text-block xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.086"
++        xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++        Layout:TextAlign="Justify"
++        rolemaps-to="P"
++       >
++      <?MarkedContent page="1" ?>Refs
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.087"
++        >
++       <?MarkedContent page="1" ?>1
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.088"
++        >
++       <?MarkedContent page="1" ?>2
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.089"
++        >
++       <?MarkedContent page="1" ?>3
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.090"
++        >
++       <?MarkedContent page="1" ?>1
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.091"
++        >
++       <?MarkedContent page="1" ?>4
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.092"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.093"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>
++      <Link xmlns="http://iso.org/pdf2/ssn"
++         id="ID.094"
++        >
++       <?MarkedContent page="1" ?>5
++       <?ReferencedObject type="Annot" page="1" ?>
++      </Link>
++      <?MarkedContent page="1" ?>.
++     </text-block>
++    </semantic-para>
++   </section>
++   <figures xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.003"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.036"
++       rolemaps-to="Aside"
++       referenced-as="1"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.039"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.040"
++        >
++       <?MarkedContent page="1" ?>Figure 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.041"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>First
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.037"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.038"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>X
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.042"
++       rolemaps-to="Aside"
++       referenced-as="2"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.045"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.046"
++        >
++       <?MarkedContent page="1" ?>Figure 2:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.047"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Before the split
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.043"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.044"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Y
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.048"
++       rolemaps-to="Aside"
++       referenced-as="3"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.051"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.052"
++        >
++       <?MarkedContent page="1" ?>Figure 3:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.053"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>After the split
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.049"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.050"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Z
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.054"
++       rolemaps-to="Aside"
++       referenced-as="4"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.063"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.064"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Starred
++      </text-block>
++     </Caption>
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.060"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.061"
++        >
++       <?MarkedContent page="1" ?>Figure 4:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.062"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Figure after it
++      </text-block>
++     </Caption>
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.057"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.058"
++        >
++       <?MarkedContent page="1" ?>Table 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.059"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Table in a figure
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.055"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.056"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>W
++      </text-block>
++     </semantic-para>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.079"
++       rolemaps-to="Aside"
++       referenced-as="7"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.082"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.083"
++        >
++       <?MarkedContent page="2" ?>Figure 5:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.084"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>In a float, continued
++      </text-block>
++     </Caption>
++     <semantic-para xmlns="https://www.latex-project.org/ns/dflt"
++        id="ID.080"
++        rolemaps-to="Part"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.081"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="2" ?>V
++      </text-block>
++     </semantic-para>
++    </float>
++   </figures>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-023-caption-target.xml (end) ---------
++============================================================
++[1
++] [2]<<latex-list-css.html>><<latex-align-css.html>> (float-023-caption-target.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~97 structure objects
++(tagpdf)             with ~100 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+-- 
+2.50.1 (Apple Git-155)
+

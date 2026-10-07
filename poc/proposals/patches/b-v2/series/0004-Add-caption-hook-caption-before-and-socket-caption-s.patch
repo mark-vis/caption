@@ -1,0 +1,2960 @@
+From 07b5a8817d12ac5e12512bc608d33b24bda57159 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 05:38:52 +0200
+Subject: [PATCH 04/14] Add \caption*, hook caption/before and socket
+ caption/step
+
+\caption reads its star and arguments itself (no \@dblarg; an absent
+optional argument is \NoValue), starts with \@kernel@caption@reset and
+executes the new hook caption/before {type}{star}{opt}{text} at the
+group level of the float, before the counter is stepped. The step goes
+through the new socket caption/step {counter} (plug kernel =
+\@kernel@caption@step), controlled by the switches \if@captionstep and
+\if@captiontarget, which code in caption/before can set false. A caption
+that does not step its counter uses the float target \@floatHref@<type>
+if there is one and otherwise makes no target, because a target named
+after the unchanged counter would duplicate the one of the last stepped
+caption (the next commit gives such captions a target with a unique
+name).
+
+\caption*: no step, no target, no list entry; \@makecaption gets the
+label \@caption@nolabel while \if@captionstar is true. The label
+typesets nothing; a \@makecaption that supports \caption* tests the
+switch and omits the label and its separator. The standard classes do
+not test it, so with this commit alone \caption*{Text} gives ": Text"
+there (a later commit removes the usual separators after the label).
+\@kernel@caption@reset sets the switches to their state outside of a
+caption. Documentation in ltfloat and clsguide.
+
+\@caption is interim code with its own release block ("caption body"):
+it writes the list entry with \addcontentsline (not for \caption*),
+typesets with \@kernel@caption@typeset and ends with
+\@kernel@caption@reset. Later commits replace the list entry and the
+typesetting by sockets.
+
+\@kernel@caption is a copy of \caption, in a release block of its own
+("caption interface copies"). Like \@kernel@caption@reset it is
+undefined after a roll-back, so \ifdefined\@kernel@caption is the test
+for the interface, and code that keeps its own \caption (classic
+hyperref, the float first aid) can pass \caption* to it with
+\@ifstar{\@kernel@caption*}{...}.
+
+latex-lab-float no longer redefines \caption: its plug latex-lab of
+caption/step stores the target at the start of the float in
+\@floatHref@<type> for the counter of the float type and uses the
+kernel plug, which gives the targets of develop. \@makecaption supports
+\caption*: no label socket, and the plugs nolabel of the label tagging
+sockets, so that a wide \caption* gets one P (an empty label from
+another source, latex3/latex2e#2022, is handled with the caption/label
+contract later in the series).
+
+New tests caption-interface-001 (\caption*, hook, step, switches, float
+target, direct calls), -002 (roll-back: \@kernel@caption and
+\@kernel@caption@reset undefined) and latex-lab float-028 (wide
+\caption*). The roll-back and hook-list .tlg files list the new release
+blocks and the hook.
+---
+ base/changes.txt                              |  11 +
+ base/doc/clsguide.tex                         |  43 +-
+ base/ltfloat.dtx                              | 491 ++++++++++++++++--
+ base/testfiles-lthooks/ltcmdhooks-001.tlg     |   1 +
+ base/testfiles-lthooks/lthooks-000.tlg        |   1 +
+ base/testfiles-lthooks/lthooks-001.tlg        |   3 +
+ base/testfiles-lthooks/lthooks-002.tlg        |   3 +
+ base/testfiles-lthooks/lthooks-003.tlg        |   2 +
+ base/testfiles-lthooks/lthooks-004.tlg        |   2 +
+ base/testfiles-lthooks/lthooks-005.tlg        |   2 +
+ base/testfiles-lthooks/lthooks-006.tlg        |   2 +
+ base/testfiles-lthooks/lthooks-007.tlg        |   3 +
+ base/testfiles-lthooks/lthooks-008.tlg        |   2 +
+ base/testfiles-lthooks/lthooks-009.tlg        |   1 +
+ base/testfiles-lthooks/lthooks-011.tlg        |   4 +
+ base/testfiles-lthooks/lthooks-013.tlg        |   1 +
+ base/testfiles-lthooks/lthooks-021.tlg        |   1 +
+ base/testfiles-lthooks/lthooks-legacy.tlg     |   1 +
+ .../lthooks-rollback-args.tlg                 |   5 +
+ base/testfiles-lthooks2/lthooks2-002.tlg      |   1 +
+ base/testfiles-lthooks2/lthooks2-005.tlg      |   2 +
+ base/testfiles/caption-interface-001.lvt      | 255 +++++++++
+ base/testfiles/caption-interface-001.tlg      | 158 ++++++
+ base/testfiles/caption-interface-002.lvt      |  33 ++
+ base/testfiles/caption-interface-002.tlg      |  19 +
+ base/testfiles/github-0479-often.luatex.tlg   |   5 +
+ base/testfiles/github-0479-often.tlg          |   5 +
+ base/testfiles/github-0479-often.xetex.tlg    |   5 +
+ ...latexrelease-rollback-003-often.luatex.tlg |  10 +
+ .../tlb-latexrelease-rollback-003-often.tlg   |  10 +
+ ...-latexrelease-rollback-003-often.xetex.tlg |  10 +
+ .../tlb-latexrelease-rollback-004.luatex.tlg  |   5 +
+ .../tlb-latexrelease-rollback-004.tlg         |   5 +
+ .../tlb-latexrelease-rollback-004.xetex.tlg   |   5 +
+ ...atexrelease-rollback-2020-10-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2020-10-01.tlg  |   5 +
+ ...latexrelease-rollback-2020-10-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2021-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2021-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2021-06-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2021-11-15.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2021-11-15.tlg  |   5 +
+ ...latexrelease-rollback-2021-11-15.xetex.tlg |   5 +
+ ...atexrelease-rollback-2022-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2022-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2022-06-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2022-11-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2022-11-01.tlg  |   5 +
+ ...latexrelease-rollback-2022-11-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2023-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2023-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2023-06-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2023-11-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2023-11-01.tlg  |   5 +
+ ...latexrelease-rollback-2023-11-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2024-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2024-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2024-06-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2024-11-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2024-11-01.tlg  |   5 +
+ ...latexrelease-rollback-2024-11-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2025-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2025-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2025-06-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2025-11-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2025-11-01.tlg  |   5 +
+ ...latexrelease-rollback-2025-11-01.xetex.tlg |   5 +
+ ...atexrelease-rollback-2026-06-01.luatex.tlg |   5 +
+ .../tlb-latexrelease-rollback-2026-06-01.tlg  |   5 +
+ ...latexrelease-rollback-2026-06-01.xetex.tlg |   5 +
+ .../tlb-rollback-004-often.luatex.tlg         |   5 +
+ base/testfiles/tlb-rollback-004-often.tlg     |   5 +
+ .../tlb-rollback-004-often.xetex.tlg          |   5 +
+ base/testfiles/tlb-rollback-005.luatex.tlg    |   5 +
+ base/testfiles/tlb-rollback-005.tlg           |   5 +
+ base/testfiles/tlb-rollback-005.xetex.tlg     |   5 +
+ required/latex-lab/changes.txt                |   6 +
+ required/latex-lab/latex-lab-float.dtx        |  96 +++-
+ .../float-028-caption-star-wide.luatex.tlg    |  95 ++++
+ .../float-028-caption-star-wide.lvt           |  31 ++
+ .../float-028-caption-star-wide.tlg           |  95 ++++
+ 81 files changed, 1581 insertions(+), 59 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-001.lvt
+ create mode 100644 base/testfiles/caption-interface-001.tlg
+ create mode 100644 base/testfiles/caption-interface-002.lvt
+ create mode 100644 base/testfiles/caption-interface-002.tlg
+ create mode 100644 required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg
+ create mode 100644 required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt
+ create mode 100644 required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 45dc544e6..658bb62dc 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,17 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx, clsguide.tex:
++	Add \caption* and the first part of a caption interface: hook
++	caption/before, socket caption/step, switches \if@captionstep and
++	\if@captiontarget; \caption no longer uses \@dblarg. \caption* does
++	not step the counter, sets no target and writes no list entry; its
++	label \@caption@nolabel typesets nothing. A caption that does not
++	step its counter uses the float target, if there is one, and makes
++	no other target. \@kernel@caption is a copy of \caption (undefined
++	after a roll-back, so \ifdefined\@kernel@caption tests for the
++	interface)
++
+ 	* ltfloat.dtx:
+ 	\caption outside a float skips its star and arguments after the error
+ 
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index bf2acc5b4..df2668610 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -42,7 +42,7 @@
+     \texttt{clsguide.tex} for full details.}%
+ }
+ 
+-\date{2026-06-01}
++\date{2026-10-06}
+ 
+ \NewDocumentCommand\cs{m}{\texttt{\textbackslash\detokenize{#1}}}
+ \NewDocumentCommand\marg{m}{\arg{#1}}
+@@ -1517,6 +1517,47 @@ by \cs{refstepcounter}.
+ \end{decl}
+ This changes the name of the next target that will be created.
+ 
++\subsection{Captions and \cs{caption*}}
++
++\LaTeX{} provides \cs{caption*} for captions without a number. It uses
++the class's \cs{@makecaption}, and the kernel offers hooks and sockets
++so that classes and packages do not need to redefine
++\cs{caption} or \cs{@caption} (see the documentation of
++\texttt{ltfloat.dtx}). For classes this means:
++\begin{itemize}
++\item \cs{@makecaption}\arg{label}\arg{text} is also used for
++  \cs{caption*}. Then the switch \cs{if@captionstar} is true and
++  \meta{label} is \cs{@caption@nolabel}. This label is not empty (a test
++  for an empty label does not work), but it typesets nothing. A class
++  should omit the label \emph{and} the separator if the switch is true;
++  otherwise the separator is printed before the text (`: Text' with
++  \verb|#1: #2|, as in the standard classes). The switch is the only
++  test that classes should use, for example:
++\begin{verbatim}
++\sbox\@tempboxa{\if@captionstar\else#1\captionsep\fi#2}%
++\end{verbatim}
++  Test the switch directly (not with \cs{ifx} against \cs{iftrue}, which
++  would unbalance a conditional when the code is in a skipped branch). A
++  class that wants to work with older formats can provide the switch
++  first:
++\begin{verbatim}
++\@ifundefined{if@captionstar}{\newif\if@captionstar}{}
++\end{verbatim}
++\item A class that redefines \cs{@caption} (for example to change the
++  list entry or the spacing) should preferably use the hooks and sockets
++  of the caption interface instead, where they cover the change (see the
++  documentation of \texttt{ltfloat.dtx}). A redefinition that does not
++  test \cs{if@captionstar} gives \cs{caption*} the label and the list
++  entry of a numbered caption, with the number of the previous caption.
++\item A class or package that redefines \cs{caption} itself takes over
++  the star as well: unless it handles it (no counter step, no list entry,
++  \cs{@caption@nolabel} as label for \cs{@makecaption} with
++  \cs{if@captionstar} true),
++  \verb|\caption*{Text}| gives a numbered caption with the text `*' and a
++  list entry, followed by `Text'. It is better to keep the kernel
++  definition and to use the hooks and sockets.
++\end{itemize}
++
+ 
+ \subsection{Querying document command argument specifications}
+ 
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 63db60dd8..1924ad933 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -54,6 +54,8 @@
+ %</driver>
+ % \fi
+ %
++% \providecommand\hook[1]{\texttt{#1}}
++% \providecommand\plug[1]{\texttt{#1}}
+ %
+ % \section{Floats}
+ %
+@@ -229,7 +231,330 @@
+ %    \end{macrocode}
+ % \end{macro}
+ %
++% \paragraph{The caption interface.}
++%
++% \changes{v1.2k}{2026-10-06}{Caption interface: hook \texttt{caption/before},
++%    socket \texttt{caption/step}, switches \cs{if@captionstep} and
++%    \cs{if@captiontarget}}
++%    \cs{caption}\oarg{list text}\marg{text} and
++%    \cs{caption*}\oarg{opt}\marg{text} process a caption in the
++%    following steps (inside a float, \meta{type} is the expansion of
++%    \cs{@captype}, e.g., \texttt{figure}):
++%    \begin{enumerate}
++%    \item The generic hook \hook{cmd/caption/before} (as for every
++%      command; it is executed before anything else).
++%    \item Outside of a float an error is raised (as before).
++%    \item \cs{@kernel@caption@reset} sets the switches
++%      \cs{if@captionstar}, \cs{if@captionstep} and \cs{if@captiontarget}
++%      to their defaults. Then the star and the arguments are read. An
++%      absent optional argument is \cs{NoValue}.
++%    \item The hook \hook{caption/before} is executed.
++%    \item Unless \cs{caption*} was used: the socket \texttt{caption/step}
++%      steps the counter.
++%    \item \cs{@caption}\marg{type}\oarg{list text}\marg{text} is called
++%      (the list text is the optional argument, or the text if it was
++%      not given). It does a \cs{par}, writes the list entry (not for
++%      \cs{caption*}), typesets the caption with \cs{@makecaption} and
++%      resets the switches \cs{if@captionstar}, \cs{if@captionstep} and
++%      \cs{if@captiontarget} to their defaults.
++%    \end{enumerate}
++%    Code that calls \cs{@caption} directly (e.g., for sub-captions) gets
++%    what \cs{@caption} does; it can set \cs{@captionstartrue} before the
++%    call.
++%    Without additional code in the hooks and with the default plugs, the
++%    result is the same as with the definitions of \LaTeX{} before 2026,
++%    except that \cs{caption*} is available.
++%
++% \paragraph{\cs{caption*} with classes and packages.}
++%    What \cs{caption*} gives depends on the definitions that are active:
++%    \begin{itemize}
++%    \item With the kernel \cs{caption} and \cs{@caption} (also if a
++%      package wraps them and calls the kernel definitions, as
++%      \cls{memoir} and \pkg{nameref} do): no step, no target, no list
++%      entry, and \cs{@makecaption} is called with the label
++%      \cs{@caption@nolabel} while \cs{if@captionstar} is true.
++%    \item With the kernel \cs{caption} and an \cs{@caption} that a class
++%      or package has replaced by a definition that does not know the
++%      star (\cls{llncs}, \cls{mwart}, \cls{jpsj2}, \ldots): that
++%      definition typesets the label \cs{fnum@}\meta{type} with the number
++%      of the previous caption and writes a list entry, unless it tests
++%      \cs{if@captionstar}.
++%    \item The class's \cs{@makecaption} decides how the caption looks.
++%      The contract is: \cs{if@captionstar} is true, and the label (the
++%      first argument) is \cs{@caption@nolabel}, never empty. A
++%      \cs{@makecaption} that supports \cs{caption*} tests the switch and
++%      omits the label \emph{and} its separator (the tagging code does
++%      that); this is the only documented test (a test for an empty label
++%      does not work). For the many definitions that do not test it,
++%      \cs{@caption@nolabel} typesets nothing, but their separator is
++%      printed before the text (for example `: Text' with the standard
++%      classes). The standard classes are not changed, because packages
++%      compare \cs{@makecaption} with their definition (for example
++%      \pkg{babel-french}, which replaces the separator for French only if
++%      \cs{@makecaption} is the standard one).
++%    \item A package or class that replaces \cs{caption} itself bypasses
++%      all of this, for example \cls{beamer}, \pkg{captcont} (which has a
++%      \cs{caption*} of its own: numbered, without list entry),
++%      \pkg{hyperref} if there is no \cs{DocumentMetadata} (also when a
++%      class loads it, as \cls{jmlr} does), and classes such as
++%      \cls{aastex701}, \cls{mnras}, \cls{uwthesis} and \cls{tufte-book}:
++%      their \cs{caption} takes the star as the text of a numbered
++%      caption, as before. Such code has to be changed (for example by
++%      keeping the kernel \cs{caption} and using the hooks and sockets
++%      described here); the kernel cannot do it, because it is not called.
++%    \end{itemize}
++%
++%    The declarations are also written to \texttt{latexrelease}, guarded,
++%    so that rolling forward from an older format works. After a roll-back
++%    they stay defined but are not used.
++%
++% \paragraph{The hook \texttt{caption/before}.}
++%    A hook with four arguments:
++%    \begin{description}
++%    \item[\texttt{caption/before}] is executed by \cs{caption} once per
++%      caption (also for \cs{caption*}), after the star and the arguments
++%      have been read and before the counter is stepped. The arguments are
++%      the type, \cs{BooleanTrue} for \cs{caption*} or \cs{BooleanFalse}
++%      otherwise (test with \cs{IfBooleanTF}), the optional argument as
++%      given or \cs{NoValue} if it was absent (test with \cs{IfNoValueTF};
++%      |[]| and |[{}]| are both given and empty), and the caption text.
++%      The hook is executed at the group level of the caller (in a float
++%      the group of the float, with its \cs{linewidth}), so local settings
++%      made here are valid for the rest of the float. This is the place to
++%      decide that the counter should not be stepped (\cs{@captionstepfalse},
++%      e.g., for a continued float) or that no target should be created
++%      (\cs{@captiontargetfalse}, if the code makes its own target). The hook
++%      is not executed if \cs{@caption} is called directly.
++%    \end{description}
++%    The hook is executed outside of any group the kernel makes.
++%    \begin{macrocode}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@kernel@caption@step}{caption interface}%
++\NewHookWithArguments{caption/before}{4}
++%    \end{macrocode}
++%
++% \begin{socketdecl}{caption/step}
++%    This socket is used by \cs{caption} (not by \cs{caption*}) to step
++%    the counter of the caption and to set \cs{@currentlabel} and the
++%    target for links (\cs{@currentHref}). The argument is the counter
++%    (the type of the caption). It is used after the hook
++%    \hook{caption/before}. Other code may use it for caption-like
++%    steps (e.g., for sub-captions or a phantom caption); it then has to
++%    set the switches \cs{if@captionstep} and \cs{if@captiontarget}
++%    itself before the use.
++%
++%    Every plug must fulfil the following contract:
++%    \begin{enumerate}
++%    \item Everything is wrapped in the socket \texttt{refstepcounter}
++%      (as in \cs{refstepcounter}).
++%    \item If \cs{if@captionstep} is true, the counter is stepped with
++%      \cs{stepcounter} (so that the counters reset by it are reset).
++%      Otherwise no counter is changed.
++%    \item \cs{@currentcounter} and \cs{@currentlabel} are set as by
++%      \cs{refstepcounter}.
++%    \item If \cs{if@captiontarget} is true: if \cs{@floatHref@}\meta{type}
++%      is defined, not \cs{relax} and not empty, \cs{@currentHref} is
++%      set globally to its value, and no new target is made. Otherwise,
++%      if the counter was stepped, the sockets
++%      \texttt{refstepcounter/target} and \texttt{recordtarget} are used,
++%      as in \cs{refstepcounter}; if it was not stepped, no target is made
++%      and \cs{@currentHref} is unchanged. If \cs{if@captiontarget} is
++%      false, none of this is done and \cs{@currentHref} is unchanged.
++%    \end{enumerate}
++%    A target made from the unchanged counter would have the same name as
++%    the one of the caption that stepped the counter last, so a caption
++%    that does not step the counter (e.g., the caption of a continued
++%    float) must never get such a target: \pkg{hyperref} would make a
++%    second destination with the same name, and links to it would lead to
++%    the first caption.
++%    Inside a float that has a target of
++%    its own (\cs{@floatHref@}\meta{type}), that target is used, because it
++%    belongs to the float that contains the caption.
++%    The default plug \plug{kernel} uses \cs{@kernel@caption@step}, which
++%    implements exactly this.
++% \end{socketdecl}
++% \begin{plugdecl}{kernel (caption/step)}
++%    \begin{macrocode}
++\IfSocketExistsF{caption/step}{%
++  \NewSocket{caption/step}{1}%
++  \NewSocketPlug{caption/step}{kernel}{\@kernel@caption@step{#1}}%
++  \AssignSocketPlug{caption/step}{kernel}%
++}
++%    \end{macrocode}
++% \end{plugdecl}
++%
++% \begin{macro}{\if@captionstar,\if@captionstep,\if@captiontarget}
++%    \cs{if@captionstar} is true while a caption made by \cs{caption*} is
++%    processed: from the start of \cs{caption*} until the end of
++%    \cs{@caption}, so also in the caption hooks and in \cs{@makecaption}.
++%    In that case the first
++%    argument of \cs{@makecaption} is \cs{@caption@nolabel}, and a
++%    \cs{@makecaption} can test this switch to omit the label and its
++%    separator. Code
++%    that calls \cs{@caption} directly can set it true before the
++%    call.
++%
++%    \cs{if@captionstep} and \cs{if@captiontarget} are true outside of
++%    captions. They are set true by \cs{caption} before the hook
++%    \hook{caption/before} is executed. Code in that hook (or code that
++%    uses the socket \texttt{caption/step} itself, directly before the use)
++%    can set them false:
++%    \begin{itemize}
++%    \item \cs{@captionstepfalse}: the counter is not stepped by the plug,
++%      either because the caption continues an earlier one (a continued
++%      float) or because the code has already stepped it itself (e.g.,
++%      for a caption after sub-captions that stepped it);
++%      \cs{@currentcounter} and \cs{@currentlabel}
++%      are still set, and if \cs{if@captiontarget} is true the float
++%      target is used if there is one; no other target is made, as it
++%      would have the name of the last caption that stepped the counter
++%      (see the socket \texttt{caption/step}). Code that has stepped
++%      the counter itself and wants a target sets
++%      \cs{@captiontargetfalse} as well and makes the target itself
++%      (with the socket \texttt{refstepcounter/target}).
++%    \item \cs{@captiontargetfalse}: the step makes no target and does not
++%      record one for tagging, and \cs{@currentHref} is unchanged; the code
++%      makes its own target.
++%    \end{itemize}
++%    The three switches are reset at the end of \cs{@caption} (with
++%    \cs{@kernel@caption@reset}), so nothing is passed on to a later
++%    caption.
++%
++%    (\cs{@ifundefined} and not \cs{ifx} because a skipped \cs{if...}
++%    would unbalance the conditional.)
++%    \begin{macrocode}
++\@ifundefined{if@captionstar}{\newif\if@captionstar}{}
++\@ifundefined{if@captionstep}{\newif\if@captionstep\@captionsteptrue}{}
++\@ifundefined{if@captiontarget}{\newif\if@captiontarget\@captiontargettrue}{}
++%    \end{macrocode}
++% \end{macro}
++%
++% \begin{macro}{\@kernel@caption@step}
++% \begin{macro}{\@caption@target,\@caption@newtarget,\@caption@floattarget}
++%    \cs{@kernel@caption@step}\marg{counter} implements the contract of
++%    the socket \texttt{caption/step}. It is not \cs{refstepcounter},
++%    because the counter is not always stepped and the target not always
++%    made. The star guard of \cs{refstepcounter} is not needed, caption
++%    counters are never |*|.
++%    \begin{macrocode}
++\def\@kernel@caption@step#1{%
++  \UseSocket{refstepcounter}{%
++    \if@captionstep
++      \stepcounter{#1}%
++    \fi
++    \edef\@currentcounter{#1}%
++    \protected@edef\@currentlabel
++       {\csname p@#1\expandafter\endcsname\csname the#1\endcsname}%
++    \if@captiontarget
++      \@caption@target{#1}%
++    \fi}}
++%    \end{macrocode}
++%    The float code can provide the target of the current float of a
++%    type in \cs{@floatHref@}\meta{type} (the code for tagged floats in
++%    \pkg{latex-lab-float} does that). If it is defined, not \cs{relax}
++%    and not empty, the caption uses this target, otherwise a new one is
++%    made as by \cs{refstepcounter}, but only if the counter was stepped,
++%    because a target named after the unchanged counter would be a
++%    duplicate. \cs{@ifundefined}
++%    is used and not
++%    \cs{ifcsname}, so that a name that has been made \cs{relax} by a
++%    \cs{csname} test counts as undefined. As the type is part of the name,
++%    a \texttt{table} caption inside a \texttt{figure} or a step of a
++%    sub-caption counter (e.g., \texttt{subfigure}) does not use the target
++%    of the figure.
++%    \begin{macrocode}
++\def\@caption@target#1{%
++  \@ifundefined{@floatHref@#1}%
++    {\@caption@newtarget{#1}}%
++    {\expandafter\ifx\csname @floatHref@#1\endcsname\@empty
++       \expandafter\@caption@newtarget
++     \else
++       \expandafter\@caption@floattarget
++     \fi
++     {#1}}}
++\def\@caption@newtarget#1{%
++  \if@captionstep
++    \expandafter\@firstofone
++  \else
++    \expandafter\@gobble
++  \fi
++  {\UseSocket{refstepcounter/target}{#1}%
++   \UseTaggingSocket{recordtarget}}}
++\def\@caption@floattarget#1{%
++  \xdef\@currentHref{\csname @floatHref@#1\endcsname}}
++%    \end{macrocode}
++% \end{macro}
++% \end{macro}
++%
++% \begin{macro}{\@kernel@caption@typeset}
++%    \cs{@kernel@caption@typeset}\marg{type}\marg{star}\marg{text} is the
++%    typesetting of the kernel: the code of \cs{@caption} before 2026,
++%    with the label \cs{@caption@nolabel} for \cs{caption*}.
++%    \begin{macrocode}
++\long\def\@kernel@caption@typeset#1#2#3{%
++  \begingroup
++%    \end{macrocode}
++%
++% The paragraph setting parameters are normalized at this point, however
++% |\@parboxrestore| resets |\everypar| which is not correct in this
++% context so |\@setminipage| is called if needed.
++%
++% The float mechanism, like minipage, sets the flag |@minipage| true
++% before executing the user-supplied text. Many \LaTeX\ constructs
++% test for this flag and do not add vertical space when it is true.
++% The intention is that this emulates \TeX's `top of page' behaviour.
++% The flag must be set false at the start of the first paragraph. This
++% is achieved by a redefinition of |\everypar|, but the call to
++% |\@parboxrestore| removes that redefinition, so it is re-inserted
++% if needed. If the flag is already false then the |\caption| was not
++% the first entry in the float, and so some other paragraph has already
++% activated the special |\everypar|. In this case no further action is
++% needed.
++%    \begin{macrocode}
++    \@parboxrestore
++    \if@minipage
++      \@setminipage
++    \fi
++%    \end{macrocode}
++%
++%    \begin{macrocode}
++    \normalsize
++    \IfBooleanTF{#2}%
++      {\@makecaption{\@caption@nolabel}}%
++      {\@makecaption{\csname fnum@#1\endcsname}}%
++      {\ignorespaces #3}\par
++  \endgroup}
++%    \end{macrocode}
++% \end{macro}
++%
++% \begin{macro}{\@caption@nolabel}
++% \changes{v1.2k}{2026-10-06}{Macro added: \cs{@caption@nolabel}, the label
++%    of \cs{caption*}}
++%    \cs{@caption@nolabel} is the label that \cs{caption*} passes to
++%    \cs{@makecaption}. The contract for \cs{@makecaption} is only that
++%    \cs{if@captionstar} is true and that the label is not empty but
++%    typesets nothing; a \cs{@makecaption} that supports \cs{caption*}
++%    tests the switch and omits the label and its separator. A separator
++%    that the \cs{@makecaption} of the class puts after the label is
++%    printed before the text.
++%    The command is robust, so that it survives \cs{edef} and case
++%    changing of the label.
++%    \begin{macrocode}
++\protected\def\@caption@nolabel{}
++%    \end{macrocode}
++% \end{macro}
++%
++%    \begin{macrocode}
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
++%    \end{macrocode}
++%
+ % \begin{macro}{\caption}
++% \begin{macro}{\@caption@args,\@caption@read,\@caption@process}
++% \begin{macro}{\@kernel@caption@reset}
+ % \begin{macro}{\@caption@skip,\@caption@skip@star,\@caption@skip@args,
+ %                \@caption@skip@opt}
+ %
+@@ -244,6 +569,28 @@
+ %    {Made caption an error outside a float: latex/2815}
+ % \changes{v1.2k}{2026-10-06}
+ %    {Outside a float, skip the star and the arguments after the error}
++% \changes{v1.2k}{2026-10-06}
++%    {Add star form; read the arguments without \cs{@dblarg}; hook
++%     \texttt{caption/before}; step the counter through the socket
++%     \texttt{caption/step}; \cs{@kernel@caption@reset}}
++%
++%    The star form \cs{caption*} typesets a caption without a label:
++%    it does not step the counter, sets no target and writes no list
++%    entry. \cs{@currentlabel} and \cs{@currentHref} are not changed (as
++%    after \cs{section*}), so a \cs{label} after \cs{caption*} records
++%    whatever was set last, which can be a caption, a section or nothing;
++%    it should not be used there. An optional argument is accepted; it
++%    is only passed to the
++%    hook \hook{caption/before} (and to \cs{@caption} as list text, which
++%    the kernel \cs{@caption} does not use for \cs{caption*}).
++%
++%    The star is read with \cs{@ifstar} and the optional argument with
++%    \cs{kernel@ifnextchar}, so spaces before them are skipped, as with
++%    \cs{@dblarg} before. The type passed on is the expansion of
++%    \cs{@captype}. User text is never inside a conditional that \TeX{}
++%    might skip. \cs{@caption} is the last token, as before
++%    (\pkg{float}'s \cs{float@caption}, for example, looks for an
++%    optional argument after it), also for \cs{caption*}.
+ %    \begin{macrocode}
+ %</2ekernel>
+ %<*2ekernel|latexrelease>
+@@ -254,10 +601,10 @@
+      \@latex@error{\noexpand\caption outside float}\@ehd
+      \expandafter\@caption@skip
+    \else
+-     \refstepcounter\@captype
+      \expandafter\@firstofone
+    \fi
+-   {\@dblarg{\@caption\@captype}}%
++   {\@kernel@caption@reset
++    \@ifstar{\@captionstartrue\@caption@args}\@caption@args}%
+ }
+ \long\def\@caption@skip#1{\@caption@skip@star}
+ \protected\def\@caption@skip@star{%
+@@ -265,6 +612,37 @@
+ \def\@caption@skip@args{%
+   \kernel@ifnextchar[\@caption@skip@opt{\@caption@skip@opt[]}}
+ \long\def\@caption@skip@opt[#1]#2{}
++\def\@caption@args{%
++  \kernel@ifnextchar[\@caption@read{\@caption@read[\NoValue]}}
++\long\def\@caption@read[#1]#2{%
++  \expandafter\@caption@process\expandafter{\@captype}{#1}{#2}}
++\long\def\@caption@process#1#2#3{%
++  \if@captionstar
++    \expandafter\@firstoftwo
++  \else
++    \expandafter\@secondoftwo
++  \fi
++  {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanTrue}{#2}{#3}%
++   \IfNoValueTF{#2}%
++     {\@caption{#1}[{#3}]{#3}}%
++     {\@caption{#1}[{#2}]{#3}}}%
++  {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanFalse}{#2}{#3}%
++   \UseSocket{caption/step}{#1}%
++   \IfNoValueTF{#2}%
++     {\@caption{#1}[{#3}]{#3}}%
++     {\@caption{#1}[{#2}]{#3}}}}
++%    \end{macrocode}
++%    \cs{@kernel@caption@reset} sets \cs{if@captionstar} false and
++%    \cs{if@captionstep} and \cs{if@captiontarget} true, which is the state
++%    outside of a caption. The kernel \cs{caption} starts with it and the
++%    kernel \cs{@caption} ends with it. It is defined together with
++%    \cs{caption} (also by \pkg{latexrelease}), so after a roll-back to an
++%    earlier date it is undefined, as \cs{@kernel@caption}.
++%    \begin{macrocode}
++\def\@kernel@caption@reset{%
++  \@captionstarfalse
++  \@captionsteptrue
++  \@captiontargettrue}
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+ %<latexrelease>\IncludeInRelease{0000/00/00}%
+@@ -279,51 +657,104 @@
+ %<latexrelease>   \fi
+ %<latexrelease>   {\@dblarg{\@caption\@captype}}%
+ %<latexrelease>}
++%<latexrelease>\let\@kernel@caption@reset\@undefined
+ %<latexrelease>\EndIncludeInRelease
+ %<*2ekernel>
+ %    \end{macrocode}
+ % \end{macro}
+ % \end{macro}
++% \end{macro}
++% \end{macro}
+ %
+ % \begin{macro}{\@caption}
++% \begin{macro}{\@caption@body}
+ % \changes{v1.0b}{1994/03/28}
+ %     {Use \cs{normalsize} not \cs{@normalsize}}
+ % \changes{v1.1r}{1996/12/06}
+ %     {Call \cs{@setminpage} if needed. latex/2318}
++% \changes{v1.2k}{2026-10-06}
++%     {No list entry and the label \cs{@caption@nolabel} for \cs{caption*};
++%      end with \cs{@kernel@caption@reset}}
++%    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
++%    signature, so code that wraps or replaces it keeps working.
++%    The typesetting (with \cs{@parboxrestore} and \cs{@makecaption})
++%    is now done by \cs{@kernel@caption@typeset}. At the end
++%    \cs{@kernel@caption@reset} resets the switches, so that code which
++%    calls \cs{@caption} or
++%    the socket \texttt{caption/step} directly (without \cs{caption}) gets
++%    a normal caption.
+ %    \begin{macrocode}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@caption}{caption body}%
+ \long\def\@caption#1[#2]#3{%
+   \par
+-  \addcontentsline{\csname ext@#1\endcsname}{#1}%
+-    {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
+-  \begingroup
+-%    \end{macrocode}
+-%
+-% The paragraph setting parameters are normalized at this point, however
+-% |\@parboxrestore| resets |\everypar| which is not correct in this
+-% context so |\@setminipage| is called if needed.
+-%
+-% The float mechanism, like minipage, sets the flag |@minipage| true
+-% before executing the user-supplied text. Many \LaTeX\ constructs
+-% test for this flag and do not add vertical space when it is true.
+-% The intention is that this emulates \TeX's `top of page' behaviour.
+-% The flag must be set false at the start of the first paragraph. This
+-% is achieved by a redefinition of |\everypar|, but the call to
+-% |\@parboxrestore| removes that redefinition, so it is re-inserted
+-% if needed. If the flag is already false then the |\caption| was not
+-% the first entry in the float, and so some other paragraph has already
+-% activated the special |\everypar|. In this case no further action is
+-% needed.
+-%    \begin{macrocode}
+-    \@parboxrestore
+-    \if@minipage
+-      \@setminipage
+-    \fi
++  \if@captionstar
++    \expandafter\@firstoftwo
++  \else
++    \expandafter\@secondoftwo
++  \fi
++  {\@caption@body{#1}{\BooleanTrue}}%
++  {\@caption@body{#1}{\BooleanFalse}}%
++  {#2}{#3}%
++  \@kernel@caption@reset}
++\long\def\@caption@body#1#2#3#4{%
++  \IfBooleanF{#2}%
++    {\addcontentsline{\csname ext@#1\endcsname}{#1}%
++       {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #3}}}%
++  \@kernel@caption@typeset{#1}{#2}{#4}}
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@caption}{caption body}%
++%<latexrelease>\long\def\@caption#1[#2]#3{%
++%<latexrelease>  \par
++%<latexrelease>  \addcontentsline{\csname ext@#1\endcsname}{#1}%
++%<latexrelease>    {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
++%<latexrelease>  \begingroup
++%<latexrelease>    \@parboxrestore
++%<latexrelease>    \if@minipage
++%<latexrelease>      \@setminipage
++%<latexrelease>    \fi
++%<latexrelease>    \normalsize
++%<latexrelease>    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++%<latexrelease>  \endgroup}
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
++% \end{macro}
++% \end{macro}
+ %
++% \begin{macro}{\@kernel@caption}
++% \changes{v1.2k}{2026-10-06}{Macro added}
++%    A copy of the kernel definition of \cs{caption} (the naming follows
++%    \cs{@kernel@refstepcounter}). Code that keeps its own \cs{caption}
++%    can pass \cs{caption*} to it (with
++%    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|), and code that
++%    has replaced \cs{caption} can restore it.
++%
++%    It is defined only if the kernel has the caption interface: after a
++%    roll-back with \pkg{latexrelease} to an earlier date it is
++%    undefined, and a roll-forward defines it again. The same holds for
++%    \cs{@kernel@caption@reset}, which is defined together with
++%    \cs{caption}. Therefore |\ifdefined\@kernel@caption| is the test for
++%    the interface, for releases, roll-back, roll-forward and development
++%    formats alike. There is no test whether \cs{caption} still is the
++%    kernel's: a meaning test cannot tell wrappers from replacements.
+ %    \begin{macrocode}
+-    \normalsize
+-    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+-  \endgroup}
++%</2ekernel>
++%<*2ekernel|latexrelease>
++%<latexrelease>\IncludeInRelease{2026/11/01}%
++%<latexrelease>                 {\@kernel@caption}{caption interface copies}%
++\let\@kernel@caption\caption
++%</2ekernel|latexrelease>
++%<latexrelease>\EndIncludeInRelease
++%<latexrelease>\IncludeInRelease{0000/00/00}%
++%<latexrelease>                 {\@kernel@caption}{caption interface copies}%
++%<latexrelease>\let\@kernel@caption\@undefined
++%<latexrelease>\EndIncludeInRelease
++%<*2ekernel>
+ %    \end{macrocode}
+ % \end{macro}
+ %
+diff --git a/base/testfiles-lthooks/ltcmdhooks-001.tlg b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+index c339c7149..839596a50 100644
+--- a/base/testfiles-lthooks/ltcmdhooks-001.tlg
++++ b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+@@ -119,6 +119,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-000.tlg b/base/testfiles-lthooks/lthooks-000.tlg
+index 777a5d8d8..b6aa8a93c 100644
+--- a/base/testfiles-lthooks/lthooks-000.tlg
++++ b/base/testfiles-lthooks/lthooks-000.tlg
+@@ -55,6 +55,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-001.tlg b/base/testfiles-lthooks/lthooks-001.tlg
+index 72c836438..97bc7ac37 100644
+--- a/base/testfiles-lthooks/lthooks-001.tlg
++++ b/base/testfiles-lthooks/lthooks-001.tlg
+@@ -62,6 +62,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -321,6 +322,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -428,6 +430,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-002.tlg b/base/testfiles-lthooks/lthooks-002.tlg
+index e97df4c75..7d44e9282 100644
+--- a/base/testfiles-lthooks/lthooks-002.tlg
++++ b/base/testfiles-lthooks/lthooks-002.tlg
+@@ -62,6 +62,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -324,6 +325,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -431,6 +433,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-003.tlg b/base/testfiles-lthooks/lthooks-003.tlg
+index 30fddaa9e..ed956a767 100644
+--- a/base/testfiles-lthooks/lthooks-003.tlg
++++ b/base/testfiles-lthooks/lthooks-003.tlg
+@@ -64,6 +64,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -182,6 +183,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-004.tlg b/base/testfiles-lthooks/lthooks-004.tlg
+index c2cc001de..4d0ef17ff 100644
+--- a/base/testfiles-lthooks/lthooks-004.tlg
++++ b/base/testfiles-lthooks/lthooks-004.tlg
+@@ -49,6 +49,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -161,6 +162,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-005.tlg b/base/testfiles-lthooks/lthooks-005.tlg
+index 406c306f6..28e985bbd 100644
+--- a/base/testfiles-lthooks/lthooks-005.tlg
++++ b/base/testfiles-lthooks/lthooks-005.tlg
+@@ -71,6 +71,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -189,6 +190,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-006.tlg b/base/testfiles-lthooks/lthooks-006.tlg
+index 1554663a6..14d4e3a3a 100644
+--- a/base/testfiles-lthooks/lthooks-006.tlg
++++ b/base/testfiles-lthooks/lthooks-006.tlg
+@@ -46,6 +46,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -156,6 +157,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-007.tlg b/base/testfiles-lthooks/lthooks-007.tlg
+index c16c98cc7..d353ad376 100644
+--- a/base/testfiles-lthooks/lthooks-007.tlg
++++ b/base/testfiles-lthooks/lthooks-007.tlg
+@@ -46,6 +46,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -157,6 +158,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -437,6 +439,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-008.tlg b/base/testfiles-lthooks/lthooks-008.tlg
+index 79a519798..520649f89 100644
+--- a/base/testfiles-lthooks/lthooks-008.tlg
++++ b/base/testfiles-lthooks/lthooks-008.tlg
+@@ -50,6 +50,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/init}
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
++>  {caption/before}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -166,6 +167,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-009.tlg b/base/testfiles-lthooks/lthooks-009.tlg
+index 64b9724ee..85b43b89c 100644
+--- a/base/testfiles-lthooks/lthooks-009.tlg
++++ b/base/testfiles-lthooks/lthooks-009.tlg
+@@ -64,6 +64,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-011.tlg b/base/testfiles-lthooks/lthooks-011.tlg
+index 9c5c7e0c3..14dc14cbe 100644
+--- a/base/testfiles-lthooks/lthooks-011.tlg
++++ b/base/testfiles-lthooks/lthooks-011.tlg
+@@ -57,6 +57,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -336,6 +337,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -617,6 +619,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -900,6 +903,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-013.tlg b/base/testfiles-lthooks/lthooks-013.tlg
+index 02a548e88..bdc3a1b88 100644
+--- a/base/testfiles-lthooks/lthooks-013.tlg
++++ b/base/testfiles-lthooks/lthooks-013.tlg
+@@ -114,6 +114,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-021.tlg b/base/testfiles-lthooks/lthooks-021.tlg
+index 9808eefaa..d9a3c9874 100644
+--- a/base/testfiles-lthooks/lthooks-021.tlg
++++ b/base/testfiles-lthooks/lthooks-021.tlg
+@@ -55,6 +55,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-legacy.tlg b/base/testfiles-lthooks/lthooks-legacy.tlg
+index 288d88b55..89d9653fa 100644
+--- a/base/testfiles-lthooks/lthooks-legacy.tlg
++++ b/base/testfiles-lthooks/lthooks-legacy.tlg
+@@ -82,6 +82,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-rollback-args.tlg b/base/testfiles-lthooks/lthooks-rollback-args.tlg
+index 48fde518d..b892a7a89 100644
+--- a/base/testfiles-lthooks/lthooks-rollback-args.tlg
++++ b/base/testfiles-lthooks/lthooks-rollback-args.tlg
+@@ -770,8 +770,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles-lthooks2/lthooks2-002.tlg b/base/testfiles-lthooks2/lthooks2-002.tlg
+index 6a4c13018..159058b46 100644
+--- a/base/testfiles-lthooks2/lthooks2-002.tlg
++++ b/base/testfiles-lthooks2/lthooks2-002.tlg
+@@ -82,6 +82,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks2/lthooks2-005.tlg b/base/testfiles-lthooks2/lthooks2-005.tlg
+index 9eae58196..98a26fafd 100644
+--- a/base/testfiles-lthooks2/lthooks2-005.tlg
++++ b/base/testfiles-lthooks2/lthooks2-005.tlg
+@@ -57,6 +57,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -324,6 +325,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/init' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
++[lthooks] Update code for hook 'caption/before' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
+new file mode 100644
+index 000000000..ecc80ae3d
+--- /dev/null
++++ b/base/testfiles/caption-interface-001.lvt
+@@ -0,0 +1,255 @@
++% Test of the caption interface: \caption* and its label
++% \@caption@nolabel (which typesets nothing), the hook caption/before,
++% the socket caption/step, the switches \if@captionstep and
++% \if@captiontarget and the float target \@floatHref@<type> (as the
++% kernel plug reads it). Unique targets are tested in
++% caption-interface-003, a replaced \@caption in caption-interface-004,
++% the separator removal of the label in caption-interface-005, the
++% roll-back in caption-interface-002, \caption outside of floats in
++% caption-outside-001.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% the kernel definitions, for the tests that wrap or keep them
++\let\kernelcaption\caption
++\let\kernelatcaption\@caption
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++\def\showswitches{%
++  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
++    step=\if@captionstep true\else false\fi,
++    target=\if@captiontarget true\else false\fi}}
++% the hooks
++\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
++\long\def\showopt#1{\IfNoValueTF{#1}%
++  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
++\AddToHookWithArguments{caption/before}[test]{%
++  \showbool{#2}\showopt{#3}%
++  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
++    figure=\thefigure, linewidth=\the\linewidth}%
++  \csname testbefore\endcsname}
++\newcounter{sub}[figure]
++\gdef\@currentHref{none}
++% helpers for the tests (\makeatletter does not work inside \TEST)
++\def\stepoff{\@captionstepfalse}
++\def\targetoff{\@captiontargetfalse}
++\def\sethref#1{\gdef\@currentHref{#1}}
++\def\showhref{\typeout{href=\@currentHref}}
++\def\showlabel{\typeout{figure=\thefigure, label=\@currentlabel,
++  sub=\thesub}}
++\def\setfloathref#1{\def\@floatHref@figure{#1}}
++\def\emptyfloathref{\let\@floatHref@figure\@empty}
++\def\relaxfloathref{\let\@floatHref@figure\relax}
++\def\settype#1{\def\@captype{#1}}
++\def\directcaption{\@caption}
++\def\starton{\@captionstartrue}
++\def\nolabel{\@caption@nolabel}
++\def\resetcaption{\@kernel@caption@reset}
++\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
++% a package that keeps its own \caption (here the definition of LaTeX
++% before 2026) and passes only \caption* to the kernel
++\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
++\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
++  {\@kernel@caption@reset\owncaption}}}
++% replacements of \@caption: as in a class that does not know \caption*
++% (the definition of llncs), a wrapper of the kernel definition (as in
++% memoir or nameref), and a definition that defers the kernel definition
++% (as threeparttable)
++\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
++  ext@#1\endcsname}{#1}{\protect\numberline{\csname
++  the#1\endcsname}{\ignorespaces #2}}\begingroup
++    \@parboxrestore
++    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++  \endgroup}
++\long\def\targetcaption#1[#2]#3{%
++  \protected@xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{CLASS TARGET: \@currentHref}%
++  \classcaption{#1}[{#2}]{#3}}
++\long\def\deferclasscaption#1[#2]#3{%
++  \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \kernelatcaption{#1}[{#2}]{#3}}
++\long\def\defercaption#1[#2]#3{%
++  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
++\def\useclasscaption{\let\@caption\classcaption}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++\def\usedefercaption{\let\@caption\defercaption}
++\def\usetargetcaption{\let\@caption\targetcaption}
++\def\usedeferclasscaption{\let\@caption\deferclasscaption}
++\def\showlabelexpansion{%
++  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
++    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
++      true\else false\fi}}}
++\def\showrestored{%
++  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
++    theH=\meaning\theHfigure}}
++\def\staroff{\@captionstarfalse}
++% the label of caption* in different \@makecaption shapes: the width
++% of the box compared with the text alone
++\def\shape#1#2{%
++  \setbox0=\hbox{\starton #2}\setbox2=\hbox{Text}%
++  \typeout{SHAPE #1: \ifdim\wd0=\wd2 clean\else
++    width \the\wd0\space(text \the\wd2)\fi}}
++\def\sep{: }
++\let\savedwarn\@caption@nolabel@warn
++\def\rewarn{\global\let\@caption@nolabel@warn\savedwarn}
++% shapes in vertical mode: total height and natural width of the last line
++% compared with the text alone; and whether the label warned
++\def\lastline#1#2{%
++  \setbox4\vbox{\unvcopy#1\unskip\unpenalty\unskip\global\setbox5\lastbox}%
++  \setbox6\hbox{\unhcopy5\unskip\unskip\unpenalty}%
++  \edef#2{\the\dimexpr\ht#1+\dp#1\relax/\the\wd6}}
++\def\showwarned{\ifx\@caption@nolabel@warn\relax warning\else no warning\fi}
++\long\def\vshape#1#2{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #2\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt \noindent Text\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb clean\else
++    height/width \tmpa\space(text \tmpb)\fi, \showwarned}}
++\def\hshape#1#2{\rewarn\shape{#1}{#2}\typeout{.... \showwarned}}
++% the same in vertical mode, compared with a reference (#2) instead of
++% the text alone
++\long\def\vshapeto#1#2#3{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #3\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt #2\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb as reference\else
++    height/width \tmpa\space(reference \tmpb)\fi, \showwarned}}
++\def\spsep{ \textendash\ }
++\def\sboxlabel{\sbox\@tempboxa{\nolabel}\unhbox\@tempboxa}
++\def\settowidthlabel{\settowidth\@tempdima{\nolabel: }\hskip\@tempdima}
++% a counter without \theH<counter> (as made before 2024 by \newcount)
++\newcount\c@myfig
++\def\themyfig{\arabic{myfig}}
++\def\p@myfig{}
++\def\fnum@myfig{My \themyfig}
++\def\ext@myfig{lom}
++\makeatother
++\begin{document}
++\START
++\TEST{normal caption}{%
++  \begin{figure}
++    \caption{Normal}
++    \showswitches
++  \end{figure}
++  \begin{figure}
++    \caption{Normal with kernel list entry}
++  \end{figure}}
++\TEST{star caption: no step, no list entry, no label}{%
++  \begin{figure}
++    \caption*{Star}
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
++\TEST{star with optional argument (only given to the hook)}{%
++  \begin{figure}
++    \caption*[x]{Star with optional argument}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{empty optional argument: kernel plug writes an empty entry}{%
++  \begin{figure}
++    \caption[]{Empty optional argument}
++    \caption[{}]{Braced empty optional argument}
++  \end{figure}}
++\TEST{empty text, no optional argument}{%
++  \begin{figure}
++    \caption{}
++  \end{figure}}
++\TEST{bracket in the optional argument, spaces}{%
++  \begin{figure}
++    \caption[{a]b}]{x}
++    \caption [Opt] {Spaces}
++  \end{figure}}
++\TEST{hook arguments with \#}{%
++  \begin{figure}
++    \caption{A \# B}
++  \end{figure}}
++\TEST{continued float: no step, counters reset by figure kept}{%
++  \begin{figure}
++    \setcounter{sub}{3}%
++    \let\testbefore\stepoff
++    \caption{Continued}
++    \showlabel
++    \showswitches
++  \end{figure}
++  \begin{figure}
++    \caption{Next}
++    \showlabel
++    \showhref
++  \end{figure}}
++\TEST{no target}{%
++  \begin{figure}
++    \sethref{OLD}%
++    \let\testbefore\targetoff
++    \caption{No target}
++    \showhref
++  \end{figure}
++  \begin{figure}
++    \caption{With target}
++    \showhref
++  \end{figure}}
++\TEST{float target}{%
++  \begin{figure}
++    \setfloathref{X}%
++    \caption{Float target X}
++    \showhref
++    \settype{table}%
++    \caption{Table in the figure}
++    \showhref
++    \settype{figure}%
++    \emptyfloathref
++    \caption{Empty float target}
++    \showhref
++    \relaxfloathref
++    \caption{Relax float target}
++    \showhref
++  \end{figure}}
++\TEST{switches are set true by \caption}{%
++  \begin{figure}
++    \stepoff
++    \targetoff
++    \caption{Switches false before}
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
++\TEST{direct call of the body (@caption)}{%
++  \begin{figure}
++    \directcaption{figure}[L]{T}
++    \starton
++    \directcaption{figure}[L2]{T2 star}
++    \showswitches
++  \end{figure}}
++\TEST{continued float with a float target: the float target}{%
++  \begin{figure}
++    \setfloathref{Y}%
++    \let\testbefore\stepoff
++    \caption{Continued in a float with a target}
++    \showlabel
++    \showhref
++  \end{figure}}
++\TEST{continued float without target: nothing made, href unchanged}{%
++  \begin{figure}
++    \sethref{OLD}%
++    \def\testbefore{\stepoff\targetoff}%
++    \caption{Continued, no target}
++    \showlabel
++    \showhref
++  \end{figure}}
++\end{document}
+diff --git a/base/testfiles/caption-interface-001.tlg b/base/testfiles/caption-interface-001.tlg
+new file mode 100644
+index 000000000..7c79e5ea7
+--- /dev/null
++++ b/base/testfiles/caption-interface-001.tlg
+@@ -0,0 +1,158 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: normal caption
++============================================================
++BEFORE: {figure}{false}{NoValue}{Normal}, figure=0, linewidth=345.0pt
++TARGET: new target figure.1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Normal}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
++SWITCHES: star=false, step=true, target=true
++BEFORE: {figure}{false}{NoValue}{Normal with kernel list entry}, figure=1, linewidth=345.0pt
++TARGET: new target figure.2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Normal with kernel list entry}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal with kernel list entry], star=false
++============================================================
++============================================================
++TEST 2: star caption: no step, no list entry, no label
++============================================================
++BEFORE: {figure}{true}{NoValue}{Star}, figure=2, linewidth=345.0pt
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star], star=true
++figure=2
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 3: star with optional argument (only given to the hook)
++============================================================
++BEFORE: {figure}{true}{[x]}{Star with optional argument}, figure=2, linewidth=345.0pt
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star with optional argument], star=true
++figure=2
++============================================================
++============================================================
++TEST 4: empty optional argument: kernel plug writes an empty entry
++============================================================
++BEFORE: {figure}{false}{[]}{Empty optional argument}, figure=2, linewidth=345.0pt
++TARGET: new target figure.3
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Empty optional argument], star=false
++BEFORE: {figure}{false}{[]}{Braced empty optional argument}, figure=3, linewidth=345.0pt
++TARGET: new target figure.4
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Braced empty optional argument], star=false
++============================================================
++============================================================
++TEST 5: empty text, no optional argument
++============================================================
++BEFORE: {figure}{false}{NoValue}{}, figure=4, linewidth=345.0pt
++TARGET: new target figure.5
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces ], star=false
++============================================================
++============================================================
++TEST 6: bracket in the optional argument, spaces
++============================================================
++BEFORE: {figure}{false}{[a]b]}{x}, figure=5, linewidth=345.0pt
++TARGET: new target figure.6
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces a]b}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces x], star=false
++BEFORE: {figure}{false}{[Opt]}{Spaces}, figure=6, linewidth=345.0pt
++TARGET: new target figure.7
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Opt}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Spaces], star=false
++============================================================
++============================================================
++TEST 7: hook arguments with \#
++============================================================
++BEFORE: {figure}{false}{NoValue}{A \# B}, figure=7, linewidth=345.0pt
++TARGET: new target figure.8
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces A \# B}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces A \# B], star=false
++============================================================
++============================================================
++TEST 8: continued float: no step, counters reset by figure kept
++============================================================
++BEFORE: {figure}{false}{NoValue}{Continued}, figure=8, linewidth=345.0pt
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued], star=false
++figure=8, label=8, sub=3
++SWITCHES: star=false, step=true, target=true
++BEFORE: {figure}{false}{NoValue}{Next}, figure=8, linewidth=345.0pt
++TARGET: new target figure.9
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Next}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Next], star=false
++figure=9, label=9, sub=0
++href=figure.9
++============================================================
++============================================================
++TEST 9: no target
++============================================================
++BEFORE: {figure}{false}{NoValue}{No target}, figure=9, linewidth=345.0pt
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces No target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces No target], star=false
++href=OLD
++BEFORE: {figure}{false}{NoValue}{With target}, figure=10, linewidth=345.0pt
++TARGET: new target figure.11
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces With target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces With target], star=false
++href=figure.11
++============================================================
++============================================================
++TEST 10: float target
++============================================================
++BEFORE: {figure}{false}{NoValue}{Float target X}, figure=11, linewidth=345.0pt
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Float target X}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Float target X], star=false
++href=X
++BEFORE: {table}{false}{NoValue}{Table in the figure}, figure=12, linewidth=345.0pt
++TARGET: new target table.1
++ADDCONTENTSLINE: {lot}{table}{\protect \numberline {\csname thetable\endcsname }{\ignorespaces Table in the figure}}
++MAKECAPTION: [\csname fnum@table\endcsname ] [\ignorespaces Table in the figure], star=false
++href=table.1
++BEFORE: {figure}{false}{NoValue}{Empty float target}, figure=12, linewidth=345.0pt
++TARGET: new target figure.13
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Empty float target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Empty float target], star=false
++href=figure.13
++BEFORE: {figure}{false}{NoValue}{Relax float target}, figure=13, linewidth=345.0pt
++TARGET: new target figure.14
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Relax float target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Relax float target], star=false
++href=figure.14
++============================================================
++============================================================
++TEST 11: switches are set true by \caption 
++============================================================
++BEFORE: {figure}{false}{NoValue}{Switches false before}, figure=14, linewidth=345.0pt
++TARGET: new target figure.15
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Switches false before}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Switches false before], star=false
++figure=15
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 12: direct call of the body (@caption)
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces L}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces T], star=false
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces T2 star], star=true
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 13: continued float with a float target: the float target
++============================================================
++BEFORE: {figure}{false}{NoValue}{Continued in a float with a target}, figure=15, linewidth=345.0pt
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued in a float with a target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued in a float with a target], star=false
++figure=15, label=15, sub=0
++href=Y
++============================================================
++============================================================
++TEST 14: continued float without target: nothing made, href unchanged
++============================================================
++BEFORE: {figure}{false}{NoValue}{Continued, no target}, figure=15, linewidth=345.0pt
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued, no target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued, no target], star=false
++figure=15, label=15, sub=0
++href=OLD
++============================================================
++[1] [2] (caption-interface-001.aux)
+diff --git a/base/testfiles/caption-interface-002.lvt b/base/testfiles/caption-interface-002.lvt
+new file mode 100644
+index 000000000..31a17cdff
+--- /dev/null
++++ b/base/testfiles/caption-interface-002.lvt
+@@ -0,0 +1,33 @@
++% Roll-back of the caption interface: with latexrelease 2026-06-01 the
++% old \caption and \@caption are back, \@kernel@caption and
++% \@kernel@caption@reset are undefined, the hook is not executed, and
++% the guarded declarations give no errors.
++\RequirePackage[2026-06-01]{latexrelease}
++\documentclass{article}
++\input{regression-test}
++\makeatletter
++\def\showcommands{%
++  \typeout{\string\@kernel@caption:
++    \ifdefined\@kernel@caption defined\else undefined\fi,
++    \string\@kernel@caption@reset:
++    \ifdefined\@kernel@caption@reset defined\else undefined\fi}}
++\AddToHookWithArguments{caption/before}{\typeout{BEFORE: #1}}
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}]}%
++  \ORImakecaption{#1}{#2}}
++\makeatother
++\begin{document}
++\START
++\TEST{interface commands after the roll-back}{\showcommands}
++\TEST{caption after the roll-back: old code, no hooks}{%
++  \begin{figure}
++    \caption{Normal}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{caption* after the roll-back: the star is the caption text}{%
++  \begin{figure}
++    \caption*{Star}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\END
+diff --git a/base/testfiles/caption-interface-002.tlg b/base/testfiles/caption-interface-002.tlg
+new file mode 100644
+index 000000000..3154e5083
+--- /dev/null
++++ b/base/testfiles/caption-interface-002.tlg
+@@ -0,0 +1,19 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: interface commands after the roll-back
++============================================================
++\@kernel@caption: undefined, \@kernel@caption@reset: undefined
++============================================================
++============================================================
++TEST 2: caption after the roll-back: old code, no hooks
++============================================================
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces Normal]
++figure=1
++============================================================
++============================================================
++TEST 3: caption* after the roll-back: the star is the caption text
++============================================================
++MAKECAPTION: [\csname fnum@\@captype \endcsname ] [\ignorespaces *]
++figure=2
++============================================================
+diff --git a/base/testfiles/github-0479-often.luatex.tlg b/base/testfiles/github-0479-often.luatex.tlg
+index bd6c818e0..3c197495f 100644
+--- a/base/testfiles/github-0479-often.luatex.tlg
++++ b/base/testfiles/github-0479-often.luatex.tlg
+@@ -781,8 +781,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/github-0479-often.tlg b/base/testfiles/github-0479-often.tlg
+index 16f4afac9..7f4f2f037 100644
+--- a/base/testfiles/github-0479-often.tlg
++++ b/base/testfiles/github-0479-often.tlg
+@@ -770,8 +770,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/github-0479-often.xetex.tlg b/base/testfiles/github-0479-often.xetex.tlg
+index cdfe698e2..cb270842b 100644
+--- a/base/testfiles/github-0479-often.xetex.tlg
++++ b/base/testfiles/github-0479-often.xetex.tlg
+@@ -771,8 +771,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
+index 95a8e55a6..48d6b67a8 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.luatex.tlg
+@@ -716,8 +716,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+@@ -1698,8 +1703,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
+index 51141b8af..cd4f78ee8 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.tlg
+@@ -710,8 +710,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+@@ -1682,8 +1687,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
+index f6bd98959..47f1049cf 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-003-often.xetex.tlg
+@@ -710,8 +710,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Skipping: [....-..-..] Prevent protrusion on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+@@ -1690,8 +1695,13 @@ Skipping: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
+index 143aaefeb..9c8a659ad 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.tlg b/base/testfiles/tlb-latexrelease-rollback-004.tlg
+index a250b0da9..b52a62009 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
+index 709f25a1a..c11cfd2ad 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-004.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.luatex.tlg
+index 9c4d1acf6..20ae2918a 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.luatex.tlg
+@@ -781,8 +781,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.tlg
+index b3627385f..c0d0ef72d 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.tlg
+@@ -770,8 +770,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.xetex.tlg
+index bdcbecf39..682a0ff64 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2020-10-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2020-10-01.xetex.tlg
+@@ -771,8 +771,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.luatex.tlg
+index a44649dbd..a4293ce64 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.tlg
+index 414a52b1c..4990f3577 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.tlg
+@@ -770,8 +770,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.xetex.tlg
+index 623b709d3..6ff74da98 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.luatex.tlg
+index 28e43c95c..8a83a7d7a 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.tlg
+index a4e94fbe7..d0ffe6daa 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.xetex.tlg
+index 90cd7e41a..bc0bc58af 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2021-11-15.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2021-11-15.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.luatex.tlg
+index 73de63904..0e55768f3 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.tlg
+index b54d4491c..e3c000f3d 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.xetex.tlg
+index bbc8333d4..ae5d88461 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.luatex.tlg
+index 209b1137d..162c1319b 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.tlg
+index ca2aadfa6..f95ae7946 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.xetex.tlg
+index 1147edb3c..545226c95 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2022-11-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2022-11-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.luatex.tlg
+index 5b5229d6e..4cee756e7 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.tlg
+index aa61601b2..dc81a06d9 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.xetex.tlg
+index 829efbbb0..03e21f22c 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.luatex.tlg
+index c4a64153e..df41b2728 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.tlg
+index b3306be58..830e925dc 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.xetex.tlg
+index 7c741f7db..56ad9150c 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2023-11-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2023-11-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.luatex.tlg
+index 1a6d5d706..e9c5049f1 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.tlg
+index cc57b279e..00b63c287 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.xetex.tlg
+index b48a36766..7fe834885 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.luatex.tlg
+index 3d7c47072..45cd67fb9 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.tlg
+index ab60595bd..e6603a88e 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.xetex.tlg
+index 98f3e4e7c..df7c5ff05 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2024-11-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2024-11-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.luatex.tlg
+index 6d4e97f3a..f9be552df 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.tlg
+index eeb9d1ba5..1387a84a6 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.xetex.tlg
+index 3bef44c96..f287bb84e 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
+index f734bd223..8514da7a7 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
+index f02142956..59e96360a 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
+index e7c03a040..a18c07918 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2025-11-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
+index 926a45852..52e9b2251 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.luatex.tlg
+@@ -782,8 +782,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
+index bed96e6e6..12446b6f1 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.tlg
+@@ -770,8 +770,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
+index 286f3cba2..b5dbca657 100644
+--- a/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
++++ b/base/testfiles/tlb-latexrelease-rollback-2026-06-01.xetex.tlg
+@@ -771,8 +771,13 @@ Already applied: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-004-often.luatex.tlg b/base/testfiles/tlb-rollback-004-often.luatex.tlg
+index e3270e559..b88ca9fc1 100644
+--- a/base/testfiles/tlb-rollback-004-often.luatex.tlg
++++ b/base/testfiles/tlb-rollback-004-often.luatex.tlg
+@@ -778,8 +778,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-004-often.tlg b/base/testfiles/tlb-rollback-004-often.tlg
+index 6d3255b85..d93019752 100644
+--- a/base/testfiles/tlb-rollback-004-often.tlg
++++ b/base/testfiles/tlb-rollback-004-often.tlg
+@@ -766,8 +766,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-004-often.xetex.tlg b/base/testfiles/tlb-rollback-004-often.xetex.tlg
+index 76314ff6d..c380472da 100644
+--- a/base/testfiles/tlb-rollback-004-often.xetex.tlg
++++ b/base/testfiles/tlb-rollback-004-often.xetex.tlg
+@@ -767,8 +767,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-005.luatex.tlg b/base/testfiles/tlb-rollback-005.luatex.tlg
+index 37679cd9e..970228381 100644
+--- a/base/testfiles/tlb-rollback-005.luatex.tlg
++++ b/base/testfiles/tlb-rollback-005.luatex.tlg
+@@ -785,8 +785,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-005.tlg b/base/testfiles/tlb-rollback-005.tlg
+index e4636c80f..f387c0525 100644
+--- a/base/testfiles/tlb-rollback-005.tlg
++++ b/base/testfiles/tlb-rollback-005.tlg
+@@ -774,8 +774,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/base/testfiles/tlb-rollback-005.xetex.tlg b/base/testfiles/tlb-rollback-005.xetex.tlg
+index ffcc9a680..1c4fb4639 100644
+--- a/base/testfiles/tlb-rollback-005.xetex.tlg
++++ b/base/testfiles/tlb-rollback-005.xetex.tlg
+@@ -775,8 +775,13 @@ Applying: [....-..-..] Four arguments on input line ....
+ Applying: [....-..-..] Prevent protrusion on input line ....
+ LaTeX Info: Redefining \noprotrusion on input line ....
+ Already applied: [....-..-..] Prevent protrusion on input line ....
++Skipping: [....-..-..] caption interface on input line ....
+ Skipping: [....-..-..] caption arguments on input line ....
+ Applying: [....-..-..] caption arguments on input line ....
++Skipping: [....-..-..] caption body on input line ....
++Applying: [....-..-..] caption body on input line ....
++Skipping: [....-..-..] caption interface copies on input line ....
++Applying: [....-..-..] caption interface copies on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+ Applying: [....-..-..] Float hooks on input line ....
+ Skipping: [....-..-..] Float hooks on input line ....
+diff --git a/required/latex-lab/changes.txt b/required/latex-lab/changes.txt
+index 1534fa955..a9cb1116e 100644
+--- a/required/latex-lab/changes.txt
++++ b/required/latex-lab/changes.txt
+@@ -1,5 +1,11 @@
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* latex-lab-float.dtx:
++	No longer redefine \caption: a plug of the kernel socket
++	caption/step gives captions in floats the target at the start of the
++	float, as before; support \caption* (plugs nolabel of the label
++	tagging sockets)
++
+ 	* latex-lab-float.dtx:
+ 	Use \DeclareTaggingFloatType in the key float/new; captions in floats
+ 	of undeclared types use float/generic/caption and float/generic/label
+diff --git a/required/latex-lab/latex-lab-float.dtx b/required/latex-lab/latex-lab-float.dtx
+index 0595efba8..3eef25ce5 100644
+--- a/required/latex-lab/latex-lab-float.dtx
++++ b/required/latex-lab/latex-lab-float.dtx
+@@ -107,7 +107,8 @@
+ % \pkg{hyperref} doesn't patch the caption commands anymore if \cs{DocumentMetadata} is used.
+ % The code here has to add a target for links. To improve the linking behavior,
+ % it add this target at the begin of the float (and at the begin of split if the float is split)
+-% and changes \cs{caption} so that a link to a caption label will go to this target.
++% and uses a plug of the kernel socket \texttt{caption/step}, so that a link to a
++% caption label will go to this target.
+ %
+ % \section{Keys}
+ %
+@@ -786,37 +787,63 @@
+ %    \end{macrocode}
+ % \end{plugdecl}
+ %
+-% \subsubsection{Redefinitions}
+-%
+-% With hyperref that means that the \cs{refstepcounter} now can affect spacing so we
+-% change that to the kernel refstepcounter:
+-%    \begin{macrocode}
+-\def\caption{%
+-   \ifx\@captype\@undefined
+-     \@latex@error{\noexpand\caption\c_space_tl outside~float}\@ehd
+-     \expandafter\@gobble
+-   \else
++% \begin{plugdecl}{nolabel (tagsupport/caption/label/begin)}
++% \begin{plugdecl}{nolabel (tagsupport/caption/label/end)}
++% \changes{0.81q}{2026-10-06}{Plugs \texttt{nolabel} for \cs{caption*}}
++% For a caption without a label (\cs{caption*}): no \texttt{Lbl} structure,
++% but the paragraph is handled as with a label. The paragraph is started
++% without para tagging, so that the following \texttt{para/begin} socket
++% starts the only \texttt{P} (with the plugs \plug{noop} the paragraph would
++% be started by the caption text after \texttt{para/begin}, which gave a
++% second \texttt{P} and unbalanced para hooks).
++%    \begin{macrocode}
++\NewTaggingSocketPlug{caption/label/begin}{nolabel}
++  {
++    \tagpdfparaOff
++  }
++\NewTaggingSocketPlug{caption/label/end}{nolabel}
++  {
++    \leavevmode
++    \tagpdfparaOn
++  }
+ %    \end{macrocode}
+-% if a caption is used outside a float no
+-% target has been set and \cs{@current@float@struct} is empty
+-%    \begin{macrocode}
+-     \tl_if_empty:NTF\@current@float@struct
+-      {
+-        \refstepcounter\@captype
+-      }
++% \end{plugdecl}
++% \end{plugdecl}
++%
++% \subsubsection{Stepping the counter}
++%
++% \changes{0.81q}{2026-10-06}{Use the kernel socket \texttt{caption/step}
++%   instead of redefining \cs{caption}}
++% With hyperref the \cs{refstepcounter} now can affect spacing, so the caption
++% should not make a new target inside a float but use the target at the
++% begin of the float. The kernel \cs{caption} steps the counter through the
++% socket \texttt{caption/step}, so we only need a plug and no longer redefine
++% \cs{caption}. It is a normal socket and not a tagging socket, because the
++% float target is also used if tagging is not active.
++% \begin{plugdecl}{latex-lab (caption/step)}
++% If a caption is used outside a float no
++% target has been set and \cs{@current@float@struct} is empty, so the
++% kernel plug makes a target as \cs{refstepcounter} does. Otherwise the
++% caption uses the target at the begin of the float (we use \cs{@captype}
++% to support autoref): the plug stores its name, locally, as the float
++% target \cs{@floatHref@}\meta{type} that the kernel plug uses, and then
++% uses the kernel plug. This is only done for the counter of the float
++% type (\cs{@captype}), as the redefinition of \cs{caption} did before;
++% other code that uses the socket for another counter (e.g., for a
++% sub-caption) gets the kernel plug.
++%    \begin{macrocode}
++\NewSocketPlug{caption/step}{latex-lab}
++  {
++    \tl_if_empty:NF \@current@float@struct
+       {
+-        \@kernel@refstepcounter\@captype
+-%    \end{macrocode}
+-% we need to reset the target for \cs{addcontentsline}.
+-% We use \cs{@captype} to support autoref.
+-%    \begin{macrocode}
+-        \xdef\@currentHref{\@captype.struct.\@current@float@struct}%
++        \str_if_eq:eeT { #1 } { \cs_if_exist_use:N \@captype }
++          { \cs_set_nopar:cpe { @floatHref@ #1 } { \@captype.struct.\@current@float@struct } }
+       }
+-     \expandafter\@firstofone
+-   \fi
+-   {\@dblarg{\@caption\@captype}}%
+-}
++    \@kernel@caption@step {#1}
++  }
++\AssignSocketPlug{caption/step}{latex-lab}
+ %    \end{macrocode}
++% \end{plugdecl}
+ %
+ % \begin{macro}{\@makecaption}
+ % \cs{@makecaption} is defined by the classes so we overwrite it for now
+@@ -830,6 +857,19 @@
+       \UseHookWithArguments{cmd/@makecaption/before}{2}{#1}{#2}%
+       \vskip\abovecaptionskip
+ %    \end{macrocode}
++% \cs{caption*} has no label (\cs{if@captionstar} is true and the first
++% argument is \cs{@caption@nolabel}, which typesets nothing), so the label
++% sockets are disabled locally, and the label tagging sockets get the plugs
++% \plug{nolabel}.
++% \changes{0.81q}{2026-10-06}{Support for \cs{caption*}}
++%    \begin{macrocode}
++      \legacy_if:nT { @captionstar }
++        {
++          \AssignSocketPlug{caption/label}{noop}
++          \AssignTaggingSocketPlug{caption/label/begin}{nolabel}
++          \AssignTaggingSocketPlug{caption/label/end}{nolabel}
++        }
++%    \end{macrocode}
+ % We don't want tagging when storing the caption for the singleline check.
+ % \changes{0.81l}{2025-10-17}{Measure \texttt{caption/label} socket instead of hard-coded colon and space, tagging issue 935}
+ %    \begin{macrocode}
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg b/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg
+new file mode 100644
+index 000000000..2d30690e9
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.luatex.tlg
+@@ -0,0 +1,95 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:6
++Floatstructure:9
++Floatstructure:12
++para hooks (text-block): 0 begin, 0 end
++para hooks (semantic): 3 begin, 3 end
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-028-caption-star-wide.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.005"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.006"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.007"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.008"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A starred caption that is wider than the line, so that it is typeset as a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.009"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.010"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.011"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short starred
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.012"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.013"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.014"
++        >
++       <?MarkedContent page="1" ?>Table 1: 
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.015"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A numbered caption that is wider than the line, so that it is typeset as a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-028-caption-star-wide.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-028-caption-star-wide.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~15 structure objects
++(tagpdf)             with ~6 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt b/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt
+new file mode 100644
+index 000000000..584a3a1b9
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.lvt
+@@ -0,0 +1,31 @@
++% \caption* that is wider than the line, so that the \@makecaption of
++% latex-lab typesets it as a paragraph and not in a box of the line width:
++% the paragraph must get one P (the one of the para/begin socket), not a
++% second one from the para hooks. With the plugs noop of the label tagging
++% sockets the para hooks were unbalanced (tagpdf error "para hooks differ"
++% at the end, which is not in the test log, so the counts are shown). A
++% short \caption* and a wide numbered caption for comparison.
++\DocumentMetadata{lang=en,tagging=on}
++\input{regression-test}
++\documentclass{article}
++\begin{document}
++\START
++\begin{table}[h]\centering
++  \caption*{A starred caption that is wider than the line, so that it is
++    typeset as a paragraph and not in a box of the line width}
++\end{table}
++\begin{table}[h]\centering
++  \caption*{Short starred}
++\end{table}
++\begin{table}[h]\centering
++  \caption{A numbered caption that is wider than the line, so that it is
++    typeset as a paragraph and not in a box of the line width}
++\end{table}
++\ExplSyntaxOn
++\typeout{para~hooks~(text-block):~\int_use:N \g__tag_para_main_begin_int
++  \space begin,~\int_use:N \g__tag_para_main_end_int \space end}
++\typeout{para~hooks~(semantic):~\int_use:N \g__tag_para_begin_int
++  \space begin,~\int_use:N \g__tag_para_end_int \space end}
++\ExplSyntaxOff
++\SHOWPDFTAGS
++\end{document}
+diff --git a/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg b/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
+new file mode 100644
+index 000000000..cd6ad1c17
+--- /dev/null
++++ b/required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
+@@ -0,0 +1,95 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++Floatstructure:5
++Floatstructure:8
++Floatstructure:11
++para hooks (text-block): 0 begin, 0 end
++para hooks (semantic): 3 begin, 3 end
++============================================================
++TEST 1: Show PDF Tags
++============================================================
++-------- float-028-caption-star-wide.xml (start) ---------
++<PDF version="2.0">
++ <StructTreeRoot>
++  <Document xmlns="http://iso.org/pdf2/ssn"
++     id="ID.002"
++    >
++   <tables xmlns="https://www.latex-project.org/ns/dflt"
++      id="ID.004"
++      rolemaps-to="Sect"
++     >
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.005"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.006"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.007"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A starred caption that is wider than the line, so that it is typeset as a paragraphand not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.008"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.009"
++       >
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.010"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>Short starred
++      </text-block>
++     </Caption>
++    </float>
++    <float xmlns="https://www.latex-project.org/ns/dflt"
++       id="ID.011"
++       rolemaps-to="Aside"
++      >
++     <Caption xmlns="http://iso.org/pdf2/ssn"
++        id="ID.012"
++       >
++      <Lbl xmlns="http://iso.org/pdf2/ssn"
++         id="ID.013"
++        >
++       <?MarkedContent page="1" ?>Table 1:
++      </Lbl>
++      <text-block xmlns="https://www.latex-project.org/ns/dflt"
++         id="ID.014"
++         xmlns:Layout="http://iso.org/pdf/ssn/Layout"
++         Layout:TextAlign="Center"
++         rolemaps-to="P"
++        >
++       <?MarkedContent page="1" ?>A numbered caption that is wider than the line, so that it is typesetas a paragraph and not in a box of the line width
++      </text-block>
++     </Caption>
++    </float>
++   </tables>
++  </Document>
++ </StructTreeRoot>
++</PDF>
++-------- float-028-caption-star-wide.xml (end) ---------
++============================================================
++[1
++]<<latex-list-css.html>><<latex-align-css.html>> (float-028-caption-star-wide.aux)
++Package tagpdf Info: Finalizing the tagging structure:
++(tagpdf)             Writing out ~14 structure objects
++(tagpdf)             with ~6 'MC' leaf nodes.
++(tagpdf)             Be patient if there are lots of objects!
++Package tagpdf Info: writing ParentTree
++Package tagpdf Info: writing IDTree
++Package tagpdf Info: writing RoleMap
++Package tagpdf Info: writing ClassMap
++Package tagpdf Info: writing NameSpaces
++Package tagpdf Info: writing StructElems
++Package tagpdf Info: writing Root
+-- 
+2.50.1 (Apple Git-155)
+

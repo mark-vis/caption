@@ -1,0 +1,1080 @@
+From a2775b2545fb72148e3c7ea67491a3ab70aff42f Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 05:53:09 +0200
+Subject: [PATCH 07/14] Remove the usual separator after the label of \caption*
+
+The label \@caption@nolabel of \caption* still typesets nothing, but
+while \if@captionstar is true it now also removes the usual separators
+after it: a colon or a period directly after the label (spaces before
+it are skipped), then spaces, ~, \nobreakspace, \space, \ , \enspace,
+\enskip, \quad and \qquad, also after the end of a group or of \textbf
+(|{#1}: #2|, |\textbf{#1}: #2|). So the standard classes, many classes
+derived from them and classes such as llncs, IEEEtran and mwart give
+"Text" instead of ": Text" without any change. If something else follows
+in the group of the label (a separator in a macro as in KOMA-Script,
+memoir, amsart or babel-french, other space, a character), it is
+printed before the text and a warning is given once per document. The
+paragraph is started where removed material would have started it, and
+\unskip, \unkern and \unpenalty after the label are removed as well.
+The cases that are printed without a warning are listed in ltfloat.
+
+This goes beyond the contract (\if@captionstar true, a label that
+typesets nothing), which classes should test, but leaving it out is not
+free. Without it, every class that does not test the switch prints its
+separator before the text: the standard classes article, report and
+book (classes.dtx does not test it) give ": Text" for \caption*, while
+the same document with \DocumentMetadata{tagging=on} gives "Text"
+(latex-lab's \@makecaption tests the switch); llncs, IEEEtran and mwart
+give their separator as well, and the float first aid (the next commit)
+relies on it for float's plain style ({\@fs@cfont #1:} #2).
+
+The alternative is that classes.dtx tests \if@captionstar. That was
+the first version of this proposal and was withdrawn: babel-french
+installs its French separator only if \@makecaption is the standard
+definition (\STD@makecaption), and caption3 recognises the standard
+classes by the same comparison, so any change to the standard
+\@makecaption gives "Figure 1: text" instead of "Figure 1 -- text" in
+French pdfLaTeX documents (caption's test/babel/french-0, -4, -5), and
+caption3 then reports an unknown class and uses its defaults. Changing
+classes.dtx would need babel-french and caption to follow.
+
+New test caption-interface-005 (the shapes of common \@makecaption
+definitions, horizontal and vertical mode, warnings; the article
+\@makecaption gives "Text" without a warning).
+caption-interface-004 shows the new meaning of \fnum@<type>.
+---
+ base/changes.txt                              |   6 +
+ base/doc/clsguide.tex                         |  17 +-
+ base/ltfloat.dtx                              | 212 +++++++++++++++-
+ base/testfiles/caption-interface-004.tlg      |  12 +-
+ .../caption-interface-005.luatex.tlg          | 222 +++++++++++++++++
+ base/testfiles/caption-interface-005.lvt      | 230 ++++++++++++++++++
+ base/testfiles/caption-interface-005.tlg      | 210 ++++++++++++++++
+ 7 files changed, 891 insertions(+), 18 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-005.luatex.tlg
+ create mode 100644 base/testfiles/caption-interface-005.lvt
+ create mode 100644 base/testfiles/caption-interface-005.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index a11128ea3..6cd09ae78 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,12 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx, clsguide.tex:
++	The label \@caption@nolabel of \caption* removes the usual separator
++	after it (a colon or a period and the following space), so the
++	standard classes need no change; it warns once if something else
++	follows
++
+ 	* ltfloat.dtx, clsguide.tex:
+ 	With an \@caption that a class or package has replaced, \caption*
+ 	gives no label, no list entry and no duplicate target either, until
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index e73ab5d67..e196875cf 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1528,11 +1528,18 @@ so that classes and packages do not need to redefine
+ \item \cs{@makecaption}\arg{label}\arg{text} is also used for
+   \cs{caption*}. Then the switch \cs{if@captionstar} is true and
+   \meta{label} is \cs{@caption@nolabel}. This label is not empty (a test
+-  for an empty label does not work), but it typesets nothing. A class
+-  should omit the label \emph{and} the separator if the switch is true;
+-  otherwise the separator is printed before the text (`: Text' with
+-  \verb|#1: #2|, as in the standard classes). The switch is the only
+-  test that classes should use, for example:
++  for an empty label does not work), but it typesets nothing, and it
++  removes the usual separators that follow it directly: a colon or a
++  period and the space after them, also after the end of a group or of
++  \cs{textbf}. So a \cs{@makecaption} that typesets \verb|#1: #2|, as the
++  standard classes do, or \verb|{\bfseries #1.} #2| and similar forms
++  needs no change. A class whose separator is in a macro, or that adds
++  other space or characters after the label, should omit the label
++  \emph{and} the separator if the switch is true. Otherwise they are
++  printed before the text; in most cases \LaTeX{} then warns once, but
++  not always (for example not for a separator after a group that
++  contains only the label, as in \verb|\textit{#1}\textbf{:}|). The
++  switch is the only test that classes should use, for example:
+ \begin{verbatim}
+ \sbox\@tempboxa{\if@captionstar\else#1\captionsep\fi#2}%
+ \end{verbatim}
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 5262a534d..55a7cd5cf 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -298,9 +298,17 @@
+ %      omits the label \emph{and} its separator (the tagging code does
+ %      that); this is the only documented test (a test for an empty label
+ %      does not work). For the many definitions that do not test it,
+-%      \cs{@caption@nolabel} typesets nothing, but their separator is
+-%      printed before the text (for example `: Text' with the standard
+-%      classes). The standard classes are not changed, because packages
++%      \cs{@caption@nolabel} typesets nothing and removes the usual
++%      separators after it (a colon or a period and the following
++%      space, also across the end of a group or of \cs{textbf}), so the
++%      standard classes, many classes derived from them and classes such
++%      as \cls{llncs}, \cls{IEEEtran} and \cls{mwart} show neither label
++%      nor separator without any change. A separator in a macro
++%      (\pkg{KOMA-Script}, \cls{memoir}, \cls{amsart}, \pkg{babel-french}
++%      for French with pdf\TeX), another space (\cs{hskip},
++%      \cs{hspace}) or another character is printed before the text; in
++%      most cases a warning is given then (once), see
++%      \cs{@caption@nolabel}. The standard classes are not changed, because packages
+ %      compare \cs{@makecaption} with their definition (for example
+ %      \pkg{babel-french}, which replaces the separator for French only if
+ %      \cs{@makecaption} is the standard one).
+@@ -685,21 +693,211 @@
+ % \end{macro}
+ %
+ % \begin{macro}{\@caption@nolabel}
++% \begin{macro}{\@caption@nolabel@look,\@caption@nolabel@do,
++%                \@caption@nolabel@next,\@caption@nolabel@drop,
++%                \@caption@nolabel@punct,\@caption@nolabel@space,
++%                \@caption@nolabel@group,\@caption@nolabel@stop,
++%                \@caption@nolabel@clean,\@caption@nolabel@other,
++%                \@caption@nolabel@brace,\@caption@nolabel@line,
++%                \@caption@nolabel@hmode,\@caption@nolabel@m,
++%                \@caption@nolabel@nowarn,\@caption@nolabel@warn}
+ % \changes{v1.2k}{2026-10-06}{Macro added: \cs{@caption@nolabel}, the label
+ %    of \cs{caption*}}
++% \changes{v1.2k}{2026-10-06}{The label of \cs{caption*} removes the usual
++%    separators after it}
+ %    \cs{@caption@nolabel} is the label that \cs{caption*} passes to
+ %    \cs{@makecaption}. The contract for \cs{@makecaption} is only that
+ %    \cs{if@captionstar} is true and that the label is not empty but
+ %    typesets nothing; a \cs{@makecaption} that supports \cs{caption*}
+-%    tests the switch and omits the label and its separator. A separator
+-%    that the \cs{@makecaption} of the class puts after the label is
+-%    printed before the text.
++%    tests the switch and omits the label and its separator.
++%
++%    Everything else is a convenience for the many \cs{@makecaption}
++%    definitions that do not (yet) test the switch. It is separate from
++%    the contract: if \cs{@caption@nolabel@look} were \cs{@gobble}, the
++%    label would simply typeset nothing. While \cs{if@captionstar} is true,
++%    the label looks at the tokens after it:
++%    \begin{itemize}
++%    \item A colon or a period directly after the label is removed
++%      (spaces before it are skipped), then spaces, |~|,
++%      \cs{nobreakspace}, \cs{space}, |\ |, \cs{enspace}, \cs{enskip},
++%      \cs{quad} and \cs{qquad}.
++%    \item If the label, or what was removed after it, is the last thing
++%      in a group or in the argument of \cs{textbf} or another command
++%      defined with \cs{DeclareTextFontCommand} (recognized by
++%      \cs{check@icr}), this continues after the end of the group (with
++%      \cs{aftergroup}), where a colon or a period can still follow if
++%      nothing has been removed yet (|{#1}: #2|, |\textbf{#1}: #2|). The
++%      italic correction \cs{maybe@ic} that \cs{check@icr} puts after
++%      the group is removed, since there is nothing to correct.
++%    \item If something was removed, the paragraph is started
++%      (\cs{leavevmode}), in the group of the removed material, as that
++%      material would have done. This is not done if \cs{par} follows in
++%      that group, so a label line such as |{\centering #1.\par}| gives
++%      no empty line; a \cs{par} after the end of the group
++%      (|{\bfseries #1.}\par|) comes too late and still gives one.
++%    \item If, in the group of the label, the label or the removed
++%      material is followed by anything else than the text (which starts
++%      with \cs{ignorespaces}), \cs{par}, \cs{relax}, \cs{@},
++%      \cs{vadjust}, \cs{penalty}, the end of a conditional, the end of a box that
++%      measures the label (\cs{sbox},
++%      \cs{settowidth}) or, after a removed separator, a group (which can
++%      contain the text), it is taken as material that is printed before
++%      the text: a separator in a macro (such as \cs{captionformat} of
++%      \pkg{KOMA-Script}, \cs{@contdelim} of \cls{memoir} or the
++%      separator of \pkg{babel-french}), other space (\cs{hskip}, also in
++%      braces) or a character (|--|). Then a warning is given once per
++%      document. The paragraph is not started for it (unless something
++%      was removed before it), so that in vertical mode a space at the
++%      start of a separator macro is still ignored, as without the label,
++%      and vertical material (\cs{vskip}) stays vertical. After the end
++%      of a group, the class code can continue with anything (for
++%      example with code that measures or boxes the label), so nothing is
++%      checked there: a separator after a group that contains only the
++%      label (|\textit{#1}\textbf{:}|, |\fbox{#1}:|) is printed without a
++%      warning. \cs{relax} also ends the look-ahead without a warning, so
++%      a separator after it is printed silently as well
++%      (|#1\relax\hskip1em|, and |#1\protect\sep| while typesetting, where
++%      \cs{protect} is \cs{relax}).
++%    \item \cs{unskip}, \cs{unkern} and \cs{unpenalty} directly after the
++%      label or the removed material are removed as well: they are meant
++%      for the end of the label, which is empty, and in vertical mode
++%      they would remove vertical material instead (such as
++%      \cs{abovecaptionskip}).
++%    \item The rule for the paragraph: it is started before the
++%      primitives whose meaning depends on the mode (\cs{kern},
++%      \cs{penalty}, \cs{hbox}, \cs{vbox}, \cs{vtop}, \cs{box},
++%      \cs{copy}, \cs{raise}, \cs{lower}, \cs{vadjust}) and before
++%      \verb|\\|, \cs{newline} and \cs{@}, so that they act in horizontal
++%      mode, as after a label, and do not give an error in vertical mode.
++%      It is not started before \cs{par}, \cs{vskip}, a space or a macro
++%      (macros are not looked into). \cs{kern}, the boxes, \cs{raise},
++%      \cs{lower}, \verb|\\| and \cs{newline} also warn, as they print
++%      space, material or an empty line before the text; \cs{penalty},
++%      \cs{vadjust} and \cs{@} do not.
++%    \end{itemize}
++%    Nothing of the text is removed, because the text passed to
++%    \cs{@makecaption} starts with \cs{ignorespaces}. All of this is
++%    only done while \cs{if@captionstar} is true, so the label does
++%    nothing else if it ends up somewhere else.
+ %    The command is robust, so that it survives \cs{edef} and case
+ %    changing of the label.
+ %    \begin{macrocode}
+-\protected\def\@caption@nolabel{}
++\protected\def\@caption@nolabel{%
++  \if@captionstar
++    \expandafter\@caption@nolabel@look\expandafter P%
++  \fi}
++%    \end{macrocode}
++%    The argument of \cs{@caption@nolabel@look} is the state, a letter:
++%    |P| (nothing removed yet, in the group of the label), |Q| (nothing
++%    removed, after the end of a group), |S| (something removed, in its
++%    group) or |G| (something removed, after the end of its group). A
++%    colon or a period is only removed in states |P| and |Q|, and only
++%    |P| and |S| can warn. \cs{kernel@ifnextchar} skips (removes)
++%    spaces and leaves the next token in \cs{@let@token}. Then
++%    \cs{@caption@nolabel@do} decides what to do with that token. To
++%    keep conditionals balanced, \cs{@let@token}, which can be \cs{fi},
++%    is only used directly after \cs{ifx} and never in a branch that
++%    may be skipped.
++%    \begin{macrocode}
++\def\@caption@nolabel@look#1{%
++  \kernel@ifnextchar\relax
++    {\@caption@nolabel@do#1}{\@caption@nolabel@do#1}}
++\def\@caption@nolabel@do#1{%
++  \def\@caption@nolabel@next{\@caption@nolabel@stop#1}%
++  \ifx\@let@token\egroup\@caption@nolabel@group#1\fi
++  \ifx\@let@token\check@icr\@caption@nolabel@group#1\fi
++  \ifx\@let@token\maybe@ic\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unskip\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unkern\@caption@nolabel@drop#1\fi
++  \ifx\@let@token\unpenalty\@caption@nolabel@drop#1\fi
++  \ifx\@let@token:\@caption@nolabel@punct#1\fi
++  \ifx\@let@token.\@caption@nolabel@punct#1\fi
++  \ifx\@let@token~\@caption@nolabel@space#1\fi
++  \ifx\@let@token\nobreakspace\@caption@nolabel@space#1\fi
++  \ifx\@let@token\space\@caption@nolabel@space#1\fi
++  \ifx\@let@token\ \@caption@nolabel@space#1\fi
++  \ifx\@let@token\enspace\@caption@nolabel@space#1\fi
++  \ifx\@let@token\enskip\@caption@nolabel@space#1\fi
++  \ifx\@let@token\quad\@caption@nolabel@space#1\fi
++  \ifx\@let@token\qquad\@caption@nolabel@space#1\fi
++  \@caption@nolabel@next}
++\def\@caption@nolabel@drop#1{%
++  \def\@caption@nolabel@next##1{\@caption@nolabel@look#1}}
++\def\@caption@nolabel@punct#1{%
++  \if P#1\@caption@nolabel@drop S\fi
++  \if Q#1\@caption@nolabel@drop S\fi}
++\def\@caption@nolabel@space#1{%
++  \if G#1\@caption@nolabel@drop G\else\@caption@nolabel@drop S\fi}
++\def\@caption@nolabel@group#1{%
++  \edef\@caption@nolabel@next{%
++    \if S#1\noexpand\leavevmode\fi
++    \aftergroup\noexpand\@caption@nolabel@look
++    \aftergroup\if P#1Q\else\if S#1G\else#1\fi\fi}}
++%    \end{macrocode}
++%    At any other token the label is done. \cs{par} and \cs{@@par} end
++%    without a paragraph. The tokens that are no separator
++%    (\cs{@caption@nolabel@clean}) only start the paragraph if
++%    something was removed; a group is such a token only after a
++%    removed separator (\cs{@caption@nolabel@brace}). The end of a conditional is recognized by
++%    its meaning as a string, so that no \cs{fi} appears in a test.
++%    \cs{penalty}, \cs{vadjust} and \cs{@} always start the paragraph
++%    (\cs{@caption@nolabel@hmode}); the other mode-dependent primitives,
++%    \verb|\\| and \cs{newline} also warn (\cs{@caption@nolabel@line}).
++%    Anything else (\cs{@caption@nolabel@other}) is printed: in states
++%    |P| and |S| this warns; only in state |S| it starts the paragraph.
++%    \begin{macrocode}
++\def\@caption@nolabel@stop#1{%
++  \let\@caption@nolabel@next\@caption@nolabel@other
++  \ifx\@let@token\ignorespaces
++    \let\@caption@nolabel@next\@caption@nolabel@clean\fi
++  \ifx\@let@token\bgroup\let\@caption@nolabel@next\@caption@nolabel@brace\fi
++  \ifx\@let@token\relax\let\@caption@nolabel@next\@caption@nolabel@clean\fi
++  \ifx\@let@token\@\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
++  \ifx\@let@token\vadjust\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
++  \ifx\@let@token\penalty\let\@caption@nolabel@next\@caption@nolabel@hmode\fi
++  \ifx\@let@token\kern\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\hbox\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\vbox\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\vtop\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\box\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\copy\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\raise\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\lower\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\color@endgroup
++    \let\@caption@nolabel@next\@caption@nolabel@clean\fi
++  \ifx\@let@token\ResumeTagging
++    \let\@caption@nolabel@next\@caption@nolabel@clean\fi
++  \ifx\@let@token\par\let\@caption@nolabel@next\@gobble\fi
++  \ifx\@let@token\@@par\let\@caption@nolabel@next\@gobble\fi
++  \ifx\@let@token\\\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \ifx\@let@token\newline\let\@caption@nolabel@next\@caption@nolabel@line\fi
++  \edef\@caption@nolabel@m{,\meaning\@let@token,}%
++  \@expandtwoargs\in@\@caption@nolabel@m\@caption@nolabel@nowarn
++  \ifin@\let\@caption@nolabel@next\@caption@nolabel@clean\fi
++  \@caption@nolabel@next#1}
++\edef\@caption@nolabel@nowarn{,\string\fi,\string\else,\string\or,}
++\def\@caption@nolabel@clean#1{\if S#1\expandafter\leavevmode\fi}
++\def\@caption@nolabel@other#1{%
++  \if\if Q#1G\else#1\fi G\else
++    \@caption@nolabel@warn
++  \fi
++  \@caption@nolabel@clean#1}
++\def\@caption@nolabel@hmode#1{\leavevmode}
++\def\@caption@nolabel@brace#1{%
++  \if P#1\expandafter\@caption@nolabel@other
++  \else\expandafter\@caption@nolabel@clean\fi#1}
++\def\@caption@nolabel@line#1{\@caption@nolabel@other#1\leavevmode}
++\def\@caption@nolabel@warn{%
++  \global\let\@caption@nolabel@warn\relax
++  \@latex@warning{%
++    \string\caption* is used with a caption layout of the\MessageBreak
++    class or of a package that does not support it,\MessageBreak
++    so a separator or a space may be printed before\MessageBreak
++    the text%
++  }}
+ %    \end{macrocode}
+ % \end{macro}
++% \end{macro}
+ %
+ %    \begin{macrocode}
+ %</2ekernel|latexrelease>
+diff --git a/base/testfiles/caption-interface-004.tlg b/base/testfiles/caption-interface-004.tlg
+index 83d14e53d..72e2d82af 100644
+--- a/base/testfiles/caption-interface-004.tlg
++++ b/base/testfiles/caption-interface-004.tlg
+@@ -12,11 +12,11 @@ ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{
+ MAKECAPTION: label=[\fnum@figure ], star=true
+ figure=1
+ SWITCHES: star=true, step=true, target=true
+-after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++after: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi , ext=macro:->, theH=macro:->\@caption@H@figure *1
+ BEFORE: {figure}{true}{[Opt]}{Starred with option}, figure=1, linewidth=345.0pt
+ ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Opt}}
+ MAKECAPTION: label=[\fnum@figure ], star=true
+-after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *2
++after: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi , ext=macro:->, theH=macro:->\@caption@H@figure *2
+ BEFORE: {figure}{false}{NoValue}{Second}, figure=1, linewidth=345.0pt
+ TARGET: new target figure.2
+ ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Second}}
+@@ -28,7 +28,7 @@ SWITCHES: star=false, step=true, target=true
+ TEST 2: caption* with a wrapper of the kernel @caption
+ ============================================================
+ BEFORE: {figure}{true}{NoValue}{Starred}, figure=2, linewidth=345.0pt
+-WRAPPER: fnum=\protected macro:->
++WRAPPER: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi 
+ MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
+ figure=2
+ SWITCHES: star=false, step=true, target=true
+@@ -43,7 +43,7 @@ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
+ TEST 3: caption* with a deferred kernel @caption
+ ============================================================
+ BEFORE: {figure}{true}{NoValue}{Deferred star}, figure=3, linewidth=345.0pt
+-after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++after: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi , ext=macro:->, theH=macro:->\@caption@H@figure *1
+ MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Deferred star], star=true
+ figure=3
+ SWITCHES: star=false, step=true, target=true
+@@ -60,7 +60,7 @@ BEFORE: {figure}{true}{NoValue}{Starred}, figure=4, linewidth=345.0pt
+ CLASS TARGET: figure.4*1
+ ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
+ MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Starred], star=true
+-after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++after: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi , ext=macro:->, theH=macro:->\@caption@H@figure *1
+ ADDCONTENTSLINE: {lof}{figure}{Manual entry after caption*}
+ BEFORE: {figure}{false}{NoValue}{Second}, figure=4, linewidth=345.0pt
+ TARGET: new target figure.5
+@@ -107,7 +107,7 @@ BEFORE: {figure}{true}{NoValue}{Starred}, figure=6, linewidth=345.0pt
+ ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
+ MAKECAPTION: label=[\fnum@figure ], star=true
+ SWITCHES: star=true, step=true, target=true
+-after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *2
++after: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi , ext=macro:->, theH=macro:->\@caption@H@figure *2
+ giveback: macro:->\@caption@uniqueH@back {figure.6}{2}
+ SWITCHES: star=false, step=true, target=true
+ after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
+diff --git a/base/testfiles/caption-interface-005.luatex.tlg b/base/testfiles/caption-interface-005.luatex.tlg
+new file mode 100644
+index 000000000..9e379c009
+--- /dev/null
++++ b/base/testfiles/caption-interface-005.luatex.tlg
+@@ -0,0 +1,222 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: article makecaption with the label of caption*: no separator
++============================================================
++article: no warning
++> \box...=
++\vbox(16.83331+0.0)x284.52756, direction TLT
++.\glue 10.0
++.\hbox(6.83331+0.0)x284.52756, glue set 132.26376fil, direction TLT
++..\glue 0.0 plus 1.0fil
++..\hbox(6.83331+0.0)x20.00003, direction TLT
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334 (font)
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...t {article: \showwarned }\showbox 0 
++                                                  \setbox 0=\vbox {\hsize =1...
++l. ...  \showbox0}
++> \box...=
++\vbox(16.94444+0.0)x284.52756, direction TLT
++.\glue 10.0
++.\hbox(6.94444+0.0)x284.52756, glue set 116.49985fil, direction TLT
++..\glue 0.0 plus 1.0fil
++..\hbox(6.94444+0.0)x51.52788, direction TLT
++...\OT1/cmr/m/n/10 L
++...\OT1/cmr/m/n/10 a
++...\discretionary (penalty 50)
++....< \OT1/cmr/m/n/10 -
++...\OT1/cmr/m/n/10 b
++...\kern0.27779 (font)
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 l
++...\OT1/cmr/m/n/10 :
++...\glue(\spaceskip) 4.44444 plus 3.33331 minus 0.55556
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334 (font)
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...akecaption {Label}{Text}}\showbox 0 
++                                                  \setbox 0=\hbox {\nolabel ...
++l. ...  \showbox0}
++> \box...=
++\hbox(6.83331+0.0)x27.22226, direction TLT
++.\OT1/cmr/m/n/10 .
++.\glue(\spaceskip) 4.44444 plus 4.99997 minus 0.37036
++.\OT1/cmr/m/n/10 T
++.\kern-0.83334 (font)
++.\OT1/cmr/m/n/10 e
++.\OT1/cmr/m/n/10 x
++.\OT1/cmr/m/n/10 t
++! OK.
++<to be read again> 
++                   \endgroup 
++l. ...  \showbox0}
++============================================================
++============================================================
++TEST 2: label of caption*: separators removed in common forms
++============================================================
++SHAPE colon: clean
++SHAPE space before colon: clean
++SHAPE colon in group: clean
++SHAPE colon and tie: clean
++SHAPE period in group: clean
++SHAPE period and enspace: clean
++SHAPE period and nobreakspaces: clean
++SHAPE label in group, colon: clean
++SHAPE label in two groups, period: clean
++SHAPE label in group, space: clean
++SHAPE quad: clean
++SHAPE qquad, control space: clean
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE text without ignorespaces (warning): clean
++SHAPE not caption*: width 27.22226pt(text 20.00003pt)
++SHAPE textbf label, colon: clean
++SHAPE textbf label and period: clean
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE other separator macro (kept, warning): width 27.22226pt(text 20.00003pt)
++SHAPE other separator macro (kept, no second warning): width 27.22226pt(text 20.00003pt)
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE hskip (kept, warning): width 30.00005pt(text 20.00003pt)
++SHAPE conditional (clean, no warning): clean
++> \box...=
++\vbox(6.83331+0.0)x284.52756, direction TLT
++.\hbox(6.83331+0.0)x284.52756, glue set 249.52753fil, direction TLT
++..\localpar
++...\localinterlinepenalty=0
++...\localbrokenpenalty=0
++...\localleftbox=null
++...\localrightbox=null
++..\hbox(0.0+0.0)x15.0, direction TLT
++..\OT1/cmr/m/n/10 T
++..\kern-0.83334 (font)
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 x
++..\OT1/cmr/m/n/10 t
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++.\penalty 268
++! OK.
++<argument> ...}\ignorespaces Text\par }\showbox 0 
++                                                  \setbox 0=\vbox {\hsize =1...
++l. ...  \showbox0}
++> \box...=
++\vbox(6.83331+0.0)x284.52756, direction TLT
++.\hbox(6.83331+0.0)x284.52756, glue set 249.52753fil, direction TLT
++..\localpar
++...\localinterlinepenalty=0
++...\localbrokenpenalty=0
++...\localleftbox=null
++...\localrightbox=null
++..\hbox(0.0+0.0)x15.0, direction TLT
++..\OT1/cmr/m/n/10 T
++..\kern-0.83334 (font)
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 x
++..\OT1/cmr/m/n/10 t
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++<to be read again> 
++                   \endgroup 
++l. ...  \showbox0}
++============================================================
++============================================================
++TEST 3: label of caption*: vertical mode, measuring, when to warn
++============================================================
++VSHAPE period, vertical mode: clean, no warning
++VSHAPE label line with period and par (no empty line): clean, no warning
++VSHAPE label and par: clean, no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE label and newline (empty line, no error, warning): height/width 12.0pt/20.00003pt (text 6.83331pt/20.00003pt), warning
++VSHAPE label in group and newline (empty line, no error): height/width 12.0pt/20.00003pt (text 6.83331pt/20.00003pt), no warning
++VSHAPE label in group, colon, vadjust: clean, no warning
++SHAPE sbox of the label (no warning): clean
++.... no warning
++SHAPE settowidth of label and colon (no warning): clean
++.... no warning
++SHAPE period and spacefactor: clean
++.... no warning
++SHAPE colon, text in a group: clean
++.... no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE character separator (warning): width 28.33337pt(text 20.00003pt)
++.... warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE two periods (warning): width 27.22226pt(text 20.00003pt)
++.... warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE space in braces (warning): width 30.00005pt(text 20.00003pt)
++.... warning
++SHAPE separator after a group with the label (known gap: printed, no warning): width 27.6389pt(text 20.00003pt)
++.... no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE separator macro with a leading space (space ignored, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vskip (stays vertical, warning): as reference, warning
++VSHAPE spacefactor (no error): clean, no warning
++VSHAPE vadjust (no error): as reference, no warning
++SHAPE relax and hskip (known gap: printed, no warning): width 30.00005pt(text 20.00003pt)
++.... no warning
++VSHAPE unskip after the label (removed, vertical skip kept): as reference, no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE kern (horizontal, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE hbox (in the paragraph, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vbox (in the paragraph, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vtop (in the paragraph, warning): as reference, warning
++VSHAPE penalty (horizontal, no warning): as reference, no warning
++============================================================
++(caption-interface-005.aux)
+diff --git a/base/testfiles/caption-interface-005.lvt b/base/testfiles/caption-interface-005.lvt
+new file mode 100644
+index 000000000..6d704bc15
+--- /dev/null
++++ b/base/testfiles/caption-interface-005.lvt
+@@ -0,0 +1,230 @@
++% Test of the separator removal of the label of \caption*
++% (\@caption@nolabel): the separators removed after it in the shapes of
++% common \@makecaption definitions, in horizontal and vertical mode, and
++% when it warns.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% the kernel definitions, for the tests that wrap or keep them
++\let\kernelcaption\caption
++\let\kernelatcaption\@caption
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++\def\showswitches{%
++  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
++    step=\if@captionstep true\else false\fi,
++    target=\if@captiontarget true\else false\fi}}
++% the hooks
++\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
++\long\def\showopt#1{\IfNoValueTF{#1}%
++  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
++\AddToHookWithArguments{caption/before}[test]{%
++  \showbool{#2}\showopt{#3}%
++  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
++    figure=\thefigure, linewidth=\the\linewidth}%
++  \csname testbefore\endcsname}
++\newcounter{sub}[figure]
++\gdef\@currentHref{none}
++% helpers for the tests (\makeatletter does not work inside \TEST)
++\def\stepoff{\@captionstepfalse}
++\def\targetoff{\@captiontargetfalse}
++\def\sethref#1{\gdef\@currentHref{#1}}
++\def\showhref{\typeout{href=\@currentHref}}
++\def\showlabel{\typeout{figure=\thefigure, label=\@currentlabel,
++  sub=\thesub}}
++\def\setfloathref#1{\def\@floatHref@figure{#1}}
++\def\emptyfloathref{\let\@floatHref@figure\@empty}
++\def\relaxfloathref{\let\@floatHref@figure\relax}
++\def\settype#1{\def\@captype{#1}}
++\def\directcaption{\@caption}
++\def\starton{\@captionstartrue}
++\def\nolabel{\@caption@nolabel}
++\def\resetcaption{\@kernel@caption@reset}
++\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
++% a package that keeps its own \caption (here the definition of LaTeX
++% before 2026) and passes only \caption* to the kernel
++\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
++\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
++  {\@kernel@caption@reset\owncaption}}}
++% replacements of \@caption: as in a class that does not know \caption*
++% (the definition of llncs), a wrapper of the kernel definition (as in
++% memoir or nameref), and a definition that defers the kernel definition
++% (as threeparttable)
++\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
++  ext@#1\endcsname}{#1}{\protect\numberline{\csname
++  the#1\endcsname}{\ignorespaces #2}}\begingroup
++    \@parboxrestore
++    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++  \endgroup}
++\long\def\targetcaption#1[#2]#3{%
++  \protected@xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{CLASS TARGET: \@currentHref}%
++  \classcaption{#1}[{#2}]{#3}}
++\long\def\deferclasscaption#1[#2]#3{%
++  \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \kernelatcaption{#1}[{#2}]{#3}}
++\long\def\defercaption#1[#2]#3{%
++  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
++\def\useclasscaption{\let\@caption\classcaption}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++\def\usedefercaption{\let\@caption\defercaption}
++\def\usetargetcaption{\let\@caption\targetcaption}
++\def\usedeferclasscaption{\let\@caption\deferclasscaption}
++\def\showlabelexpansion{%
++  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
++    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
++      true\else false\fi}}}
++\def\showrestored{%
++  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
++    theH=\meaning\theHfigure}}
++\def\staroff{\@captionstarfalse}
++% the label of caption* in different \@makecaption shapes: the width
++% of the box compared with the text alone
++\def\shape#1#2{%
++  \setbox0=\hbox{\starton #2}\setbox2=\hbox{Text}%
++  \typeout{SHAPE #1: \ifdim\wd0=\wd2 clean\else
++    width \the\wd0\space(text \the\wd2)\fi}}
++\def\sep{: }
++\let\savedwarn\@caption@nolabel@warn
++\def\rewarn{\global\let\@caption@nolabel@warn\savedwarn}
++% shapes in vertical mode: total height and natural width of the last line
++% compared with the text alone; and whether the label warned
++\def\lastline#1#2{%
++  \setbox4\vbox{\unvcopy#1\unskip\unpenalty\unskip\global\setbox5\lastbox}%
++  \setbox6\hbox{\unhcopy5\unskip\unskip\unpenalty}%
++  \edef#2{\the\dimexpr\ht#1+\dp#1\relax/\the\wd6}}
++\def\showwarned{\ifx\@caption@nolabel@warn\relax warning\else no warning\fi}
++\long\def\vshape#1#2{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #2\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt \noindent Text\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb clean\else
++    height/width \tmpa\space(text \tmpb)\fi, \showwarned}}
++\def\hshape#1#2{\rewarn\shape{#1}{#2}\typeout{.... \showwarned}}
++% the same in vertical mode, compared with a reference (#2) instead of
++% the text alone
++\long\def\vshapeto#1#2#3{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #3\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt #2\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb as reference\else
++    height/width \tmpa\space(reference \tmpb)\fi, \showwarned}}
++\def\spsep{ \textendash\ }
++\def\sboxlabel{\sbox\@tempboxa{\nolabel}\unhbox\@tempboxa}
++\def\settowidthlabel{\settowidth\@tempdima{\nolabel: }\hskip\@tempdima}
++% a counter without \theH<counter> (as made before 2024 by \newcount)
++\newcount\c@myfig
++\def\themyfig{\arabic{myfig}}
++\def\p@myfig{}
++\def\fnum@myfig{My \themyfig}
++\def\ext@myfig{lom}
++\makeatother
++\begin{document}
++\START
++\TEST{article makecaption with the label of caption*: no separator}{%
++  \setbox0=\vbox{\hsize=10cm
++    \starton\ORImakecaption{\nolabel}{\ignorespaces Text}}%
++  \typeout{article: \showwarned}%
++  \showbox0
++  \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
++  \showbox0
++  \setbox0=\hbox{\nolabel. Text}% outside of caption*: nothing removed
++  \showbox0}
++\TEST{label of caption*: separators removed in common forms}{%
++  \shape{colon}{\nolabel: \ignorespaces Text}%
++  \shape{space before colon}{\nolabel : \ignorespaces Text}%
++  \shape{colon in group}{{\bfseries\nolabel:} \ignorespaces Text}%
++  \shape{colon and tie}{\nolabel:~\ignorespaces Text}%
++  \shape{period in group}{{\bfseries\nolabel.} \ignorespaces Text}%
++  \shape{period and enspace}{\nolabel.\enspace\ignorespaces Text}%
++  \shape{period and nobreakspaces}%
++    {{\nolabel.}\nobreakspace\nobreakspace \ignorespaces Text}%
++  \shape{label in group, colon}{{\nolabel}: \ignorespaces Text}%
++  \shape{label in two groups, period}{{{\nolabel}}. \ignorespaces Text}%
++  \shape{label in group, space}{{\bfseries\nolabel} \ignorespaces Text}%
++  \shape{quad}{\nolabel\quad \ignorespaces Text}%
++  \shape{qquad, control space}{\nolabel\qquad\ \ignorespaces Text}%
++  \shape{text without ignorespaces (warning)}{\nolabel: Text}%
++  \shape{not caption*}{\staroff\nolabel: \ignorespaces Text}%
++  \shape{textbf label, colon}{\textbf{\nolabel}: \ignorespaces Text}%
++  \shape{textbf label and period}{\textbf{\nolabel.} \ignorespaces Text}%
++  \rewarn
++  \shape{other separator macro (kept, warning)}{\nolabel\sep\ignorespaces Text}%
++  \shape{other separator macro (kept, no second warning)}%
++    {\nolabel\sep\ignorespaces Text}%
++  \rewarn
++  \shape{hskip (kept, warning)}{\nolabel\hskip 1em\ignorespaces Text}%
++  \rewarn
++  \shape{conditional (clean, no warning)}%
++    {\iftrue\nolabel: \fi\ignorespaces Text}%
++  \setbox0=\vbox{\hsize=10cm \starton
++    {\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text\par}%
++  \showbox0
++  \setbox0=\vbox{\hsize=10cm \starton\nolabel\par\ignorespaces Text\par}%
++  \showbox0}
++% Shapes marked "known gap" record output that is not wanted but accepted
++% (the silent cases listed in ltfloat.dtx); a change there can be an
++% improvement rather than a regression.
++\TEST{label of caption*: vertical mode, measuring, when to warn}{%
++  \vshape{period, vertical mode}{\nolabel. \ignorespaces Text}%
++  \vshape{label line with period and par (no empty line)}%
++    {{\centering\bfseries\nolabel.\par}\ignorespaces Text}%
++  \vshape{label and par}{\nolabel\par\ignorespaces Text}%
++  \vshape{label and newline (empty line, no error, warning)}%
++    {\nolabel\\\ignorespaces Text}%
++  \vshape{label in group and newline (empty line, no error)}%
++    {{\bfseries\nolabel}\\\ignorespaces Text}%
++  \vshape{label in group, colon, vadjust}%
++    {{\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text}%
++  \hshape{sbox of the label (no warning)}%
++    {\sboxlabel\ignorespaces Text}%
++  \hshape{settowidth of label and colon (no warning)}%
++    {\settowidthlabel\ignorespaces Text}%
++  \hshape{period and spacefactor}{\nolabel.\@\ignorespaces Text}%
++  \hshape{colon, text in a group}{\nolabel: {\ignorespaces Text}}%
++  \hshape{character separator (warning)}{\nolabel\ -- \ignorespaces Text}%
++  \hshape{two periods (warning)}{\nolabel.. \ignorespaces Text}%
++  \hshape{space in braces (warning)}{\nolabel{\hskip 1em}\ignorespaces Text}%
++  \hshape{separator after a group with the label (known gap: printed, no warning)}%
++    {\textit{\nolabel}\textbf{:} \ignorespaces Text}%
++  \vshapeto{separator macro with a leading space (space ignored, warning)}%
++    {\textendash\ Text}{\nolabel\spsep\ignorespaces Text}%
++  \vshapeto{vskip (stays vertical, warning)}%
++    {\vskip 2pt \noindent Text}{\nolabel\vskip 2pt \ignorespaces Text}%
++  \vshape{spacefactor (no error)}{\nolabel\@\ignorespaces Text}%
++  \vshapeto{vadjust (no error)}%
++    {\noindent\vadjust{\penalty 7 }Text}%
++    {\nolabel\vadjust{\penalty 7 }\ignorespaces Text}%
++  \hshape{relax and hskip (known gap: printed, no warning)}%
++    {\nolabel\relax\hskip 1em\ignorespaces Text}%
++  \vshapeto{unskip after the label (removed, vertical skip kept)}%
++    {\vskip 10pt \noindent Text}{\vskip 10pt \nolabel\unskip: \ignorespaces Text}%
++  \vshapeto{kern (horizontal, warning)}%
++    {\noindent\kern 3pt Text}{\nolabel\kern 3pt \ignorespaces Text}%
++  \vshapeto{hbox (in the paragraph, warning)}%
++    {\noindent\hbox{ -- }Text}{\nolabel\hbox{ -- }\ignorespaces Text}%
++  \vshapeto{vbox (in the paragraph, warning)}%
++    {\noindent\vbox{\hbox{ -- }}Text}{\nolabel\vbox{\hbox{ -- }}\ignorespaces Text}%
++  \vshapeto{vtop (in the paragraph, warning)}%
++    {\noindent\vtop{\hbox{ -- }}Text}{\nolabel\vtop{\hbox{ -- }}\ignorespaces Text}%
++  \vshapeto{penalty (horizontal, no warning)}%
++    {\noindent\penalty 7 Text}{\nolabel\penalty 7 \ignorespaces Text}}
++\end{document}
+diff --git a/base/testfiles/caption-interface-005.tlg b/base/testfiles/caption-interface-005.tlg
+new file mode 100644
+index 000000000..7e4c427c9
+--- /dev/null
++++ b/base/testfiles/caption-interface-005.tlg
+@@ -0,0 +1,210 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: article makecaption with the label of caption*: no separator
++============================================================
++article: no warning
++> \box...=
++\vbox(16.83331+0.0)x284.52756
++.\glue 10.0
++.\hbox(6.83331+0.0)x284.52756, glue set 132.26376fil
++..\glue 0.0 plus 1.0fil
++..\hbox(6.83331+0.0)x20.00003
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...t {article: \showwarned }\showbox 0 
++                                                  \setbox 0=\vbox {\hsize =1...
++l. ...  \showbox0}
++> \box...=
++\vbox(16.94444+0.0)x284.52756
++.\glue 10.0
++.\hbox(6.94444+0.0)x284.52756, glue set 116.49985fil
++..\glue 0.0 plus 1.0fil
++..\hbox(6.94444+0.0)x51.52788
++...\OT1/cmr/m/n/10 L
++...\OT1/cmr/m/n/10 a
++...\OT1/cmr/m/n/10 b
++...\kern0.27779
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 l
++...\OT1/cmr/m/n/10 :
++...\glue 4.44444 plus 3.33331 minus 0.55556
++...\OT1/cmr/m/n/10 T
++...\kern-0.83334
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 x
++...\OT1/cmr/m/n/10 t
++..\glue 0.0 plus 1.0fil
++.\glue 0.0
++! OK.
++<argument> ...akecaption {Label}{Text}}\showbox 0 
++                                                  \setbox 0=\hbox {\nolabel ...
++l. ...  \showbox0}
++> \box...=
++\hbox(6.83331+0.0)x27.22226
++.\OT1/cmr/m/n/10 .
++.\glue 4.44444 plus 4.99997 minus 0.37036
++.\OT1/cmr/m/n/10 T
++.\kern-0.83334
++.\OT1/cmr/m/n/10 e
++.\OT1/cmr/m/n/10 x
++.\OT1/cmr/m/n/10 t
++! OK.
++<to be read again> 
++                   \endgroup 
++l. ...  \showbox0}
++============================================================
++============================================================
++TEST 2: label of caption*: separators removed in common forms
++============================================================
++SHAPE colon: clean
++SHAPE space before colon: clean
++SHAPE colon in group: clean
++SHAPE colon and tie: clean
++SHAPE period in group: clean
++SHAPE period and enspace: clean
++SHAPE period and nobreakspaces: clean
++SHAPE label in group, colon: clean
++SHAPE label in two groups, period: clean
++SHAPE label in group, space: clean
++SHAPE quad: clean
++SHAPE qquad, control space: clean
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE text without ignorespaces (warning): clean
++SHAPE not caption*: width 27.22226pt(text 20.00003pt)
++SHAPE textbf label, colon: clean
++SHAPE textbf label and period: clean
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE other separator macro (kept, warning): width 27.22226pt(text 20.00003pt)
++SHAPE other separator macro (kept, no second warning): width 27.22226pt(text 20.00003pt)
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE hskip (kept, warning): width 30.00005pt(text 20.00003pt)
++SHAPE conditional (clean, no warning): clean
++> \box...=
++\vbox(6.83331+0.0)x284.52756
++.\hbox(6.83331+0.0)x284.52756, glue set 249.52753fil
++..\hbox(0.0+0.0)x15.0
++..\OT1/cmr/m/n/10 T
++..\kern-0.83334
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 x
++..\OT1/cmr/m/n/10 t
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++.\penalty 268
++! OK.
++<argument> ...}\ignorespaces Text\par }\showbox 0 
++                                                  \setbox 0=\vbox {\hsize =1...
++l. ...  \showbox0}
++> \box...=
++\vbox(6.83331+0.0)x284.52756
++.\hbox(6.83331+0.0)x284.52756, glue set 249.52753fil
++..\hbox(0.0+0.0)x15.0
++..\OT1/cmr/m/n/10 T
++..\kern-0.83334
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 x
++..\OT1/cmr/m/n/10 t
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++<to be read again> 
++                   \endgroup 
++l. ...  \showbox0}
++============================================================
++============================================================
++TEST 3: label of caption*: vertical mode, measuring, when to warn
++============================================================
++VSHAPE period, vertical mode: clean, no warning
++VSHAPE label line with period and par (no empty line): clean, no warning
++VSHAPE label and par: clean, no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE label and newline (empty line, no error, warning): height/width 12.0pt/20.00003pt (text 6.83331pt/20.00003pt), warning
++VSHAPE label in group and newline (empty line, no error): height/width 12.0pt/20.00003pt (text 6.83331pt/20.00003pt), no warning
++VSHAPE label in group, colon, vadjust: clean, no warning
++SHAPE sbox of the label (no warning): clean
++.... no warning
++SHAPE settowidth of label and colon (no warning): clean
++.... no warning
++SHAPE period and spacefactor: clean
++.... no warning
++SHAPE colon, text in a group: clean
++.... no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE character separator (warning): width 28.33337pt(text 20.00003pt)
++.... warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE two periods (warning): width 27.22226pt(text 20.00003pt)
++.... warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++SHAPE space in braces (warning): width 30.00005pt(text 20.00003pt)
++.... warning
++SHAPE separator after a group with the label (known gap: printed, no warning): width 27.6389pt(text 20.00003pt)
++.... no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE separator macro with a leading space (space ignored, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vskip (stays vertical, warning): as reference, warning
++VSHAPE spacefactor (no error): clean, no warning
++VSHAPE vadjust (no error): as reference, no warning
++SHAPE relax and hskip (known gap: printed, no warning): width 30.00005pt(text 20.00003pt)
++.... no warning
++VSHAPE unskip after the label (removed, vertical skip kept): as reference, no warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE kern (horizontal, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE hbox (in the paragraph, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vbox (in the paragraph, warning): as reference, warning
++LaTeX Warning: \caption* is used with a caption layout of the
++               class or of a package that does not support it,
++               so a separator or a space may be printed before
++               the text on input line ....
++VSHAPE vtop (in the paragraph, warning): as reference, warning
++VSHAPE penalty (horizontal, no warning): as reference, no warning
++============================================================
++(caption-interface-005.aux)
+-- 
+2.50.1 (Apple Git-155)
+

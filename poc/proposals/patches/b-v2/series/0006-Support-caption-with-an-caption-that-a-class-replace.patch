@@ -1,0 +1,971 @@
+From 05e6d4f6d9d439bb1ce701329c02550f84647265 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 16:49:56 +0200
+Subject: [PATCH 06/14] Support \caption* with an \@caption that a class
+ replaced
+
+Classes and packages that replace \@caption by a definition that does
+not know the star (llncs, mwcls, jpsj2, ...) typeset \fnum@<type> with
+the number of the previous caption, write a list entry and, with
+hyperref, may make a target named after the previous caption. For
+\caption*, \@caption@nostep@defs therefore lets \fnum@<type> be
+\@caption@nolabel, makes \ext@<type> empty and gives \theH<type> a
+unique suffix (for a caption that does not step its counter only the
+suffix). The settings last until the next \caption, the end of the
+group, or the start of the kernel \@caption, because \@caption has to
+stay the last token of \caption and a replaced \@caption may defer its
+work (threeparttable). The kernel \@caption gives an unused unique
+number back. \if@captionstar stays true until the same point. That is
+a trade-off: a \@makecaption that runs later in the same group without
+a \caption before it (e.g., for a listing) would also omit its label,
+so clsguide asks a class whose \@caption handles \caption* itself to
+set the switch false at its end.
+
+\@kernel@caption@reset now also ends these settings. It is documented
+for code that keeps its own numbered \caption and passes only \caption*
+to the kernel with \@kernel@caption* (clsguide).
+\@kernel@caption@unique also works while the settings are active.
+
+This part can be left out: no later code depends on it (only on
+\@kernel@caption and \@kernel@caption@reset, which exist without it),
+but the tests of the
+float first aid and of later parts assume it. Without it such classes
+give \caption* a numbered label and a list entry.
+
+New test caption-interface-004 (a replaced, a wrapping and a deferring
+\@caption, the give-back, the reset, \@kernel@caption@unique while the
+settings are active). latex-lab float-024 gets a class \@caption that
+makes its own target.
+---
+ base/changes.txt                              |   5 +
+ base/doc/clsguide.tex                         |  27 +-
+ base/ltfloat.dtx                              | 207 +++++++++++--
+ base/testfiles/caption-interface-004.lvt      | 278 ++++++++++++++++++
+ base/testfiles/caption-interface-004.tlg      | 164 +++++++++++
+ .../float-024-caption-continued.lvt           |  33 ++-
+ .../float-024-caption-continued.tlg           |  17 +-
+ 7 files changed, 702 insertions(+), 29 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-004.lvt
+ create mode 100644 base/testfiles/caption-interface-004.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index e38973c81..a11128ea3 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,11 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx, clsguide.tex:
++	With an \@caption that a class or package has replaced, \caption*
++	gives no label, no list entry and no duplicate target either, until
++	\@kernel@caption@reset (\caption starts with it)
++
+ 	* ltfloat.dtx:
+ 	A caption that does not step its counter and has no float target
+ 	gets a target with a unique name (figure.1*1, figure.1*2, ...);
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index df2668610..e73ab5d67 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1546,16 +1546,35 @@ so that classes and packages do not need to redefine
+ \item A class that redefines \cs{@caption} (for example to change the
+   list entry or the spacing) should preferably use the hooks and sockets
+   of the caption interface instead, where they cover the change (see the
+-  documentation of \texttt{ltfloat.dtx}). A redefinition that does not
+-  test \cs{if@captionstar} gives \cs{caption*} the label and the list
+-  entry of a numbered caption, with the number of the previous caption.
++  documentation of \texttt{ltfloat.dtx}). An
++  existing redefinition that typesets the label with
++  \cs{fnum@}\meta{type}, writes the list entry with
++  \verb|\addcontentsline{\csname ext@|\meta{type}\verb|\endcsname}|
++  and makes a link target from \cs{theH}\meta{type} (if at all), as the
++  kernel and \pkg{hyperref} did before, gives a correct \cs{caption*}
++  without changes: for \cs{caption*} the kernel lets
++  \cs{fnum@}\meta{type} be the label described above, makes
++  \cs{ext@}\meta{type} empty and gives \cs{theH}\meta{type} a unique
++  suffix, until the next \cs{caption} or the end of the group (so also if
++  the redefinition defers its work). For a caption that does not step
++  its counter (a continued float) only the unique suffix is used. A
++  redefinition can also test \cs{if@captionstar} itself, and one that
++  defers its work should do so before it defers. As the switch also
++  stays true until the next \cs{caption} or the end of the group, a
++  redefinition that tests it (or whose \cs{@makecaption} does) should
++  set it false at its end (\cs{@captionstarfalse}); otherwise a later
++  \cs{@makecaption} in the same float, for example for a listing, would
++  omit its label as well.
+ \item A class or package that redefines \cs{caption} itself takes over
+   the star as well: unless it handles it (no counter step, no list entry,
+   \cs{@caption@nolabel} as label for \cs{@makecaption} with
+   \cs{if@captionstar} true),
+   \verb|\caption*{Text}| gives a numbered caption with the text `*' and a
+   list entry, followed by `Text'. It is better to keep the kernel
+-  definition and to use the hooks and sockets.
++  definition and to use the hooks and sockets. Code that keeps its own
++  \cs{caption} and passes only \cs{caption*} to the kernel (to
++  \cs{@kernel@caption}, the copy of the kernel \cs{caption}) must start
++  its own numbered \cs{caption} with \cs{@kernel@caption@reset}.
+ \end{itemize}
+ 
+ 
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index ea38a285a..5262a534d 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -244,7 +244,8 @@
+ %    \item The generic hook \hook{cmd/caption/before} (as for every
+ %      command; it is executed before anything else).
+ %    \item Outside of a float an error is raised (as before).
+-%    \item \cs{@kernel@caption@reset} sets the switches
++%    \item \cs{@kernel@caption@reset} undoes what an earlier caption in
++%      the same group may have left (see below) and sets the switches
+ %      \cs{if@captionstar}, \cs{if@captionstep} and \cs{if@captiontarget}
+ %      to their defaults. Then the star and the arguments are read. An
+ %      absent optional argument is \cs{NoValue}.
+@@ -275,10 +276,21 @@
+ %      \cs{@caption@nolabel} while \cs{if@captionstar} is true.
+ %    \item With the kernel \cs{caption} and an \cs{@caption} that a class
+ %      or package has replaced by a definition that does not know the
+-%      star (\cls{llncs}, \cls{mwart}, \cls{jpsj2}, \ldots): that
+-%      definition typesets the label \cs{fnum@}\meta{type} with the number
+-%      of the previous caption and writes a list entry, unless it tests
+-%      \cs{if@captionstar}.
++%      star (\cls{llncs}, \cls{mwart}, \cls{jpsj2}, \ldots): the kernel
++%      lets \cs{fnum@}\meta{type} be \cs{@caption@nolabel}, makes
++%      \cs{ext@}\meta{type} empty (so \cs{addcontentsline} writes to no
++%      list) and gives \cs{theH}\meta{type} a unique suffix (so a target
++%      that the definition makes has a new name), until the next
++%      \cs{caption} or the end of the group (see
++%      \cs{@caption@nostep@defs}). Such a definition, if it uses these
++%      commands as the kernel did, then also gives a caption without
++%      label, without list entry and without a duplicate target, in the
++%      layout of the class, also if it defers the typesetting
++%      (\pkg{threeparttable} does that for a caption above the table).
++%      \cs{if@captionstar} is true until the same point. For a caption
++%      that does not step its counter for another reason
++%      (\cs{@captionstepfalse}, a continued float) only the unique
++%      suffix is used.
+ %    \item The class's \cs{@makecaption} decides how the caption looks.
+ %      The contract is: \cs{if@captionstar} is true, and the label (the
+ %      first argument) is \cs{@caption@nolabel}, never empty. A
+@@ -407,9 +419,17 @@
+ %    processed: from the start of \cs{caption*} until the end of
+ %    \cs{@caption}, so also in the caption hooks and in \cs{@makecaption}.
+ %    In that case the first
+-%    argument of \cs{@makecaption} is \cs{@caption@nolabel}, and a
+-%    \cs{@makecaption} can test this switch to omit the label and its
+-%    separator. Code
++%    argument of \cs{@makecaption} is \cs{@caption@nolabel} (or, if
++%    \cs{@caption} has been replaced, \cs{fnum@}\meta{type}, which is then
++%    \cs{@caption@nolabel}), and a \cs{@makecaption} can test this switch
++%    to omit the label and its separator. If \cs{@caption} is not
++%    the kernel's, the switch stays true until the next \cs{caption} or
++%    the end of the current group, as the settings of
++%    \cs{@caption@nostep@defs}, because that \cs{@caption} may defer its
++%    work. Such an \cs{@caption} that tests the switch itself (or whose
++%    \cs{@makecaption} does) should therefore set it false at its end;
++%    otherwise a later \cs{@makecaption} in the same group (for example
++%    for the caption of a listing) would omit its label as well. Code
+ %    that calls \cs{@caption} directly can set it true before the
+ %    call.
+ %
+@@ -452,7 +472,7 @@
+ % \begin{macro}{\@kernel@caption@step,\@kernel@caption@unique}
+ % \begin{macro}{\@caption@target,\@caption@newtarget,\@caption@floattarget,
+ %                \@caption@uniquetarget,\@caption@uniquedo,\@caption@uniqueH,
+-%                \@caption@uniqueH@from,\@caption@noH}
++%                \@caption@uniqueH@from,\@caption@Htype,\@caption@noH}
+ %    \cs{@kernel@caption@step}\marg{counter} implements the contract of
+ %    the socket \texttt{caption/step}. It is not \cs{refstepcounter},
+ %    because the counter is not always stepped and the target not always
+@@ -530,7 +550,16 @@
+ %    \item In the hook \hook{caption/before} and in the plugs of the
+ %      socket \texttt{caption/step} (and outside of captions)
+ %      \cs{theH}\meta{counter} has its normal meaning, and no number is
+-%      reserved, so the numbers have no gaps.
++%      reserved, so the numbers have no gaps. (A number that the kernel
++%      reserves for a replaced \cs{@caption}, see
++%      \cs{@caption@nostep@defs}, is given back at the start of the kernel
++%      \cs{@caption}.)
++%    \item After a \cs{caption*} or a caption that does not step, if
++%      \cs{@caption} is a replaced one, \cs{theH}\meta{counter} has the
++%      unique form of that caption until the next \cs{caption} or the end
++%      of the group (see \cs{@caption@nostep@defs}). The command can also
++%      be used there: the name is made from the normal meaning, which is
++%      saved, so it is the next unique name after that of the caption.
+ %    \item The command adds no group: assignments in \meta{code} survive,
+ %      also local ones (such as \cs{@currentHref} with the \pkg{hyperref}
+ %      option \texttt{localanchorname}). Afterwards
+@@ -572,9 +601,27 @@
+ %    \cs{protected@edef}, only to tell names apart), and
+ %    \cs{@caption@H@n@}\meta{name} holds the last \meta{n} used for it,
+ %    globally, so the numbering does not depend on captions elsewhere.
++%
++%    While the settings of \cs{@caption@nostep@defs} for the same counter
++%    are active (\cs{@caption@nostep@restore} is not \cs{relax}),
++%    \cs{theH}\meta{counter} is already the unique form and refers to
++%    \cs{@caption@H@}\meta{counter}; taking it as the previous meaning
++%    would let that command refer to itself (an endless loop when the name
++%    is expanded). Then the meaning saved by \cs{@caption@nostep@defs}
++%    (\cs{@caption@saved@H}) is used. For \cs{@caption@nostep@defs} itself
++%    it is the same as the current one.
+ %    \begin{macrocode}
+ \def\@caption@uniqueH#1{%
+-  \@caption@uniqueH@from{theH#1}{#1}%
++  \edef\@caption@Htype{#1}%
++  \ifx\@caption@nostep@restore\relax
++    \@caption@uniqueH@from{theH#1}{#1}%
++  \else
++    \ifx\@caption@Htype\@caption@nostep@type
++      \@caption@uniqueH@from{@caption@saved@H}{#1}%
++    \else
++      \@caption@uniqueH@from{theH#1}{#1}%
++    \fi
++  \fi
+   \protected@edef\@caption@Hname{#1.\csname @caption@H@#1\endcsname}%
+   \edef\@caption@Hname{\detokenize\expandafter{\@caption@Hname}}%
+   \@ifundefined{@caption@H@n@\@caption@Hname}%
+@@ -662,7 +709,9 @@
+ %
+ % \begin{macro}{\caption}
+ % \begin{macro}{\@caption@args,\@caption@read,\@caption@process}
+-% \begin{macro}{\@kernel@caption@reset}
++% \begin{macro}{\@caption@nostep@defs,\@caption@nostep@restore,
++%                \@caption@nostep@giveback,\@caption@uniqueH@back,
++%                \@caption@nostep@type,\@kernel@caption@reset}
+ % \begin{macro}{\@caption@skip,\@caption@skip@star,\@caption@skip@args,
+ %                \@caption@skip@opt}
+ %
+@@ -681,6 +730,8 @@
+ %    {Add star form; read the arguments without \cs{@dblarg}; hook
+ %     \texttt{caption/before}; step the counter through the socket
+ %     \texttt{caption/step}; \cs{@kernel@caption@reset}}
++% \changes{v1.2k}{2026-10-06}
++%    {Settings for a replaced \cs{@caption} until the next caption}
+ %
+ %    The star form \cs{caption*} typesets a caption without a label:
+ %    it does not step the counter, sets no target and writes no list
+@@ -731,23 +782,130 @@
+     \expandafter\@secondoftwo
+   \fi
+   {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanTrue}{#2}{#3}%
++   \@caption@nostep@defs{#1}%
+    \IfNoValueTF{#2}%
+      {\@caption{#1}[{#3}]{#3}}%
+      {\@caption{#1}[{#2}]{#3}}}%
+   {\UseHookWithArguments{caption/before}{4}{#1}{\BooleanFalse}{#2}{#3}%
+    \UseSocket{caption/step}{#1}%
++   \if@captionstep\else
++     \@caption@nostep@defs{#1}%
++   \fi
+    \IfNoValueTF{#2}%
+      {\@caption{#1}[{#3}]{#3}}%
+      {\@caption{#1}[{#2}]{#3}}}}
+ %    \end{macrocode}
+-%    \cs{@kernel@caption@reset} sets \cs{if@captionstar} false and
+-%    \cs{if@captionstep} and \cs{if@captiontarget} true, which is the state
+-%    outside of a caption. The kernel \cs{caption} starts with it and the
+-%    kernel \cs{@caption} ends with it. It is defined together with
+-%    \cs{caption} (also by \pkg{latexrelease}), so after a roll-back to an
+-%    earlier date it is undefined, as \cs{@kernel@caption}.
++%    \cs{@caption@nostep@defs}\marg{type} prepares the definitions for a
++%    caption that does not step its counter (\cs{caption*}, or
++%    \cs{@captionstepfalse} for a continued float), in case \cs{@caption}
++%    is not the kernel's. A class or package may have replaced
++%    \cs{@caption} by a definition that does not know the star or the
++%    switches (\cls{llncs}, \cls{mwart} and others): it would typeset the
++%    label with the number of the previous caption, write a list entry
++%    and, with \pkg{hyperref}, make a target with the name of the previous
++%    caption (\cls{mwart} does that with \cs{hyper@makecurrent}). So:
++%    \begin{itemize}
++%    \item \cs{theH}\meta{type} gets a unique suffix (see
++%      \cs{@caption@uniqueH}), so a target made from it has a new name;
++%    \item for \cs{caption*} also \cs{fnum@}\meta{type} is
++%      \cs{@caption@nolabel} (the same label as from the kernel, and
++%      \cs{if@captionstar} is true) and \cs{ext@}\meta{type} is empty, so
++%      that \cs{addcontentsline} writes to no list.
++%    \end{itemize}
++%    Such a definition, if it uses these commands as the kernel did, then
++%    gives a caption without label, without list entry and without a
++%    duplicate target, in the layout of the class. The settings are
++%    local and last until \cs{@caption@nostep@restore} is executed: at
++%    the start of the kernel \cs{@caption} (so its list entry and
++%    typesetting see the normal definitions), at the start of the next
++%    \cs{caption}
++%    (with \cs{@kernel@caption@reset}), or at the end of the group; why,
++%    is explained below.
++%    \cs{addcontentsline} itself is not changed, so an
++%    \verb|\addcontentsline{lof}...| after \cs{caption*} works. An
++%    undefined \cs{theH}\meta{type} is saved as undefined (\cs{ifcsname}
++%    does not make it \cs{relax}), so that it is undefined again after
++%    the restore; \cs{@caption@nostep@type} records the type, for
++%    \cs{@caption@uniqueH}. The
++%    kernel \cs{@caption} also gives the number of the unique suffix
++%    back (\cs{@caption@nostep@giveback}), since nothing used it there.
++%    \begin{macrocode}
++\def\@caption@nostep@defs#1{%
++  \edef\@caption@nostep@type{#1}%
++  \ifcsname theH#1\endcsname
++    \expandafter\let\expandafter\@caption@saved@H\csname theH#1\endcsname
++  \else
++    \let\@caption@saved@H\@undefined
++  \fi
++  \if@captionstar
++    \expandafter\let\expandafter\@caption@saved@fnum
++      \csname fnum@#1\endcsname
++    \expandafter\let\expandafter\@caption@saved@ext
++      \csname ext@#1\endcsname
++    \def\@caption@nostep@restore{%
++      \expandafter\let\csname theH#1\endcsname\@caption@saved@H
++      \expandafter\let\csname fnum@#1\endcsname\@caption@saved@fnum
++      \expandafter\let\csname ext@#1\endcsname\@caption@saved@ext
++      \let\@caption@nostep@restore\relax
++      \let\@caption@nostep@giveback\relax}%
++    \expandafter\let\csname fnum@#1\endcsname\@caption@nolabel
++    \expandafter\let\csname ext@#1\endcsname\@empty
++  \else
++    \def\@caption@nostep@restore{%
++      \expandafter\let\csname theH#1\endcsname\@caption@saved@H
++      \let\@caption@nostep@restore\relax
++      \let\@caption@nostep@giveback\relax}%
++  \fi
++  \@caption@uniqueH{#1}%
++  \edef\@caption@nostep@giveback{%
++    \noexpand\@caption@uniqueH@back{\@caption@Hname}%
++      {\csname @caption@H@n@\@caption@Hname\endcsname}}}
++\let\@caption@nostep@restore\relax
++\let\@caption@nostep@giveback\relax
++\def\@caption@uniqueH@back#1#2{%
++  \expandafter\ifnum\csname @caption@H@n@#1\endcsname=#2\relax
++    \expandafter\xdef\csname @caption@H@n@#1\endcsname
++      {\the\numexpr#2-\@ne}%
++  \fi}
++%    \end{macrocode}
++%    The settings of \cs{@caption@nostep@defs} have to outlive
++%    \cs{caption*} (and a caption that does not step), because the kernel
++%    \cs{caption} gets no control back after \cs{@caption}: \cs{@caption}
++%    reads its own arguments and has to stay the last token of
++%    \cs{caption}, as \pkg{float} and others look for an optional
++%    argument after it. And a replaced \cs{@caption} may defer its work:
++%    \pkg{threeparttable} stores the call of the previous \cs{@caption}
++%    (\cs{TPT@docapt}) and executes it only at the start of the tabular,
++%    after \cs{caption*} has ended. Then \cs{fnum@}\meta{type},
++%    \cs{ext@}\meta{type}, \cs{theH}\meta{type} and \cs{if@captionstar}
++%    must still have the values for \cs{caption*}; the switch also if
++%    the deferred \cs{@caption} is the kernel's. So the settings last
++%    until the kernel \cs{@caption} starts, until the next \cs{caption},
++%    or until the end of the group (in practice that of the float).
++%
++%    \cs{@kernel@caption@reset} ends them: it undoes everything
++%    \cs{@caption@nostep@defs} has set (it drops a pending give-back of
++%    the unique number without giving it back, since a replaced
++%    \cs{@caption} may have used it for a target), sets
++%    \cs{if@captionstar} false and \cs{if@captionstep} and
++%    \cs{if@captiontarget} true, which is the state outside of a caption.
++%    The kernel \cs{caption} starts with it and the kernel \cs{@caption}
++%    ends with it, so it is the only code that ends these settings. It is
++%    the command for
++%    code that keeps its own \cs{caption} and passes only \cs{caption*}
++%    to the kernel (for example with
++%    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|): such code
++%    must start its own numbered
++%    \cs{caption} with \cs{@kernel@caption@reset}, otherwise the settings
++%    of a \cs{caption*} before it in the same float are still active (no
++%    label, no list entry, the target name of the \cs{caption*}). As
++%    whatever \cs{@caption@nostep@defs} may set in the future is undone
++%    by it as well, such code depends on nothing else. It is defined
++%    together with \cs{caption} (also by \pkg{latexrelease}), so after a
++%    roll-back to an earlier date it is undefined, as \cs{@kernel@caption}.
+ %    \begin{macrocode}
+ \def\@kernel@caption@reset{%
++  \@caption@nostep@restore
+   \@captionstarfalse
+   \@captionsteptrue
+   \@captiontargettrue}
+@@ -783,12 +941,17 @@
+ % \changes{v1.2k}{2026-10-06}
+ %     {No list entry and the label \cs{@caption@nolabel} for \cs{caption*};
+ %      end with \cs{@kernel@caption@reset}}
++% \changes{v1.2k}{2026-10-06}
++%     {Undo the settings for a replaced \cs{@caption} before the \cs{par}}
+ %    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
+ %    signature, so code that wraps or replaces it keeps working.
+ %    The typesetting (with \cs{@parboxrestore} and \cs{@makecaption})
+-%    is now done by \cs{@kernel@caption@typeset}. At the end
+-%    \cs{@kernel@caption@reset} resets the switches, so that code which
+-%    calls \cs{@caption} or
++%    is now done by \cs{@kernel@caption@typeset}. At the start the
++%    settings of \cs{@caption@nostep@defs} are undone, before the
++%    \cs{par}, so that the paragraph hooks, the output routine and the
++%    list entry and the typesetting see the normal definitions. At the end
++%    \cs{@kernel@caption@reset} resets the switches (the settings are
++%    already undone by then), so that code which calls \cs{@caption} or
+ %    the socket \texttt{caption/step} directly (without \cs{caption}) gets
+ %    a normal caption.
+ %    \begin{macrocode}
+@@ -797,6 +960,8 @@
+ %<latexrelease>\IncludeInRelease{2026/11/01}%
+ %<latexrelease>                 {\@caption}{caption body}%
+ \long\def\@caption#1[#2]#3{%
++  \@caption@nostep@giveback
++  \@caption@nostep@restore
+   \par
+   \if@captionstar
+     \expandafter\@firstoftwo
+diff --git a/base/testfiles/caption-interface-004.lvt b/base/testfiles/caption-interface-004.lvt
+new file mode 100644
+index 000000000..204b4771d
+--- /dev/null
++++ b/base/testfiles/caption-interface-004.lvt
+@@ -0,0 +1,278 @@
++% Test of \caption* and of captions that do not step with an \@caption
++% that a class or package has replaced (as llncs or mwart), wraps (as
++% memoir or nameref) or defers (as threeparttable): the settings of
++% \fnum@<type>, \ext@<type> and \theH<type> until the next caption, the
++% number of the unique suffix given back by the kernel \@caption,
++% \@kernel@caption@reset, and \@kernel@caption@unique while the settings
++% are active.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% the kernel definitions, for the tests that wrap or keep them
++\let\kernelcaption\caption
++\let\kernelatcaption\@caption
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++\def\showswitches{%
++  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
++    step=\if@captionstep true\else false\fi,
++    target=\if@captiontarget true\else false\fi}}
++% the hooks
++\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
++\long\def\showopt#1{\IfNoValueTF{#1}%
++  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
++\AddToHookWithArguments{caption/before}[test]{%
++  \showbool{#2}\showopt{#3}%
++  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
++    figure=\thefigure, linewidth=\the\linewidth}%
++  \csname testbefore\endcsname}
++\newcounter{sub}[figure]
++\gdef\@currentHref{none}
++% helpers for the tests (\makeatletter does not work inside \TEST)
++\def\stepoff{\@captionstepfalse}
++\def\targetoff{\@captiontargetfalse}
++\def\sethref#1{\gdef\@currentHref{#1}}
++\def\showhref{\typeout{href=\@currentHref}}
++\def\showlabel{\typeout{figure=\thefigure, label=\@currentlabel,
++  sub=\thesub}}
++\def\setfloathref#1{\def\@floatHref@figure{#1}}
++\def\emptyfloathref{\let\@floatHref@figure\@empty}
++\def\relaxfloathref{\let\@floatHref@figure\relax}
++\def\settype#1{\def\@captype{#1}}
++\def\directcaption{\@caption}
++\def\starton{\@captionstartrue}
++\def\nolabel{\@caption@nolabel}
++\def\resetcaption{\@kernel@caption@reset}
++\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
++% a package that keeps its own \caption (here the definition of LaTeX
++% before 2026) and passes only \caption* to the kernel
++\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
++\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
++  {\@kernel@caption@reset\owncaption}}}
++% replacements of \@caption: as in a class that does not know \caption*
++% (the definition of llncs), a wrapper of the kernel definition (as in
++% memoir or nameref), and a definition that defers the kernel definition
++% (as threeparttable)
++\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
++  ext@#1\endcsname}{#1}{\protect\numberline{\csname
++  the#1\endcsname}{\ignorespaces #2}}\begingroup
++    \@parboxrestore
++    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
++  \endgroup}
++\long\def\targetcaption#1[#2]#3{%
++  \protected@xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{CLASS TARGET: \@currentHref}%
++  \classcaption{#1}[{#2}]{#3}}
++\long\def\deferclasscaption#1[#2]#3{%
++  \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \kernelatcaption{#1}[{#2}]{#3}}
++\long\def\defercaption#1[#2]#3{%
++  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
++\def\useclasscaption{\let\@caption\classcaption}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++\def\usedefercaption{\let\@caption\defercaption}
++\def\usetargetcaption{\let\@caption\targetcaption}
++\def\usedeferclasscaption{\let\@caption\deferclasscaption}
++\def\showlabelexpansion{%
++  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
++    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
++      true\else false\fi}}}
++\def\showrestored{%
++  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
++    theH=\meaning\theHfigure}}
++\def\staroff{\@captionstarfalse}
++% the label of caption* in different \@makecaption shapes: the width
++% of the box compared with the text alone
++\def\shape#1#2{%
++  \setbox0=\hbox{\starton #2}\setbox2=\hbox{Text}%
++  \typeout{SHAPE #1: \ifdim\wd0=\wd2 clean\else
++    width \the\wd0\space(text \the\wd2)\fi}}
++\def\sep{: }
++\let\savedwarn\@caption@nolabel@warn
++\def\rewarn{\global\let\@caption@nolabel@warn\savedwarn}
++% shapes in vertical mode: total height and natural width of the last line
++% compared with the text alone; and whether the label warned
++\def\lastline#1#2{%
++  \setbox4\vbox{\unvcopy#1\unskip\unpenalty\unskip\global\setbox5\lastbox}%
++  \setbox6\hbox{\unhcopy5\unskip\unskip\unpenalty}%
++  \edef#2{\the\dimexpr\ht#1+\dp#1\relax/\the\wd6}}
++\def\showwarned{\ifx\@caption@nolabel@warn\relax warning\else no warning\fi}
++\long\def\vshape#1#2{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #2\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt \noindent Text\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb clean\else
++    height/width \tmpa\space(text \tmpb)\fi, \showwarned}}
++\def\hshape#1#2{\rewarn\shape{#1}{#2}\typeout{.... \showwarned}}
++% the same in vertical mode, compared with a reference (#2) instead of
++% the text alone
++\long\def\vshapeto#1#2#3{%
++  \rewarn
++  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #3\par}%
++  \setbox2=\vbox{\hsize=10cm \parindent=0pt #2\par}%
++  \lastline0\tmpa \lastline2\tmpb
++  \typeout{VSHAPE #1: \ifx\tmpa\tmpb as reference\else
++    height/width \tmpa\space(reference \tmpb)\fi, \showwarned}}
++\def\spsep{ \textendash\ }
++\def\sboxlabel{\sbox\@tempboxa{\nolabel}\unhbox\@tempboxa}
++\def\settowidthlabel{\settowidth\@tempdima{\nolabel: }\hskip\@tempdima}
++% a counter without \theH<counter> (as made before 2024 by \newcount)
++\newcount\c@myfig
++\def\themyfig{\arabic{myfig}}
++\def\p@myfig{}
++\def\fnum@myfig{My \themyfig}
++\def\ext@myfig{lom}
++% from caption-interface-003: code that only needs the name, and a
++% replaced \@caption that makes its target from \theH<type>
++\def\ownname#1{%
++  \@kernel@caption@unique{#1}{%
++    \edef\ownhref{#1.\csname theH#1\endcsname}%
++    \typeout{OWN NAME: \ownhref}}}
++\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
++\long\def\replacedcaption#1[#2]#3{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{REPLACED: #3, target \@currentHref}}
++\def\usereplaced{\let\@caption\replacedcaption}
++\def\showunique{\@kernel@caption@unique{figure}{\showtheH}}
++\makeatother
++\begin{document}
++\START
++\TEST{caption* with a replaced @caption (class): no label, no entry}{%
++  \begin{figure}
++    \useclasscaption
++    \showlabelexpansion
++    \caption{First}
++    \caption*{Starred}
++    \typeout{figure=\thefigure}
++    \showswitches
++    \showrestored
++    \caption*[Opt]{Starred with option}
++    \showrestored
++    \caption{Second}
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
++\TEST{caption* with a wrapper of the kernel @caption}{%
++  \begin{figure}
++    \usewrappercaption
++    \caption*{Starred}
++    \typeout{figure=\thefigure}
++    \showswitches
++    \showrestored
++    \caption{Normal}
++  \end{figure}}
++\TEST{caption* with a deferred kernel @caption}{%
++  \begin{figure}
++    \usedefercaption
++    \caption*{Deferred star}
++    \showrestored
++    \deferred
++    \typeout{figure=\thefigure}
++    \showswitches
++  \end{figure}}
++\TEST{replaced @caption: settings until the next caption}{%
++  \begin{figure}
++    \usetargetcaption
++    \caption{First}
++    \caption*{Starred}
++    \showrestored
++    \addcontentsline{lof}{figure}{Manual entry after caption*}
++    \caption{Second}
++    \showrestored
++    \let\testbefore\stepoff
++    \caption{Second, continued}
++    \showrestored
++    \showhref
++  \end{figure}
++  \showrestored}
++\TEST{replaced @caption that defers: star still honoured}{%
++  \begin{figure}
++    \usedeferclasscaption
++    \showlabelexpansion
++    \caption*{Deferred class star}
++    \deferred
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{kernel @caption: unique number given back, no gap}{%
++  \begin{figure}
++    \caption{Stepped}
++    \caption*{Starred}
++    \let\testbefore\stepoff
++    \caption{Continued}
++    \showhref
++  \end{figure}}
++\TEST{kernel@caption@reset: ends the settings of caption*}{%
++  \begin{figure}
++    \useclasscaption
++    \showlabelexpansion
++    \caption*{Starred}
++    \showswitches
++    \showrestored
++    \showgiveback
++    \resetcaption
++    \showswitches
++    \showrestored
++    \showgiveback
++    \starton\stepoff\targetoff
++    \resetcaption
++    \showswitches
++  \end{figure}}
++\TEST{kernel@caption@reset: own caption, only the star from the kernel}{%
++  \begin{figure}
++    \useclasscaption
++    \useowncaption
++    \showlabelexpansion
++    \caption{Own first}
++    \caption*{Starred}
++    \caption{Own second}
++    \showlabel
++    \showhref
++    \showrestored
++    \showswitches
++  \end{figure}}
++\TEST{after a caption* with a replaced caption code}{%
++  \setcounter{figure}{0}%
++  \begin{figure}
++    \usereplaced
++    \caption{Stepped}
++    \caption*{Starred}
++    \showtheH
++    \ownname{figure}%
++    \ownname{figure}%
++    \showtheH
++    \settype{table}%
++    \ownname{table}%
++    \settype{figure}%
++    \caption{Stepped again}
++    \showtheH
++  \end{figure}}
++\TEST{after an unstepped caption with a replaced caption code}{%
++  \begin{figure}
++    \usereplaced
++    \let\testbefore\stepoff
++    \caption{Continued by other code}
++    \let\testbefore\relax
++    \ownname{figure}%
++    \showunique
++    \showtheH
++  \end{figure}
++  \ownname{figure}%
++  \showtheH}
++\end{document}
+diff --git a/base/testfiles/caption-interface-004.tlg b/base/testfiles/caption-interface-004.tlg
+new file mode 100644
+index 000000000..83d14e53d
+--- /dev/null
++++ b/base/testfiles/caption-interface-004.tlg
+@@ -0,0 +1,164 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: caption* with a replaced @caption (class): no label, no entry
++============================================================
++BEFORE: {figure}{false}{NoValue}{First}, figure=0, linewidth=345.0pt
++TARGET: new target figure.1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces First}}
++MAKECAPTION: label=[Figure\nobreakspace 1], star=false
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=1, linewidth=345.0pt
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
++MAKECAPTION: label=[\fnum@figure ], star=true
++figure=1
++SWITCHES: star=true, step=true, target=true
++after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++BEFORE: {figure}{true}{[Opt]}{Starred with option}, figure=1, linewidth=345.0pt
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Opt}}
++MAKECAPTION: label=[\fnum@figure ], star=true
++after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *2
++BEFORE: {figure}{false}{NoValue}{Second}, figure=1, linewidth=345.0pt
++TARGET: new target figure.2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Second}}
++MAKECAPTION: label=[Figure\nobreakspace 2], star=false
++figure=2
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 2: caption* with a wrapper of the kernel @caption
++============================================================
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=2, linewidth=345.0pt
++WRAPPER: fnum=\protected macro:->
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
++figure=2
++SWITCHES: star=false, step=true, target=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++BEFORE: {figure}{false}{NoValue}{Normal}, figure=2, linewidth=345.0pt
++TARGET: new target figure.3
++WRAPPER: fnum=macro:->\figurename \nobreakspace \thefigure 
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Normal}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
++============================================================
++============================================================
++TEST 3: caption* with a deferred kernel @caption
++============================================================
++BEFORE: {figure}{true}{NoValue}{Deferred star}, figure=3, linewidth=345.0pt
++after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Deferred star], star=true
++figure=3
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 4: replaced @caption: settings until the next caption
++============================================================
++BEFORE: {figure}{false}{NoValue}{First}, figure=3, linewidth=345.0pt
++TARGET: new target figure.4
++CLASS TARGET: figure.4
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces First}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces First], star=false
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=4, linewidth=345.0pt
++CLASS TARGET: figure.4*1
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Starred], star=true
++after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *1
++ADDCONTENTSLINE: {lof}{figure}{Manual entry after caption*}
++BEFORE: {figure}{false}{NoValue}{Second}, figure=4, linewidth=345.0pt
++TARGET: new target figure.5
++CLASS TARGET: figure.5
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Second}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Second], star=false
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++BEFORE: {figure}{false}{NoValue}{Second, continued}, figure=5, linewidth=345.0pt
++TARGET: new target figure.5*1
++CLASS TARGET: figure.5*2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Second, continued}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Second, continued], star=false
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\@caption@H@figure *2
++href=figure.5*2
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 5: replaced @caption that defers: star still honoured
++============================================================
++BEFORE: {figure}{true}{NoValue}{Deferred class star}, figure=5, linewidth=345.0pt
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Deferred class star}}
++MAKECAPTION: label=[\fnum@figure ], star=true
++figure=5
++============================================================
++============================================================
++TEST 6: kernel @caption: unique number given back, no gap
++============================================================
++BEFORE: {figure}{false}{NoValue}{Stepped}, figure=5, linewidth=345.0pt
++TARGET: new target figure.6
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Stepped}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Stepped], star=false
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=6, linewidth=345.0pt
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
++BEFORE: {figure}{false}{NoValue}{Continued}, figure=6, linewidth=345.0pt
++TARGET: new target figure.6*1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued], star=false
++href=figure.6*1
++============================================================
++============================================================
++TEST 7: kernel@caption@reset: ends the settings of caption*
++============================================================
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=6, linewidth=345.0pt
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
++MAKECAPTION: label=[\fnum@figure ], star=true
++SWITCHES: star=true, step=true, target=true
++after: fnum=\protected macro:->, ext=macro:->, theH=macro:->\@caption@H@figure *2
++giveback: macro:->\@caption@uniqueH@back {figure.6}{2}
++SWITCHES: star=false, step=true, target=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++giveback: \relax
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 8: kernel@caption@reset: own caption, only the star from the kernel
++============================================================
++TARGET: new target figure.7
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Own first}}
++MAKECAPTION: label=[Figure\nobreakspace 7], star=false
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=7, linewidth=345.0pt
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
++MAKECAPTION: label=[\fnum@figure ], star=true
++TARGET: new target figure.8
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Own second}}
++MAKECAPTION: label=[Figure\nobreakspace 8], star=false
++figure=8, label=8, sub=0
++href=figure.8
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 9: after a caption* with a replaced caption code
++============================================================
++BEFORE: {figure}{false}{NoValue}{Stepped}, figure=0, linewidth=345.0pt
++TARGET: new target figure.1
++REPLACED: Stepped, target figure.1
++BEFORE: {figure}{true}{NoValue}{Starred}, figure=1, linewidth=345.0pt
++REPLACED: Starred, target figure.1*3
++theHfigure: macro:->\@caption@H@figure *3
++OWN NAME: figure.1*4
++OWN NAME: figure.1*5
++theHfigure: macro:->\@caption@H@figure *3
++OWN NAME: table.0*1
++BEFORE: {figure}{false}{NoValue}{Stepped again}, figure=1, linewidth=345.0pt
++TARGET: new target figure.2
++REPLACED: Stepped again, target figure.2
++theHfigure: macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 10: after an unstepped caption with a replaced caption code
++============================================================
++BEFORE: {figure}{false}{NoValue}{Continued by other code}, figure=2, linewidth=345.0pt
++TARGET: new target figure.2*1
++REPLACED: Continued by other code, target figure.2*2
++OWN NAME: figure.2*3
++theHfigure: macro:->\@caption@H@figure *4
++theHfigure: macro:->\@caption@H@figure *2
++OWN NAME: figure.2*5
++theHfigure: macro:->\the \value {figure}
++============================================================
++[1] (caption-interface-004.aux)
+diff --git a/required/latex-lab/testfiles-float/float-024-caption-continued.lvt b/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
+index 35eea64bd..362413397 100644
+--- a/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
++++ b/required/latex-lab/testfiles-float/float-024-caption-continued.lvt
+@@ -10,7 +10,9 @@
+ % gave "destination with the same identifier" and links to the first
+ % caption): it gets a target with a unique name, and its \label
+ % records the number of the counter and that target. \caption* makes
+-% no target and no list entry.
++% no target and no list entry. A class that replaces \@caption and makes
++% its own target from \theH<type> gets a unique name for \caption* and
++% continued captions as well.
+ \input{regression-test}
+ \documentclass{article}
+ \makeatletter
+@@ -26,6 +28,19 @@
+ \def\showhref#1{\typeout{#1: label=\@currentlabel, href=\@currentHref}}
+ \def\showref#1{\typeout{#1: \expandafter\meaning\csname r@#1\endcsname}}
+ \def\setcaptype#1{\def\@captype{#1}}
++% an \@caption replaced by a class that makes its own target (as mwcls
++% does with hyperref): \caption* and continued captions must not give it
++% the name of the last stepped caption
++\long\def\classcaption#1[#2]#3{%
++  \hyper@makecurrent{\@captype}%
++  \par\addcontentsline{\csname ext@#1\endcsname}{#1}%
++    {\protect\numberline{\csname the#1\endcsname.}{\ignorespaces #2}}%
++  \begingroup\@parboxrestore\normalsize
++    \@makecaption{\csname fnum@#1\endcsname}%
++      {\ignorespaces\Hy@raisedlink{\hyper@@anchor{\@currentHref}{\relax}}#3}%
++    \par
++  \endgroup}
++\def\useclasscaption{\let\@caption\classcaption}
+ \makeatother
+ \begin{document}
+ \START
+@@ -60,9 +75,23 @@
+   \begin{figure}[h]
+     \caption*{Starred}\showhref{Starred}
+   \end{figure}}
++\TEST{class @caption with its own target}{%
++  \begin{figure}[h]
++    \caption{Fifth}\label{e}\showhref{Fifth}
++  \end{figure}
++  \begin{figure}[h]
++    \useclasscaption
++    \caption*{Fifth, starred}\label{es}\showhref{Starred}
++  \end{figure}
++  \begin{figure}[h]
++    \useclasscaption
++    \continuedtrue
++    \caption{Fifth, continued}\label{ec}\showhref{Continued}
++  \end{figure}}
+ \TEST{labels}{%
+   \showref{a}\showref{ac}\showref{acc}\showref{b}%
+-  \showref{c}\showref{cc}\showref{d}}
++  \showref{c}\showref{cc}\showref{d}%
++  \showref{e}\showref{es}\showref{ec}}
+ \TEST{destinations (no duplicate)}{%
+   \clearpage}
+ \END
+diff --git a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+index 70350f5e8..c5e4e6ab8 100644
+--- a/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
++++ b/required/latex-lab/testfiles-float/float-024-caption-continued.tlg
+@@ -30,7 +30,14 @@ TEST 4: caption*: no step, no target
+ Starred: label=, href=figure.4
+ ============================================================
+ ============================================================
+-TEST 5: labels
++TEST 5: class @caption with its own target
++============================================================
++Fifth: label=5, href=figure.5
++Starred: label=, href=figure.5*1
++Continued: label=5, href=figure.5*3
++============================================================
++============================================================
++TEST 6: labels
+ ============================================================
+ a: macro:->{1}{1}{}{figure.1}{}
+ ac: macro:->{1}{1}{}{figure.1*1}{}
+@@ -39,12 +46,18 @@ b: macro:->{2}{1}{}{figure.2}{}
+ c: macro:->{3}{1}{}{figure.3}{}
+ cc: macro:->{3}{1}{}{figure.3*1}{}
+ d: macro:->{4}{1}{}{figure.4}{}
++e: macro:->{5}{2}{}{figure.5}{}
++es: macro:->{}{2}{}{figure.5*1}{}
++ec: macro:->{5}{2}{}{figure.5*3}{}
+ ============================================================
+ ============================================================
+-TEST 6: destinations (no duplicate)
++TEST 7: destinations (no duplicate)
+ ============================================================
+ LaTeX Warning: `h' float specifier changed to `ht'.
+ LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
++LaTeX Warning: `h' float specifier changed to `ht'.
+ [1
+ ] [2]
+ ============================================================
+-- 
+2.50.1 (Apple Git-155)
+

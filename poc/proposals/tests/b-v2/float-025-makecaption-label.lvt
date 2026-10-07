@@ -1,0 +1,29 @@
+% The code of latex-lab-float that redefines \@makecaption at
+% \begin{document} has the label latex-lab-testphase-float. Classes
+% (acmart, mitthesis, asmeconf, asmejour) remove it by this label to
+% keep their own \@makecaption, so the label is kept for compatibility:
+% the class definition below must survive, without a warning, also for
+% \caption*.
+% \START comes before the removal, so that a "Cannot remove chunk" warning
+% (given by \RemoveFromHook if the code were not there) would be in the log;
+% the messages of \begin{document} are omitted.
+\DocumentMetadata{lang=en}
+\input{regression-test}
+\documentclass{article}
+\START
+\makeatletter
+\long\def\@makecaption#1#2{\typeout{CLASS MAKECAPTION: \detokenize{#1}}#1. #2\par}
+\RemoveFromHook{begindocument}[latex-lab-testphase-float]
+\makeatother
+\OMIT
+\begin{document}
+\TIMO
+\makeatletter
+\TEST{The class definition survives}{\typeout{\meaning\@makecaption}}
+\makeatother
+\TEST{Numbered caption and caption*}{%
+  \begin{figure}[h]
+    \caption{Numbered}
+    \caption*{Unnumbered}
+  \end{figure}}
+\END

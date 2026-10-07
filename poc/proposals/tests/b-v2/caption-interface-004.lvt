@@ -1,0 +1,278 @@
+% Test of \caption* and of captions that do not step with an \@caption
+% that a class or package has replaced (as llncs or mwart), wraps (as
+% memoir or nameref) or defers (as threeparttable): the settings of
+% \fnum@<type>, \ext@<type> and \theH<type> until the next caption, the
+% number of the unique suffix given back by the kernel \@caption,
+% \@kernel@caption@reset, and \@kernel@caption@unique while the settings
+% are active.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% the kernel definitions, for the tests that wrap or keep them
+\let\kernelcaption\caption
+\let\kernelatcaption\@caption
+% show the arguments \@makecaption gets
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
+    star=\if@captionstar true\else false\fi}%
+  \ORImakecaption{#1}{#2}}
+% show what is written to the list
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+% show the targets made by the step
+\NewSocketPlug{refstepcounter/target}{test}{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{TARGET: new target \@currentHref}}
+\AssignSocketPlug{refstepcounter/target}{test}
+\def\showswitches{%
+  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
+    step=\if@captionstep true\else false\fi,
+    target=\if@captiontarget true\else false\fi}}
+% the hooks
+\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
+\long\def\showopt#1{\IfNoValueTF{#1}%
+  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
+\AddToHookWithArguments{caption/before}[test]{%
+  \showbool{#2}\showopt{#3}%
+  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
+    figure=\thefigure, linewidth=\the\linewidth}%
+  \csname testbefore\endcsname}
+\newcounter{sub}[figure]
+\gdef\@currentHref{none}
+% helpers for the tests (\makeatletter does not work inside \TEST)
+\def\stepoff{\@captionstepfalse}
+\def\targetoff{\@captiontargetfalse}
+\def\sethref#1{\gdef\@currentHref{#1}}
+\def\showhref{\typeout{href=\@currentHref}}
+\def\showlabel{\typeout{figure=\thefigure, label=\@currentlabel,
+  sub=\thesub}}
+\def\setfloathref#1{\def\@floatHref@figure{#1}}
+\def\emptyfloathref{\let\@floatHref@figure\@empty}
+\def\relaxfloathref{\let\@floatHref@figure\relax}
+\def\settype#1{\def\@captype{#1}}
+\def\directcaption{\@caption}
+\def\starton{\@captionstartrue}
+\def\nolabel{\@caption@nolabel}
+\def\resetcaption{\@kernel@caption@reset}
+\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
+% a package that keeps its own \caption (here the definition of LaTeX
+% before 2026) and passes only \caption* to the kernel
+\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
+\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
+  {\@kernel@caption@reset\owncaption}}}
+% replacements of \@caption: as in a class that does not know \caption*
+% (the definition of llncs), a wrapper of the kernel definition (as in
+% memoir or nameref), and a definition that defers the kernel definition
+% (as threeparttable)
+\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
+  ext@#1\endcsname}{#1}{\protect\numberline{\csname
+  the#1\endcsname}{\ignorespaces #2}}\begingroup
+    \@parboxrestore
+    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+  \endgroup}
+\long\def\targetcaption#1[#2]#3{%
+  \protected@xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{CLASS TARGET: \@currentHref}%
+  \classcaption{#1}[{#2}]{#3}}
+\long\def\deferclasscaption#1[#2]#3{%
+  \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
+\long\def\wrappercaption#1[#2]#3{%
+  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
+  \kernelatcaption{#1}[{#2}]{#3}}
+\long\def\defercaption#1[#2]#3{%
+  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
+\def\useclasscaption{\let\@caption\classcaption}
+\def\usewrappercaption{\let\@caption\wrappercaption}
+\def\usedefercaption{\let\@caption\defercaption}
+\def\usetargetcaption{\let\@caption\targetcaption}
+\def\usedeferclasscaption{\let\@caption\deferclasscaption}
+\def\showlabelexpansion{%
+  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
+    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
+      true\else false\fi}}}
+\def\showrestored{%
+  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
+    theH=\meaning\theHfigure}}
+\def\staroff{\@captionstarfalse}
+% the label of caption* in different \@makecaption shapes: the width
+% of the box compared with the text alone
+\def\shape#1#2{%
+  \setbox0=\hbox{\starton #2}\setbox2=\hbox{Text}%
+  \typeout{SHAPE #1: \ifdim\wd0=\wd2 clean\else
+    width \the\wd0\space(text \the\wd2)\fi}}
+\def\sep{: }
+\let\savedwarn\@caption@nolabel@warn
+\def\rewarn{\global\let\@caption@nolabel@warn\savedwarn}
+% shapes in vertical mode: total height and natural width of the last line
+% compared with the text alone; and whether the label warned
+\def\lastline#1#2{%
+  \setbox4\vbox{\unvcopy#1\unskip\unpenalty\unskip\global\setbox5\lastbox}%
+  \setbox6\hbox{\unhcopy5\unskip\unskip\unpenalty}%
+  \edef#2{\the\dimexpr\ht#1+\dp#1\relax/\the\wd6}}
+\def\showwarned{\ifx\@caption@nolabel@warn\relax warning\else no warning\fi}
+\long\def\vshape#1#2{%
+  \rewarn
+  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #2\par}%
+  \setbox2=\vbox{\hsize=10cm \parindent=0pt \noindent Text\par}%
+  \lastline0\tmpa \lastline2\tmpb
+  \typeout{VSHAPE #1: \ifx\tmpa\tmpb clean\else
+    height/width \tmpa\space(text \tmpb)\fi, \showwarned}}
+\def\hshape#1#2{\rewarn\shape{#1}{#2}\typeout{.... \showwarned}}
+% the same in vertical mode, compared with a reference (#2) instead of
+% the text alone
+\long\def\vshapeto#1#2#3{%
+  \rewarn
+  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #3\par}%
+  \setbox2=\vbox{\hsize=10cm \parindent=0pt #2\par}%
+  \lastline0\tmpa \lastline2\tmpb
+  \typeout{VSHAPE #1: \ifx\tmpa\tmpb as reference\else
+    height/width \tmpa\space(reference \tmpb)\fi, \showwarned}}
+\def\spsep{ \textendash\ }
+\def\sboxlabel{\sbox\@tempboxa{\nolabel}\unhbox\@tempboxa}
+\def\settowidthlabel{\settowidth\@tempdima{\nolabel: }\hskip\@tempdima}
+% a counter without \theH<counter> (as made before 2024 by \newcount)
+\newcount\c@myfig
+\def\themyfig{\arabic{myfig}}
+\def\p@myfig{}
+\def\fnum@myfig{My \themyfig}
+\def\ext@myfig{lom}
+% from caption-interface-003: code that only needs the name, and a
+% replaced \@caption that makes its target from \theH<type>
+\def\ownname#1{%
+  \@kernel@caption@unique{#1}{%
+    \edef\ownhref{#1.\csname theH#1\endcsname}%
+    \typeout{OWN NAME: \ownhref}}}
+\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
+\long\def\replacedcaption#1[#2]#3{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{REPLACED: #3, target \@currentHref}}
+\def\usereplaced{\let\@caption\replacedcaption}
+\def\showunique{\@kernel@caption@unique{figure}{\showtheH}}
+\makeatother
+\begin{document}
+\START
+\TEST{caption* with a replaced @caption (class): no label, no entry}{%
+  \begin{figure}
+    \useclasscaption
+    \showlabelexpansion
+    \caption{First}
+    \caption*{Starred}
+    \typeout{figure=\thefigure}
+    \showswitches
+    \showrestored
+    \caption*[Opt]{Starred with option}
+    \showrestored
+    \caption{Second}
+    \typeout{figure=\thefigure}
+    \showswitches
+  \end{figure}}
+\TEST{caption* with a wrapper of the kernel @caption}{%
+  \begin{figure}
+    \usewrappercaption
+    \caption*{Starred}
+    \typeout{figure=\thefigure}
+    \showswitches
+    \showrestored
+    \caption{Normal}
+  \end{figure}}
+\TEST{caption* with a deferred kernel @caption}{%
+  \begin{figure}
+    \usedefercaption
+    \caption*{Deferred star}
+    \showrestored
+    \deferred
+    \typeout{figure=\thefigure}
+    \showswitches
+  \end{figure}}
+\TEST{replaced @caption: settings until the next caption}{%
+  \begin{figure}
+    \usetargetcaption
+    \caption{First}
+    \caption*{Starred}
+    \showrestored
+    \addcontentsline{lof}{figure}{Manual entry after caption*}
+    \caption{Second}
+    \showrestored
+    \let\testbefore\stepoff
+    \caption{Second, continued}
+    \showrestored
+    \showhref
+  \end{figure}
+  \showrestored}
+\TEST{replaced @caption that defers: star still honoured}{%
+  \begin{figure}
+    \usedeferclasscaption
+    \showlabelexpansion
+    \caption*{Deferred class star}
+    \deferred
+    \typeout{figure=\thefigure}
+  \end{figure}}
+\TEST{kernel @caption: unique number given back, no gap}{%
+  \begin{figure}
+    \caption{Stepped}
+    \caption*{Starred}
+    \let\testbefore\stepoff
+    \caption{Continued}
+    \showhref
+  \end{figure}}
+\TEST{kernel@caption@reset: ends the settings of caption*}{%
+  \begin{figure}
+    \useclasscaption
+    \showlabelexpansion
+    \caption*{Starred}
+    \showswitches
+    \showrestored
+    \showgiveback
+    \resetcaption
+    \showswitches
+    \showrestored
+    \showgiveback
+    \starton\stepoff\targetoff
+    \resetcaption
+    \showswitches
+  \end{figure}}
+\TEST{kernel@caption@reset: own caption, only the star from the kernel}{%
+  \begin{figure}
+    \useclasscaption
+    \useowncaption
+    \showlabelexpansion
+    \caption{Own first}
+    \caption*{Starred}
+    \caption{Own second}
+    \showlabel
+    \showhref
+    \showrestored
+    \showswitches
+  \end{figure}}
+\TEST{after a caption* with a replaced caption code}{%
+  \setcounter{figure}{0}%
+  \begin{figure}
+    \usereplaced
+    \caption{Stepped}
+    \caption*{Starred}
+    \showtheH
+    \ownname{figure}%
+    \ownname{figure}%
+    \showtheH
+    \settype{table}%
+    \ownname{table}%
+    \settype{figure}%
+    \caption{Stepped again}
+    \showtheH
+  \end{figure}}
+\TEST{after an unstepped caption with a replaced caption code}{%
+  \begin{figure}
+    \usereplaced
+    \let\testbefore\stepoff
+    \caption{Continued by other code}
+    \let\testbefore\relax
+    \ownname{figure}%
+    \showunique
+    \showtheH
+  \end{figure}
+  \ownname{figure}%
+  \showtheH}
+\end{document}

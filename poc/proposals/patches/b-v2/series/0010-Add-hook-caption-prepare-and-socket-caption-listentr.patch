@@ -1,0 +1,925 @@
+From 271f6728c7e799c66b39285b1ff2a304029afca2 Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 16:59:08 +0200
+Subject: [PATCH 10/14] Add hook caption/prepare and socket caption/listentry
+
+\@caption now executes the new hook caption/prepare
+{type}{star}{list text}{text} after the \par, for every caption (also
+for \caption* and for direct calls of \@caption), and writes the list
+entry through the new socket caption/listentry {type}{list text}{text}
+(not for \caption*). The default plug kernel writes the entry with
+\addcontentsline as before, so the output does not change. At the time
+of the hook \@currentlabel is set, and \@currentHref if the step made a
+target; it is the place for code that today wraps \@caption (e.g., to
+make its own target, with \@captiontargetfalse in caption/before and
+\@kernel@caption@unique for a caption that does not step). The
+settings for a replaced \@caption are undone before the hook, and a
+number reserved for it is given back before it, so the hook and the
+plug see the normal definitions.
+
+caption/listentry has three arguments (v1 had two): the caption text
+too, so a plug can use it when the list text was not given (it can
+record in caption/before whether it was).
+
+\@caption keeps its release block ("caption body"); it still typesets
+with \@kernel@caption@typeset (the socket caption/typeset is a later
+part), so the caption package does not take its client path yet (it
+tests \@kernel@@caption).
+
+New test caption-interface-006 (hook and plug arguments, \caption*,
+direct calls, a wrapper of the kernel \@caption, a client that names
+its own target in caption/prepare); caption-interface-002 checks that
+the new hook is not executed after a roll-back. The hook-list .tlg
+files list the new hook.
+---
+ base/changes.txt                          |   7 +
+ base/doc/clsguide.tex                     |   5 +-
+ base/ltfloat.dtx                          |  75 +++++++---
+ base/testfiles-lthooks/ltcmdhooks-001.tlg |   1 +
+ base/testfiles-lthooks/lthooks-000.tlg    |   1 +
+ base/testfiles-lthooks/lthooks-001.tlg    |   3 +
+ base/testfiles-lthooks/lthooks-002.tlg    |   3 +
+ base/testfiles-lthooks/lthooks-003.tlg    |   2 +
+ base/testfiles-lthooks/lthooks-004.tlg    |   2 +
+ base/testfiles-lthooks/lthooks-005.tlg    |   2 +
+ base/testfiles-lthooks/lthooks-006.tlg    |   2 +
+ base/testfiles-lthooks/lthooks-007.tlg    |   3 +
+ base/testfiles-lthooks/lthooks-008.tlg    |   2 +
+ base/testfiles-lthooks/lthooks-009.tlg    |   1 +
+ base/testfiles-lthooks/lthooks-011.tlg    |   4 +
+ base/testfiles-lthooks/lthooks-013.tlg    |   1 +
+ base/testfiles-lthooks/lthooks-021.tlg    |   1 +
+ base/testfiles-lthooks/lthooks-legacy.tlg |   1 +
+ base/testfiles-lthooks2/lthooks2-002.tlg  |   1 +
+ base/testfiles-lthooks2/lthooks2-005.tlg  |   2 +
+ base/testfiles/caption-interface-002.lvt  |   3 +-
+ base/testfiles/caption-interface-006.lvt  | 165 ++++++++++++++++++++++
+ base/testfiles/caption-interface-006.tlg  | 134 ++++++++++++++++++
+ 23 files changed, 402 insertions(+), 19 deletions(-)
+ create mode 100644 base/testfiles/caption-interface-006.lvt
+ create mode 100644 base/testfiles/caption-interface-006.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index ee598c4ba..b37f44f79 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,13 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx, clsguide.tex:
++	Caption interface: hook caption/prepare, executed by \@caption
++	after the \par for every caption (also for \caption* and direct
++	calls of \@caption), and socket caption/listentry with three
++	arguments (type, list text, text; plug kernel: the \addcontentsline
++	of before; not used for \caption*)
++
+ 	* ltfloat.dtx:
+ 	Document the float first aid for \caption* (latex-firstaid)
+ 
+diff --git a/base/doc/clsguide.tex b/base/doc/clsguide.tex
+index e196875cf..a37213048 100644
+--- a/base/doc/clsguide.tex
++++ b/base/doc/clsguide.tex
+@@ -1552,8 +1552,9 @@ so that classes and packages do not need to redefine
+ \end{verbatim}
+ \item A class that redefines \cs{@caption} (for example to change the
+   list entry or the spacing) should preferably use the hooks and sockets
+-  of the caption interface instead, where they cover the change (see the
+-  documentation of \texttt{ltfloat.dtx}). An
++  of the caption interface instead, where they cover the change (for
++  example the socket \texttt{caption/listentry} for the list entry; see
++  the documentation of \texttt{ltfloat.dtx}). An
+   existing redefinition that typesets the label with
+   \cs{fnum@}\meta{type}, writes the list entry with
+   \verb|\addcontentsline{\csname ext@|\meta{type}\verb|\endcsname}|
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 0177af3dc..049dd32b2 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -236,6 +236,8 @@
+ % \changes{v1.2k}{2026-10-06}{Caption interface: hook \texttt{caption/before},
+ %    socket \texttt{caption/step}, switches \cs{if@captionstep} and
+ %    \cs{if@captiontarget}}
++% \changes{v1.2k}{2026-10-06}{Hook \texttt{caption/prepare}, socket
++%    \texttt{caption/listentry}}
+ %    \cs{caption}\oarg{list text}\marg{text} and
+ %    \cs{caption*}\oarg{opt}\marg{text} process a caption in the
+ %    following steps (inside a float, \meta{type} is the expansion of
+@@ -254,8 +256,10 @@
+ %      steps the counter.
+ %    \item \cs{@caption}\marg{type}\oarg{list text}\marg{text} is called
+ %      (the list text is the optional argument, or the text if it was
+-%      not given). It does a \cs{par}, writes the list entry (not for
+-%      \cs{caption*}), typesets the caption with \cs{@makecaption} and
++%      not given). It does a \cs{par}, executes the hook
++%      \hook{caption/prepare}, writes the list entry with the socket
++%      \texttt{caption/listentry} (not for \cs{caption*}), typesets the
++%      caption with \cs{@makecaption} and
+ %      resets the switches \cs{if@captionstar}, \cs{if@captionstep} and
+ %      \cs{if@captiontarget} to their defaults.
+ %    \end{enumerate}
+@@ -330,8 +334,8 @@
+ %    so that rolling forward from an older format works. After a roll-back
+ %    they stay defined but are not used.
+ %
+-% \paragraph{The hook \texttt{caption/before}.}
+-%    A hook with four arguments:
++% \paragraph{The hooks \texttt{caption/before} and \texttt{caption/prepare}.}
++%    Two hooks with four arguments each:
+ %    \begin{description}
+ %    \item[\texttt{caption/before}] is executed by \cs{caption} once per
+ %      caption (also for \cs{caption*}), after the star and the arguments
+@@ -347,14 +351,24 @@
+ %      e.g., for a continued float) or that no target should be created
+ %      (\cs{@captiontargetfalse}, if the code makes its own target). The hook
+ %      is not executed if \cs{@caption} is called directly.
++%    \item[\texttt{caption/prepare}] is executed by \cs{@caption} after the
++%      \cs{par} and before the list entry, for every call of \cs{@caption}
++%      (also for \cs{caption*} and for direct calls). The arguments are the
++%      type, the star state as above (from \cs{if@captionstar}), the list
++%      text and the caption text. At this point \cs{@currentlabel} is set
++%      and, if the step made a target, \cs{@currentHref} as well. This is
++%      the place for code that today wraps \cs{@caption}, e.g., to make a
++%      target of its own or to record the title of the caption for named
++%      references.
+ %    \end{description}
+-%    The hook is executed outside of any group the kernel makes.
++%    Both hooks are executed outside of any group the kernel makes.
+ %    \begin{macrocode}
+ %</2ekernel>
+ %<*2ekernel|latexrelease>
+ %<latexrelease>\IncludeInRelease{2026/11/01}%
+ %<latexrelease>                 {\@kernel@caption@step}{caption interface}%
+ \NewHookWithArguments{caption/before}{4}
++\NewHookWithArguments{caption/prepare}{4}
+ %    \end{macrocode}
+ %
+ % \begin{socketdecl}{caption/step}
+@@ -424,6 +438,32 @@
+ %    \end{macrocode}
+ % \end{plugdecl}
+ %
++% \begin{socketdecl}{caption/listentry}
++%    This socket writes the entry for the list of figures, tables, etc.
++%    It is used by \cs{@caption} after the hook \hook{caption/prepare},
++%    unless the star form \cs{caption*} was used (\cs{if@captionstar}).
++%    The first argument is the caption type, the second the text for the
++%    list (the optional argument of \cs{caption}, or the caption text if
++%    it was not given), the third the caption text. The default plug
++%    \plug{kernel} writes the entry with \cs{addcontentsline} as before;
++%    it also writes an (empty) entry if the optional argument is empty.
++%    A package that wants to know whether the optional argument was
++%    given can record that in the hook \hook{caption/before}.
++% \end{socketdecl}
++% \begin{plugdecl}{kernel (caption/listentry)}
++%    \begin{macrocode}
++\IfSocketExistsF{caption/listentry}{%
++  \NewSocket{caption/listentry}{3}%
++  \NewSocketPlug{caption/listentry}{kernel}
++    {%
++      \addcontentsline{\csname ext@#1\endcsname}{#1}%
++        {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #2}}%
++    }%
++  \AssignSocketPlug{caption/listentry}{kernel}%
++}
++%    \end{macrocode}
++% \end{plugdecl}
++%
+ % \begin{macro}{\if@captionstar,\if@captionstep,\if@captiontarget}
+ %    \cs{if@captionstar} is true while a caption made by \cs{caption*} is
+ %    processed: from the start of \cs{caption*} until the end of
+@@ -550,20 +590,20 @@
+ %    documented for code that makes the target of a caption itself or
+ %    only needs its name (for example code that sets
+ %    \cs{@captiontargetfalse} in the hook \hook{caption/before} and makes
+-%    the anchor with
++%    the anchor in the hook \hook{caption/prepare} with
+ %    |\@kernel@caption@unique{|\meta{type}|}{\hyper@makecurrent{|\meta{type}|}}|),
+ %    so that it does not have to know how the names are counted:
+ %    \begin{itemize}
+ %    \item Every use takes a new number. Code that wants one name for
+ %      one caption uses it once and keeps the result (e.g.,
+ %      \cs{@currentHref}).
+-%    \item In the hook \hook{caption/before} and in the plugs of the
+-%      socket \texttt{caption/step} (and outside of captions)
++%    \item In the hooks \hook{caption/before} and \hook{caption/prepare}
++%      and in the plugs of the caption sockets (and outside of captions)
+ %      \cs{theH}\meta{counter} has its normal meaning, and no number is
+ %      reserved, so the numbers have no gaps. (A number that the kernel
+ %      reserves for a replaced \cs{@caption}, see
+ %      \cs{@caption@nostep@defs}, is given back at the start of the kernel
+-%      \cs{@caption}.)
++%      \cs{@caption}, before \hook{caption/prepare}.)
+ %    \item After a \cs{caption*} or a caption that does not step, if
+ %      \cs{@caption} is a replaced one, \cs{theH}\meta{counter} has the
+ %      unique form of that caption until the next \cs{caption} or the end
+@@ -941,7 +981,7 @@
+ %    it should not be used there. An optional argument is accepted; it
+ %    is only passed to the
+ %    hook \hook{caption/before} (and to \cs{@caption} as list text, which
+-%    the kernel \cs{@caption} does not use for \cs{caption*}).
++%    the kernel \cs{@caption} only passes to \hook{caption/prepare}).
+ %
+ %    The star is read with \cs{@ifstar} and the optional argument with
+ %    \cs{kernel@ifnextchar}, so spaces before them are skipped, as with
+@@ -1016,7 +1056,7 @@
+ %    gives a caption without label, without list entry and without a
+ %    duplicate target, in the layout of the class. The settings are
+ %    local and last until \cs{@caption@nostep@restore} is executed: at
+-%    the start of the kernel \cs{@caption} (so its list entry and
++%    the start of the kernel \cs{@caption} (so its hook, list entry and
+ %    typesetting see the normal definitions), at the start of the next
+ %    \cs{caption}
+ %    (with \cs{@kernel@caption@reset}), or at the end of the group; why,
+@@ -1143,13 +1183,17 @@
+ %      end with \cs{@kernel@caption@reset}}
+ % \changes{v1.2k}{2026-10-06}
+ %     {Undo the settings for a replaced \cs{@caption} before the \cs{par}}
++% \changes{v1.2k}{2026-10-06}
++%     {Hook \texttt{caption/prepare}; list entry with the socket
++%      \texttt{caption/listentry}}
+ %    \cs{@caption}\marg{type}\oarg{list text}\marg{text} keeps its
+ %    signature, so code that wraps or replaces it keeps working.
+ %    The typesetting (with \cs{@parboxrestore} and \cs{@makecaption})
+ %    is now done by \cs{@kernel@caption@typeset}. At the start the
+ %    settings of \cs{@caption@nostep@defs} are undone, before the
+-%    \cs{par}, so that the paragraph hooks, the output routine and the
+-%    list entry and the typesetting see the normal definitions. At the end
++%    \cs{par}, so that the paragraph hooks, the output routine, the hook
++%    \hook{caption/prepare}, the list entry and the typesetting see the
++%    normal definitions. At the end
+ %    \cs{@kernel@caption@reset} resets the switches (the settings are
+ %    already undone by then), so that code which calls \cs{@caption} or
+ %    the socket \texttt{caption/step} directly (without \cs{caption}) gets
+@@ -1173,9 +1217,8 @@
+   {#2}{#3}%
+   \@kernel@caption@reset}
+ \long\def\@caption@body#1#2#3#4{%
+-  \IfBooleanF{#2}%
+-    {\addcontentsline{\csname ext@#1\endcsname}{#1}%
+-       {\protect\numberline{\csname the#1\endcsname}{\ignorespaces #3}}}%
++  \UseHookWithArguments{caption/prepare}{4}{#1}{#2}{#3}{#4}%
++  \IfBooleanF{#2}{\UseSocket{caption/listentry}{#1}{#3}{#4}}%
+   \@kernel@caption@typeset{#1}{#2}{#4}}
+ %</2ekernel|latexrelease>
+ %<latexrelease>\EndIncludeInRelease
+diff --git a/base/testfiles-lthooks/ltcmdhooks-001.tlg b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+index b5b2d7b07..b829eff38 100644
+--- a/base/testfiles-lthooks/ltcmdhooks-001.tlg
++++ b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+@@ -120,6 +120,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-000.tlg b/base/testfiles-lthooks/lthooks-000.tlg
+index 398dae7c7..4bb057449 100644
+--- a/base/testfiles-lthooks/lthooks-000.tlg
++++ b/base/testfiles-lthooks/lthooks-000.tlg
+@@ -56,6 +56,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-001.tlg b/base/testfiles-lthooks/lthooks-001.tlg
+index 03fe2380a..39bdfb728 100644
+--- a/base/testfiles-lthooks/lthooks-001.tlg
++++ b/base/testfiles-lthooks/lthooks-001.tlg
+@@ -63,6 +63,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -330,6 +331,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -439,6 +441,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-002.tlg b/base/testfiles-lthooks/lthooks-002.tlg
+index ec45b390b..b690c8b52 100644
+--- a/base/testfiles-lthooks/lthooks-002.tlg
++++ b/base/testfiles-lthooks/lthooks-002.tlg
+@@ -63,6 +63,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -333,6 +334,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -442,6 +444,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-003.tlg b/base/testfiles-lthooks/lthooks-003.tlg
+index 024f9e297..9557cf57c 100644
+--- a/base/testfiles-lthooks/lthooks-003.tlg
++++ b/base/testfiles-lthooks/lthooks-003.tlg
+@@ -65,6 +65,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -185,6 +186,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-004.tlg b/base/testfiles-lthooks/lthooks-004.tlg
+index 3a48e3686..5f5eaba98 100644
+--- a/base/testfiles-lthooks/lthooks-004.tlg
++++ b/base/testfiles-lthooks/lthooks-004.tlg
+@@ -50,6 +50,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -164,6 +165,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-005.tlg b/base/testfiles-lthooks/lthooks-005.tlg
+index 7db48f8d0..275c79c71 100644
+--- a/base/testfiles-lthooks/lthooks-005.tlg
++++ b/base/testfiles-lthooks/lthooks-005.tlg
+@@ -72,6 +72,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -192,6 +193,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-006.tlg b/base/testfiles-lthooks/lthooks-006.tlg
+index 7d6da8af6..741d1c79f 100644
+--- a/base/testfiles-lthooks/lthooks-006.tlg
++++ b/base/testfiles-lthooks/lthooks-006.tlg
+@@ -47,6 +47,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -159,6 +160,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-007.tlg b/base/testfiles-lthooks/lthooks-007.tlg
+index be65a5ba2..cea19f330 100644
+--- a/base/testfiles-lthooks/lthooks-007.tlg
++++ b/base/testfiles-lthooks/lthooks-007.tlg
+@@ -47,6 +47,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -160,6 +161,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -448,6 +450,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-008.tlg b/base/testfiles-lthooks/lthooks-008.tlg
+index 474c7e00f..355fb588b 100644
+--- a/base/testfiles-lthooks/lthooks-008.tlg
++++ b/base/testfiles-lthooks/lthooks-008.tlg
+@@ -51,6 +51,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {tbl/cell/begin}
+ >  {tbl/cell/end}
+ >  {caption/before}
++>  {caption/prepare}
+ >  {float/begin}
+ >  {float/end}
+ >  {insertmark}
+@@ -169,6 +170,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-009.tlg b/base/testfiles-lthooks/lthooks-009.tlg
+index 871bd67a7..643fcde87 100644
+--- a/base/testfiles-lthooks/lthooks-009.tlg
++++ b/base/testfiles-lthooks/lthooks-009.tlg
+@@ -65,6 +65,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-011.tlg b/base/testfiles-lthooks/lthooks-011.tlg
+index 020b015bb..bf805f043 100644
+--- a/base/testfiles-lthooks/lthooks-011.tlg
++++ b/base/testfiles-lthooks/lthooks-011.tlg
+@@ -58,6 +58,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -345,6 +346,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -634,6 +636,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -925,6 +928,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-013.tlg b/base/testfiles-lthooks/lthooks-013.tlg
+index fc157cb30..b3b6c5533 100644
+--- a/base/testfiles-lthooks/lthooks-013.tlg
++++ b/base/testfiles-lthooks/lthooks-013.tlg
+@@ -115,6 +115,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-021.tlg b/base/testfiles-lthooks/lthooks-021.tlg
+index 93fb11b4e..bb99fe924 100644
+--- a/base/testfiles-lthooks/lthooks-021.tlg
++++ b/base/testfiles-lthooks/lthooks-021.tlg
+@@ -56,6 +56,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks/lthooks-legacy.tlg b/base/testfiles-lthooks/lthooks-legacy.tlg
+index bc3bea768..00201ffee 100644
+--- a/base/testfiles-lthooks/lthooks-legacy.tlg
++++ b/base/testfiles-lthooks/lthooks-legacy.tlg
+@@ -83,6 +83,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks2/lthooks2-002.tlg b/base/testfiles-lthooks2/lthooks2-002.tlg
+index b0666a54b..5add495de 100644
+--- a/base/testfiles-lthooks2/lthooks2-002.tlg
++++ b/base/testfiles-lthooks2/lthooks2-002.tlg
+@@ -83,6 +83,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles-lthooks2/lthooks2-005.tlg b/base/testfiles-lthooks2/lthooks2-005.tlg
+index 2676ae2bf..b9201b0a0 100644
+--- a/base/testfiles-lthooks2/lthooks2-005.tlg
++++ b/base/testfiles-lthooks2/lthooks2-005.tlg
+@@ -58,6 +58,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+@@ -333,6 +334,7 @@ Data structure for label rules:
+ [lthooks] Update code for hook 'tbl/cell/begin' on input line ...:
+ [lthooks] Update code for hook 'tbl/cell/end' on input line ...:
+ [lthooks] Update code for hook 'caption/before' on input line ...:
++[lthooks] Update code for hook 'caption/prepare' on input line ...:
+ [lthooks] Update code for hook 'float/begin' on input line ...:
+ [lthooks] Update code for hook 'float/end' on input line ...:
+ [lthooks] Update code for hook 'insertmark' on input line ...:
+diff --git a/base/testfiles/caption-interface-002.lvt b/base/testfiles/caption-interface-002.lvt
+index 991c7c445..b2647855b 100644
+--- a/base/testfiles/caption-interface-002.lvt
++++ b/base/testfiles/caption-interface-002.lvt
+@@ -1,7 +1,7 @@
+ % Roll-back of the caption interface: with latexrelease 2026-06-01 the
+ % old \caption and \@caption are back, \@kernel@caption,
+ % \@kernel@caption@reset and \@kernel@caption@unique are undefined, the
+-% hook is not executed, and
++% hooks are not executed, and
+ % the guarded declarations give no errors.
+ \RequirePackage[2026-06-01]{latexrelease}
+ \documentclass{article}
+@@ -15,6 +15,7 @@
+     \string\@kernel@caption@unique:
+     \ifdefined\@kernel@caption@unique defined\else undefined\fi}}
+ \AddToHookWithArguments{caption/before}{\typeout{BEFORE: #1}}
++\AddToHookWithArguments{caption/prepare}{\typeout{PREPARE: #1}}
+ \let\ORImakecaption\@makecaption
+ \long\def\@makecaption#1#2{%
+   \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}]}%
+diff --git a/base/testfiles/caption-interface-006.lvt b/base/testfiles/caption-interface-006.lvt
+new file mode 100644
+index 000000000..96492d163
+--- /dev/null
++++ b/base/testfiles/caption-interface-006.lvt
+@@ -0,0 +1,165 @@
++% Test of the hook caption/prepare
++% (executed by \@caption for every caption, also for \caption* and direct
++% calls) and the socket caption/listentry with three arguments (not used
++% for \caption*), the definitions they see after a caption handled by a
++% wrapper of the kernel \@caption, and \@kernel@caption@unique used in
++% caption/prepare by code that makes its own target. The roll-back is
++% tested in caption-interface-002.
++\input{regression-test}
++\documentclass{article}
++\makeatletter
++% the kernel definition of \@caption, for the wrapper
++\let\kernelatcaption\@caption
++% show the arguments \@makecaption gets
++\let\ORImakecaption\@makecaption
++\long\def\@makecaption#1#2{%
++  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
++    star=\if@captionstar true\else false\fi}%
++  \ORImakecaption{#1}{#2}}
++% show what is written to the list
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++% show the targets made by the step
++\NewSocketPlug{refstepcounter/target}{test}{%
++  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
++  \typeout{TARGET: new target \@currentHref}}
++\AssignSocketPlug{refstepcounter/target}{test}
++% the hooks
++\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
++\AddToHookWithArguments{caption/before}[test]{%
++  \csname testbefore\endcsname}
++\AddToHookWithArguments{caption/prepare}[test]{%
++  \showbool{#2}%
++  \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
++    figure=\thefigure, label=\@currentlabel, href=\@currentHref}%
++  \csname testprepare\endcsname}
++% a listentry plug that shows its three arguments
++\NewSocketPlug{caption/listentry}{test}{%
++  \typeout{LISTENTRY: {#1}{\detokenize{#2}}{\detokenize{#3}}}}
++\gdef\@currentHref{none}
++% helpers for the tests (\makeatletter does not work inside \TEST)
++\def\stepoff{\@captionstepfalse}
++\def\targetoff{\@captiontargetfalse}
++\def\sethref#1{\gdef\@currentHref{#1}}
++\def\showhref{\typeout{href=\@currentHref}}
++\def\showtheH{\typeout{theHfigure: \meaning\theHfigure}}
++\def\directcaption{\@caption}
++\def\starton{\@captionstartrue}
++\def\showswitches{%
++  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
++    step=\if@captionstep true\else false\fi,
++    target=\if@captiontarget true\else false\fi}}
++% a wrapper of the kernel \@caption (as in memoir or nameref)
++\long\def\wrappercaption#1[#2]#3{%
++  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
++  \kernelatcaption{#1}[{#2}]{#3}}
++\def\usewrappercaption{\let\@caption\wrappercaption}
++\def\showrestored{%
++  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
++    theH=\meaning\theHfigure}}
++\def\testpreparestar{%
++  \def\testprepare{\typeout{PREPARE sees: fnum=\meaning\fnum@figure,
++    ext=\meaning\ext@figure, theH=\meaning\theHfigure}}}
++% code that only needs the name (as \hyper@makecurrent), with a local
++% assignment
++\def\ownname#1{%
++  \@kernel@caption@unique{#1}{%
++    \edef\ownhref{#1.\csname theH#1\endcsname}%
++    \typeout{OWN NAME: \ownhref}}}
++% a client: no kernel target, its own name in caption/prepare, if the
++% counter is not stepped (by other code)
++\def\clientprepare{\def\testprepare{%
++  \if@captionstep\else\ownname{figure}\fi}}
++\def\clientbefore{\def\testbefore{\@captiontargetfalse
++  \csname othercode\endcsname}}
++\makeatother
++\begin{document}
++\START
++\TEST{normal caption: prepare, list entry plug with three arguments}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/listentry}{test}%
++    \caption{Normal}
++    \caption[Short]{Long}
++  \end{figure}
++  \begin{figure}
++    \caption[Short]{Normal with kernel list entry}
++  \end{figure}}
++\TEST{star caption: prepare, no list entry}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/listentry}{test}%
++    \caption*{Star}
++    \caption*[x]{Star with optional argument}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{empty optional argument: kernel plug writes an empty entry}{%
++  \begin{figure}
++    \caption[]{Empty optional argument}
++    \caption[{}]{Braced empty optional argument}
++  \end{figure}}
++\TEST{hook and plug arguments with \#}{%
++  \begin{figure}
++    \AssignSocketPlug{caption/listentry}{test}%
++    \caption[A \# B]{C \# D}
++  \end{figure}}
++\TEST{prepare after a continued caption and without target}{%
++  \begin{figure}
++    \let\testbefore\stepoff
++    \caption{Continued}
++    \sethref{OLD}%
++    \let\testbefore\targetoff
++    \caption{No target}
++  \end{figure}}
++\TEST{direct call of @caption: prepare and list entry}{%
++  \begin{figure}
++    \directcaption{figure}[L]{T}
++    \starton
++    \directcaption{figure}[L2]{T2 star}
++    \showswitches
++  \end{figure}}
++\TEST{caption* with a wrapper of the kernel @caption: prepare sees the
++  normal definitions}{%
++  \begin{figure}
++    \usewrappercaption
++    \testpreparestar
++    \caption*{Starred}
++    \typeout{figure=\thefigure}
++    \showswitches
++    \showrestored
++    \caption{Normal}
++  \end{figure}}
++\TEST{client in caption/prepare: names counted with the kernel's}{%
++  \begin{figure}
++    \let\testprepare\relax
++    \caption{Stepped}
++    \caption{Stepped again}
++    \showhref
++    \clientbefore\clientprepare
++    \let\othercode\stepoff
++    \caption{Continued by other code (client)}
++    \showhref
++    \typeout{own: \ownhref}%
++    \let\testbefore\stepoff
++    \let\testprepare\relax
++    \caption{Continued by other code (kernel)}
++    \showhref
++    \clientbefore\clientprepare
++    \caption{Continued by other code (client again)}
++    \showtheH
++  \end{figure}}
++\TEST{caption* before: the number it reserved is given back, no gap}{%
++  \begin{figure}
++    \let\testprepare\relax
++    \caption{Stepped}
++    \showhref
++    \caption*{Starred}
++    \clientbefore\clientprepare
++    \let\othercode\stepoff
++    \caption{Continued by other code (client)}
++    \let\testbefore\stepoff
++    \let\testprepare\relax
++    \caption{Continued by other code (kernel)}
++    \showhref
++  \end{figure}}
++\END
+diff --git a/base/testfiles/caption-interface-006.tlg b/base/testfiles/caption-interface-006.tlg
+new file mode 100644
+index 000000000..8035cff98
+--- /dev/null
++++ b/base/testfiles/caption-interface-006.tlg
+@@ -0,0 +1,134 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: normal caption: prepare, list entry plug with three arguments
++============================================================
++TARGET: new target figure.1
++PREPARE: {figure}{false}{Normal}{Normal}, figure=1, label=1, href=figure.1
++LISTENTRY: {figure}{Normal}{Normal}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
++TARGET: new target figure.2
++PREPARE: {figure}{false}{Short}{Long}, figure=2, label=2, href=figure.2
++LISTENTRY: {figure}{Short}{Long}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Long], star=false
++TARGET: new target figure.3
++PREPARE: {figure}{false}{Short}{Normal with kernel list entry}, figure=3, label=3, href=figure.3
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Short}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal with kernel list entry], star=false
++============================================================
++============================================================
++TEST 2: star caption: prepare, no list entry
++============================================================
++PREPARE: {figure}{true}{Star}{Star}, figure=3, label=, href=figure.3
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star], star=true
++PREPARE: {figure}{true}{x}{Star with optional argument}, figure=3, label=, href=figure.3
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Star with optional argument], star=true
++figure=3
++============================================================
++============================================================
++TEST 3: empty optional argument: kernel plug writes an empty entry
++============================================================
++TARGET: new target figure.4
++PREPARE: {figure}{false}{}{Empty optional argument}, figure=4, label=4, href=figure.4
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Empty optional argument], star=false
++TARGET: new target figure.5
++PREPARE: {figure}{false}{}{Braced empty optional argument}, figure=5, label=5, href=figure.5
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces }}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Braced empty optional argument], star=false
++============================================================
++============================================================
++TEST 4: hook and plug arguments with \#
++============================================================
++TARGET: new target figure.6
++PREPARE: {figure}{false}{A \# B}{C \# D}, figure=6, label=6, href=figure.6
++LISTENTRY: {figure}{A \# B}{C \# D}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces C \# D], star=false
++============================================================
++============================================================
++TEST 5: prepare after a continued caption and without target
++============================================================
++TARGET: new target figure.6*1
++PREPARE: {figure}{false}{Continued}{Continued}, figure=6, label=6, href=figure.6*1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued], star=false
++PREPARE: {figure}{false}{No target}{No target}, figure=7, label=7, href=OLD
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces No target}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces No target], star=false
++============================================================
++============================================================
++TEST 6: direct call of @caption: prepare and list entry
++============================================================
++PREPARE: {figure}{false}{L}{T}, figure=7, label=, href=OLD
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces L}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces T], star=false
++PREPARE: {figure}{true}{L2}{T2 star}, figure=7, label=, href=OLD
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces T2 star], star=true
++SWITCHES: star=false, step=true, target=true
++============================================================
++============================================================
++TEST 7: caption* with a wrapper of the kernel @caption: prepare sees the normal definitions
++============================================================
++WRAPPER: fnum=\protected macro:->\if@captionstar \expandafter \@caption@nolabel@look \expandafter P\fi 
++PREPARE: {figure}{true}{Starred}{Starred}, figure=7, label=, href=OLD
++PREPARE sees: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
++figure=7
++SWITCHES: star=false, step=true, target=true
++after: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++TARGET: new target figure.8
++WRAPPER: fnum=macro:->\figurename \nobreakspace \thefigure 
++PREPARE: {figure}{false}{Normal}{Normal}, figure=8, label=8, href=figure.8
++PREPARE sees: fnum=macro:->\figurename \nobreakspace \thefigure , ext=macro:->lof, theH=macro:->\the \value {figure}
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Normal}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Normal], star=false
++============================================================
++============================================================
++TEST 8: client in caption/prepare: names counted with the kernel's
++============================================================
++TARGET: new target figure.9
++PREPARE: {figure}{false}{Stepped}{Stepped}, figure=9, label=9, href=figure.9
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Stepped}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Stepped], star=false
++TARGET: new target figure.10
++PREPARE: {figure}{false}{Stepped again}{Stepped again}, figure=10, label=10, href=figure.10
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Stepped again}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Stepped again], star=false
++href=figure.10
++PREPARE: {figure}{false}{Continued by other code (client)}{Continued by other code (client)}, figure=10, label=10, href=figure.10
++OWN NAME: figure.10*1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued by other code (client)}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued by other code (client)], star=false
++href=figure.10
++own: figure.10*1
++TARGET: new target figure.10*2
++PREPARE: {figure}{false}{Continued by other code (kernel)}{Continued by other code (kernel)}, figure=10, label=10, href=figure.10*2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued by other code (kernel)}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued by other code (kernel)], star=false
++href=figure.10*2
++PREPARE: {figure}{false}{Continued by other code (client again)}{Continued by other code (client again)}, figure=10, label=10, href=figure.10*2
++OWN NAME: figure.10*3
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued by other code (client again)}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued by other code (client again)], star=false
++theHfigure: macro:->\the \value {figure}
++============================================================
++============================================================
++TEST 9: caption* before: the number it reserved is given back, no gap
++============================================================
++TARGET: new target figure.11
++PREPARE: {figure}{false}{Stepped}{Stepped}, figure=11, label=11, href=figure.11
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Stepped}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Stepped], star=false
++href=figure.11
++PREPARE: {figure}{true}{Starred}{Starred}, figure=11, label=11, href=figure.11
++MAKECAPTION: [\@caption@nolabel ] [\ignorespaces Starred], star=true
++PREPARE: {figure}{false}{Continued by other code (client)}{Continued by other code (client)}, figure=11, label=11, href=figure.11
++OWN NAME: figure.11*1
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued by other code (client)}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued by other code (client)], star=false
++TARGET: new target figure.11*2
++PREPARE: {figure}{false}{Continued by other code (kernel)}{Continued by other code (kernel)}, figure=11, label=11, href=figure.11*2
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Continued by other code (kernel)}}
++MAKECAPTION: [\csname fnum@figure\endcsname ] [\ignorespaces Continued by other code (kernel)], star=false
++href=figure.11*2
++============================================================
+-- 
+2.50.1 (Apple Git-155)
+

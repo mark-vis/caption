@@ -1,13 +1,16 @@
-% Proposal (b): the float target \@floatHref@<type> used by the kernel
+% The float target \@floatHref@<type> used by the kernel
 % plug of caption/step (tagging and hyperref): figure captions use the
 % target at the start of the float, captions after float/split the new
 % target (before, they used a target that is never made), a table caption
-% inside a figure and a caption outside of floats get targets of their own.
-% \nameref gives the caption text (list text), not the last heading.
+% inside a figure (before: table.struct.<n>, which is never made either)
+% and a caption outside of floats get targets of their own.
 % A caption that does not step the counter (continued float) uses the
 % float target inside a float and a target with a unique name outside
 % of floats, never a second target with the name of the last stepped
 % caption.
+% \@makecaption with \@captype undefined (as packages use it outside of
+% floats) uses the generic structure names (before: undefined control
+% sequence).
 \DocumentMetadata{lang=en,tagging=on}
 \input{regression-test}
 \documentclass{article}
@@ -19,6 +22,8 @@
      \csname @floatHref@\@captype\endcsname\else(none)\fi}}
 \newif\ifcontinued
 \AddToHookWithArguments{caption/before}{\ifcontinued\@captionstepfalse\fi}
+\newcommand\nocaptype{\begingroup\let\@captype\@undefined
+  \@makecaption{Label}{No float type}\endgroup}
 \makeatother
 \begin{document}
 \START
@@ -55,6 +60,7 @@
 \end{figure}
 
 Refs \ref{a} \ref{b1} \ref{b2} \ref{t} \ref{c} \ref{o} \ref{oc} \ref{fc}.
-Names: \nameref{a}, \nameref{b2}, \nameref{t}, \nameref{o}.
+
+\nocaptype
 \SHOWPDFTAGS
 \end{document}

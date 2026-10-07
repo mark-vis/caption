@@ -1,0 +1,52 @@
+% Test the float/begin and float/end hooks
+\documentclass{article}
+\input{regression-test}
+\makeatletter
+\def\showmode{\ifinner inner \fi\ifvmode vertical\else
+  \ifhmode horizontal\else other\fi\fi}
+\AddToHookWithArguments{float/begin}{%
+  \edef\reserved@a{\showmode}%
+  \TYPE{BEGIN: #1 [#2], captype=\@captype, hsize=\the\hsize,
+        linewidth=\the\linewidth, mode=\reserved@a,
+        \if@minipage minipage\else no minipage\fi}}
+\AddToHookWithArguments{float/end}{%
+  \edef\reserved@a{\showmode}%
+  \TYPE{END: #1 [#2], captype=\@captype, hsize=\the\hsize,
+        mode=\reserved@a}}
+\setlength\textwidth{400pt}
+\setlength\columnsep{20pt}
+\begin{document}
+\sbox0{\begin{minipage}{2cm}x\end{minipage}}% load fonts before \START
+\START
+\TEST{one-column figure}{%
+  \begin{figure}[ht] A \end{figure}}
+\TEST{one-column figure* (same as figure)}{%
+  \begin{figure*} B \end{figure*}}
+\TEST{float started in horizontal mode}{%
+  \noindent text \begin{table}[b] C \end{table} more text\par}
+\TEST{a box ended by @endfloatbox without @xfloat: no hook}{%
+  \setbox0\color@vbox\vbox\bgroup D\@endfloatbox
+  \TYPE{box done}}
+\TEST{a box ended by @endfloatbox nested in a float (like float.sty [H]
+  in a minipage): end hook only once, for the float}{%
+  \begin{figure}
+    \begin{minipage}{2cm}%
+      \def\@captype{program}%
+      \setbox0\color@vbox\vbox\bgroup D1\@endfloatbox
+    \end{minipage}%
+    \setbox0\color@vbox\vbox\bgroup D2\@endfloatbox
+  \end{figure}}
+\twocolumn
+\TEST{two-column figure}{%
+  \begin{figure} E \end{figure}}
+\TEST{two-column figure*}{%
+  \begin{figure*} F \end{figure*}}
+\TEST{two-column table* with optional argument}{%
+  \begin{table*}[p] G \end{table*}}
+\AddToHookWithArguments{float/begin}[pkgA]{\TYPE{pkgA begin: #1}}
+\AddToHookWithArguments{float/begin}[pkgB]{\TYPE{pkgB begin: #1}}
+\AddToHookWithArguments{float/end}[pkgA]{\TYPE{pkgA end: #1}}
+\AddToHookWithArguments{float/end}[pkgB]{\TYPE{pkgB end: #1}}
+\TEST{code from two labels: float/end is reversed}{%
+  \begin{figure} H \end{figure}}
+\END

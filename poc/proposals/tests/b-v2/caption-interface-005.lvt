@@ -1,0 +1,230 @@
+% Test of the separator removal of the label of \caption*
+% (\@caption@nolabel): the separators removed after it in the shapes of
+% common \@makecaption definitions, in horizontal and vertical mode, and
+% when it warns.
+\input{regression-test}
+\documentclass{article}
+\makeatletter
+% the kernel definitions, for the tests that wrap or keep them
+\let\kernelcaption\caption
+\let\kernelatcaption\@caption
+% show the arguments \@makecaption gets
+\let\ORImakecaption\@makecaption
+\long\def\@makecaption#1#2{%
+  \typeout{MAKECAPTION: [\detokenize{#1}] [\detokenize{#2}],
+    star=\if@captionstar true\else false\fi}%
+  \ORImakecaption{#1}{#2}}
+% show what is written to the list
+\let\ORIaddcontentsline\addcontentsline
+\def\addcontentsline#1#2#3{%
+  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
+  \ORIaddcontentsline{#1}{#2}{#3}}
+% show the targets made by the step
+\NewSocketPlug{refstepcounter/target}{test}{%
+  \xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{TARGET: new target \@currentHref}}
+\AssignSocketPlug{refstepcounter/target}{test}
+\def\showswitches{%
+  \typeout{SWITCHES: star=\if@captionstar true\else false\fi,
+    step=\if@captionstep true\else false\fi,
+    target=\if@captiontarget true\else false\fi}}
+% the hooks
+\long\def\showbool#1{\IfBooleanTF{#1}{\def\tmpstar{true}}{\def\tmpstar{false}}}
+\long\def\showopt#1{\IfNoValueTF{#1}%
+  {\def\tmpopt{NoValue}}{\def\tmpopt{[\detokenize{#1}]}}}
+\AddToHookWithArguments{caption/before}[test]{%
+  \showbool{#2}\showopt{#3}%
+  \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
+    figure=\thefigure, linewidth=\the\linewidth}%
+  \csname testbefore\endcsname}
+\newcounter{sub}[figure]
+\gdef\@currentHref{none}
+% helpers for the tests (\makeatletter does not work inside \TEST)
+\def\stepoff{\@captionstepfalse}
+\def\targetoff{\@captiontargetfalse}
+\def\sethref#1{\gdef\@currentHref{#1}}
+\def\showhref{\typeout{href=\@currentHref}}
+\def\showlabel{\typeout{figure=\thefigure, label=\@currentlabel,
+  sub=\thesub}}
+\def\setfloathref#1{\def\@floatHref@figure{#1}}
+\def\emptyfloathref{\let\@floatHref@figure\@empty}
+\def\relaxfloathref{\let\@floatHref@figure\relax}
+\def\settype#1{\def\@captype{#1}}
+\def\directcaption{\@caption}
+\def\starton{\@captionstartrue}
+\def\nolabel{\@caption@nolabel}
+\def\resetcaption{\@kernel@caption@reset}
+\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
+% a package that keeps its own \caption (here the definition of LaTeX
+% before 2026) and passes only \caption* to the kernel
+\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
+\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
+  {\@kernel@caption@reset\owncaption}}}
+% replacements of \@caption: as in a class that does not know \caption*
+% (the definition of llncs), a wrapper of the kernel definition (as in
+% memoir or nameref), and a definition that defers the kernel definition
+% (as threeparttable)
+\long\def\classcaption#1[#2]#3{\par\addcontentsline{\csname
+  ext@#1\endcsname}{#1}{\protect\numberline{\csname
+  the#1\endcsname}{\ignorespaces #2}}\begingroup
+    \@parboxrestore
+    \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
+  \endgroup}
+\long\def\targetcaption#1[#2]#3{%
+  \protected@xdef\@currentHref{#1.\csname theH#1\endcsname}%
+  \typeout{CLASS TARGET: \@currentHref}%
+  \classcaption{#1}[{#2}]{#3}}
+\long\def\deferclasscaption#1[#2]#3{%
+  \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
+\long\def\wrappercaption#1[#2]#3{%
+  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
+  \kernelatcaption{#1}[{#2}]{#3}}
+\long\def\defercaption#1[#2]#3{%
+  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
+\def\useclasscaption{\let\@caption\classcaption}
+\def\usewrappercaption{\let\@caption\wrappercaption}
+\def\usedefercaption{\let\@caption\defercaption}
+\def\usetargetcaption{\let\@caption\targetcaption}
+\def\usedeferclasscaption{\let\@caption\deferclasscaption}
+\def\showlabelexpansion{%
+  \def\@makecaption##1##2{\protected@edef\reserved@a{##1}%
+    \typeout{MAKECAPTION: label=[\reserved@a], star=\if@captionstar
+      true\else false\fi}}}
+\def\showrestored{%
+  \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
+    theH=\meaning\theHfigure}}
+\def\staroff{\@captionstarfalse}
+% the label of caption* in different \@makecaption shapes: the width
+% of the box compared with the text alone
+\def\shape#1#2{%
+  \setbox0=\hbox{\starton #2}\setbox2=\hbox{Text}%
+  \typeout{SHAPE #1: \ifdim\wd0=\wd2 clean\else
+    width \the\wd0\space(text \the\wd2)\fi}}
+\def\sep{: }
+\let\savedwarn\@caption@nolabel@warn
+\def\rewarn{\global\let\@caption@nolabel@warn\savedwarn}
+% shapes in vertical mode: total height and natural width of the last line
+% compared with the text alone; and whether the label warned
+\def\lastline#1#2{%
+  \setbox4\vbox{\unvcopy#1\unskip\unpenalty\unskip\global\setbox5\lastbox}%
+  \setbox6\hbox{\unhcopy5\unskip\unskip\unpenalty}%
+  \edef#2{\the\dimexpr\ht#1+\dp#1\relax/\the\wd6}}
+\def\showwarned{\ifx\@caption@nolabel@warn\relax warning\else no warning\fi}
+\long\def\vshape#1#2{%
+  \rewarn
+  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #2\par}%
+  \setbox2=\vbox{\hsize=10cm \parindent=0pt \noindent Text\par}%
+  \lastline0\tmpa \lastline2\tmpb
+  \typeout{VSHAPE #1: \ifx\tmpa\tmpb clean\else
+    height/width \tmpa\space(text \tmpb)\fi, \showwarned}}
+\def\hshape#1#2{\rewarn\shape{#1}{#2}\typeout{.... \showwarned}}
+% the same in vertical mode, compared with a reference (#2) instead of
+% the text alone
+\long\def\vshapeto#1#2#3{%
+  \rewarn
+  \setbox0=\vbox{\hsize=10cm \parindent=0pt \starton #3\par}%
+  \setbox2=\vbox{\hsize=10cm \parindent=0pt #2\par}%
+  \lastline0\tmpa \lastline2\tmpb
+  \typeout{VSHAPE #1: \ifx\tmpa\tmpb as reference\else
+    height/width \tmpa\space(reference \tmpb)\fi, \showwarned}}
+\def\spsep{ \textendash\ }
+\def\sboxlabel{\sbox\@tempboxa{\nolabel}\unhbox\@tempboxa}
+\def\settowidthlabel{\settowidth\@tempdima{\nolabel: }\hskip\@tempdima}
+% a counter without \theH<counter> (as made before 2024 by \newcount)
+\newcount\c@myfig
+\def\themyfig{\arabic{myfig}}
+\def\p@myfig{}
+\def\fnum@myfig{My \themyfig}
+\def\ext@myfig{lom}
+\makeatother
+\begin{document}
+\START
+\TEST{article makecaption with the label of caption*: no separator}{%
+  \setbox0=\vbox{\hsize=10cm
+    \starton\ORImakecaption{\nolabel}{\ignorespaces Text}}%
+  \typeout{article: \showwarned}%
+  \showbox0
+  \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
+  \showbox0
+  \setbox0=\hbox{\nolabel. Text}% outside of caption*: nothing removed
+  \showbox0}
+\TEST{label of caption*: separators removed in common forms}{%
+  \shape{colon}{\nolabel: \ignorespaces Text}%
+  \shape{space before colon}{\nolabel : \ignorespaces Text}%
+  \shape{colon in group}{{\bfseries\nolabel:} \ignorespaces Text}%
+  \shape{colon and tie}{\nolabel:~\ignorespaces Text}%
+  \shape{period in group}{{\bfseries\nolabel.} \ignorespaces Text}%
+  \shape{period and enspace}{\nolabel.\enspace\ignorespaces Text}%
+  \shape{period and nobreakspaces}%
+    {{\nolabel.}\nobreakspace\nobreakspace \ignorespaces Text}%
+  \shape{label in group, colon}{{\nolabel}: \ignorespaces Text}%
+  \shape{label in two groups, period}{{{\nolabel}}. \ignorespaces Text}%
+  \shape{label in group, space}{{\bfseries\nolabel} \ignorespaces Text}%
+  \shape{quad}{\nolabel\quad \ignorespaces Text}%
+  \shape{qquad, control space}{\nolabel\qquad\ \ignorespaces Text}%
+  \shape{text without ignorespaces (warning)}{\nolabel: Text}%
+  \shape{not caption*}{\staroff\nolabel: \ignorespaces Text}%
+  \shape{textbf label, colon}{\textbf{\nolabel}: \ignorespaces Text}%
+  \shape{textbf label and period}{\textbf{\nolabel.} \ignorespaces Text}%
+  \rewarn
+  \shape{other separator macro (kept, warning)}{\nolabel\sep\ignorespaces Text}%
+  \shape{other separator macro (kept, no second warning)}%
+    {\nolabel\sep\ignorespaces Text}%
+  \rewarn
+  \shape{hskip (kept, warning)}{\nolabel\hskip 1em\ignorespaces Text}%
+  \rewarn
+  \shape{conditional (clean, no warning)}%
+    {\iftrue\nolabel: \fi\ignorespaces Text}%
+  \setbox0=\vbox{\hsize=10cm \starton
+    {\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text\par}%
+  \showbox0
+  \setbox0=\vbox{\hsize=10cm \starton\nolabel\par\ignorespaces Text\par}%
+  \showbox0}
+% Shapes marked "known gap" record output that is not wanted but accepted
+% (the silent cases listed in ltfloat.dtx); a change there can be an
+% improvement rather than a regression.
+\TEST{label of caption*: vertical mode, measuring, when to warn}{%
+  \vshape{period, vertical mode}{\nolabel. \ignorespaces Text}%
+  \vshape{label line with period and par (no empty line)}%
+    {{\centering\bfseries\nolabel.\par}\ignorespaces Text}%
+  \vshape{label and par}{\nolabel\par\ignorespaces Text}%
+  \vshape{label and newline (empty line, no error, warning)}%
+    {\nolabel\\\ignorespaces Text}%
+  \vshape{label in group and newline (empty line, no error)}%
+    {{\bfseries\nolabel}\\\ignorespaces Text}%
+  \vshape{label in group, colon, vadjust}%
+    {{\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text}%
+  \hshape{sbox of the label (no warning)}%
+    {\sboxlabel\ignorespaces Text}%
+  \hshape{settowidth of label and colon (no warning)}%
+    {\settowidthlabel\ignorespaces Text}%
+  \hshape{period and spacefactor}{\nolabel.\@\ignorespaces Text}%
+  \hshape{colon, text in a group}{\nolabel: {\ignorespaces Text}}%
+  \hshape{character separator (warning)}{\nolabel\ -- \ignorespaces Text}%
+  \hshape{two periods (warning)}{\nolabel.. \ignorespaces Text}%
+  \hshape{space in braces (warning)}{\nolabel{\hskip 1em}\ignorespaces Text}%
+  \hshape{separator after a group with the label (known gap: printed, no warning)}%
+    {\textit{\nolabel}\textbf{:} \ignorespaces Text}%
+  \vshapeto{separator macro with a leading space (space ignored, warning)}%
+    {\textendash\ Text}{\nolabel\spsep\ignorespaces Text}%
+  \vshapeto{vskip (stays vertical, warning)}%
+    {\vskip 2pt \noindent Text}{\nolabel\vskip 2pt \ignorespaces Text}%
+  \vshape{spacefactor (no error)}{\nolabel\@\ignorespaces Text}%
+  \vshapeto{vadjust (no error)}%
+    {\noindent\vadjust{\penalty 7 }Text}%
+    {\nolabel\vadjust{\penalty 7 }\ignorespaces Text}%
+  \hshape{relax and hskip (known gap: printed, no warning)}%
+    {\nolabel\relax\hskip 1em\ignorespaces Text}%
+  \vshapeto{unskip after the label (removed, vertical skip kept)}%
+    {\vskip 10pt \noindent Text}{\vskip 10pt \nolabel\unskip: \ignorespaces Text}%
+  \vshapeto{kern (horizontal, warning)}%
+    {\noindent\kern 3pt Text}{\nolabel\kern 3pt \ignorespaces Text}%
+  \vshapeto{hbox (in the paragraph, warning)}%
+    {\noindent\hbox{ -- }Text}{\nolabel\hbox{ -- }\ignorespaces Text}%
+  \vshapeto{vbox (in the paragraph, warning)}%
+    {\noindent\vbox{\hbox{ -- }}Text}{\nolabel\vbox{\hbox{ -- }}\ignorespaces Text}%
+  \vshapeto{vtop (in the paragraph, warning)}%
+    {\noindent\vtop{\hbox{ -- }}Text}{\nolabel\vtop{\hbox{ -- }}\ignorespaces Text}%
+  \vshapeto{penalty (horizontal, no warning)}%
+    {\noindent\penalty 7 Text}{\nolabel\penalty 7 \ignorespaces Text}}
+\end{document}

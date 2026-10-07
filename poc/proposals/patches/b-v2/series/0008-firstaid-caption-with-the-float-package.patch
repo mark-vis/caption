@@ -1,0 +1,1272 @@
+From 304c6fd2ea6a968722816154bb9b3befdc45491a Mon Sep 17 00:00:00 2001
+From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+Date: Wed, 7 Oct 2026 16:58:23 +0200
+Subject: [PATCH 08/14] firstaid: \caption* with the float package
+
+float.sty (frozen since 2001, loaded by many documents for [H] and by
+algorithm.sty) replaces \caption by a definition that does not know the
+star, so \caption*{Text} gave "Figure 2: *" with a list entry, followed
+by "Text".
+
+The first aid (applied only to float.sty v1.3d, and only if the kernel
+has the caption interface, i.e. \@kernel@caption is defined, which it is
+not after a roll-back) keeps float's \caption for numbered captions and
+lets \caption* use the kernel definition \@kernel@caption*. For a type
+restyled by float, \@caption is set for this one caption to float's
+caption code \@float@c@<type>, which restores the previous \@caption and
+continues. That code uses \fnum@<type> and \ext@<type> as the kernel
+did, and its style macros put the label in a group ({\@fs@cfont #1:} #2,
+{\@fs@cfont #1} #2), which the look-ahead of \@caption@nolabel (previous
+commit) handles. So with the kernel's settings for a replaced \@caption
+the caption has the style of float (ruled, plain, boxed) without label,
+separator and list entry, and float's optional argument after the
+caption still works.
+
+Those settings last until the next \caption, which here can be float's
+own: float's \caption (without star) therefore first runs
+\@kernel@caption@reset. Otherwise a numbered caption after \caption* in
+the same float lost its label and its list entry, although the counter
+was stepped, and its \label got the target name of the \caption* (with
+hyperref loaded before float also a duplicate destination); this
+happened in restyled floats, \newfloat types, algorithm.sty, and in
+plain figures when hyperref is loaded before float.
+
+Not covered: hyperref without \DocumentMetadata loaded after float
+replaces \caption again (as for all floats). The caption package
+replaces \caption anyway.
+
+Documentation: ltfloat.dtx mentions the first aid; base/changes.txt has
+an item for it.
+
+Tests: required/firstaid firstaid-float-caption (not restyled figure,
+ruled table, numbered caption unchanged, optional argument of float,
+numbered caption after \caption* in a restyled table, a figure, a
+\newfloat type and a \restylefloat* type) and
+firstaid-float-caption-hyperref (hyperref loaded before float; a
+separate file because the package order differs).
+
+The hook dumps of 15 lthooks and 2 lthooks2 tests list the new code for
+package/float/after; their .tlg files are updated (additions only).
+---
+ base/changes.txt                              |   3 +
+ base/ltfloat.dtx                              |   6 +-
+ base/testfiles-lthooks/ltcmdhooks-001.tlg     |   7 +
+ base/testfiles-lthooks/lthooks-000.tlg        |   7 +
+ base/testfiles-lthooks/lthooks-001.tlg        |  15 ++
+ base/testfiles-lthooks/lthooks-002.tlg        |  15 ++
+ base/testfiles-lthooks/lthooks-003.tlg        |   8 +
+ base/testfiles-lthooks/lthooks-004.tlg        |   8 +
+ base/testfiles-lthooks/lthooks-005.tlg        |   8 +
+ base/testfiles-lthooks/lthooks-006.tlg        |   8 +
+ base/testfiles-lthooks/lthooks-007.tlg        |  15 ++
+ base/testfiles-lthooks/lthooks-008.tlg        |   8 +
+ base/testfiles-lthooks/lthooks-009.tlg        |   7 +
+ base/testfiles-lthooks/lthooks-011.tlg        |  28 +++
+ base/testfiles-lthooks/lthooks-013.tlg        |   7 +
+ base/testfiles-lthooks/lthooks-021.tlg        |   7 +
+ base/testfiles-lthooks/lthooks-legacy.tlg     |   7 +
+ base/testfiles-lthooks2/lthooks2-002.tlg      |   7 +
+ base/testfiles-lthooks2/lthooks2-005.tlg      |  14 ++
+ required/firstaid/changes.txt                 |   8 +
+ .../latex2e-first-aid-for-external-files.dtx  |  66 +++++-
+ .../firstaid-float-caption-hyperref.lvt       |  40 ++++
+ .../firstaid-float-caption-hyperref.tlg       |  56 +++++
+ .../testfiles/firstaid-float-caption.lvt      |  82 +++++++
+ .../testfiles/firstaid-float-caption.tlg      | 219 ++++++++++++++++++
+ 25 files changed, 652 insertions(+), 4 deletions(-)
+ create mode 100644 required/firstaid/testfiles/firstaid-float-caption-hyperref.lvt
+ create mode 100644 required/firstaid/testfiles/firstaid-float-caption-hyperref.tlg
+ create mode 100644 required/firstaid/testfiles/firstaid-float-caption.lvt
+ create mode 100644 required/firstaid/testfiles/firstaid-float-caption.tlg
+
+diff --git a/base/changes.txt b/base/changes.txt
+index 6cd09ae78..ee598c4ba 100644
+--- a/base/changes.txt
++++ b/base/changes.txt
+@@ -8,6 +8,9 @@ not part of the distribution.
+ 
+ 2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
+ 
++	* ltfloat.dtx:
++	Document the float first aid for \caption* (latex-firstaid)
++
+ 	* ltfloat.dtx, clsguide.tex:
+ 	The label \@caption@nolabel of \caption* removes the usual separator
+ 	after it (a colon or a period and the following space), so the
+diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
+index 55a7cd5cf..0177af3dc 100644
+--- a/base/ltfloat.dtx
++++ b/base/ltfloat.dtx
+@@ -322,6 +322,8 @@
+ %      caption, as before. Such code has to be changed (for example by
+ %      keeping the kernel \cs{caption} and using the hooks and sockets
+ %      described here); the kernel cannot do it, because it is not called.
++%      For \pkg{float}, which is no longer maintained, the first aid lets
++%      \cs{caption*} use the kernel definition.
+ %    \end{itemize}
+ %
+ %    The declarations are also written to \texttt{latexrelease}, guarded,
+@@ -1092,8 +1094,8 @@
+ %    the command for
+ %    code that keeps its own \cs{caption} and passes only \cs{caption*}
+ %    to the kernel (for example with
+-%    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|): such code
+-%    must start its own numbered
++%    \verb|\@ifstar{\@kernel@caption*}{|\ldots\verb|}|, as the first aid
++%    for \pkg{float} does): such code must start its own numbered
+ %    \cs{caption} with \cs{@kernel@caption@reset}, otherwise the settings
+ %    of a \cs{caption*} before it in the same float are still active (no
+ %    label, no list entry, the target name of the \cs{caption*}). As
+diff --git a/base/testfiles-lthooks/ltcmdhooks-001.tlg b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+index 839596a50..b5b2d7b07 100644
+--- a/base/testfiles-lthooks/ltcmdhooks-001.tlg
++++ b/base/testfiles-lthooks/ltcmdhooks-001.tlg
+@@ -295,6 +295,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -345,6 +351,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  cmd/foo/before -> before 1 before 2 \__hook_toplevel cmd/foo/before {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{#9}\__hook_next cmd/foo/before {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{#9} 
+  cmd/foo/after -> \__hook_toplevel cmd/foo/after {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{#9}after 2 after 1 \__hook_next cmd/foo/after {#1}{#2}{#3}{#4}{#5}{#6}{#7}{#8}{#9} 
+diff --git a/base/testfiles-lthooks/lthooks-000.tlg b/base/testfiles-lthooks/lthooks-000.tlg
+index b6aa8a93c..398dae7c7 100644
+--- a/base/testfiles-lthooks/lthooks-000.tlg
++++ b/base/testfiles-lthooks/lthooks-000.tlg
+@@ -231,6 +231,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -265,6 +271,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ No file lthooks-000.aux.
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks/lthooks-001.tlg b/base/testfiles-lthooks/lthooks-001.tlg
+index 97bc7ac37..03fe2380a 100644
+--- a/base/testfiles-lthooks/lthooks-001.tlg
++++ b/base/testfiles-lthooks/lthooks-001.tlg
+@@ -238,6 +238,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -280,6 +286,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foobar\__hook_toplevel xxx \__hook_next xxx  
+ LaTeX hooks Warning: Cannot remove chunk 'label3' from hook 'xxx' because it does not exist in that hook.
+@@ -373,6 +380,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ [lthooks] Update code for hook 'para/before' on input line ...:
+@@ -606,6 +614,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -646,6 +660,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foo\__hook_toplevel xxx \__hook_next xxx  
+ The hook xxx contains the rules:
+diff --git a/base/testfiles-lthooks/lthooks-002.tlg b/base/testfiles-lthooks/lthooks-002.tlg
+index 7d44e9282..ec45b390b 100644
+--- a/base/testfiles-lthooks/lthooks-002.tlg
++++ b/base/testfiles-lthooks/lthooks-002.tlg
+@@ -238,6 +238,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -280,6 +286,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foobar\__hook_toplevel xxx \__hook_next xxx  
+ LaTeX hooks Warning: Cannot remove chunk 'label3' from hook 'xxx' because it does not exist in that hook.
+@@ -376,6 +383,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ [lthooks] Update code for hook 'para/before' on input line ...:
+@@ -609,6 +617,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -649,6 +663,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foo\__hook_toplevel xxx \__hook_next xxx  
+ The hook xxx contains the rules:
+diff --git a/base/testfiles-lthooks/lthooks-003.tlg b/base/testfiles-lthooks/lthooks-003.tlg
+index ed956a767..024f9e297 100644
+--- a/base/testfiles-lthooks/lthooks-003.tlg
++++ b/base/testfiles-lthooks/lthooks-003.tlg
+@@ -115,6 +115,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ The hook xxx contains the rules:
+@@ -359,6 +360,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -425,5 +432,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo1 foo9 foo3 foo2 foo7 foo4 foo5 foo8 foo6\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-004.tlg b/base/testfiles-lthooks/lthooks-004.tlg
+index 4d0ef17ff..3a48e3686 100644
+--- a/base/testfiles-lthooks/lthooks-004.tlg
++++ b/base/testfiles-lthooks/lthooks-004.tlg
+@@ -100,6 +100,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ The hook xxx contains the rules:
+@@ -338,6 +339,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -395,5 +402,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo4\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-005.tlg b/base/testfiles-lthooks/lthooks-005.tlg
+index 28e985bbd..7db48f8d0 100644
+--- a/base/testfiles-lthooks/lthooks-005.tlg
++++ b/base/testfiles-lthooks/lthooks-005.tlg
+@@ -122,6 +122,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ The hook xxx contains the rules:
+@@ -366,6 +367,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -432,5 +439,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo1 foo9 foo3 foo2 foo7 foo4 foo5 foo8 foo6\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-006.tlg b/base/testfiles-lthooks/lthooks-006.tlg
+index 14d4e3a3a..7d6da8af6 100644
+--- a/base/testfiles-lthooks/lthooks-006.tlg
++++ b/base/testfiles-lthooks/lthooks-006.tlg
+@@ -97,6 +97,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ The hook xxx contains the rules:
+@@ -333,6 +334,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -380,5 +387,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo1 foo3 foo2\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-007.tlg b/base/testfiles-lthooks/lthooks-007.tlg
+index d353ad376..be65a5ba2 100644
+--- a/base/testfiles-lthooks/lthooks-007.tlg
++++ b/base/testfiles-lthooks/lthooks-007.tlg
+@@ -97,6 +97,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}
+ >  {xxx}.
+ The hook xxx contains the rules:
+@@ -334,6 +335,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -382,6 +389,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo1 foo3\__hook_toplevel xxx \__hook_next xxx  
+ [lthooks] Update code for hook 'para/before' on input line ...:
+@@ -615,6 +623,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -661,5 +675,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx ->  foo1 foo3\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-008.tlg b/base/testfiles-lthooks/lthooks-008.tlg
+index 520649f89..474c7e00f 100644
+--- a/base/testfiles-lthooks/lthooks-008.tlg
++++ b/base/testfiles-lthooks/lthooks-008.tlg
+@@ -101,6 +101,7 @@ The sequence \g__hook_all_seq contains the items (without outer braces):
+ >  {class/amsproc/after}
+ >  {class/amsbook/after}
+ >  {package/amsthm/after}
++>  {package/float/after}
+ >  {package/cellspace/after}.
+ The hook enddocument contains the rules:
+ [lthooks] Update code for hook 'para/before' on input line ...:
+@@ -343,6 +344,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -378,6 +385,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ No file lthooks-008.aux.
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks/lthooks-009.tlg b/base/testfiles-lthooks/lthooks-009.tlg
+index 85b43b89c..871bd67a7 100644
+--- a/base/testfiles-lthooks/lthooks-009.tlg
++++ b/base/testfiles-lthooks/lthooks-009.tlg
+@@ -240,6 +240,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -275,6 +281,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ No file lthooks-009.aux.
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks/lthooks-011.tlg b/base/testfiles-lthooks/lthooks-011.tlg
+index 14dc14cbe..020b015bb 100644
+--- a/base/testfiles-lthooks/lthooks-011.tlg
++++ b/base/testfiles-lthooks/lthooks-011.tlg
+@@ -233,6 +233,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -278,6 +284,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foo\__hook_toplevel xxx \__hook_next xxx  
+ [lthooks] Add to hook 'xxx' (rear) on input line ...
+@@ -513,6 +520,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -560,6 +573,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foobar\__hook_toplevel xxx \__hook_next xxx  
+ [lthooks] Add to hook 'xxx' (labels) on input line ...
+@@ -795,6 +809,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -844,6 +864,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foobarbaz\__hook_toplevel xxx \__hook_next xxx  
+ [lthooks] Add to hook 'xxx' (return) on input line ...
+@@ -1079,6 +1100,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -1130,5 +1157,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  xxx -> foobarbazboom\__hook_toplevel xxx \__hook_next xxx  
+diff --git a/base/testfiles-lthooks/lthooks-013.tlg b/base/testfiles-lthooks/lthooks-013.tlg
+index bdc3a1b88..fc157cb30 100644
+--- a/base/testfiles-lthooks/lthooks-013.tlg
++++ b/base/testfiles-lthooks/lthooks-013.tlg
+@@ -290,6 +290,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -332,6 +338,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  env/itemize/begin -> \typeout {env itemize first}\__hook_toplevel env/itemize/begin \__hook_next env/itemize/begin  
+ No file lthooks-013.aux.
+diff --git a/base/testfiles-lthooks/lthooks-021.tlg b/base/testfiles-lthooks/lthooks-021.tlg
+index d9a3c9874..93fb11b4e 100644
+--- a/base/testfiles-lthooks/lthooks-021.tlg
++++ b/base/testfiles-lthooks/lthooks-021.tlg
+@@ -231,6 +231,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -265,6 +271,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ No file lthooks-021.aux.
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks/lthooks-legacy.tlg b/base/testfiles-lthooks/lthooks-legacy.tlg
+index 89d9653fa..bc3bea768 100644
+--- a/base/testfiles-lthooks/lthooks-legacy.tlg
++++ b/base/testfiles-lthooks/lthooks-legacy.tlg
+@@ -258,6 +258,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -295,6 +301,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ No file lthooks-legacy.aux.
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks2/lthooks2-002.tlg b/base/testfiles-lthooks2/lthooks2-002.tlg
+index 159058b46..b0666a54b 100644
+--- a/base/testfiles-lthooks2/lthooks2-002.tlg
++++ b/base/testfiles-lthooks2/lthooks2-002.tlg
+@@ -258,6 +258,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -292,6 +298,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ (lthooks2-002.aux)
+ LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line ....
+diff --git a/base/testfiles-lthooks2/lthooks2-005.tlg b/base/testfiles-lthooks2/lthooks2-005.tlg
+index 98a26fafd..2676ae2bf 100644
+--- a/base/testfiles-lthooks2/lthooks2-005.tlg
++++ b/base/testfiles-lthooks2/lthooks2-005.tlg
+@@ -233,6 +233,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -267,6 +273,7 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+ [lthooks] Add to hook 'some-hook' (other-package) on input line ...
+ [lthooks]    <- code from other-package,
+@@ -501,6 +508,12 @@ Code labels for sorting:
+ Data structure for label rules:
+  firstaid/aliascounter = 0 -> 
+ [lthooks] Handled code for firstaid/aliascounter
++[lthooks] Update code for hook 'package/float/after' on input line ...:
++Code labels for sorting:
++ firstaid
++Data structure for label rules:
++ firstaid = 0 -> 
++[lthooks] Handled code for firstaid
+ [lthooks] Update code for hook 'package/cellspace/after' on input line ...:
+ Code labels for sorting:
+  firstaid
+@@ -543,5 +556,6 @@ Data structure for label rules:
+  class/amsproc/after -> \__hook_toplevel class/amsproc/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsproc/after  
+  class/amsbook/after -> \__hook_toplevel class/amsbook/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next class/amsbook/after  
+  package/amsthm/after -> \__hook_toplevel package/amsthm/after \@amsthm@reset@ynthm \AddToHook {package/cleveref/after}[firstaid/aliascounter]{\let \@ynthm \@amsthm@saved@ynthm }\__hook_next package/amsthm/after  
++ package/float/after -> \__hook_toplevel package/float/after \FirstAidNeededT {float}{sty}{....-..-.. v... Float enhancements (AL)}{\ifdefined \@kernel@caption \let \firstaid@float@caption \caption \def \caption {\@ifstar \firstaid@float@starcaption {\@kernel@caption@reset \firstaid@float@caption }}\fi }\__hook_next package/float/after  
+  package/cellspace/after -> \__hook_toplevel package/cellspace/after \FirstAidNeededT {cellspace}{sty}{....-..-.. v... Spacing table cells (JN)}{\let \@startpbox@action \@startpbox }\__hook_next package/cellspace/after  
+  some-hook -> code to run when other-package is loaded,code from other-package,\__hook_toplevel some-hook \__hook_next some-hook  
+diff --git a/required/firstaid/changes.txt b/required/firstaid/changes.txt
+index b7f063db6..5cd77f530 100644
+--- a/required/firstaid/changes.txt
++++ b/required/firstaid/changes.txt
+@@ -1,3 +1,11 @@
++2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
++
++	* latex2e-first-aid-for-external-files.dtx (subsection{The \pkg{float} package first aid}):
++	\caption* uses the kernel definition when float is loaded (float's
++	\caption does not know the star form); restyled floats keep the
++	caption code of their style; a numbered \caption after \caption*
++	in the same float is unchanged; it starts with \@kernel@caption@reset
++
+ 2026-10-02  Frank Mittelbach  <Frank.Mittelbach@latex-project.org>
+ 
+ 	* latex2e-first-aid-for-external-files.dtx (subsection{First aid for AMS classes}):
+diff --git a/required/firstaid/latex2e-first-aid-for-external-files.dtx b/required/firstaid/latex2e-first-aid-for-external-files.dtx
+index 62ac5bdf4..396746b3d 100644
+--- a/required/firstaid/latex2e-first-aid-for-external-files.dtx
++++ b/required/firstaid/latex2e-first-aid-for-external-files.dtx
+@@ -112,8 +112,8 @@
+ %    \end{macrocode}
+ %
+ %    \begin{macrocode}
+-\def\LaTeXFirstAidDate{2026-10-02}
+-\def\LaTeXFirstAidVersion{v1.1z}
++\def\LaTeXFirstAidDate{2026-10-06}
++\def\LaTeXFirstAidVersion{v1.2a}
+ %    \end{macrocode}
+ %
+ %    \begin{macrocode}
+@@ -1144,6 +1144,68 @@
+ %
+ %
+ %
++% \subsection{The \pkg{float} package first aid}
++%
++% \changes{v1.2a}{2026-10-06}{First aid for \cs{caption*} with \pkg{float}}
++%    \pkg{float} replaces \cs{caption} by a definition that does not
++%    know the star form, so with it \verb|\caption*{Text}| gives a
++%    numbered caption with the text `*' and a list entry, followed by
++%    `Text'. As the package is no longer maintained, we let \cs{caption*}
++%    use the kernel definition if the kernel has the caption interface
++%    (\cs{@kernel@caption} is defined); \cs{caption} without star keeps
++%    the definition of \pkg{float}. For a float type restyled by
++%    \pkg{float}, the caption code of its style
++%    (\cs{@float@c@}\meta{type}) is used as \cs{@caption} for this one
++%    caption, so the caption gets the layout of the style. That code
++%    uses \cs{fnum@}\meta{type} and \cs{ext@}\meta{type} as the kernel
++%    did, so the kernel's settings for a replaced \cs{@caption} give a
++%    caption without label and without list entry, and \pkg{float}'s
++%    optional argument after the caption still works, because
++%    \cs{@caption} is the last token of \cs{caption*}.
++%
++%    The kernel's settings for a replaced \cs{@caption} last until the
++%    next \cs{caption}, but here the next \cs{caption} can be the one of
++%    \pkg{float}, which does not know them. So \cs{caption} without star
++%    first undoes them with \cs{@kernel@caption@reset}, which also resets
++%    \cs{if@captionstar}; otherwise a numbered caption after a
++%    \cs{caption*} in the same float would have no label, no list entry
++%    and the target name of the \cs{caption*}. (A float restyled by
++%    \pkg{float} shows only its last caption, as before: \pkg{float}
++%    keeps one caption per float.)
++%    \begin{macrocode}
++\AddToHook{package/float/after}[firstaid]{%
++  \FirstAidNeededT{float}{sty}%
++    {2001/11/08 v1.3d Float enhancements (AL)}%
++    {\ifdefined\@kernel@caption
++       \let\firstaid@float@caption\caption
++       \def\caption{%
++         \@ifstar\firstaid@float@starcaption
++           {\@kernel@caption@reset\firstaid@float@caption}}%
++     \fi}%
++}
++%    \end{macrocode}
++%    \cs{firstaid@float@starcaption} sets \cs{@caption} to a definition
++%    that restores the previous \cs{@caption} and continues with
++%    \cs{@float@c@}\meta{type}, if the type has been restyled, and then
++%    calls the kernel \cs{caption*}. (The test with \cs{csname} makes an
++%    undefined \cs{@float@c@}\meta{type} \cs{relax}, as \pkg{float}
++%    itself does.)
++%    \begin{macrocode}
++\def\firstaid@float@starcaption{%
++  \ifx\@captype\@undefined\else
++    \expandafter\ifx\csname @float@c@\@captype\endcsname\relax\else
++      \let\firstaid@float@savedcaption\@caption
++      \expandafter\def\expandafter\@caption\expandafter{%
++        \expandafter\firstaid@float@onecaption
++          \csname @float@c@\@captype\endcsname}%
++    \fi
++  \fi
++  \@kernel@caption*}
++\def\firstaid@float@onecaption#1{%
++  \let\@caption\firstaid@float@savedcaption
++  #1}
++%    \end{macrocode}
++%
+ % \subsection{The \pkg{cellspace} package first aid}
+ %
+ %    Since this package doesn't seem to see updates we add a firstaid
+diff --git a/required/firstaid/testfiles/firstaid-float-caption-hyperref.lvt b/required/firstaid/testfiles/firstaid-float-caption-hyperref.lvt
+new file mode 100644
+index 000000000..bcb068f60
+--- /dev/null
++++ b/required/firstaid/testfiles/firstaid-float-caption-hyperref.lvt
+@@ -0,0 +1,40 @@
++% First aid for float with hyperref loaded before float (hyperref's
++% \@caption stays active, float's \caption replaces hyperref's): \caption*
++% gives no label, no list entry and a target with a unique name; a
++% numbered caption after it in the same float is unchanged.
++\input{regression-test}
++\documentclass{article}
++\usepackage{hyperref}
++\usepackage{float}
++\floatstyle{ruled}
++\restylefloat{table}
++\makeatletter
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++\def\showcapt{\showbox\@floatcapt}
++\def\showstate#1{\typeout{#1=\csname the#1\endcsname,
++  label=\@currentlabel, href=\@currentHref,
++  star=\if@captionstar true\else false\fi}}
++\makeatother
++\begin{document}
++\START
++\TEST{figure: numbered, caption*, numbered}{%
++  \begin{figure}[H]
++    \caption{First}
++    \showstate{figure}
++    \caption*{Starred}
++    \showstate{figure}
++    \caption{Second}
++    \showstate{figure}
++  \end{figure}}
++\TEST{restyled table: caption*, then numbered}{%
++  \begin{table}[H]
++    \caption*{Starred table}
++    \showstate{table}
++    \caption{Numbered table}
++    \showstate{table}
++    \showcapt
++  \end{table}}
++\END
+diff --git a/required/firstaid/testfiles/firstaid-float-caption-hyperref.tlg b/required/firstaid/testfiles/firstaid-float-caption-hyperref.tlg
+new file mode 100644
+index 000000000..b45bebf47
+--- /dev/null
++++ b/required/firstaid/testfiles/firstaid-float-caption-hyperref.tlg
+@@ -0,0 +1,56 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: figure: numbered, caption*, numbered
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces First}}
++figure=1, label=1, href=figure.1, star=false
++ADDCONTENTSLINE: {}{figure}{\protect \numberline {\csname thefigure\endcsname }{\ignorespaces Starred}}
++figure=1, label=1, href=figure.1*1, star=true
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Second}}
++figure=2, label=2, href=figure.2, star=false
++============================================================
++============================================================
++TEST 2: restyled table: caption*, then numbered
++============================================================
++ADDCONTENTSLINE: {}{table}{\protect \numberline {\@nameuse {thetable}}{\ignorespaces Starred table}}
++table=0, label=, href=figure.2, star=true
++ADDCONTENTSLINE: {lot}{table}{\protect \numberline {\@nameuse {the\@captype }}{\ignorespaces Numbered table}}
++table=1, label=1, href=table.1, star=false
++> \box...=
++\vbox(6.94444+0.0)x345.0
++.\hbox(6.94444+0.0)x345.0, glue set 234.29175fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/bx/n/10 T
++..\kern-0.95833
++..\OT1/cmr/bx/n/10 a
++..\OT1/cmr/bx/n/10 b
++..\OT1/cmr/bx/n/10 l
++..\OT1/cmr/bx/n/10 e
++..\penalty 10000
++..\glue 3.83331 plus 1.91666 minus 1.27777
++..\OT1/cmr/bx/n/10 1
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 N
++..\OT1/cmr/m/n/10 u
++..\OT1/cmr/m/n/10 m
++..\kern-0.27779
++..\OT1/cmr/m/n/10 b
++..\kern0.27779
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 t
++..\OT1/cmr/m/n/10 a
++..\OT1/cmr/m/n/10 b
++..\OT1/cmr/m/n/10 l
++..\OT1/cmr/m/n/10 e
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{table}}
++============================================================
+diff --git a/required/firstaid/testfiles/firstaid-float-caption.lvt b/required/firstaid/testfiles/firstaid-float-caption.lvt
+new file mode 100644
+index 000000000..a2558367b
+--- /dev/null
++++ b/required/firstaid/testfiles/firstaid-float-caption.lvt
+@@ -0,0 +1,82 @@
++% First aid for float: \caption* uses the kernel definition (float's
++% \caption does not know the star form); a restyled float type keeps the
++% caption code of its style, without label and without list entry;
++% float's optional argument after the caption still works; \caption
++% without star is unchanged, also after a \caption* in the same float;
++% the same for \newfloat and \restylefloat*.
++\input{regression-test}
++\documentclass{article}
++\usepackage{float}
++\floatstyle{ruled}
++\restylefloat{table}
++\floatstyle{boxed}
++\newfloat{program}{tbp}{lop}
++\floatstyle{plain}
++\newfloat{algo}{tbp}{loa}
++\restylefloat*{algo}
++\makeatletter
++\let\ORIaddcontentsline\addcontentsline
++\def\addcontentsline#1#2#3{%
++  \typeout{ADDCONTENTSLINE: {#1}{#2}{\detokenize{#3}}}%
++  \ORIaddcontentsline{#1}{#2}{#3}}
++\def\showcapt{\showbox\@floatcapt}
++\def\showstate#1{\typeout{#1=\csname the#1\endcsname,
++  label=\@currentlabel, fnum=\expandafter\ifx\csname fnum@#1\endcsname
++  \@caption@nolabel \string\@caption@nolabel\else
++  \expandafter\meaning\csname fnum@#1\endcsname\fi,
++  ext=\csname ext@#1\endcsname, star=\if@captionstar true\else false\fi}}
++\makeatother
++\begin{document}
++\START
++\TEST{figure (not restyled): kernel caption*}{%
++  \begin{figure}[H]
++    \caption{Numbered figure}
++    \caption*{Starred figure}
++    \typeout{figure=\thefigure}
++  \end{figure}}
++\TEST{restyled table: style of float, no label, no list entry}{%
++  \begin{table}[H]
++    \caption*{Starred table}
++    \typeout{table=\thetable}
++    \showcapt
++  \end{table}}
++\TEST{restyled table: numbered caption unchanged}{%
++  \begin{table}[H]
++    \caption{Numbered table}
++    \typeout{table=\thetable}
++    \showcapt
++  \end{table}}
++\TEST{restyled table: caption* with the optional argument of float}{%
++  \begin{table}[H]
++    \caption*{Starred}[More]
++    \showcapt
++  \end{table}}
++\TEST{restyled table: numbered caption after caption*}{%
++  \begin{table}[H]
++    \caption*{Starred mixed}
++    \caption{Numbered mixed}
++    \showstate{table}
++    \showcapt
++  \end{table}}
++\TEST{figure (not restyled): numbered caption after caption*}{%
++  \begin{figure}[H]
++    \caption*{Starred mixed}
++    \caption{Numbered mixed}
++    \showstate{figure}
++  \end{figure}}
++\TEST{newfloat (boxed): caption* and numbered caption}{%
++  \begin{program}[H]
++    \caption*{Starred program}
++    \showstate{program}
++    \caption{Numbered program}
++    \showstate{program}
++    \showcapt
++  \end{program}}
++\TEST{restylefloat* (kernel caption code): caption* and numbered caption}{%
++  \begin{algo}[H]
++    \caption*{Starred algo}
++    \caption{Numbered algo}
++    \showstate{algo}
++    \showcapt
++  \end{algo}}
++\END
+diff --git a/required/firstaid/testfiles/firstaid-float-caption.tlg b/required/firstaid/testfiles/firstaid-float-caption.tlg
+new file mode 100644
+index 000000000..16f9e286e
+--- /dev/null
++++ b/required/firstaid/testfiles/firstaid-float-caption.tlg
+@@ -0,0 +1,219 @@
++This is a generated file for the l3build validation system.
++Don't change this file in any respect.
++============================================================
++TEST 1: figure (not restyled): kernel caption*
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Numbered figure}}
++figure=1
++============================================================
++============================================================
++TEST 2: restyled table: style of float, no label, no list entry
++============================================================
++ADDCONTENTSLINE: {}{table}{\protect \numberline {\@nameuse {thetable}}{\ignorespaces Starred table}}
++table=0
++> \box...=
++\vbox(6.94444+0.0)x345.0
++.\hbox(6.94444+0.0)x345.0, glue set 287.7221fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/m/n/10 S
++..\OT1/cmr/m/n/10 t
++..\OT1/cmr/m/n/10 a
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 t
++..\OT1/cmr/m/n/10 a
++..\OT1/cmr/m/n/10 b
++..\OT1/cmr/m/n/10 l
++..\OT1/cmr/m/n/10 e
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{table}}
++============================================================
++============================================================
++TEST 3: restyled table: numbered caption unchanged
++============================================================
++ADDCONTENTSLINE: {lot}{table}{\protect \numberline {\@nameuse {the\@captype }}{\ignorespaces Numbered table}}
++table=1
++> \box...=
++\vbox(6.94444+0.0)x345.0
++.\hbox(6.94444+0.0)x345.0, glue set 234.29175fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/bx/n/10 T
++..\kern-0.95833
++..\OT1/cmr/bx/n/10 a
++..\OT1/cmr/bx/n/10 b
++..\OT1/cmr/bx/n/10 l
++..\OT1/cmr/bx/n/10 e
++..\penalty 10000
++..\glue 3.83331 plus 1.91666 minus 1.27777
++..\OT1/cmr/bx/n/10 1
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 N
++..\OT1/cmr/m/n/10 u
++..\OT1/cmr/m/n/10 m
++..\kern-0.27779
++..\OT1/cmr/m/n/10 b
++..\kern0.27779
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 t
++..\OT1/cmr/m/n/10 a
++..\OT1/cmr/m/n/10 b
++..\OT1/cmr/m/n/10 l
++..\OT1/cmr/m/n/10 e
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{table}}
++============================================================
++============================================================
++TEST 4: restyled table: caption* with the optional argument of float
++============================================================
++ADDCONTENTSLINE: {}{table}{\protect \numberline {\@nameuse {thetable}}{\ignorespaces Starred}}
++> \box...=
++\vbox(18.94444+0.0)x345.0
++.\hbox(6.94444+0.0)x345.0, glue set 312.72215fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/m/n/10 S
++..\OT1/cmr/m/n/10 t
++..\OT1/cmr/m/n/10 a
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++.\glue(\parskip) 0.0
++.\glue(\parskip) 0.0
++.\glue(\baselineskip) 5.16669
++.\hbox(6.83331+0.0)x345.0, glue set 322.47218fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/m/n/10 M
++..\OT1/cmr/m/n/10 o
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{table}}
++============================================================
++============================================================
++TEST 5: restyled table: numbered caption after caption*
++============================================================
++ADDCONTENTSLINE: {}{table}{\protect \numberline {\@nameuse {thetable}}{\ignorespaces Starred mixed}}
++ADDCONTENTSLINE: {lot}{table}{\protect \numberline {\@nameuse {the\@captype }}{\ignorespaces Numbered mixed}}
++table=2, label=2, fnum=macro:->\tablename \nobreakspace \thetable , ext=lot, star=false
++> \box...=
++\vbox(6.94444+0.0)x345.0
++.\hbox(6.94444+0.0)x345.0, glue set 229.5695fil
++..\hbox(0.0+0.0)x0.0
++..\OT1/cmr/bx/n/10 T
++..\kern-0.95833
++..\OT1/cmr/bx/n/10 a
++..\OT1/cmr/bx/n/10 b
++..\OT1/cmr/bx/n/10 l
++..\OT1/cmr/bx/n/10 e
++..\penalty 10000
++..\glue 3.83331 plus 1.91666 minus 1.27777
++..\OT1/cmr/bx/n/10 2
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 N
++..\OT1/cmr/m/n/10 u
++..\OT1/cmr/m/n/10 m
++..\kern-0.27779
++..\OT1/cmr/m/n/10 b
++..\kern0.27779
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 r
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\glue 3.33333 plus 1.66666 minus 1.11111
++..\OT1/cmr/m/n/10 m
++..\OT1/cmr/m/n/10 i
++..\OT1/cmr/m/n/10 x
++..\OT1/cmr/m/n/10 e
++..\OT1/cmr/m/n/10 d
++..\penalty 10000
++..\glue(\parfillskip) 0.0 plus 1.0fil
++..\glue(\rightskip) 0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{table}}
++============================================================
++============================================================
++TEST 6: figure (not restyled): numbered caption after caption*
++============================================================
++ADDCONTENTSLINE: {lof}{figure}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Numbered mixed}}
++figure=2, label=2, fnum=macro:->\figurename \nobreakspace \thefigure , ext=lof, star=false
++============================================================
++============================================================
++TEST 7: newfloat (boxed): caption* and numbered caption
++============================================================
++ADDCONTENTSLINE: {}{program}{\protect \numberline {\@nameuse {theprogram}}{\ignorespaces Starred program}}
++program=0, label=, fnum=\@caption@nolabel, ext=, star=true
++ADDCONTENTSLINE: {lop}{program}{\protect \numberline {\@nameuse {the\@captype }}{\ignorespaces Numbered program}}
++program=1, label=1, fnum=macro:->\fname@program {} \theprogram , ext=lop, star=false
++> \box...=
++\vbox(6.94444+1.94444)x345.0
++.\hbox(6.94444+1.94444)x345.0, glue set 99.94102fil
++..\glue 0.0 plus 1.0fil
++..\hbox(6.94444+1.94444)x145.11795
++...\OT1/cmr/bx/n/10 p
++...\OT1/cmr/bx/n/10 r
++...\OT1/cmr/bx/n/10 o
++...\OT1/cmr/bx/n/10 g
++...\OT1/cmr/bx/n/10 r
++...\OT1/cmr/bx/n/10 a
++...\OT1/cmr/bx/n/10 m
++...\glue 3.83331 plus 1.91666 minus 1.27777
++...\OT1/cmr/bx/n/10 1
++...\OT1/cmr/bx/n/10 :
++...\glue 4.44444 plus 3.33331 minus 0.55556
++...\OT1/cmr/m/n/10 N
++...\OT1/cmr/m/n/10 u
++...\OT1/cmr/m/n/10 m
++...\kern-0.27779
++...\OT1/cmr/m/n/10 b
++...\kern0.27779
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 r
++...\OT1/cmr/m/n/10 e
++...\OT1/cmr/m/n/10 d
++...\glue 3.33333 plus 1.66666 minus 1.11111
++...\OT1/cmr/m/n/10 p
++...\OT1/cmr/m/n/10 r
++...\OT1/cmr/m/n/10 o
++...\OT1/cmr/m/n/10 g
++...\OT1/cmr/m/n/10 r
++...\OT1/cmr/m/n/10 a
++...\OT1/cmr/m/n/10 m
++..\glue 0.0 plus 1.0fil
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{program}}
++============================================================
++============================================================
++TEST 8: restylefloat* (kernel caption code): caption* and numbered caption
++============================================================
++ADDCONTENTSLINE: {loa}{algo}{\protect \numberline {\csname the\@captype \endcsname }{\ignorespaces Numbered algo}}
++algo=1, label=1, fnum=macro:->\fname@algo {} \thealgo , ext=loa, star=false
++> \box...=
++\vbox(0.0+0.0)x0.0
++! OK.
++\showcapt ->\showbox \@floatcapt 
++l. ...  \end{algo}}
++============================================================
+-- 
+2.50.1 (Apple Git-155)
+

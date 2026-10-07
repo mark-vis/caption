@@ -1,0 +1,37 @@
+% A class with its own \@makecaption with tagging support, as documented
+% for the begindocument code of latex-lab-float (label tagging sockets
+% before para/begin, kept with a voids rule): its captions in a box
+% inside another paragraph (as threeparttable) must not be taken as
+% being inside their own paragraph, also though the class sets nothing
+% for the label sockets. That gave unbalanced para hooks (tagpdf error
+% "para hooks differ").
+\DocumentMetadata{lang=en,tagging=on}
+\input{regression-test}
+\documentclass{article}
+\ExplSyntaxOn
+\makeatletter
+\AddToHook{begindocument}[myclass]
+  {
+    \long\def\@makecaption#1#2{%
+      \vskip\abovecaptionskip
+      \UseTaggingSocket{caption/begin}{\@current@float@struct}
+      \UseTaggingSocket{caption/label/begin}
+      \textbf{#1.}\space
+      \UseTaggingSocket{caption/label/end}
+      \UseTaggingSocket{para/begin}
+          #2
+      \par
+      \UseTaggingSocket{caption/end}
+      \vskip\belowcaptionskip}
+  }
+\DeclareHookRule{begindocument}{myclass}{voids}{latex-lab-testphase-float}
+\makeatother
+\ExplSyntaxOff
+\begin{document}
+\START
+\begin{table}[h]\centering
+  \noindent\vtop{\hsize=4cm \caption{Short}\par}
+\end{table}
+\begin{figure}[h]\caption{Normal}\end{figure}
+\SHOWPDFTAGS
+\end{document}

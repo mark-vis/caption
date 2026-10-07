@@ -1,6 +1,6 @@
 # What caption needs from the kernel: four proposals
 
-**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06. Written against latex2e `develop` at 829e56a15
+**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06, and (b) with (a), (c), (d) split into a reviewable series on current develop 2a9bfe9d6 on 2026-10-07 ((b)4). Written against latex2e `develop` at 829e56a15
 (format date 2026-11-01, pre-release). caption references are to branch
 `fixes-combined` of https://github.com/mark-vis/caption (caption v3.6p, caption3 v2.4e),
 other packages and classes as in TeX Live 2026. All files mentioned are in
@@ -34,7 +34,7 @@ combined patch").
 | | Proposal | Kernel / latex-lab change | caption side | Size (.dtx lines) | Depends on |
 |---|---|---|---|---|---|
 | (a) | Hooks at the start and end of every float | ltfloat: mirrored hook pair `float/begin`/`float/end` (2 args), used in `\@xfloat`, `\@xdblfloat`, `\@endfloatbox`; latex-lab-float: the same call in its copy of `\@xfloat` | caption.sty uses the hook instead of wrapping `\@xfloat`/`\@xdblfloat`; a checking wrapper stays for classes that bypass the kernel code | +202/−7 (about 25 lines of code; the rest is `latexrelease` copies and documentation) | — |
-| (b) | A caption interface: `\caption*`, list entries, sub-captions (version 2) | ltfloat: `\caption` reads its own arguments, `\caption*`, hooks `caption/before`/`caption/prepare`, sockets `caption/step`, `caption/listentry` (3 args), `caption/typeset`, switches `\if@captionstar`/`\if@captionstep`/`\if@captiontarget`, unique targets for unstepped captions, `\@kernel@caption@reset`, `\@kernel@caption@unique`, kernel copies; lttagging: `subfloat/box` (and v1's `subfloat/begin`/`end`); latex-lab-float: float target per type, no own `\caption`; first aid for float.sty; classes unchanged | caption becomes a client in every setup: restores the kernel copies, decides in the hooks, plugs `caption/listentry` and `caption/typeset`; subcaption uses `subfloat/box` | v1 +249/−42, then v2 +975/−89 in ltfloat.dtx, +153/−43 in latex-lab-float | — |
+| (b) | A caption interface: `\caption*`, list entries, sub-captions (version 2) | ltfloat: `\caption` reads its own arguments, `\caption*`, hooks `caption/before`/`caption/prepare`, sockets `caption/step`, `caption/listentry` (3 args), `caption/typeset`, switches `\if@captionstar`/`\if@captionstep`/`\if@captiontarget`, unique targets for unstepped captions, `\@kernel@caption@reset`, `\@kernel@caption@unique`, kernel copies; lttagging: `subfloat/box` (and v1's `subfloat/begin`/`end`); latex-lab-float: float target per type, no own `\caption`; first aid for float.sty; classes unchanged | caption becomes a client in every setup: restores the kernel copies, decides in the hooks, plugs `caption/listentry` and `caption/typeset`; subcaption uses `subfloat/box` | in the split series: ltfloat.dtx +1026/−30, latex-lab-float +305/−20 (without (c)), lttagging +62/−4, first aid +64/−2 | — |
 | (c) | caption3's label format as a plug for `caption/label` | latex-lab-float: documented contract for `caption/label`, new socket `caption/separator`, label tagging sockets usable inside a paragraph, the existing hook label `latex-lab-testphase-float` of latex-lab's `\@makecaption` code documented (not renamed); latex-lab-listings; lttagging documentation | caption3 provides plugs `caption3`; caption.sty keeps its own `\@makecaption` with a `voids` rule against that label and tags the label with the kernel sockets | +102/−17 | (b) |
 | (d) | Registering new float types for tagging | lttagging: `\DeclareTaggingFloatType`, the list of float types moves there; latex-lab-float: `float/new` uses it, captions of undeclared types fall back to generic names; latex-lab-namespace: `float/generic/caption`, `float/generic/label` | newfloat (a separate package, see (d)) registers each new type; caption's `\DeclareCaptionType` gets it through newfloat | +97/−23, plus +30 in newfloat | — |
 
@@ -45,12 +45,13 @@ combined patch").
    newfloat's maintainer, not for the LaTeX team.
 2. (a) and the kernel part of (d): small, independent of each other and of (b)/(c).
 3. (b): the largest change, and the one with the most open questions (classes,
-   hyperref, template-based captions). It is being split into parts ((b)4); its optional
-   part O2 is small and can go early.
+   hyperref, template-based captions). It is split into parts ((b)4); its optional
+   part O2 is small and can go early (`patches/b-v2/O2-standalone.patch`).
 4. (c), on top of (b) (in the split: after b-3).
 
-The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b) version 1, (c);
-(b) version 2 is the further series in `patches/b-v2/` on top of it.
+The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b) version 1, (c)
+on develop 829e56a15. The current form is `patches/b-v2/series/`: 14 commits on develop 2a9bfe9d6
+in the order (a), (d), O2, (b) in parts, (c) after b-4, and the rest of (b); see (b)4.
 
 ### Release dates and versions
 
@@ -545,28 +546,31 @@ entry is written.
 
 ## (b) A caption interface: `\caption*`, list entries, sub-captions (version 2)
 
-> **Version 2, 2026-10-06.** This replaces version 1 of (b) (2026-10-04; the old text is in the
-> git history of this file, and its code is still series 0003, on which version 2 is built). The
-> long working version with all measurements and review findings is `PROPOSAL-b-v2.md` in the
-> caption branch `poc-b2` (folder `poc-b2/`); `poc/PROPOSALS-b-v2-draft.md` is this section on
-> its own.
+> **Version 2, 2026-10-06; split into a series 2026-10-07.** This replaces version 1 of (b)
+> (2026-10-04; the old text is in the git history of this file). The long working version with
+> all measurements and review findings is `PROPOSAL-b-v2.md` in the caption branch `poc-b2`
+> (folder `poc-b2/`, section 2.7 for the series); `poc/PROPOSALS-b-v2-draft.md` is this section
+> on its own.
 
-Patches (in `poc/proposals/patches/b-v2/`):
-- `series/0001-0028`: version 2 as 28 commits on top of the series (a), (d), (b) v1, (c)
-  (`patches/series/0001-0004`); `kernel-b2.patch` is the same as one diff. Together they give
-  latex2e branch `poc-b2` (head 37cb2bcd7) on develop 829e56a15.
-- `on-develop-2a9bfe9d6/`: all 32 commits replayed on develop 2a9bfe9d6 (2026-10-06), because
-  the 829e56a15 patches now conflict in `required/latex-lab/changes.txt`.
-- `caption-client.diff`: caption as a client (against the caption PoC v3.8, a518ec6).
+Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
+- `series/0001-0014`: (a), (d), O2 and (b) in parts, with (c) after b-4, as 14 commits on
+  latex2e develop **2a9bfe9d6** (2026-10-06); `git am` gives latex2e branch `b2-split`, head
+  449aa8e30. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
+  b-6, and `classes.dtx` is not changed. The 28-patch prototype on top of the version-1 series
+  and its replay on 2a9bfe9d6 are in the git history of this folder.
+- `O1.patch` (optional, on top of the series) and `O2-standalone.patch` (O2 alone on develop,
+  for a first small PR).
+- `caption-client.diff`: caption as a client (against the caption PoC a518ec6); it takes its
+  client path only when `\@kernel@@caption` is defined, i.e. from part b-5 on.
 
-Tests (copies in `poc/proposals/tests/b-v2/`): base `caption-interface-001` (32 cases), `-002`
-(roll-back), `-003` (unique names); latex-lab `float-020`, `float-023`, `float-024`; firstaid
-`firstaid-float-caption`, `-hyperref`.
+Tests (copies in `poc/proposals/tests/b-v2/`, one set per part, see (b)4): base
+`caption-outside-001`, `caption-interface-001` to `-007` (`-008` with O1); latex-lab
+`float-020` to `float-030`; firstaid `firstaid-float-caption`, `-hyperref`; and the tests of (a)
+and (d).
 
-**Not yet a reviewable series.** Version 2 is built on version 1 and then rewrites much of it,
-and its core is one large commit. The split into the parts of section 4 has started on current
-develop ((a), (d), O2 are done); until it is finished, please read the patches as a prototype of
-the interface, not as the PR.
+Every commit passes the base suite in pdfTeX, XeTeX and LuaTeX, the hook configurations, the
+other base configurations, firstaid and latex-lab `config-float` on its own; the head also all
+latex-lab CI configurations and `required/tools`.
 
 ### 1. Problem
 
@@ -631,8 +635,7 @@ With the default plugs and empty hooks, `\caption` gives the same output as toda
 | `\@floatHref@<type>` | latex-lab state, documented | the target of the current float of that type |
 | `subfloat/box` | tagging socket, 0 arguments | the next `minipage`/`\parbox` is a sub-float (`Part` instead of `Div`) |
 
-The three `\@kernel@...` commands are defined in one release block, so a `latexrelease`
-roll-back undefines them; the hooks, sockets and switches stay defined (unused), so
+The `\@kernel@...` commands are undefined after a `latexrelease` roll-back; the hooks, sockets and switches stay defined (unused), so
 `\IfHookExistsTF` is not a valid test.
 
 **Contracts.**
@@ -683,36 +686,48 @@ roll-back undefines them; the hooks, sockets and switches stay defined (unused),
   `\@kernel@caption` exists); beamer needs `\caption*` in its templates. KOMA, memoir, AMS and
   babel-french print their separator with a warning; one `\if@captionstar` test each would fix
   that. Of 85 TL classes that compile with pdfLaTeX, 50 give a clean `\caption*`.
-- Known gaps: `subfloat/box` needs a group around the box; O1 overwrites titles that memoir or
-  nameref sanitised; `\@kernel@caption@unique` must not be used between a `\caption*` handled by
-  a replaced `\@caption` and the next `\caption` (it loops); with hyperref's
-  `naturalnames=true`, captions left unstepped by other code still give duplicates.
-- Size: ltfloat.dtx code grows from 371 lines (develop) to 656 (all proposals with v2).
+- Known gaps: O1 overwrites titles that memoir or nameref sanitised (so O1 is optional); with
+  hyperref's `naturalnames=true`, captions left unstepped by other code still give duplicates.
+  Resolved in the split: `subfloat/box` needs no group any more, and `\@kernel@caption@unique`
+  also works after a `\caption*` handled by a replaced `\@caption`.
+- Size: the non-comment lines of ltfloat.dtx grow from 390 (develop 2a9bfe9d6) to 686 (the
+  series); b-3a alone has 91 of them, b-3b 41, b-3c 54, b-3d 87.
 
-### 4. Parts (the planned PRs) and their state
+### 4. Parts (the series) and their state
 
-| part | content | state |
-|---|---|---|
-| O2 | skip the arguments after "`\caption` outside float" | committed on develop 2a9bfe9d6 after (a) and (d); passes the full base suite, hook configs, firstaid, latex-lab float |
-| b-3 | `\caption` reads its arguments, `\caption*` with `\@caption@nolabel`, `caption/before`, `caption/step` with the switches and unique targets, replaced-`\@caption` settings, `\@kernel@caption@reset`, `\@kernel@caption@unique`, documentation (ltfloat, usrguide and clsguide drafts) | in progress |
-| b-3f | first aid: `\caption*` with float.sty | to split |
-| b-1 | latex-lab: float target per type, generic structure names (needs b-3's step plug) | to split |
-| b-4 | `caption/prepare`, 3-argument `caption/listentry` | to split |
-| (c) | (section (c)), after b-3 | to rebase |
-| b-5 | `caption/typeset`, the kernel copies | to split; open design question (RFC) |
-| b-6 | `subfloat/box` | to split; open design question for the tagging team (RFC) |
-| O1 | nameref title | to split, or to nameref |
+latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; not pushed, not posted):
 
-The current code (v1 series + 28 commits) passes, on its head: the full base suite in pdfTeX,
-XeTeX and LuaTeX (605 tests), all base configurations, firstaid, and all latex-lab CI
-configurations (the same differences as develop, all local: the `<PDF>` vs
-`<PDF version="2.0">` line of show-pdf-tags and similar).
-Every commit of the v1 series passes the same on its own.
+| # | part | commit | content | tests |
+|---|---|---|---|---|
+| 0001 | (a) | 2e1246c7c | hooks `float/begin`/`float/end` | tlb-float-hooks-001, -002-rollback |
+| 0002 | (d) | bebf5fccc | `\DeclareTaggingFloatType`, generic caption names | float-017 |
+| 0003 | O2 | c30a91bb1 | skip the arguments after "`\caption` outside float" | caption-outside-001 |
+| 0004 | b-3a | 07b5a8817 | `\caption` reads its arguments, `\caption*`, `caption/before`, `caption/step` with the switches, `\@kernel@caption` (the interface test), `\@kernel@caption@reset`; latex-lab without its own `\caption` | caption-interface-001, -002, float-028 |
+| 0005 | b-3b | 979d62f7b | unique targets for unstepped captions, `\@kernel@caption@unique` | caption-interface-003, float-024 |
+| 0006 | b-3c | 05e6d4f6d | `\caption*` with a replaced `\@caption` (llncs, mwcls, threeparttable) | caption-interface-004 |
+| 0007 | b-3d | a2775b254 | separator look-ahead of `\@caption@nolabel` | caption-interface-005 |
+| 0008 | b-3f | 304c6fd2e | first aid: `\caption*` with float.sty | firstaid-float-caption, -hyperref |
+| 0009 | b-1 | 2edb486e2 | latex-lab: float target per type (fixes the two latex-lab bugs) | float-023, float-004 |
+| 0010 | b-4 | 271f6728c | `caption/prepare`, 3-argument `caption/listentry` | caption-interface-006 |
+| 0011 | (c) | 5b6eb6b66 | section (c); also latex3/latex2e#2022 (empty label) | float-021, -022, -025, -026, -027, -029, -030 |
+| 0012 | b-5 | d7f0671a9 | `caption/typeset`, `\@kernel@@caption` (request for comments) | caption-interface-007 |
+| 0013 | b-6 | ab41c6600 | `subfloat/box` (request for comments) | float-020 |
+| 0014 | announce | 449aa8e30 | usrguide section and ltnews44 draft; to apply only with hyperref support for `\caption*` | — |
+| O1.patch | O1 | 5576f6bb3 | nameref title in `\@caption` (optional) | caption-interface-008 |
+
+What is optional: b-5 and b-6 are requests for comments; O1 is optional; the last commit waits for
+hyperref. b-3d is not a free choice: without it the standard classes print ": Text" for
+`\caption*` (the alternative, a `classes.dtx` change, breaks babel-french and caption3). b-3b and
+b-3c are needed by the float first aid for restyled floats and by the hyperref sketch (the cover
+letter still calls them droppable; this is being corrected).
+
+The series had three review rounds; the open points are in the cover letter and in
+`PROPOSAL-b-v2.md`. The release date (2026/11/01 in every release block) is a placeholder.
 
 ### 5. How caption uses it
 
-caption becomes a client if `\@kernel@caption` is defined; otherwise its v3.7 code runs
-unchanged. On the client path it restores the kernel copies at `\begin{document}` (where it used
+caption becomes a client if `\@kernel@@caption` is defined (from b-5 on, together with the
+socket `caption/typeset` it needs); otherwise its v3.7 code runs unchanged. On the client path it restores the kernel copies at `\begin{document}` (where it used
 to install its own `\caption`/`\@caption`), decides step, target and list entry in
 `caption/before`, makes its hypcap anchor in `caption/prepare` (for an unstepped caption with
 `\@kernel@caption@unique{<type>}{\hyper@makecurrent{<type>}}`), and plugs `caption/listentry`
@@ -745,7 +760,8 @@ is `issue_111` (the kernel's error for `\caption` outside a float instead of cap
    commands that packages are told to call, or should they get public names?
 9. O1 in the kernel or in nameref? O2 looks uncontroversial.
 10. Release: the patches use 2026/11/01, too early for an interface that has not been
-    discussed. Which release, and is a latex-dev phase wanted? (No ltnews text yet.)
+    discussed. Which release, and is a latex-dev phase wanted? (A draft ltnews44 text is in
+    the last commit of the series.)
 
 ---
 

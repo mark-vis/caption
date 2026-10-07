@@ -1,5 +1,5 @@
 diff --git a/source/caption.dtx b/source/caption.dtx
-index 1932f6f..140ef44 100644
+index 1932f6f..7602556 100644
 --- a/source/caption.dtx
 +++ b/source/caption.dtx
 @@ -31,7 +31,7 @@
@@ -11,19 +11,22 @@ index 1932f6f..140ef44 100644
  %
  % \iffalse
  %<*driver>
-@@ -1856,6 +1856,22 @@
+@@ -1856,6 +1856,25 @@
  % \end{macro}
  % \end{macro}
  %
 +% \begin{macro}{\caption@ifclient}
 +% \changes{v3.8}{2026/10/05}{This macro added (PoC)}
 +% \changes{v3.8}{2026/10/05}{Uses version~2 of the caption interface of the kernel (PoC)}
++% \changes{v3.8}{2026/10/07}{Tests \cs{@kernel@@caption} instead of \cs{@kernel@caption} (PoC)}
 +%  |\caption@ifclient|\marg{true}\marg{false}\par
-+%  True if we use the caption interface of the kernel, i.e.~if |\@kernel@caption|
-+%  is defined. (We do not test the format date.)
++%  True if we use the caption interface of the kernel, i.e.~if |\@kernel@@caption|
++%  is defined: we need the socket \texttt{caption/typeset}, which comes with it.
++%  (|\@kernel@caption|, the test of the kernel for its interface, may be there
++%  without this socket. We do not test the format date.)
 +%  See section~\ref{caption-interface} for details.
 +%    \begin{macrocode}
-+\ifdefined\@kernel@caption
++\ifdefined\@kernel@@caption
 +  \let\caption@ifclient\@firstoftwo
 +\else
 +  \let\caption@ifclient\@secondoftwo
@@ -34,7 +37,7 @@ index 1932f6f..140ef44 100644
  % \begin{macro}{\caption@floatstruct}
  % \changes{v3.7}{2026/10/04}{This macro added}
  %  |\caption@floatstruct|\par
-@@ -1885,6 +1901,29 @@
+@@ -1885,6 +1904,29 @@
        \expandafter\expandafter\expandafter\@firstoftwo
      \fi\fi}}
  %    \end{macrocode}
@@ -64,7 +67,7 @@ index 1932f6f..140ef44 100644
  % \end{macro}
  %
  % \begin{macro}{\caption@make@above}
-@@ -1915,6 +1954,7 @@
+@@ -1915,6 +1957,7 @@
  % \changes{v3.5}{2020/08/30}{Re-definition of \cs{@xdblfloat} added}
  % \changes{v3.7}{2026/10/04}{Re-definition of \cs{@makecaption} added if \texttt{latex-lab} handles floats}
  % \changes{v3.8}{2026/10/05}{Does not redefine \cs{caption} and \cs{@caption} if the kernel offers the caption interface (PoC)}
@@ -72,7 +75,7 @@ index 1932f6f..140ef44 100644
  % \changes{v3.8}{2026/10/05}{Uses the kernel hooks \texttt{float/begin} instead of redefining \cs{@xfloat} and \cs{@xdblfloat}, if available (PoC)}
  % \changes{v3.8}{2026/10/05}{Re-definition of \cs{@makecaption} only if the code of \texttt{latex-lab} could not be removed (PoC)}
  %    \begin{macrocode}
-@@ -1938,11 +1978,10 @@
+@@ -1938,11 +1981,10 @@
  %   but is simply overcautious and especially unwanted by the user nowadays.
  %   So starting with \version{3.4} we only do not redefine |\caption| and |\@caption| if the
  %   `compatibility' option is set to `true', and starting with \version{3.6} we always redefine them.
@@ -87,7 +90,7 @@ index 1932f6f..140ef44 100644
      {\caption@client}%
      {\let\caption\caption@caption
       \let\@caption\caption@@caption}%
-@@ -1978,296 +2017,291 @@
+@@ -1978,296 +2020,292 @@
  %    \begin{macrocode}
  \let\@makecaption\caption@makecaption
  %    \end{macrocode}
@@ -157,7 +160,8 @@ index 1932f6f..140ef44 100644
 +%   |\@floatHref@|\meta{type} (set by \texttt{latex-lab}),
 +% \item and the copies |\@kernel@caption| and |\@kernel@@caption| of the kernel definitions
 +%   of |\caption| and |\@caption|. They are undefined after a roll-back with
-+%   \pkg{latexrelease}, so we use them as test for the interface.
++%   \pkg{latexrelease}, so we use |\@kernel@@caption| (which comes with
++%   \texttt{caption/typeset}) as test for the interface.
  % \end{itemize}
 -% If these are available we do not redefine |\caption| and |\@caption|. Instead:
 +% If the interface is available, we restore the kernel definitions of |\caption| and |\@caption|
@@ -617,7 +621,7 @@ index 1932f6f..140ef44 100644
      \caption@setfloatcapt{%
        \caption@parboxrestore
        \if@minipage
-@@ -2277,27 +2311,29 @@
+@@ -2277,27 +2315,29 @@
        \ifcaption@star
          \let\caption@makeanchor\@firstofone
        \fi
@@ -663,7 +667,7 @@ index 1932f6f..140ef44 100644
  %    \end{macrocode}
  % \end{macro}
  %
-@@ -2960,6 +2996,11 @@
+@@ -2960,6 +3000,11 @@
  \long\def\caption@iiibox#1{%
    \caption@iiiibox{#1}\vbox\vtop}
  %    \end{macrocode}
@@ -675,7 +679,7 @@ index 1932f6f..140ef44 100644
  %    \begin{macrocode}
  \long\def\caption@iiiibox#1#2#3#4#5[#6][#7]#8{%
    \caption@checkdecl{justification}{#7}{%
-@@ -2967,25 +3008,30 @@
+@@ -2967,25 +3012,30 @@
      #1*% set \caption@position
      \caption@iftop{%
        \endgroup
@@ -708,7 +712,7 @@ index 1932f6f..140ef44 100644
  \newcommand*\captionbox@innerpos@default{c}
  \newcommand*\captionbox@hrule{\hrule\@height\z@\relax}
  %    \end{macrocode}
-@@ -3205,6 +3251,25 @@
+@@ -3205,6 +3255,25 @@
  %    \begin{macrocode}
  \newcommand*\caption@refstepcounter@{\refstepcounter}
  %    \end{macrocode}
@@ -734,7 +738,7 @@ index 1932f6f..140ef44 100644
  % \end{macro}
  %
  % \begin{macro}{\caption@stepcounter}
-@@ -3536,8 +3601,7 @@
+@@ -3536,8 +3605,7 @@
  % redefine \caption
      \let\caption\caption@subcaption
      \caption@ifclient
@@ -744,7 +748,7 @@ index 1932f6f..140ef44 100644
        {\let\@caption\caption@@caption}%
      \let\phantomcaption\caption@subphantom
      \let\captionlistentry\caption@sublistentry
-@@ -3553,6 +3617,7 @@
+@@ -3553,6 +3621,7 @@
  % \end{macro}
  %
  % \begin{macro}{\caption@subcaption}
@@ -752,7 +756,7 @@ index 1932f6f..140ef44 100644
  % Makes a sub-caption.
  %    \begin{macrocode}
  \newcommand*\caption@subcaption{%
-@@ -3561,6 +3626,21 @@
+@@ -3561,6 +3630,21 @@
      {\caption@refstepcounter\@subcaptype}%
      {\caption@dblarg{\@caption\@subcaptype}}}
  %    \end{macrocode}
@@ -774,7 +778,7 @@ index 1932f6f..140ef44 100644
  % \end{macro}
  %
  % \begin{macro}{\caption@subphantom}
-@@ -4580,43 +4660,29 @@
+@@ -4580,43 +4664,29 @@
  % Inside a float handled by \texttt{latex-lab} (tagged PDF) the float already has
  % a link target, so the counter is stepped without setting an additional one
  % (as \texttt{latex-lab} does it).
@@ -836,7 +840,7 @@ index 1932f6f..140ef44 100644
  %    \end{macrocode}
  % \end{macro}
  %
-@@ -4636,6 +4702,55 @@
+@@ -4636,6 +4706,55 @@
  %    \end{macrocode}
  % \end{macro}
  %
@@ -892,7 +896,7 @@ index 1932f6f..140ef44 100644
  % \begin{macro}{\caption@makeanchor}
  % \changes{v3.1l}{2010/01/09}{Adapted to the current hyperref package}
  % We redefine |\caption@makeanchor| so a \pkg{hyperref} anchor
-@@ -4687,7 +4802,7 @@
+@@ -4687,7 +4806,7 @@
  % at the start of the float, so the link points to the float structure.
  %    \begin{macrocode}
        \caption@iftagfloat
@@ -901,7 +905,7 @@ index 1932f6f..140ef44 100644
          {\caption@makestart\@captype
           \caption@startanchor\@currentHref}%
  %    \end{macrocode}
-@@ -5362,15 +5477,12 @@
+@@ -5362,15 +5481,12 @@
  %
  % \begin{macro}{\caption@window}
  % \changes{v3.1c}{2007/10/06}{Bugfix: \cs{caption@clearmargin} added}
@@ -918,7 +922,7 @@ index 1932f6f..140ef44 100644
      \caption@setautoposition b%
      \caption@settype{#1}%
      \caption@clearmargin
-@@ -5569,14 +5681,9 @@
+@@ -5569,14 +5685,9 @@
  % \begin{macro}{\rotcaption}
  % \changes{v3.0c}{2004/07/16}{Bugfix: Check for \cs{caption@star} removed}
  % \changes{v3.0i}{2005/12/07}{Rewritten, works with \pkg{hyperref} now}

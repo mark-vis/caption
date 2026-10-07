@@ -1,12 +1,18 @@
-% Test of the caption interface (proposal (b)): \caption*, the hooks
-% caption/before and caption/prepare, the sockets caption/step,
-% caption/listentry and caption/typeset, the switches \if@captionstep
-% and \if@captiontarget, the float target \@floatHref@<type> and the
-% kernel copies \@kernel@caption and \@kernel@@caption, and
-% \@kernel@caption@reset.
+% Test of the caption interface: \caption* and its label
+% \@caption@nolabel (which typesets nothing), the hook caption/before,
+% the socket caption/step, the switches \if@captionstep and
+% \if@captiontarget and the float target \@floatHref@<type> (as the
+% kernel plug reads it). Unique targets are tested in
+% caption-interface-003, a replaced \@caption in caption-interface-004,
+% the separator removal of the label in caption-interface-005, the
+% roll-back in caption-interface-002, \caption outside of floats in
+% caption-outside-001.
 \input{regression-test}
 \documentclass{article}
 \makeatletter
+% the kernel definitions, for the tests that wrap or keep them
+\let\kernelcaption\caption
+\let\kernelatcaption\@caption
 % show the arguments \@makecaption gets
 \let\ORImakecaption\@makecaption
 \long\def\@makecaption#1#2{%
@@ -36,22 +42,6 @@
   \typeout{BEFORE: {#1}{\tmpstar}{\tmpopt}{\detokenize{#4}},
     figure=\thefigure, linewidth=\the\linewidth}%
   \csname testbefore\endcsname}
-\AddToHookWithArguments{caption/prepare}[test]{%
-  \showbool{#2}%
-  \typeout{PREPARE: {#1}{\tmpstar}{\detokenize{#3}}{\detokenize{#4}},
-    figure=\thefigure, label=\@currentlabel, href=\@currentHref}%
-  \csname testprepare\endcsname}
-% a listentry plug that shows its three arguments
-\NewSocketPlug{caption/listentry}{test}{%
-  \typeout{LISTENTRY: {#1}{\detokenize{#2}}{\detokenize{#3}}}}
-% a typeset plug that shows its arguments and the line width, makes a
-% local definition and then uses the kernel typesetting
-\NewSocketPlug{caption/typeset}{test}{%
-  \showbool{#2}%
-  \typeout{TYPESET: {#1}{\tmpstar}{\detokenize{#3}},
-    linewidth=\the\linewidth, star=\if@captionstar true\else false\fi}%
-  \def\testlocal{set by the typeset plug}%
-  \@kernel@caption@typeset{#1}{#2}{#3}}
 \newcounter{sub}[figure]
 \gdef\@currentHref{none}
 % helpers for the tests (\makeatletter does not work inside \TEST)
@@ -73,11 +63,8 @@
 % a package that keeps its own \caption (here the definition of LaTeX
 % before 2026) and passes only \caption* to the kernel
 \def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
-\def\useowncaption{\def\caption{\@ifstar{\@kernel@caption*}%
+\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
   {\@kernel@caption@reset\owncaption}}}
-\def\showcopies{%
-  \typeout{caption: \ifx\caption\@kernel@caption kernel\else other\fi,
-    @caption: \ifx\@caption\@kernel@@caption kernel\else other\fi}}
 % replacements of \@caption: as in a class that does not know \caption*
 % (the definition of llncs), a wrapper of the kernel definition (as in
 % memoir or nameref), and a definition that defers the kernel definition
@@ -96,9 +83,9 @@
   \gdef\deferred{\classcaption{#1}[{#2}]{#3}}}
 \long\def\wrappercaption#1[#2]#3{%
   \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
-  \@kernel@@caption{#1}[{#2}]{#3}}
+  \kernelatcaption{#1}[{#2}]{#3}}
 \long\def\defercaption#1[#2]#3{%
-  \gdef\deferred{\@kernel@@caption{#1}[{#2}]{#3}}}
+  \gdef\deferred{\kernelatcaption{#1}[{#2}]{#3}}}
 \def\useclasscaption{\let\@caption\classcaption}
 \def\usewrappercaption{\let\@caption\wrappercaption}
 \def\usedefercaption{\let\@caption\defercaption}
@@ -111,9 +98,6 @@
 \def\showrestored{%
   \typeout{after: fnum=\meaning\fnum@figure, ext=\meaning\ext@figure,
     theH=\meaning\theHfigure}}
-\def\testpreparestar{%
-  \def\testprepare{\typeout{PREPARE sees: fnum=\meaning\fnum@figure,
-    ext=\meaning\ext@figure, theH=\meaning\theHfigure}}}
 \def\staroff{\@captionstarfalse}
 % the label of caption* in different \@makecaption shapes: the width
 % of the box compared with the text alone
@@ -162,7 +146,6 @@
 \START
 \TEST{normal caption}{%
   \begin{figure}
-    \AssignSocketPlug{caption/listentry}{test}%
     \caption{Normal}
     \showswitches
   \end{figure}
@@ -204,7 +187,6 @@
     \let\testbefore\stepoff
     \caption{Continued}
     \showlabel
-    \showhref
     \showswitches
   \end{figure}
   \begin{figure}
@@ -247,15 +229,6 @@
     \typeout{figure=\thefigure}
     \showswitches
   \end{figure}}
-\TEST{typeset plug at the level of the float}{%
-  \begin{figure}
-    \begin{minipage}{3cm}
-      \AssignSocketPlug{caption/typeset}{test}%
-      \caption{Typeset plug}
-      \typeout{local: \testlocal}
-      \caption*{Typeset plug, star}
-    \end{minipage}
-  \end{figure}}
 \TEST{direct call of the body (@caption)}{%
   \begin{figure}
     \directcaption{figure}[L]{T}
@@ -263,21 +236,6 @@
     \directcaption{figure}[L2]{T2 star}
     \showswitches
   \end{figure}}
-\TEST{kernel copies}{%
-  \showcopies}
-\TEST{article makecaption with the label of caption*: no separator}{%
-  \setbox0=\vbox{\hsize=10cm \starton\ORImakecaption{\nolabel}{Text}}%
-  \showbox0
-  \setbox0=\vbox{\hsize=10cm \ORImakecaption{Label}{Text}}%
-  \showbox0
-  \setbox0=\hbox{\nolabel. Text}% outside of caption*: nothing removed
-  \showbox0}
-\TEST{caption outside float: error, arguments skipped}{%
-  \setbox0=\vbox{\caption[Opt]{Outside}}%
-  \showbox0 }
-\TEST{caption* outside float: error, arguments skipped}{%
-  \setbox0=\vbox{\caption*{Outside}}%
-  \showbox0 }
 \TEST{continued float with a float target: the float target}{%
   \begin{figure}
     \setfloathref{Y}%
@@ -293,207 +251,5 @@
     \caption{Continued, no target}
     \showlabel
     \showhref
-  \end{figure}}
-\TEST{two continued captions: two different unique targets}{%
-  \begin{figure}
-    \let\testbefore\stepoff
-    \caption{Continued once}
-    \showhref
-    \caption{Continued twice}
-    \showhref
-  \end{figure}}
-\TEST{caption* with a replaced @caption (class): no label, no entry}{%
-  \begin{figure}
-    \useclasscaption
-    \showlabelexpansion
-    \caption{First}
-    \caption*{Starred}
-    \typeout{figure=\thefigure}
-    \showswitches
-    \showrestored
-    \caption*[Opt]{Starred with option}
-    \showrestored
-    \caption{Second}
-    \typeout{figure=\thefigure}
-    \showswitches
-  \end{figure}}
-\TEST{caption* with a wrapper of the kernel @caption}{%
-  \begin{figure}
-    \usewrappercaption
-    \testpreparestar
-    \caption*{Starred}
-    \typeout{figure=\thefigure}
-    \showswitches
-    \showrestored
-    \caption{Normal}
-  \end{figure}}
-\TEST{caption* with a deferred kernel @caption}{%
-  \begin{figure}
-    \usedefercaption
-    \caption*{Deferred star}
-    \showrestored
-    \deferred
-    \typeout{figure=\thefigure}
-    \showswitches
-  \end{figure}}
-\TEST{unique targets are counted per name}{%
-  \begin{figure}
-    \let\testbefore\stepoff
-    \caption{Continued, first}
-    \showhref
-    \settype{table}%
-    \caption{Continued table}
-    \showhref
-    \settype{figure}%
-    \caption{Continued, second}
-    \showhref
-  \end{figure}}
-\TEST{unique target for a counter without theH}{%
-  \begin{figure}
-    \settype{myfig}%
-    \let\testbefore\stepoff
-    \caption{Continued myfig}
-    \showhref
-    \caption{Continued myfig again}
-    \showhref
-    \typeout{theHmyfig: \ifcsname theHmyfig\endcsname defined\else undefined\fi}
-  \end{figure}}
-\TEST{label of caption*: separators removed in common forms}{%
-  \shape{colon}{\nolabel: \ignorespaces Text}%
-  \shape{space before colon}{\nolabel : \ignorespaces Text}%
-  \shape{colon in group}{{\bfseries\nolabel:} \ignorespaces Text}%
-  \shape{colon and tie}{\nolabel:~\ignorespaces Text}%
-  \shape{period in group}{{\bfseries\nolabel.} \ignorespaces Text}%
-  \shape{period and enspace}{\nolabel.\enspace\ignorespaces Text}%
-  \shape{period and nobreakspaces}%
-    {{\nolabel.}\nobreakspace\nobreakspace \ignorespaces Text}%
-  \shape{label in group, colon}{{\nolabel}: \ignorespaces Text}%
-  \shape{label in two groups, period}{{{\nolabel}}. \ignorespaces Text}%
-  \shape{label in group, space}{{\bfseries\nolabel} \ignorespaces Text}%
-  \shape{quad}{\nolabel\quad \ignorespaces Text}%
-  \shape{qquad, control space}{\nolabel\qquad\ \ignorespaces Text}%
-  \shape{text without ignorespaces}{\nolabel: Text}%
-  \shape{not caption*}{\staroff\nolabel: \ignorespaces Text}%
-  \shape{textbf label, colon}{\textbf{\nolabel}: \ignorespaces Text}%
-  \shape{textbf label and period}{\textbf{\nolabel.} \ignorespaces Text}%
-  \shape{other separator macro (kept, warning)}{\nolabel\sep\ignorespaces Text}%
-  \shape{other separator macro (kept, no second warning)}%
-    {\nolabel\sep\ignorespaces Text}%
-  \rewarn
-  \shape{hskip (kept, warning)}{\nolabel\hskip 1em\ignorespaces Text}%
-  \rewarn
-  \shape{conditional (clean, no warning)}%
-    {\iftrue\nolabel: \fi\ignorespaces Text}%
-  \setbox0=\vbox{\hsize=10cm \starton
-    {\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text\par}%
-  \showbox0
-  \setbox0=\vbox{\hsize=10cm \starton\nolabel\par\ignorespaces Text\par}%
-  \showbox0}
-\TEST{replaced @caption: settings until the next caption}{%
-  \begin{figure}
-    \usetargetcaption
-    \caption{First}
-    \caption*{Starred}
-    \showrestored
-    \addcontentsline{lof}{figure}{Manual entry after caption*}
-    \caption{Second}
-    \showrestored
-    \let\testbefore\stepoff
-    \caption{Second, continued}
-    \showrestored
-    \showhref
-  \end{figure}
-  \showrestored}
-\TEST{replaced @caption that defers: star still honoured}{%
-  \begin{figure}
-    \usedeferclasscaption
-    \showlabelexpansion
-    \caption*{Deferred class star}
-    \deferred
-    \typeout{figure=\thefigure}
-  \end{figure}}
-\TEST{kernel @caption: unique number given back, no gap}{%
-  \begin{figure}
-    \caption{Stepped}
-    \caption*{Starred}
-    \let\testbefore\stepoff
-    \caption{Continued}
-    \showhref
-  \end{figure}}
-% Shapes marked "known gap" record output that is not wanted but accepted
-% (the silent cases listed in ltfloat.dtx); a change there can be an
-% improvement rather than a regression.
-\TEST{label of caption*: vertical mode, measuring, when to warn}{%
-  \vshape{period, vertical mode}{\nolabel. \ignorespaces Text}%
-  \vshape{label line with period and par (no empty line)}%
-    {{\centering\bfseries\nolabel.\par}\ignorespaces Text}%
-  \vshape{label and par}{\nolabel\par\ignorespaces Text}%
-  \vshape{label and newline (empty line, no error, warning)}%
-    {\nolabel\\\ignorespaces Text}%
-  \vshape{label in group and newline (empty line, no error)}%
-    {{\bfseries\nolabel}\\\ignorespaces Text}%
-  \vshape{label in group, colon, vadjust}%
-    {{\nolabel: }\vadjust{\penalty 268 }\ignorespaces Text}%
-  \hshape{sbox of the label (no warning)}%
-    {\sboxlabel\ignorespaces Text}%
-  \hshape{settowidth of label and colon (no warning)}%
-    {\settowidthlabel\ignorespaces Text}%
-  \hshape{period and spacefactor}{\nolabel.\@\ignorespaces Text}%
-  \hshape{colon, text in a group}{\nolabel: {\ignorespaces Text}}%
-  \hshape{character separator (warning)}{\nolabel\ -- \ignorespaces Text}%
-  \hshape{two periods (warning)}{\nolabel.. \ignorespaces Text}%
-  \hshape{space in braces (warning)}{\nolabel{\hskip 1em}\ignorespaces Text}%
-  \hshape{separator after a group with the label (known gap: printed, no warning)}%
-    {\textit{\nolabel}\textbf{:} \ignorespaces Text}%
-  \vshapeto{separator macro with a leading space (space ignored, warning)}%
-    {\textendash\ Text}{\nolabel\spsep\ignorespaces Text}%
-  \vshapeto{vskip (stays vertical, warning)}%
-    {\vskip 2pt \noindent Text}{\nolabel\vskip 2pt \ignorespaces Text}%
-  \vshape{spacefactor (no error)}{\nolabel\@\ignorespaces Text}%
-  \vshapeto{vadjust (no error)}%
-    {\noindent\vadjust{\penalty 7 }Text}%
-    {\nolabel\vadjust{\penalty 7 }\ignorespaces Text}%
-  \hshape{relax and hskip (known gap: printed, no warning)}%
-    {\nolabel\relax\hskip 1em\ignorespaces Text}%
-  \vshapeto{unskip after the label (removed, vertical skip kept)}%
-    {\vskip 10pt \noindent Text}{\vskip 10pt \nolabel\unskip: \ignorespaces Text}%
-  \vshapeto{kern (horizontal, warning)}%
-    {\noindent\kern 3pt Text}{\nolabel\kern 3pt \ignorespaces Text}%
-  \vshapeto{hbox (in the paragraph, warning)}%
-    {\noindent\hbox{ -- }Text}{\nolabel\hbox{ -- }\ignorespaces Text}%
-  \vshapeto{vbox (in the paragraph, warning)}%
-    {\noindent\vbox{\hbox{ -- }}Text}{\nolabel\vbox{\hbox{ -- }}\ignorespaces Text}%
-  \vshapeto{vtop (in the paragraph, warning)}%
-    {\noindent\vtop{\hbox{ -- }}Text}{\nolabel\vtop{\hbox{ -- }}\ignorespaces Text}%
-  \vshapeto{penalty (horizontal, no warning)}%
-    {\noindent\penalty 7 Text}{\nolabel\penalty 7 \ignorespaces Text}}
-\TEST{kernel@caption@reset: ends the settings of caption*}{%
-  \begin{figure}
-    \useclasscaption
-    \showlabelexpansion
-    \caption*{Starred}
-    \showswitches
-    \showrestored
-    \showgiveback
-    \resetcaption
-    \showswitches
-    \showrestored
-    \showgiveback
-    \starton\stepoff\targetoff
-    \resetcaption
-    \showswitches
-  \end{figure}}
-\TEST{kernel@caption@reset: own caption, only the star from the kernel}{%
-  \begin{figure}
-    \useclasscaption
-    \useowncaption
-    \showlabelexpansion
-    \caption{Own first}
-    \caption*{Starred}
-    \caption{Own second}
-    \showlabel
-    \showhref
-    \showrestored
-    \showswitches
   \end{figure}}
 \end{document}
