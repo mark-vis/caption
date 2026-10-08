@@ -1,13 +1,13 @@
-# PoC: caption on the proposed kernel interfaces (a)-(d)
+# Experiment: caption on the proposed kernel interfaces (a)-(d)
 
-DRAFT, 2026-10-05. Branch `poc-kernel-interfaces` = caption v3.7 + changes that make caption
+2026-10-05. Branch `poc-kernel-interfaces` = caption v3.7 + changes that make caption
 (v3.8 PoC), caption3 (v2.6 PoC) and subcaption (v1.8 PoC) use the kernel interfaces proposed in
 `poc/PROPOSALS.md` (branch `poc-caption4`), when they exist.
 
 - `RESULTS.md`: what was measured, results, and the gaps in the proposals (section 6, G1-G7).
-- `README-POC.md`: the test setup used (paths refer to a scratch directory).
 - `kernel-patches/`: latex2e patch series (apply with `git am` to latex2e develop 829e56a15)
-  and newfloat v1.2a.
+  and newfloat v1.2a. The same kernel commits are on branch `poc-kernel-interfaces` of
+  https://github.com/mark-vis/latex2e.
 - `corpus/`: test documents and the driver scripts (`run.sh`, `compare.sh`).
 
 To rebuild the patched kernel: in a latex2e clone at 829e56a15, `git am kernel-patches/000*.patch`,
