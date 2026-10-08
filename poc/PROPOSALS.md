@@ -1,7 +1,9 @@
 # What caption needs from the kernel: four proposals
 
-**Draft for discussion.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06, and (b) with (a), (c), (d) split into a reviewable series on current develop 2a9bfe9d6 on 2026-10-07 ((b)4). Written against latex2e `develop` at 829e56a15
-(format date 2026-11-01, pre-release). caption references are to branch
+**Draft for discussion**, 2026-10-08. The current patch series is on latex2e `develop`
+(branch `b2-split` of https://github.com/mark-vis/latex2e, see (b)4). Sections (a), (c), (d)
+and "Verification of the combined patch" also describe the earlier version on develop
+829e56a15 (format date 2026-11-01, pre-release), kept for reference. caption references are to branch
 `fixes-combined` of https://github.com/mark-vis/caption (caption v3.6p, caption3 v2.4e),
 other packages and classes as in TeX Live 2026. All files mentioned are in
 `poc/proposals/` on branch `poc-caption4` of the same repository.
@@ -50,7 +52,7 @@ combined patch").
 3. (b): the largest change, and the one with the most open questions (classes,
    hyperref, template-based captions). It is split into parts ((b)4); its optional
    part O2 is small and can go early (`patches/b-v2/O2-standalone.patch`).
-4. (c), on top of (b) (in the split: after b-3).
+4. (c), on top of (b) (in the series: after b-4).
 
 The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b) version 1, (c)
 on develop 829e56a15. The current form is `patches/b-v2/series/`: 14 commits on develop 2a9bfe9d6
@@ -61,21 +63,19 @@ in the order (a), (d), O2, (b) in parts, (c) after b-4, and the rest of (b); see
 All `\IncludeInRelease` blocks use **2026/11/01**. That is the date develop uses for
 its next release: `\fmtversion` is 2026-11-01 (base/ltvers.dtx),
 base/TEMPLATE-IncludeInRelease.txt uses 2026/11/01, ltclass.dtx already has blocks with
-that date, and base/doc/ltnews44.tex is the draft for November 2026. The team may
-prefer a later date; as ltvers.dtx explains, a guessed date is
-changed when the release date is fixed. caption's guards do not depend on the date:
-(a) tests `\@float@usehooks`, (b) and (c) test whether a socket exists. (d) adds no
+that date, and base/doc/ltnews44.tex is the draft for November 2026. The date is a
+placeholder; as ltvers.dtx explains, a guessed date is changed when the release date is
+fixed (see (b), question 10). caption's guards do not depend on the date: (a) tests `\@float@usehooks`, (b) and (c) test whether a socket exists. (d) adds no
 `latexrelease` block of its own, because lttagging is one module in `latexrelease`
 (`\NewModuleRelease{2024/06/01}{lttagging}`), and the same holds for the sockets (b)
 adds there.
 
-In a combined release each file gets one new version: ltfloat v1.2k, lttagging v1.1b,
-classes v1.4o, latex-lab-float 0.81q, latex-lab-namespace 0.8s, latex-lab-listings
-0.80b, all dated 2026-10-03. In the series, the first patch that touches a file changes
-its version line; the stand-alone patches of (a), (b) and (d) each change it themselves.
-One exception: (c) changes latex-lab-float once more, to 0.81r of 2026-10-06, for the
-`threeparttable` fix of 2026-10-06 (its `\changes` entries have that version); for a
-real release these would be merged into one version.
+In the version-1 series, each file gets one new version in a combined release: ltfloat
+v1.2k, lttagging v1.1b, classes v1.4o, latex-lab-float 0.81q, latex-lab-namespace 0.8s,
+latex-lab-listings 0.80b, all dated 2026-10-03. In the series, the first patch that touches
+a file changes its version line; the stand-alone patches of (a), (b) and (d) each change it themselves.
+One exception: (c) changes latex-lab-float once more (0.81r); for a real release these
+would be one version.
 The `\changes` dates follow each file's own convention (yyyy/mm/dd in base, yyyy-mm-dd
 in latex-lab).
 
@@ -134,11 +134,9 @@ All patches include the expected updates of existing `.tlg` files, saved with
 every release block (`tlb-rollback-004-often`, `tlb-rollback-005`, `github-0479-often`;
 new `Applying/Skipping` lines from (a) and (b), for pdfTeX, LuaTeX and XeTeX), the tests
 of `config-lthooks` and `config-lthooks2` that list all hooks (the two new hooks, from
-(a)) and `float-010-outside` (a tagpdf debug line, from (d)). (Before 2026-10-06 the
-series lacked the updates of 13 roll-back tests and of `lthooks2-002`/`-005`, so the full
-base suite failed on every patch; see "Full base suite" below.) In each case the only difference is the added lines, or the two changed debug
-lines. The new `float-017-declare` `.tlg` files have `<PDF version="2.0">` like the
-other `.tlg` files (see "Verification").
+(a)) and `float-010-outside` (a tagpdf debug line, from (d)). In each case the only
+difference is the added lines, or the two changed debug lines. The new `float-017-declare`
+`.tlg` files have `<PDF version="2.0">` like the other `.tlg` files (see "Verification").
 
 No code had to change because of an interaction between the proposals.
 
@@ -280,8 +278,8 @@ box in which `float/begin` ran. `\@float@usehooks` records `\currentgrouplevel` 
 defines `\@float@end@hook` locally. `\@float@end@hook` is `\relax` outside floats, and
 inside a float it does nothing at any other group level. This matters because packages
 use `\@endfloatbox` for boxes that did not start with `\@xfloat`, and such a box can sit
-inside a float: for example a float.sty `[H]` float in a minipage in a `figure`. The
-first version of this patch ran `float/end` twice there, once with the arguments of the
+inside a float: for example a float.sty `[H]` float in a minipage in a `figure`. Without
+the group-level test, `float/end` would run twice there, once with the arguments of the
 outer figure. Test 5 of `tlb-float-hooks-001` covers this case, and
 `mwe/a4-nested-H.tex` covers it with the real float.sty.
 
@@ -393,11 +391,11 @@ patch are in the last section).
 
   `tlb-float-hooks-002-rollback.lvt` (`latexrelease` 2026-06-01): the hooks are declared
   but no output appears. Both pass with `l3build check -e pdftex` and `-e luatex`.
-- **Nested `[H]` with the real float.sty** (`mwe/a4-nested-H.tex`): a `program` `[H]` float in a minipage in a `figure`. With the first version
-  of the patch it printed `END figure [] captype=program` and then
-  `END figure [] captype=figure`. Now it prints one `BEGIN figure []` and one
+- **Nested `[H]` with the real float.sty** (`mwe/a4-nested-H.tex`): a `program` `[H]` float in a minipage in a `figure`. Without the group-level
+  test it would print `END figure [] captype=program` and then
+  `END figure [] captype=figure`; with the patch it prints one `BEGIN figure []` and one
   `END figure [] captype=figure`, with 0 errors.
-- **Existing base tests.** On the first version of the patch, `l3build check -e pdftex`
+- **Existing base tests.** Before the `.tlg` updates were added, `l3build check -e pdftex`
   on 44 tests chosen because they exercise floats, float placement/tracing, two-column
   floats and rollback: `tlb-fltrace-000…005b`, `tlb-fltrace-*-2015`,
   `tlb-fltrace-rollback-2024-11-01`, `tlb-flafter-rollback-2024-11-01`, `tlb-hfloat-01`,
@@ -445,7 +443,7 @@ patch are in the last section).
   cmd-hook version failed. (Not rerun on the combined patch.)
 - The documentation of the patched `ltfloat.dtx` typesets without errors.
 
-**Not verified:** the full `l3build check` of base and latex-lab; XeTeX; real classes
+**Not verified:** the full latex-lab suite (for the full base suite see "Full base suite"); XeTeX; real classes
 that replace `\@xfloat` completely (revtex, aastex; only simulated); nidanfloat itself
 (it is for pLaTeX; only simulated) and acmart sigchi-a; a `latexrelease` roll-forward
 from an older format.
@@ -549,19 +547,18 @@ entry is written.
 
 ## (b) A caption interface: `\caption*`, list entries, sub-captions (version 2)
 
-> **Version 2, 2026-10-06; split into a series 2026-10-07.** This replaces version 1 of (b)
-> (2026-10-04; the old text is in the git history of this file). The details of each part are in
+> This replaces version 1 of (b) (its text is in the git history of this file). The details of each part are in
 > the commit messages of the series (latex2e branch `b2-split` of https://github.com/mark-vis/latex2e).
 
 Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
 - `series/0001-0014`: (a), (d), O2 and (b) in parts, with (c) after b-4, as 14 commits on
-  latex2e develop **2a9bfe9d6** (2026-10-06); `git am` gives latex2e branch `b2-split`, head
+  latex2e develop **2a9bfe9d6**; `git am` gives latex2e branch `b2-split`, head
   dd54d64b9. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
-  b-6, and `classes.dtx` is not changed. The 28-patch prototype on top of the version-1 series
-  and its replay on 2a9bfe9d6 are in the git history of this folder.
+  b-6, and `classes.dtx` is not changed.
 - `O1.patch` (optional, on top of the series) and `O2-standalone.patch` (O2 alone on develop,
-  for a first small PR).
-- `caption-client.diff`: caption as a client (against the caption PoC b9111ce); it takes its
+  if a small first step is wanted).
+- `caption-client.diff`: caption as a client (against commit b9111ce of branch `poc-b2` of
+  https://github.com/mark-vis/caption, where the client itself is); it takes its
   client path only when `\@kernel@@caption` is defined, i.e. from part b-5 on.
 
 Tests (copies in `poc/proposals/tests/b-v2/`, one set per part, see (b)4): base
@@ -571,7 +568,8 @@ and (d).
 
 Every commit passes the base suite in pdfTeX, XeTeX and LuaTeX, the hook configurations, the
 other base configurations, firstaid and latex-lab `config-float` on its own; the head also all
-latex-lab CI configurations and `required/tools`.
+latex-lab CI configurations and `required/tools` (apart from the `<PDF version="2.0">` line, see
+"About the `<PDF version="2.0">` line").
 
 ### 1. Problem
 
@@ -689,7 +687,7 @@ The `\@kernel@...` commands are undefined after a `latexrelease` roll-back; the 
   that. Of 85 TL classes that compile with pdfLaTeX, 50 give a clean `\caption*`.
 - Known gaps: O1 overwrites titles that memoir or nameref sanitised (so O1 is optional); with
   hyperref's `naturalnames=true`, captions left unstepped by other code still give duplicates.
-  `subfloat/box` needs no group, and `\@kernel@caption@unique` also works after a `\caption*`
+- `subfloat/box` needs no group, and `\@kernel@caption@unique` also works after a `\caption*`
   handled by a replaced `\@caption`.
 - Size: the non-comment lines of ltfloat.dtx grow from 390 (develop 2a9bfe9d6) to 686 (the
   series); b-3a alone has 91 of them, b-3b 41, b-3c 54, b-3d 87.
@@ -754,7 +752,7 @@ is `issue_111` (the kernel's error for `\caption` outside a float instead of cap
    should availability be a documented conditional and the copies not be restored by clients?
 6. Sub-floats: `subfloat/box` with one-shot plugs, a key for `minipage`/`\parbox`, or a
    sub-float environment in latex-lab? Which role in table cells?
-7. A first aid that adds `\caption*` to the unmaintained float.sty?
+7. A first aid that adds `\caption*` to float.sty?
 8. The names a client may use: the copies, hooks, sockets, switches, `\@floatHref@<type>`,
    `\@kernel@caption@reset` and `\@kernel@caption@unique`. Is `\@kernel@...` the right form for
    commands that packages are told to call, or should they get public names?
@@ -767,23 +765,24 @@ is `issue_111` (the kernel's error for `\caption` outside a float instead of cap
 
 ## (c) caption3's label format as a plug for the `caption/label` socket
 
-Patch: series 0004 (`poc/proposals/patches/series/0004-*.patch`), on top of (b) version 1
-(series 0003; version 2 is built on top of (c)): it also handles `\caption*`. There is no stand-alone version; without (b) only the `\caption*`
-lines would have to go. Tests: `poc/proposals/tests/float-021-caption-label.*`,
+Patch: commit 0011 of the series (`poc/proposals/patches/b-v2/series/0011-*.patch`, after
+b-4). The version-1 patch is `poc/proposals/patches/series/0004-*.patch`, on top of (b)
+version 1. Both also handle `\caption*`. There is no stand-alone version; without (b) only the
+`\caption*` lines would have to go. Tests: `poc/proposals/tests/float-021-caption-label.*`,
 `float-022-caption-separator.*`, `float-025-makecaption-label.*`,
 `float-026-makecaption-voids.*`, `float-027-caption-in-box.*`. caption-side code: `poc/proposals/mwe/caption3-labelplug.tex`,
 `mwe/caption-sty-remove.tex`.
 
-> **Changed 2026-10-06 (item 4).** The first version of (c) moved latex-lab's
-> `begindocument` code for `\@makecaption` to a new label `latex-lab/float/makecaption`.
-> That broke acmart, mitthesis, asmeconf and asmejour, which remove the code with
+> **Why the hook label is kept (item 4).** Moving latex-lab's `begindocument` code for
+> `\@makecaption` to a new label (`latex-lab/float/makecaption`) breaks acmart, mitthesis,
+> asmeconf and asmejour, which remove the code with
 > `\RemoveFromHook{begindocument}[latex-lab-testphase-float]` (the workaround from
-> tagging-project issue 720): the removal failed with "Cannot remove chunk", latex-lab's
-> `\@makecaption` stayed active, and acmart with `\DocumentMetadata` printed "Fig. 1:
-> First" instead of "Fig. 1. First" and "Fig. 1: Starred" for `\caption*`. (c) now keeps
+> tagging-project issue 720) (tested): the removal fails with "Cannot remove chunk", latex-lab's
+> `\@makecaption` stays active, and acmart with `\DocumentMetadata` prints "Fig. 1:
+> First" instead of "Fig. 1. First" and "Fig. 1: Starred" for `\caption*`. So (c) keeps
 > the label `latex-lab-testphase-float` and only documents it; caption.sty uses a `voids`
 > rule. Measurements in section 4 and in "Verification of the combined patch" that are
-> not marked "2026-10-06" were taken with the first version.
+> not marked "2026-10-06" were taken with that renaming variant.
 
 ### 1. Problem
 
@@ -934,14 +933,14 @@ No change to kernel code is needed.
    - An open chunk counts only if the caller has not said that it uses the sockets
      before the paragraph: latex-lab's own `\@makecaption` sets
      `\l__tag_caption_label_beforepar_bool` (locally, reset at its end), so its output
-     stays the same. Changed 2026-10-06: the first version took any open chunk as the
-     chunk of the caption paragraph. A caption in a box inside another paragraph
-     (`threeparttable` puts the table and its caption into a `\vtop` after `\noindent`)
-     then neither switched para tagging off nor started its own paragraph, and every
-     caption in a tagged `threeparttable` gave the tagpdf error "para hooks differ",
-     which develop does not give (test `float-027-caption-in-box`).
+     stays the same. Without this flag, any open chunk would count as the caption
+     paragraph's chunk: a caption in a box inside another paragraph (`threeparttable`
+     puts the table and its caption into a `\vtop` after `\noindent`) would then neither
+     switch para tagging off nor start its own paragraph, and every caption in a tagged
+     `threeparttable` would give the tagpdf error "para hooks differ", which develop does
+     not give (test `float-027-caption-in-box`).
    - Inside a paragraph, `Lbl` becomes a child of the caption's `P`, which is what the
-     PoC produces today.
+     caption4 PoC produces today.
 4. **A documented label for latex-lab's `\@makecaption`.** The `begindocument` code that
    replaces `\@makecaption` keeps the label it has today, the package's default label
    `latex-lab-testphase-float`; the patch documents it and says that it is kept for
@@ -1000,7 +999,7 @@ latex-lab-float (the contract is documented in the patch):
  }
 ...
 \bool_new:N \g_@@_caption_label_inpar_bool
-\bool_new:N \l_@@_caption_label_beforepar_bool   % set by \@makecaption (2026-10-06)
+\bool_new:N \l_@@_caption_label_beforepar_bool   % set by \@makecaption
 \prg_new_conditional:Npnn \@@_caption_label_if_inpar: { TF }
   {
     \bool_lazy_and:nnTF
@@ -1050,14 +1049,13 @@ to `caption/separator` as well.
 ### 4. Verification
 
 These runs were made on (b) + (c) (results for the combined patch
-are in the last section). Unless marked "2026-10-06", they were made with the first
-version of item 4, which renamed the hook label (renamed label); the other items did not
-change, and the 2026-10-06 runs below show that the rest of the output did not either.
+are in the last section). Runs not marked 2026-10-06 used the variant that renamed the
+hook label; the other items are unchanged.
 
 - `l3build check -c config-float` (pdfTeX and LuaTeX): only `firstaid-float-H-2` and the
   three new tests (`float-020`, `float-021`, `float-022`) differ, and only in the
   `<PDF version="2.0">` line. That line differs the same way on the unpatched clone.
-  (Renamed label.) 2026-10-06, on the latex2e branch with the label kept: the same ten
+  On latex2e branch `poc-kernel-interfaces` (label kept): the same ten
   `.diff` files with the same content as before, and the new `float-025` and `float-026`
   pass; `config-table-pdftex`, `config-table-luatex` and `config-block` give the same
   `.diff` files with the same content as with the renamed label.
@@ -1110,7 +1108,7 @@ change, and the 2026-10-06 runs below show that the rest of the output did not e
     (SFBX/CMBX in `pdffonts`) and hanging indentation. Unpatched develop gives the same
     output, because the label is not new.
   - caption 3.6 has no tagging code, so there is no `Caption`/`Lbl` here. This only shows
-    that the hook label works. The tagging part is the PoC run below.
+    that the hook label works. The tagging part is the caption4 PoC run below.
   - The same document with `mwe/caption-sty-remove.tex` (the `voids` rule) in place of
     the `\RemoveFromHook` line gives the same output on the series. On unpatched develop
     that code does nothing, because the socket `caption/separator` does not exist.
@@ -1128,25 +1126,24 @@ change, and the 2026-10-06 runs below show that the rest of the output did not e
     ((b); "Fig. 2" instead of "Fig. 3" for the next caption), and under tagging acmart and
     asmeconf get one `Lbl` more, acmart also 14 instead of 10 errors (these tagging errors
     exist on develop as well).
-- caption3 using the sockets: in the PoC caption3.sty I replaced the private tagpdf code
-  with `\UseTaggingSocket{caption/label/begin|end}` ("sock"). In the PoC caption4.sty I
-  also replaced the second `\let\@makecaption` at `\begin{document}` with
-  `\RemoveFromHook` of latex-lab's code (renamed label) ("rm"). Five PoC test
+- caption3 using the sockets (these modified files are not published): in the caption4
+  PoC's caption3.sty I replaced the private tagpdf code with
+  `\UseTaggingSocket{caption/label/begin|end}` ("sock"). In its caption4.sty I also
+  replaced the second `\let\@makecaption` at `\begin{document}` with `\RemoveFromHook`
+  of latex-lab's code (renamed label) ("rm"). Five PoC test
   documents with tagging (`poc/tests/` t01, t02, t07, t10, t11), both engines: all 20
   runs 0 errors. "rm" vs "sock": identical structure trees (`pdfinfo -struct-text`), text
   and warnings. Every caption is a `Caption` with `Lbl`. No "Cannot remove chunk"
   warning. "sock" vs the original PoC code with private tagpdf calls: identical as well.
-  (These modified PoC files are not part of `poc/proposals`, and these runs were not
-  repeated on the combined patch or with the label kept.)
 
 - 2026-10-06, tagged `threeparttable` (`\DocumentMetadata{tagging=on}`, article, no
   caption package; captions above and below the table, wrapped, `\caption*`; pdfLaTeX and
-  LuaLaTeX): 0 errors, as on develop (the first version of (c) gave one tagpdf error per
-  document, "para hooks differ"); the structure of numbered captions equals develop's
+  LuaLaTeX): 0 errors, as on develop (without the `beforepar` flag of item 3 each
+  document gives the tagpdf error "para hooks differ"); the structure of numbered captions equals develop's
   (`pdfinfo -struct-text`). With `tablenotes`, develop's own tagpdf error ("text-block"
   para hooks) remains; it is not caused by the proposals. New test
   `float-027-caption-in-box.lvt` (captions in a `\vtop` after `\noindent`: short,
-  wrapped, `\caption*`); the first version gives the error there.
+  wrapped, `\caption*`); without the flag it gives the error there.
 
 **Not verified:** PDF/UA validation (veraPDF/PAC); `labelsep=newline` with the caption3
 plug (the contract forbids `\\`, see the open questions); latex-lab-table's longtable
@@ -1180,7 +1177,7 @@ so older formats and older latex-lab versions take the old path
     \cs_set_protected:Npn \caption@tag@lbl@end   { \UseTaggingSocket { caption/label/end } }
   }
   {
-    % older latex-lab: caption3 keeps the private tagpdf code of the PoC here
+    % older latex-lab: caption3 keeps the private tagpdf code of the caption4 PoC here
     \cs_set_eq:NN \caption@tag@lbl@begin \scan_stop:
     \cs_set_eq:NN \caption@tag@lbl@end   \scan_stop:
   }
@@ -1333,7 +1330,7 @@ kernel code without testing for a command name.
 
 **(ii) The kernel: `\DeclareTaggingFloatType{<type>}`.** Everyone who defines float types
 (newfloat, float.sty, tocbasic, memoir, classes, hand-written `\@float` environments)
-should have one declaration that works with and without tagging:
+would benefit from one declaration that works with and without tagging:
 
 - `\DeclareTaggingFloatType{<type>}` goes in `lttagging.dtx`. It is part of the format,
   so it is always defined, also without `\DocumentMetadata`. `<type>` is the argument of
@@ -1351,16 +1348,15 @@ should have one declaration that works with and without tagging:
   afterwards but its names are empty: no TeX error, but tagpdf warns (`tag  is not
   known`) and the tags are wrong (`mwe/d10b-declare-only-in-group.tex`, 16 tagpdf
   warnings). A later declaration outside the group assigns the roles again
-  (`mwe/d10-declare-in-group.tex`, test `float-017-declare`). The first version of this
-  proposal skipped known types completely and could not repair this. The existing
+  (`mwe/d10-declare-in-group.tex`, test `float-017-declare`). The existing
   `float/new` key has the same local/global mix. I did not change that, because the l3
   naming rules tie `l_` variables to local assignments, and you will know better whether
   the names should become global.
 - `\tagpdfsetup{float/new=<type>}` keeps working: it calls `\DeclareTaggingFloatType`
   and keeps its info message for known types (test `float-016-new` unchanged).
 
-**Name.** The first draft of this proposal used `\DeclareFloatType`, but
-floatrowbytocbasic (TL2026, v1.0 2023-08-16) already defines `\DeclareFloatType` as a
+**Name.** The obvious name `\DeclareFloatType` is taken: floatrowbytocbasic (TL2026, v1.0
+2023-08-16) already defines `\DeclareFloatType` as a
 copy of floatrow's `\DeclareNewFloatType` (floatrowbytocbasic.sty:32-33) and then patches
 it. With a kernel `\DeclareFloatType`, `\usepackage{floatrowbytocbasic}` stops with
 `Command \DeclareFloatType already defined`. `\DeclareTaggingFloatType` does not occur
@@ -1478,9 +1474,8 @@ combined patch are in the last section).
 
   It gives 0 errors with pdfTeX and LuaTeX. `diagram` and `chart` are deferred into a
   `Sect` with `Caption`/`Lbl`. The undeclared `scheme` stays in the flow as a generic
-  `float` (Aside), now with `Caption`/`Lbl`. The `.tlg` was saved with my local
-  show-pdf-tags, which writes `<PDF>`; it now has `<PDF version="2.0">` like the other
-  `.tlg` files in the repository, so locally it differs in that line only.
+  `float` (Aside), now with `Caption`/`Lbl`. For its `<PDF version="2.0">` line see
+  "About the `<PDF version="2.0">` line".
 - **Documents on the patched kernel**, pdfLaTeX and LuaLaTeX:
   - `d1` (hand-made type, no packages): 0 errors (was 9/14), `Caption` and `Lbl`
     present. The generic float still sits inside the paragraph (the existing `P` →
@@ -1488,7 +1483,7 @@ combined patch are in the last section).
   - `d2` with newfloat v1.2: 0 errors (was 18/28), generic structure. With newfloat
     v1.2a: 0 errors, 0 tagpdf warnings, deferred `Sect`.
   - `d6` tocbasic and `d7` memoir: 0 errors (were 9 each), from (iii) alone.
-  - `d9` floatrowbytocbasic: 0 errors (with the first draft's `\DeclareFloatType`: 7
+  - `d9` floatrowbytocbasic: 0 errors (with a kernel `\DeclareFloatType`: 7
     errors, `Command \DeclareFloatType already defined`).
   - `d10` (declared in a group, then again): 0 errors, 0 tagpdf warnings, 0
     `pdfinfo -struct` errors. `d10b` (only in a group): 0 errors, 16 tagpdf warnings,
@@ -1505,14 +1500,11 @@ combined patch are in the last section).
     `\DocumentMetadata{}` (tagging off), the type is registered without errors.
   - **Name clashes** (`d11`, `d12`): newfloat together with floatrowbytocbasic and with
     floatrow, without metadata gives 0 errors with v1.2 and with v1.2a. Under tagging it
-    gives 9 errors with v1.2 and 0 with v1.2a. The first draft of v1.2a tested
-    `\ifdefined\DeclareFloatType` and then called floatrowbytocbasic's two-argument
-    command, which gave 44 errors even without tagging.
+    gives 9 errors with v1.2 and 0 with v1.2a.
 - **newfloat's own tests** in the caption suite (`test/newfloat`, 5 documents, no
-  tagging): with the first draft of v1.2a, identical text with v1.2 and v1.2a.
-  `figurewithin-3` fails in both (it does not load newfloat). Not rerun for the current
-  v1.2a, which only drops the `\ifdefined` branch, a branch that is never taken without
-  the kernel change.
+  tagging): with an earlier v1.2a that differed only by an `\ifdefined` branch never taken
+  without the kernel change, identical text with v1.2 and v1.2a. `figurewithin-3` fails in
+  both (it does not load newfloat).
 - The documentation of the patched `lttagging.dtx` typesets without errors.
 
 **Not verified:** the full latex-lab test suite (only `config-float`), XeTeX, validation
@@ -1568,41 +1560,28 @@ an unpatched copy of the same commit. The stand-alone patches (a), (b) and (d) w
 applied alone to fresh copies. Every l3build and TeX run had a time limit. The scripts
 are in `poc/proposals/scripts/`; `poc/proposals/README.md` explains how to rerun them.
 
-**Taken with the renamed label.** The tables below were measured with the first version
-of (c), which renamed latex-lab's hook label (see (c), "Changed 2026-10-06"). After the
-change, series 0004 and `combined.diff` were regenerated from the latex2e branch, and on
-that branch (an export, not the series applied by `run-checks.sh`) latex-lab
-`config-float`, `config-table-pdftex`, `config-table-luatex` and `config-block` gave the
-same `.diff` files with the same content as before; the two new tests `float-025` and
-`float-026` pass in both engines and fail with the renamed label. The series still
-applies to 829e56a15 and gives the tree of the branch. The base tests and
-`config-lthooks` were not rerun: (c) changes no base file except the lttagging
-documentation, and the change touches latex-lab-float only. The client documents were
-not rerun on the combined patch; `c-caption-remove` was rerun on a format built from the
-branch (see (c)4).
+**Taken with the renamed label.** The tables were measured with the label-renaming variant
+of (c) (see (c), "Why the hook label is kept"); with the final (c) on branch
+`poc-kernel-interfaces`, `config-float`, `config-table-pdftex`, `config-table-luatex` and
+`config-block` gave the same results and `float-025`/`float-026` pass. Of the client
+documents, `c-caption-remove` was rerun with the final (c) (see (c)4).
 
 **About the `<PDF version="2.0">` line.** The `.pvt`-style latex-lab tests print the
 structure with show-pdf-tags. The `.tlg` files in the repository contain
-`<PDF version="2.0">`; my local show-pdf-tags writes `<PDF>`. So `firstaid-float-H-2`,
-`firstaid-listings` and (LuaTeX) `table-015-hhline` fail locally on unpatched develop,
-and the new tests 017, 020, 021 and 022 (whose
-`.tlg` files have the repository's line) fail locally in exactly that one line
+`<PDF version="2.0">`; the show-pdf-tags of my TeX installation writes `<PDF>`. So
+`firstaid-float-H-2`, `firstaid-listings` and (LuaTeX) `table-015-hhline` fail in my runs
+on unpatched develop, and the new tests 017, 020, 021 and 022 (whose `.tlg` files have the
+repository's line) fail in my runs in exactly that one line
 (`float-025` and `float-026` print no structure and pass). They
 may need to be saved again on your setup.
 
 ### Full base suite (2026-10-06)
 
-(Rerun after the second change of 2026-10-06, the `nolabel` plugs in (b) and the
-`threeparttable` fix in (c), for the changed patches: (a)+(d)+(b) and the whole series
-(603 base tests each; the whole series also with the 7 other base configurations) and
-the stand-alone (b) (601). Results as below. (a), (a)+(d) and the stand-alone (d) did not
-change and were not rerun. `config-float` now also has `float-028` (from (b)) and
-`float-027` (from (c)); both pass.)
+(`config-float` here also contains `float-027` and `float-028`; both pass.)
 
 Each commit of the series ((a); (a)+(d); (a)+(d)+(b); all four) and the stand-alone (b)
-and (d), each as a `git archive` of its own commit on develop 829e56a15, with the
-corrected `.tlg` files and (c) in its final form (the label kept, with the
-compatibility wording and the `float-025` warning check):
+and (d), each as a `git archive` of its own commit on develop 829e56a15, with (c) in its
+final form:
 - base, default configuration, all tests (600 on develop and with (d) alone, 601–603 with the other patches) in
   pdfTeX, LuaTeX and XeTeX: all pass;
 - base `config-lthooks`, `config-lthooks2`: all pass; for the four series states also
@@ -1664,7 +1643,7 @@ newfloat v1.2a. Three runs each (two for the simpler ones).
   `mwe/caption-excerpt.tex`, `mwe/caption3-labelplug.tex`), each tested on its own.
 - Real subcaption code on the sub-float sockets.
 - On the combined patch, these runs of the single-patch verification were not repeated:
-  the caption test suite with the hook (a), the `latexrelease` roll-forward (b), the PoC
+  the caption test suite with the hook (a), the `latexrelease` roll-forward (b), the caption4 PoC
   "sock"/"rm" comparison (c), the newfloat runs on unchanged TeX Live (d), and
   typesetting the documentation of the changed `.dtx` files.
-- (c) without (b), and (c) on top of the stand-alone (b) (the series puts it after (d)).
+- (c) without (b), and (c) on top of the stand-alone (b) (in the series (a) and (d) come before it).

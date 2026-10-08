@@ -1,9 +1,9 @@
-# caption4 proof of concept: evaluation
+# caption4 proof of concept: results
 
 2026-10-03. Branch `poc-caption4` (on top of `fixes-combined`), folder `poc/`.
 Kernel and latex-lab survey: `survey/kernel-survey.md`.
 
-## Verdict
+## Summary
 
 The core of caption/subcaption can be made **compatible with tagged PDF** with a
 small, local change to the existing code: roughly 55 lines in caption.sty and 40 in
@@ -15,8 +15,8 @@ for a hard break.
 
 Getting rid of *all* redefinitions of kernel internals is **not possible yet**. The
 kernel has no hook at the start of a float, and no caption interface (`\caption*`,
-list-entry control, sub-captions). Those must come from the LaTeX team. The PoC shows
-exactly which interfaces are missing (see "Proposals for the LaTeX team").
+list-entry control, sub-captions). Those would have to come from the kernel. The PoC shows
+exactly which interfaces are missing (see "What the kernel would need").
 
 ## What was built
 
@@ -96,7 +96,9 @@ the label hook and properties later.
 - **`\subref` still uses the `sub@<key>` label.** A properties-based design
   (`\RecordProperties`/`\RefProperty`) was not needed for the results above.
 
-## Proposals for the LaTeX team
+## What the kernel would need
+
+These points are worked out as concrete proposals, with code and tests, in `PROPOSALS.md`.
 
 1. **A hook or socket at the start and end of every float, in the kernel `\@xfloat`.**
    The sockets `float/begin` and `float/end` are already declared in lttagging, but only
@@ -110,11 +112,9 @@ the label hook and properties later.
 4. **newfloat (now a separate package) could call `\tagpdfsetup{float/new=…}`** automatically
    for each new float type.
 
-## Effort
+## Remaining work in caption
 
-The main costs are understanding caption.sty and latex-lab, careful testing, and
-documentation. Remaining work for a release that includes the tagging
-support:
+For a caption release that includes the tagging support:
 
 | Item | Size |
 |---|---|
@@ -122,13 +122,11 @@ support:
 | Make sure every adaptation still behaves under tagging (float, floatrow, longtable + latex-lab-table, listings, wrapfig, sidecap, …) | M–L (each adaptation S) |
 | Validate with veraPDF / PAC on a test set | M |
 | Sub-figure as `Part`, newfloat registration | S |
-| Coordinate with the LaTeX team (float hook, caption templates) | M (calendar time) |
 | Documentation (caption.pdf is outdated, #1) | L |
 
-## Suggested next step
+Most of the first row is done in caption v3.7 (branch `caption-v3.7`).
 
-Do not create a separate `caption4` package. Bring the tagging changes into caption
-itself (as v3.7) on top of `fixes-combined`, because that path reaches users. In
-parallel, show this report to the LaTeX team (Ulrike, who maintains the tagging code)
-before writing more code: they may prefer a different split between caption and
-latex-lab.
+## What happened next
+
+The tagging changes went into caption itself (v3.7, branch `caption-v3.7`) instead of a
+separate caption4 package. The kernel interfaces are worked out in `PROPOSALS.md`.

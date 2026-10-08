@@ -11,9 +11,9 @@ git am /path/to/series/*.patch       # gives the tree of every commit, head dd54
 
 Two separate files: `O1.patch` (optional, applies on top of the head) and
 `O2-standalone.patch` (the fix for `\caption` outside a float alone on develop 2a9bfe9d6, with
-its own `.tlg` files, for a first small PR).
+its own `.tlg` files, if a small first step is wanted).
 
-The commit subjects are plain; the short labels ((a), (d), O2, b-3a ...) are only used in this
+The commit subjects are plain; the short labels ((a), (d), O2, b-3a ...; b-2 and b-3e were folded into other parts) are only used in this
 letter and in `poc/PROPOSALS.md`. Each commit message describes the change, its tests and its
 open questions in full.
 
@@ -39,7 +39,7 @@ open questions in full.
 ## Order and dependencies
 
 - (a), (d) and O2 are independent of each other. (d) applies alone to develop (only
-  `changes.txt` needs a merge). O2 in the series is on top of (a); for a first PR use
+  `changes.txt` needs a merge). O2 in the series is on top of (a); on its own, use
   `O2-standalone.patch`, which passes the full test set on develop.
 - b-3a is the core. It also defines `\@kernel@caption` (a copy of `\caption`, and the test for
   the interface) and `\@kernel@caption@reset`; both are undefined after a roll-back. Code that
@@ -62,7 +62,8 @@ open questions in full.
 - b-5 and b-6 are requests for comments; their messages list the questions.
 - Can be left out: b-3f as a whole (then `\caption*` with float.sty gives the output of
   develop), b-4 to b-6, (c) and b-1 (if the team takes them on develop instead), and the
-  announce commit, which is meant to be applied only when hyperref supports `\caption*`.
+  announce commit (a possible usrguide section and LaTeX News text, if wanted; it assumes
+  hyperref support for `\caption*`).
 
 The caption package (`caption-client.diff`; branch `poc-b2` of
 https://github.com/mark-vis/caption) takes its client path only when `\@kernel@@caption` is
@@ -80,7 +81,7 @@ Run with `l3build check` on a `git archive` export of each commit:
 - every commit of the series, O1 and O2 alone: the base suite in pdfTeX, XeTeX and LuaTeX,
   `config-lthooks`, `config-lthooks2`, the other base configurations (1run, TU, doc, legacy,
   ltcmd, ltmarks, lttemplates), firstaid (`build`, `config-TU`) and latex-lab `config-float`:
-  all pass, except that `config-float` shows the local `<PDF>` line (below) and nothing else:
+  all pass, except that `config-float` shows the `<PDF>` line (below) and nothing else:
 
   | commits | `config-float` `.diff` files |
   |---|---|
@@ -97,8 +98,8 @@ Run with `l3build check` on a `git archive` export of each commit:
 - `l3build doc` (the CI documentation jobs) on the head: all 8 jobs pass.
 
 About `<PDF version="2.0">`: the `.tlg` files in the repository contain `<PDF version="2.0">`,
-my local show-pdf-tags writes `<PDF>`. So `firstaid-float-H-2`, `firstaid-listings` and (LuaTeX)
-`table-015-hhline` fail locally on develop too, and the new tests that print the structure
+the show-pdf-tags of my TeX installation writes `<PDF>`. So `firstaid-float-H-2`,
+`firstaid-listings` and (LuaTeX) `table-015-hhline` fail in my runs on develop too, and the new tests that print the structure
 differ in that one line. Their `.tlg` files may need to be saved again on your setup.
 
 With documents: the caption client (`caption-client.diff`) with a class matrix (249 documents,
@@ -110,7 +111,7 @@ b-3a alone it gives "Figure 1: Starred" with a list entry and a duplicate destin
 
 Not run: caption's own `test.sh` on this exact series, PDF/UA validation, XeTeX documents
 outside l3build, a roll-forward from an older format (develop's own roll-forward from the
-TL 2026 format is broken), the latex-lab CI configurations on the other intermediate commits,
+TL 2026 format is broken in my tests), the latex-lab CI configurations on the other intermediate commits,
 the class matrix and the corpus on the intermediate kernels, LuaLaTeX for the intermediate-kernel
 client runs and for the hyperref sketch.
 

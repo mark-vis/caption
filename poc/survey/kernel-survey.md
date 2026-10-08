@@ -2,7 +2,7 @@
 
 Sources: latex2e develop f4c052f (2026-10-03), TL2026 format 2026-06-01 PL0, latex-lab float 0.81n
 2026-04-24. [K] = stable kernel in TL2026, [LAB] = latex-lab only (tagging/testphase), [DEV] = develop only.
-Verified by reading code and compiling; items marked "inferred" are not verified.
+Verified by reading code and compiling.
 
 ## Floats
 - [K] No hooks or sockets in `\@float`, `\@xfloat`, `\end@float`, `\@floatboxreset`, `\caption`, `\@caption`,
