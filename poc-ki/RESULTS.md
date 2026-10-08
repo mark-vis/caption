@@ -153,7 +153,7 @@ active" test, and hyperref and float.sty are not clients.
 
 Targeted checks in three areas (fallback, tagging, interfaces) found 18 issues. I reproduced
 each one before deciding what to do with it. The fixes are six small commits; the head is then
-**b9111ce**. The CheckSums of caption.dtx, caption3.dtx, subcaption.dtx and
+**b4abaa9**. The CheckSums of caption.dtx, caption3.dtx, subcaption.dtx and
 `source/fallback/v3.7/*.dtx` were not updated after these fixes.
 
 | commit | change |
@@ -163,7 +163,7 @@ each one before deciding what to do with it. The fixes are six small commits; th
 | 6e65f60 | subcaption uses the sockets `subfloat/begin|end` only with caption ≥ v3.8 (#3) |
 | 1b3230b | in sub-floats, the copy of the kernel `\@caption` is used only when `\@caption` no longer uses `caption/listentry` (e.g. threeparttable) (#15) |
 | 8a0eee0 | `\caption@client@@@makecaption` also takes the star from the kernel's `\if@captionstar` (#11, part) |
-| b9111ce | `\@currentHref` is empty while the client step runs and is restored afterwards, unless the plug set a new one (#4) |
+| b4abaa9 | `\@currentHref` is empty while the client step runs and is restored afterwards, unless the plug set a new one (#4) |
 
 | # | issue (short) | outcome |
 |---|---|---|
@@ -207,7 +207,7 @@ each one before deciding what to do with it. The fixes are six small commits; th
 - **G5 (b, lttagging):** with `\@skiphyperref` true, `\refstepcounter` still runs the
   `recordtarget` socket and records a stale `\@currentHref`. The flag of G3 should also
   suppress `recordtarget`, or `recordtarget` should only run when a target was set. caption
-  then needs neither `\if@skiphyperref` nor the empty-`\@currentHref` code of b9111ce.
+  then needs neither `\if@skiphyperref` nor the empty-`\@currentHref` code of b4abaa9.
 - **G6 (d):** `\__tag_float_name:n` should fall back to `generic` when `\@captype` is
   undefined or empty (listings). caption3's private `Lbl` tagging for that case could then go.
 - **G7 (c, lttagging, a/b):** caption needs a socket or plug for "caption typeset as one inline
@@ -239,7 +239,7 @@ each one before deciding what to do with it. The fixes are six small commits; th
 The kernel series was changed three times on 2026-10-06; its final state is latex2e branch
 `poc-kernel-interfaces` of https://github.com/mark-vis/latex2e, head **de50ef859**, and is in
 `kernel-patches/`. Below, "old kernel" is the patched develop of sections 4–6 and "new kernel"
-the final series; "old client" is b9111ce and "new client" is 6d49454.
+the final series; "old client" is b4abaa9 and "new client" is 0ee2ded.
 
 **(c) keeps the hook label.** latex-lab-float adds its `\@makecaption` code with the label
 `latex-lab-testphase-float` again and documents it, with a `voids` rule as the preferred way
