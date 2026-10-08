@@ -55,7 +55,7 @@ combined patch").
 4. (c), on top of (b) (in the series: after b-4).
 
 The patch series in `poc/proposals/patches/series/` uses the order (a), (d), (b) version 1, (c)
-on develop 829e56a15. The current form is `patches/b-v2/series/`: 14 commits on develop 2a9bfe9d6
+on develop 829e56a15. The current form is `patches/b-v2/series/`: 14 commits on develop e58563c7c
 in the order (a), (d), O2, (b) in parts, (c) after b-4, and the rest of (b); see (b)4.
 
 ### Release dates and versions
@@ -552,12 +552,12 @@ entry is written.
 
 Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
 - `series/0001-0014`: (a), (d), O2 and (b) in parts, with (c) after b-4, as 14 commits on
-  latex2e develop **2a9bfe9d6**; `git am` gives latex2e branch `b2-split`, head
-  dd54d64b9. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
+  latex2e develop **e58563c7c**; `git am` gives latex2e branch `b2-split`, head
+  46a994237. Version 1 of (b) is not in it: its content is folded into the parts b-3a, b-4 and
   b-6, and `classes.dtx` is not changed.
 - `O1.patch` (optional, on top of the series) and `O2-standalone.patch` (O2 alone on develop,
   if a small first step is wanted).
-- `caption-client.diff`: caption as a client (against commit b9111ce of branch `poc-b2` of
+- `caption-client.diff`: caption as a client (against commit b4abaa9 of branch `poc-b2` of
   https://github.com/mark-vis/caption, where the client itself is); it takes its
   client path only when `\@kernel@@caption` is defined, i.e. from part b-5 on.
 
@@ -689,30 +689,30 @@ The `\@kernel@...` commands are undefined after a `latexrelease` roll-back; the 
   hyperref's `naturalnames=true`, captions left unstepped by other code still give duplicates.
 - `subfloat/box` needs no group, and `\@kernel@caption@unique` also works after a `\caption*`
   handled by a replaced `\@caption`.
-- Size: the non-comment lines of ltfloat.dtx grow from 390 (develop 2a9bfe9d6) to 686 (the
+- Size: the non-comment lines of ltfloat.dtx grow from 390 (develop e58563c7c) to 686 (the
   series); b-3a alone has 91 of them, b-3b 41, b-3c 54, b-3d 87.
 
 ### 4. Parts (the series) and their state
 
-latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; https://github.com/mark-vis/latex2e/tree/b2-split):
+latex2e branch `b2-split` on develop e58563c7c (`patches/b-v2/series/`; https://github.com/mark-vis/latex2e/tree/b2-split):
 
 | # | part | commit | content | tests |
 |---|---|---|---|---|
-| 0001 | (a) | 2e1246c7c | hooks `float/begin`/`float/end` | tlb-float-hooks-001, -002-rollback |
-| 0002 | (d) | bebf5fccc | `\DeclareTaggingFloatType`, generic caption names | float-017 |
-| 0003 | O2 | 28bd304c8 | skip the arguments after "`\caption` outside float" | caption-outside-001 |
-| 0004 | b-3a | 721622eec | `\caption` reads its arguments, `\caption*`, `caption/before`, `caption/step` with the switches, `\@kernel@caption` (the interface test), `\@kernel@caption@reset`; latex-lab without its own `\caption` | caption-interface-001, -002, float-028 |
-| 0005 | b-3b | aff8c2a32 | unique targets for unstepped captions, `\@kernel@caption@unique` | caption-interface-003, float-024 |
-| 0006 | b-3c | 2e60929aa | `\caption*` with a replaced `\@caption` (llncs, mwcls, threeparttable) | caption-interface-004 |
-| 0007 | b-3d | a65bb571f | separator look-ahead of `\@caption@nolabel` | caption-interface-005 |
-| 0008 | b-3f | 3bfd34630 | first aid: `\caption*` with float.sty | firstaid-float-caption, -hyperref |
-| 0009 | b-1 | 40458f577 | latex-lab: float target per type (fixes the two latex-lab bugs) | float-023, float-004 |
-| 0010 | b-4 | 413a65cd4 | `caption/prepare`, 3-argument `caption/listentry` | caption-interface-006 |
-| 0011 | (c) | ef48558d2 | section (c); also latex3/latex2e#2022 (empty label) | float-021, -022, -025, -026, -027, -029, -030 |
-| 0012 | b-5 | ebac3521e | `caption/typeset`, `\@kernel@@caption` (request for comments) | caption-interface-007 |
-| 0013 | b-6 | 8f83a89b2 | `subfloat/box` (request for comments) | float-020 |
-| 0014 | announce | dd54d64b9 | usrguide section and ltnews44 draft; to apply only with hyperref support for `\caption*` | — |
-| O1.patch | O1 | 5576f6bb3 | nameref title in `\@caption` (optional) | caption-interface-008 |
+| 0001 | (a) | 220798b8e | hooks `float/begin`/`float/end` | tlb-float-hooks-001, -002-rollback |
+| 0002 | (d) | 2111e4cfd | `\DeclareTaggingFloatType`, generic caption names | float-017 |
+| 0003 | O2 | 8505bc5ed | skip the arguments after "`\caption` outside float" | caption-outside-001 |
+| 0004 | b-3a | 5c42c5d86 | `\caption` reads its arguments, `\caption*`, `caption/before`, `caption/step` with the switches, `\@kernel@caption` (the interface test), `\@kernel@caption@reset`; latex-lab without its own `\caption` | caption-interface-001, -002, float-028 |
+| 0005 | b-3b | 6603b90d0 | unique targets for unstepped captions, `\@kernel@caption@unique` | caption-interface-003, float-024 |
+| 0006 | b-3c | 00755265e | `\caption*` with a replaced `\@caption` (llncs, mwcls, threeparttable) | caption-interface-004 |
+| 0007 | b-3d | 9fbf5cc8d | separator look-ahead of `\@caption@nolabel` | caption-interface-005 |
+| 0008 | b-3f | 19bf2fbd3 | first aid: `\caption*` with float.sty | firstaid-float-caption, -hyperref |
+| 0009 | b-1 | 117a9dcef | latex-lab: float target per type (fixes the two latex-lab bugs) | float-023, float-004 |
+| 0010 | b-4 | 37fccd426 | `caption/prepare`, 3-argument `caption/listentry` | caption-interface-006 |
+| 0011 | (c) | 312873213 | section (c); also latex3/latex2e#2022 (empty label) | float-021, -022, -025, -026, -027, -029, -030 |
+| 0012 | b-5 | 0e2a124c0 | `caption/typeset`, `\@kernel@@caption` (request for comments) | caption-interface-007 |
+| 0013 | b-6 | c2c39c88b | `subfloat/box` (request for comments) | float-020 |
+| 0014 | announce | 46a994237 | usrguide section and ltnews44 draft; to apply only with hyperref support for `\caption*` | — |
+| O1.patch | O1 | da2602471 | nameref title in `\@caption` (optional) | caption-interface-008 |
 
 What is optional: b-5 and b-6 are requests for comments; O1 is optional; the last commit waits for
 hyperref. b-3d is not a free choice: without it the standard classes print ": Text" for

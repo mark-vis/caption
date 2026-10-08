@@ -1,16 +1,16 @@
 # Caption hooks and sockets: the patch series
 
-14 commits on latex2e develop **2a9bfe9d6** (2026-10-06). The patches are in `series/`
+14 commits on latex2e develop **e58563c7c** (2026-10-08). The patches are in `series/`
 (`git format-patch`); the same commits are on branch `b2-split` of
-https://github.com/mark-vis/latex2e (head **dd54d64b9**). Not yet a pull request.
+https://github.com/mark-vis/latex2e (head **46a994237**). Not yet a pull request.
 
 ```sh
-git checkout -b b2-split 2a9bfe9d6
-git am /path/to/series/*.patch       # gives the tree of every commit, head dd54d64b9
+git checkout -b b2-split e58563c7c
+git am /path/to/series/*.patch       # gives the tree of every commit, head 46a994237
 ```
 
 Two separate files: `O1.patch` (optional, applies on top of the head) and
-`O2-standalone.patch` (the fix for `\caption` outside a float alone on develop 2a9bfe9d6, with
+`O2-standalone.patch` (the fix for `\caption` outside a float alone on develop e58563c7c, with
 its own `.tlg` files, if a small first step is wanted).
 
 The commit subjects are plain; the short labels ((a), (d), O2, b-3a ...; b-2 and b-3e were folded into other parts) are only used in this
@@ -19,22 +19,22 @@ open questions in full.
 
 | label | commit | subject |
 |---|---|---|
-| (a) | 2e1246c7c | Add hooks float/begin and float/end |
-| (d) | bebf5fccc | Add \DeclareTaggingFloatType and generic caption names |
-| O2 | 28bd304c8 | Skip the arguments of \caption outside a float |
-| b-3a | 721622eec | Add \caption*, hook caption/before and socket caption/step |
-| b-3b | aff8c2a32 | Give captions that do not step their counter a unique target |
-| b-3c | 2e60929aa | Support \caption* with an \@caption that a class replaced |
-| b-3d | a65bb571f | Remove the usual separator after the label of \caption* |
-| b-3f | 3bfd34630 | firstaid: \caption* with the float package |
-| b-1 | 40458f577 | latex-lab: float target \@floatHref@<type> |
-| b-4 | 413a65cd4 | Add hook caption/prepare and socket caption/listentry |
-| (c) | ef48558d2 | latex-lab: label contract, caption/separator, in-paragraph labels |
-| b-5 | ebac3521e | Add socket caption/typeset and the kernel copy \@kernel@@caption (request for comments) |
-| b-6 | 8f83a89b2 | Add tagging sockets for sub-floats (request for comments) |
-| announce | dd54d64b9 | Document \caption* in usrguide; draft LaTeX News entries |
-| O1 (`O1.patch`, optional) | 5576f6bb3 | Set \@currentlabelname for captions (title for named references) |
-| O2 alone (`O2-standalone.patch`) | 98c6642b6 | Skip the arguments of \caption outside a float |
+| (a) | 220798b8e | Add hooks float/begin and float/end |
+| (d) | 2111e4cfd | Add \DeclareTaggingFloatType and generic caption names |
+| O2 | 8505bc5ed | Skip the arguments of \caption outside a float |
+| b-3a | 5c42c5d86 | Add \caption*, hook caption/before and socket caption/step |
+| b-3b | 6603b90d0 | Give captions that do not step their counter a unique target |
+| b-3c | 00755265e | Support \caption* with an \@caption that a class replaced |
+| b-3d | 9fbf5cc8d | Remove the usual separator after the label of \caption* |
+| b-3f | 19bf2fbd3 | firstaid: \caption* with the float package |
+| b-1 | 117a9dcef | latex-lab: float target \@floatHref@<type> |
+| b-4 | 37fccd426 | Add hook caption/prepare and socket caption/listentry |
+| (c) | 312873213 | latex-lab: label contract, caption/separator, in-paragraph labels |
+| b-5 | 0e2a124c0 | Add socket caption/typeset and the kernel copy \@kernel@@caption (request for comments) |
+| b-6 | c2c39c88b | Add tagging sockets for sub-floats (request for comments) |
+| announce | 46a994237 | Document \caption* in usrguide; draft LaTeX News entries |
+| O1 (`O1.patch`, optional) | da2602471 | Set \@currentlabelname for captions (title for named references) |
+| O2 alone (`O2-standalone.patch`) | 0507c6fc6 | Skip the arguments of \caption outside a float |
 
 ## Order and dependencies
 
@@ -92,10 +92,12 @@ Run with `l3build check` on a `git archive` export of each commit:
   | (c), b-5 | 18 (+ float-021/022/027/029/030) |
   | b-6, announce, O1 | 20 (+ float-020) |
 
-- all 18 latex-lab CI configurations and `required/tools` on b-3a, b-3f, b-6, announce and O1:
-  tools and `config-minipage` pass; the 52 `.diff` files that develop 2a9bfe9d6 also has show
-  the same lines; the new ones are only `config-float` files with the `<PDF>` line;
-- `l3build doc` (the CI documentation jobs) on the head: all 8 jobs pass.
+- all 18 latex-lab CI configurations and `required/tools` on the head: tools and
+  `config-minipage` pass; the 53 `.diff` files that develop e58563c7c also has show the same
+  lines; the 18 new ones are only `config-float` files with the `<PDF>` line (on the earlier
+  develop 2a9bfe9d6 the same held for b-3a, b-3f, b-6 and O1);
+- on the head: `config-doc` passes, and usrguide, clsguide and ltnews44 typeset without errors
+  (on develop 2a9bfe9d6 also `l3build doc`, all 8 CI documentation jobs).
 
 About `<PDF version="2.0">`: the `.tlg` files in the repository contain `<PDF version="2.0">`,
 the show-pdf-tags of my TeX installation writes `<PDF>`. So `firstaid-float-H-2`,

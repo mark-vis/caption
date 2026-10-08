@@ -2,10 +2,10 @@
 
 Two sets of material are here:
 
-- **Current: the series in `patches/b-v2/`** (2026-10-07): 14 commits on latex2e `develop`
-  2a9bfe9d6 with (a), (d), O2, (b) version 2 in parts, and (c); cover letter
+- **Current: the series in `patches/b-v2/`** (2026-10-08): 14 commits on latex2e `develop`
+  e58563c7c with (a), (d), O2, (b) version 2 in parts, and (c); cover letter
   `patches/b-v2/COVER.md`, tests in `tests/b-v2/`. The same commits are on branch
-  `b2-split` of https://github.com/mark-vis/latex2e (head dd54d64b9). Section (b) of
+  `b2-split` of https://github.com/mark-vis/latex2e (head 46a994237). Section (b) of
   `poc/PROPOSALS.md` describes it.
 - **Version 1, kept for reference** (2026-10-04): `patches/series/`, `patches/standalone/`,
   `patches/combined.diff`, the tests directly in `tests/`, the documents in `mwe/` and the
@@ -23,9 +23,9 @@ Two sets of material are here:
 | `patches/standalone/a-float-hooks.patch` | (a) alone (identical to series 0001) |
 | `patches/standalone/b-caption-interface.patch` | (b) alone: declares `float/<type>/sub` in the `float/new` key and does not use (d)'s helper |
 | `patches/standalone/d-tagging-float-types.patch` | (d) alone: series 0002 plus the version line of latex-lab-float |
-| `patches/b-v2/series/0001-…0014-*.patch` | the reviewable series (2026-10-07): (a), (d), O2, (b) in parts b-3a, b-3b, b-3c, b-3d, b-3f, b-1, b-4, then (c), b-5, b-6 and a last commit with the usrguide section and the ltnews44 draft; `git am` on latex2e develop 2a9bfe9d6 gives branch `b2-split` (head dd54d64b9). Cover letter: `patches/b-v2/COVER.md` |
-| `patches/b-v2/O1.patch`, `patches/b-v2/O2-standalone.patch` | O1 (optional nameref title, on top of the series) and O2 alone on develop 2a9bfe9d6 (with its own `.tlg` files) |
-| `patches/b-v2/caption-client.diff` | caption as a client of (b) version 2 (`source/caption.dtx`, `source/subcaption.dtx`, caption branch `poc-b2` e5efa1b), against commit b9111ce (also on branch `poc-kernel-interfaces`); the client path needs `\@kernel@@caption` (part b-5) |
+| `patches/b-v2/series/0001-…0014-*.patch` | the reviewable series (2026-10-08): (a), (d), O2, (b) in parts b-3a, b-3b, b-3c, b-3d, b-3f, b-1, b-4, then (c), b-5, b-6 and a last commit with the usrguide section and the ltnews44 draft; `git am` on latex2e develop e58563c7c gives branch `b2-split` (head 46a994237). Cover letter: `patches/b-v2/COVER.md` |
+| `patches/b-v2/O1.patch`, `patches/b-v2/O2-standalone.patch` | O1 (optional nameref title, on top of the series) and O2 alone on develop e58563c7c (with its own `.tlg` files) |
+| `patches/b-v2/caption-client.diff` | caption as a client of (b) version 2 (`source/caption.dtx`, `source/subcaption.dtx`, caption branch `poc-b2` 5080bef), against commit b4abaa9 (also on branch `poc-kernel-interfaces`); the client path needs `\@kernel@@caption` (part b-5) |
 | `patches/caption-floathooks.diff` | caption side of (a), against the generated caption.sty v3.6p |
 | `patches/newfloat-v1.2a.diff` | newfloat side of (d), against newfloat.dtx v1.2 (TeX Live 2026); newfloat lives in its own repository, https://gitlab.com/axelsommerfeldt/newfloat |
 | `tests/` | version 1: the new l3build tests (copies of the files in the patches): base `tlb-float-hooks-001`, `tlb-float-hooks-002-rollback` (a), `caption-interface-001` (b); latex-lab `testfiles-float/float-017-declare` (d), `float-020-caption-interface`, `float-028-caption-star-wide` (b), `float-021-caption-label`, `float-022-caption-separator`, `float-025-makecaption-label`, `float-026-makecaption-voids`, `float-027-caption-in-box` (c) |
@@ -60,8 +60,8 @@ files of existing tests (rollback tests, `config-lthooks`, `float-010-outside`) 
 
 ```sh
 git clone https://github.com/latex3/latex2e.git && cd latex2e
-git checkout -b b2-split 2a9bfe9d6
-git am /path/to/poc/proposals/patches/b-v2/series/*.patch   # head dd54d64b9
+git checkout -b b2-split e58563c7c
+git am /path/to/poc/proposals/patches/b-v2/series/*.patch   # head 46a994237
 ```
 
 The cover letter `patches/b-v2/COVER.md` lists the commits, their dependencies and the

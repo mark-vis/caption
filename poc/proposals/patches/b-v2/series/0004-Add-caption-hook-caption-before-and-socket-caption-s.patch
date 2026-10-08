@@ -1,5 +1,5 @@
-From 721622eec9c0c0b07c5aabd437be83c466716d55 Mon Sep 17 00:00:00 2001
-From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+From 5c42c5d866e58162b038c011c19a19fd3076b897 Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
 Date: Wed, 7 Oct 2026 05:38:52 +0200
 Subject: [PATCH 04/14] Add \caption*, hook caption/before and socket
  caption/step
@@ -44,7 +44,7 @@ hyperref, the float first aid) can pass \caption* to it with
 latex-lab-float no longer redefines \caption: its plug latex-lab of
 caption/step stores the target at the start of the float in
 \@floatHref@<type> for the counter of the float type and uses the
-kernel plug, which gives the targets of develop. \@makecaption supports
+kernel plug, so the targets do not change. \@makecaption supports
 \caption*: no label socket, and the plugs nolabel of the label tagging
 sockets, so that a wide \caption* gets one P (an empty label from
 another source, latex3/latex2e#2022, is handled by the latex-lab part
@@ -58,7 +58,7 @@ blocks and the hook.
 ---
  base/changes.txt                              |  11 +
  base/doc/clsguide.tex                         |  43 +-
- base/ltfloat.dtx                              | 491 ++++++++++++++++--
+ base/ltfloat.dtx                              | 488 ++++++++++++++++--
  base/testfiles-lthooks/ltcmdhooks-001.tlg     |   1 +
  base/testfiles-lthooks/lthooks-000.tlg        |   1 +
  base/testfiles-lthooks/lthooks-001.tlg        |   3 +
@@ -137,7 +137,7 @@ blocks and the hook.
  .../float-028-caption-star-wide.luatex.tlg    |  95 ++++
  .../float-028-caption-star-wide.lvt           |  31 ++
  .../float-028-caption-star-wide.tlg           |  95 ++++
- 81 files changed, 1581 insertions(+), 59 deletions(-)
+ 81 files changed, 1578 insertions(+), 59 deletions(-)
  create mode 100644 base/testfiles/caption-interface-001.lvt
  create mode 100644 base/testfiles/caption-interface-001.tlg
  create mode 100644 base/testfiles/caption-interface-002.lvt
@@ -147,10 +147,10 @@ blocks and the hook.
  create mode 100644 required/latex-lab/testfiles-float/float-028-caption-star-wide.tlg
 
 diff --git a/base/changes.txt b/base/changes.txt
-index 45dc544e6..658bb62dc 100644
+index 04d2ca270..2c3499e8d 100644
 --- a/base/changes.txt
 +++ b/base/changes.txt
-@@ -8,6 +8,17 @@ not part of the distribution.
+@@ -14,6 +14,17 @@ not part of the distribution.
  
  2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
  
@@ -230,7 +230,7 @@ index bf2acc5b4..df2668610 100644
  \subsection{Querying document command argument specifications}
  
 diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
-index 63db60dd8..1924ad933 100644
+index 63db60dd8..74111d96c 100644
 --- a/base/ltfloat.dtx
 +++ b/base/ltfloat.dtx
 @@ -54,6 +54,8 @@
@@ -242,7 +242,7 @@ index 63db60dd8..1924ad933 100644
  %
  % \section{Floats}
  %
-@@ -229,7 +231,330 @@
+@@ -229,7 +231,327 @@
  %    \end{macrocode}
  % \end{macro}
  %
@@ -277,7 +277,7 @@ index 63db60dd8..1924ad933 100644
 +%    what \cs{@caption} does; it can set \cs{@captionstartrue} before the
 +%    call.
 +%    Without additional code in the hooks and with the default plugs, the
-+%    result is the same as with the definitions of \LaTeX{} before 2026,
++%    result is the same as in earlier releases,
 +%    except that \cs{caption*} is available.
 +%
 +% \paragraph{\cs{caption*} with classes and packages.}
@@ -290,7 +290,7 @@ index 63db60dd8..1924ad933 100644
 +%      \cs{@caption@nolabel} while \cs{if@captionstar} is true.
 +%    \item With the kernel \cs{caption} and an \cs{@caption} that a class
 +%      or package has replaced by a definition that does not know the
-+%      star (\cls{llncs}, \cls{mwart}, \cls{jpsj2}, \ldots): that
++%      star (\cls{llncs}, \cls{mwart}, \ldots): that
 +%      definition typesets the label \cs{fnum@}\meta{type} with the number
 +%      of the previous caption and writes a list entry, unless it tests
 +%      \cs{if@captionstar}.
@@ -308,11 +308,8 @@ index 63db60dd8..1924ad933 100644
 +%      \pkg{babel-french}, which replaces the separator for French only if
 +%      \cs{@makecaption} is the standard one).
 +%    \item A package or class that replaces \cs{caption} itself bypasses
-+%      all of this, for example \cls{beamer}, \pkg{captcont} (which has a
-+%      \cs{caption*} of its own: numbered, without list entry),
-+%      \pkg{hyperref} if there is no \cs{DocumentMetadata} (also when a
-+%      class loads it, as \cls{jmlr} does), and classes such as
-+%      \cls{aastex701}, \cls{mnras}, \cls{uwthesis} and \cls{tufte-book}:
++%      all of this, for example \pkg{hyperref} if there is no
++%      \cs{DocumentMetadata}, \cls{beamer} and some classes:
 +%      their \cs{caption} takes the star as the text of a numbered
 +%      caption, as before. Such code has to be changed (for example by
 +%      keeping the kernel \cs{caption} and using the hooks and sockets
@@ -505,7 +502,7 @@ index 63db60dd8..1924ad933 100644
 +%
 +% \begin{macro}{\@kernel@caption@typeset}
 +%    \cs{@kernel@caption@typeset}\marg{type}\marg{star}\marg{text} is the
-+%    typesetting of the kernel: the code of \cs{@caption} before 2026,
++%    typesetting of the kernel: the previous code of \cs{@caption},
 +%    with the label \cs{@caption@nolabel} for \cs{caption*}.
 +%    \begin{macrocode}
 +\long\def\@kernel@caption@typeset#1#2#3{%
@@ -573,7 +570,7 @@ index 63db60dd8..1924ad933 100644
  % \begin{macro}{\@caption@skip,\@caption@skip@star,\@caption@skip@args,
  %                \@caption@skip@opt}
  %
-@@ -244,6 +569,28 @@
+@@ -244,6 +566,28 @@
  %    {Made caption an error outside a float: latex/2815}
  % \changes{v1.2k}{2026-10-06}
  %    {Outside a float, skip the star and the arguments after the error}
@@ -602,7 +599,7 @@ index 63db60dd8..1924ad933 100644
  %    \begin{macrocode}
  %</2ekernel>
  %<*2ekernel|latexrelease>
-@@ -254,10 +601,10 @@
+@@ -254,10 +598,10 @@
       \@latex@error{\noexpand\caption outside float}\@ehd
       \expandafter\@caption@skip
     \else
@@ -615,7 +612,7 @@ index 63db60dd8..1924ad933 100644
  }
  \long\def\@caption@skip#1{\@caption@skip@star}
  \protected\def\@caption@skip@star{%
-@@ -265,6 +612,37 @@
+@@ -265,6 +609,37 @@
  \def\@caption@skip@args{%
    \kernel@ifnextchar[\@caption@skip@opt{\@caption@skip@opt[]}}
  \long\def\@caption@skip@opt[#1]#2{}
@@ -653,7 +650,7 @@ index 63db60dd8..1924ad933 100644
  %</2ekernel|latexrelease>
  %<latexrelease>\EndIncludeInRelease
  %<latexrelease>\IncludeInRelease{0000/00/00}%
-@@ -279,51 +657,104 @@
+@@ -279,51 +654,104 @@
  %<latexrelease>   \fi
  %<latexrelease>   {\@dblarg{\@caption\@captype}}%
  %<latexrelease>}
@@ -1130,7 +1127,7 @@ index 9eae58196..98a26fafd 100644
  [lthooks] Update code for hook 'insertmark' on input line ...:
 diff --git a/base/testfiles/caption-interface-001.lvt b/base/testfiles/caption-interface-001.lvt
 new file mode 100644
-index 000000000..ecc80ae3d
+index 000000000..cba69733a
 --- /dev/null
 +++ b/base/testfiles/caption-interface-001.lvt
 @@ -0,0 +1,255 @@
@@ -1196,8 +1193,8 @@ index 000000000..ecc80ae3d
 +\def\nolabel{\@caption@nolabel}
 +\def\resetcaption{\@kernel@caption@reset}
 +\def\showgiveback{\typeout{giveback: \meaning\@caption@nostep@giveback}}
-+% a package that keeps its own \caption (here the definition of LaTeX
-+% before 2026) and passes only \caption* to the kernel
++% a package that keeps its own \caption (here the definition of
++% earlier releases) and passes only \caption* to the kernel
 +\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
 +\def\useowncaption{\def\caption{\@ifstar{\kernelcaption*}%
 +  {\@kernel@caption@reset\owncaption}}}

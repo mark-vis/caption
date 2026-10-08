@@ -1,5 +1,5 @@
-From ebac3521ef1dc820882dc06608e385121018aaf2 Mon Sep 17 00:00:00 2001
-From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+From 0e2a124c0e0e1384f0e4c9ddc4188b48c1b39b0c Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
 Date: Wed, 7 Oct 2026 17:03:59 +0200
 Subject: [PATCH 12/14] Add socket caption/typeset and the kernel copy
  \@kernel@@caption
@@ -7,7 +7,7 @@ Subject: [PATCH 12/14] Add socket caption/typeset and the kernel copy
 \@caption now typesets every caption through the new socket
 caption/typeset {type}{star}{text} (\BooleanTrue for \caption*, the
 text without \ignorespaces), after the list entry. The default plug
-kernel calls \@kernel@caption@typeset, the typesetting of before (with
+kernel calls \@kernel@caption@typeset, the previous typesetting (with
 the label \@caption@nolabel for \caption*), so the output does not
 change. A plug runs at the group level of the caller of \@caption (in a
 float the group of the float, with its \linewidth), before
@@ -17,17 +17,17 @@ caption) assigns its own plug and can fall back to
 \@kernel@caption@typeset, which is now documented for that purpose.
 
 Request for comments: the kernel copy \@kernel@@caption of \@caption
-(next to \@kernel@caption, the copy of \caption, which is there since
-the first part of the interface). A package that has always replaced
-\caption and \@caption, typically at \begin{document}, can restore
-both instead and then use the hooks and sockets; code that wraps
+(next to \@kernel@caption, the copy of \caption from "Add \caption*,
+hook caption/before and socket caption/step"). A package that has always
+replaced \caption and \@caption, typically at \begin{document}, can
+restore both instead and then use the hooks and sockets; code that wraps
 \@caption can call it. It is defined in the release block "caption
 interface copies", so after a roll-back with latexrelease it is
 undefined like \@kernel@caption. \ifdefined\@kernel@caption stays the
 test for the interface. Open questions for the team: whether this copy
-is wanted at all (instead of only the hooks and sockets) and its name.
-With this part the caption package takes its client path (it tests
-\@kernel@@caption, because it needs caption/typeset).
+is wanted at all (instead of only the hooks and sockets) and its name. A
+package that uses caption/typeset can test for \@kernel@@caption, which
+is defined only from this commit on.
 
 Documentation: the socket in the steps list, its socketdecl/plugdecl,
 \if@captionstar (valid in the plugs of caption/typeset), \@caption and
@@ -54,16 +54,16 @@ a roll-back.
  create mode 100644 base/testfiles/caption-interface-007.tlg
 
 diff --git a/base/changes.txt b/base/changes.txt
-index 2453f61b3..f861682d4 100644
+index dc563dbc4..daa60e564 100644
 --- a/base/changes.txt
 +++ b/base/changes.txt
-@@ -8,6 +8,12 @@ not part of the distribution.
+@@ -14,6 +14,12 @@ not part of the distribution.
  
  2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
  
 +	* ltfloat.dtx, clsguide.tex:
 +	Caption interface: socket caption/typeset {type}{star}{text}
-+	(plug kernel: \@kernel@caption@typeset, the typesetting of before),
++	(plug kernel: \@kernel@caption@typeset, the previous typesetting),
 +	used by \@caption for every caption; kernel copy \@kernel@@caption
 +	of \@caption (undefined after a roll-back, as \@kernel@caption)
 +
@@ -88,7 +88,7 @@ index a37213048..1f8543797 100644
    \cs{fnum@}\meta{type}, writes the list entry with
    \verb|\addcontentsline{\csname ext@|\meta{type}\verb|\endcsname}|
 diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
-index 049dd32b2..d48ad463f 100644
+index ff777ae48..856d178f4 100644
 --- a/base/ltfloat.dtx
 +++ b/base/ltfloat.dtx
 @@ -238,6 +238,7 @@
@@ -110,7 +110,7 @@ index 049dd32b2..d48ad463f 100644
  %      \cs{if@captiontarget} to their defaults.
  %    \end{enumerate}
  %    Code that calls \cs{@caption} directly (e.g., for sub-captions) gets
-@@ -464,11 +465,44 @@
+@@ -461,11 +462,44 @@
  %    \end{macrocode}
  % \end{plugdecl}
  %
@@ -157,7 +157,7 @@ index 049dd32b2..d48ad463f 100644
  %    argument of \cs{@makecaption} is \cs{@caption@nolabel} (or, if
  %    \cs{@caption} has been replaced, \cs{fnum@}\meta{type}, which is then
  %    \cs{@caption@nolabel}), and a \cs{@makecaption} can test this switch
-@@ -588,9 +622,9 @@
+@@ -585,9 +619,9 @@
  %    as those of the kernel's own targets for such captions, so a name
  %    made in this way and a kernel target never collide. It is
  %    documented for code that makes the target of a caption itself or
@@ -170,10 +170,10 @@ index 049dd32b2..d48ad463f 100644
  %    |\@kernel@caption@unique{|\meta{type}|}{\hyper@makecurrent{|\meta{type}|}}|),
  %    so that it does not have to know how the names are counted:
  %    \begin{itemize}
-@@ -696,7 +730,9 @@
+@@ -693,7 +727,9 @@
  % \begin{macro}{\@kernel@caption@typeset}
  %    \cs{@kernel@caption@typeset}\marg{type}\marg{star}\marg{text} is the
- %    typesetting of the kernel: the code of \cs{@caption} before 2026,
+ %    typesetting of the kernel: the previous code of \cs{@caption},
 -%    with the label \cs{@caption@nolabel} for \cs{caption*}.
 +%    with the label \cs{@caption@nolabel} for \cs{caption*}. It is
 +%    documented, so that a plug of \texttt{caption/typeset} can fall back
@@ -181,7 +181,7 @@ index 049dd32b2..d48ad463f 100644
  %    \begin{macrocode}
  \long\def\@kernel@caption@typeset#1#2#3{%
    \begingroup
-@@ -1056,9 +1092,8 @@
+@@ -1053,9 +1089,8 @@
  %    gives a caption without label, without list entry and without a
  %    duplicate target, in the layout of the class. The settings are
  %    local and last until \cs{@caption@nostep@restore} is executed: at
@@ -193,7 +193,7 @@ index 049dd32b2..d48ad463f 100644
  %    (with \cs{@kernel@caption@reset}), or at the end of the group; why,
  %    is explained below.
  %    \cs{addcontentsline} itself is not changed, so an
-@@ -1186,14 +1221,16 @@
+@@ -1183,14 +1218,16 @@
  % \changes{v1.2k}{2026-10-06}
  %     {Hook \texttt{caption/prepare}; list entry with the socket
  %      \texttt{caption/listentry}}
@@ -215,7 +215,7 @@ index 049dd32b2..d48ad463f 100644
  %    \cs{@kernel@caption@reset} resets the switches (the settings are
  %    already undone by then), so that code which calls \cs{@caption} or
  %    the socket \texttt{caption/step} directly (without \cs{caption}) gets
-@@ -1219,7 +1256,7 @@
+@@ -1216,7 +1253,7 @@
  \long\def\@caption@body#1#2#3#4{%
    \UseHookWithArguments{caption/prepare}{4}{#1}{#2}{#3}{#4}%
    \IfBooleanF{#2}{\UseSocket{caption/listentry}{#1}{#3}{#4}}%
@@ -224,7 +224,7 @@ index 049dd32b2..d48ad463f 100644
  %</2ekernel|latexrelease>
  %<latexrelease>\EndIncludeInRelease
  %<latexrelease>\IncludeInRelease{0000/00/00}%
-@@ -1242,16 +1279,21 @@
+@@ -1239,16 +1276,21 @@
  % \end{macro}
  % \end{macro}
  %
@@ -248,7 +248,7 @@ index 049dd32b2..d48ad463f 100644
  %
  %    They are defined only if the kernel has the caption interface: after
  %    a roll-back with \pkg{latexrelease} to an earlier date they are
-@@ -1268,12 +1310,14 @@
+@@ -1265,12 +1307,14 @@
  %<latexrelease>                 {\@kernel@caption}{caption interface copies}%
  \let\@kernel@caption\caption
  \let\@kernel@caption@unique\@caption@uniquedo
@@ -303,7 +303,7 @@ index 454013ddc..b38249811 100644
  TEST 2: caption after the roll-back: old code, no hooks
 diff --git a/base/testfiles/caption-interface-007.lvt b/base/testfiles/caption-interface-007.lvt
 new file mode 100644
-index 000000000..d5c101c96
+index 000000000..e5b35fc85
 --- /dev/null
 +++ b/base/testfiles/caption-interface-007.lvt
 @@ -0,0 +1,147 @@
@@ -375,7 +375,7 @@ index 000000000..d5c101c96
 +  \typeout{caption: \ifx\caption\@kernel@caption kernel\else other\fi,
 +    @caption: \ifx\@caption\@kernel@@caption kernel\else other\fi}}
 +% a package that replaces \caption and \@caption (as the caption package
-+% did before 2026) and later restores the kernel copies
++% does) and later restores the kernel copies
 +\long\def\pkgcaption{\typeout{PACKAGE CAPTION}\@gobble}
 +\long\def\pkgatcaption#1[#2]#3{\typeout{PACKAGE @CAPTION}}
 +\def\replacecaption{\let\caption\pkgcaption \let\@caption\pkgatcaption}
@@ -386,8 +386,8 @@ index 000000000..d5c101c96
 +  \typeout{WRAPPER: fnum=\expandafter\meaning\csname fnum@#1\endcsname}%
 +  \@kernel@@caption{#1}[{#2}]{#3}}
 +\def\usewrappercaption{\let\@caption\wrappercaption}
-+% a package that keeps its own \caption (here the definition of LaTeX
-+% before 2026) and passes only \caption* to the kernel
++% a package that keeps its own \caption (here the definition of
++% earlier releases) and passes only \caption* to the kernel
 +\def\owncaption{\refstepcounter\@captype\@dblarg{\@caption\@captype}}
 +\def\useowncaption{\def\caption{\@ifstar{\@kernel@caption*}%
 +  {\@kernel@caption@reset\owncaption}}}

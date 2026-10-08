@@ -1,5 +1,5 @@
-From 413a65cd4a931e898966a44557835f4b3c1f021c Mon Sep 17 00:00:00 2001
-From: mark-vis <118430440+mark-vis@users.noreply.github.com>
+From 37fccd4262cf92368a8068431d9d779cbc4724e4 Mon Sep 17 00:00:00 2001
+From: Mark Vis <118430440+mark-vis@users.noreply.github.com>
 Date: Wed, 7 Oct 2026 16:59:08 +0200
 Subject: [PATCH 10/14] Add hook caption/prepare and socket caption/listentry
 
@@ -22,9 +22,8 @@ can use it when the list text was not given (it can record in
 caption/before whether it was).
 
 \@caption keeps its release block ("caption body"); it still typesets
-with \@kernel@caption@typeset (the socket caption/typeset is added
-separately), so the caption package does not take its client path yet
-(it tests \@kernel@@caption).
+with \@kernel@caption@typeset (the socket caption/typeset is added by
+"Add socket caption/typeset and the kernel copy \@kernel@@caption").
 
 New test caption-interface-006 (hook and plug arguments, \caption*,
 direct calls, a wrapper of the kernel \@caption, a client that names
@@ -60,10 +59,10 @@ files list the new hook.
  create mode 100644 base/testfiles/caption-interface-006.tlg
 
 diff --git a/base/changes.txt b/base/changes.txt
-index ee598c4ba..b37f44f79 100644
+index 16c95881d..eb30106a3 100644
 --- a/base/changes.txt
 +++ b/base/changes.txt
-@@ -8,6 +8,13 @@ not part of the distribution.
+@@ -14,6 +14,13 @@ not part of the distribution.
  
  2026-10-06  Mark Vis  <118430440+mark-vis@users.noreply.github.com>
  
@@ -71,8 +70,8 @@ index ee598c4ba..b37f44f79 100644
 +	Caption interface: hook caption/prepare, executed by \@caption
 +	after the \par for every caption (also for \caption* and direct
 +	calls of \@caption), and socket caption/listentry with three
-+	arguments (type, list text, text; plug kernel: the \addcontentsline
-+	of before; not used for \caption*)
++	arguments (type, list text, text; plug kernel: the previous
++	\addcontentsline; not used for \caption*)
 +
  	* ltfloat.dtx:
  	Document the float first aid for \caption* (latex-firstaid)
@@ -94,7 +93,7 @@ index e196875cf..a37213048 100644
    \cs{fnum@}\meta{type}, writes the list entry with
    \verb|\addcontentsline{\csname ext@|\meta{type}\verb|\endcsname}|
 diff --git a/base/ltfloat.dtx b/base/ltfloat.dtx
-index 0177af3dc..049dd32b2 100644
+index c0f872bf9..ff777ae48 100644
 --- a/base/ltfloat.dtx
 +++ b/base/ltfloat.dtx
 @@ -236,6 +236,8 @@
@@ -119,7 +118,7 @@ index 0177af3dc..049dd32b2 100644
  %      resets the switches \cs{if@captionstar}, \cs{if@captionstep} and
  %      \cs{if@captiontarget} to their defaults.
  %    \end{enumerate}
-@@ -330,8 +334,8 @@
+@@ -327,8 +331,8 @@
  %    so that rolling forward from an older format works. After a roll-back
  %    they stay defined but are not used.
  %
@@ -130,7 +129,7 @@ index 0177af3dc..049dd32b2 100644
  %    \begin{description}
  %    \item[\texttt{caption/before}] is executed by \cs{caption} once per
  %      caption (also for \cs{caption*}), after the star and the arguments
-@@ -347,14 +351,24 @@
+@@ -344,14 +348,24 @@
  %      e.g., for a continued float) or that no target should be created
  %      (\cs{@captiontargetfalse}, if the code makes its own target). The hook
  %      is not executed if \cs{@caption} is called directly.
@@ -156,7 +155,7 @@ index 0177af3dc..049dd32b2 100644
  %    \end{macrocode}
  %
  % \begin{socketdecl}{caption/step}
-@@ -424,6 +438,32 @@
+@@ -421,6 +435,32 @@
  %    \end{macrocode}
  % \end{plugdecl}
  %
@@ -189,7 +188,7 @@ index 0177af3dc..049dd32b2 100644
  % \begin{macro}{\if@captionstar,\if@captionstep,\if@captiontarget}
  %    \cs{if@captionstar} is true while a caption made by \cs{caption*} is
  %    processed: from the start of \cs{caption*} until the end of
-@@ -550,20 +590,20 @@
+@@ -547,20 +587,20 @@
  %    documented for code that makes the target of a caption itself or
  %    only needs its name (for example code that sets
  %    \cs{@captiontargetfalse} in the hook \hook{caption/before} and makes
@@ -214,7 +213,7 @@ index 0177af3dc..049dd32b2 100644
  %    \item After a \cs{caption*} or a caption that does not step, if
  %      \cs{@caption} is a replaced one, \cs{theH}\meta{counter} has the
  %      unique form of that caption until the next \cs{caption} or the end
-@@ -941,7 +981,7 @@
+@@ -938,7 +978,7 @@
  %    it should not be used there. An optional argument is accepted; it
  %    is only passed to the
  %    hook \hook{caption/before} (and to \cs{@caption} as list text, which
@@ -223,7 +222,7 @@ index 0177af3dc..049dd32b2 100644
  %
  %    The star is read with \cs{@ifstar} and the optional argument with
  %    \cs{kernel@ifnextchar}, so spaces before them are skipped, as with
-@@ -1016,7 +1056,7 @@
+@@ -1013,7 +1053,7 @@
  %    gives a caption without label, without list entry and without a
  %    duplicate target, in the layout of the class. The settings are
  %    local and last until \cs{@caption@nostep@restore} is executed: at
@@ -232,7 +231,7 @@ index 0177af3dc..049dd32b2 100644
  %    typesetting see the normal definitions), at the start of the next
  %    \cs{caption}
  %    (with \cs{@kernel@caption@reset}), or at the end of the group; why,
-@@ -1143,13 +1183,17 @@
+@@ -1140,13 +1180,17 @@
  %      end with \cs{@kernel@caption@reset}}
  % \changes{v1.2k}{2026-10-06}
  %     {Undo the settings for a replaced \cs{@caption} before the \cs{par}}
@@ -252,7 +251,7 @@ index 0177af3dc..049dd32b2 100644
  %    \cs{@kernel@caption@reset} resets the switches (the settings are
  %    already undone by then), so that code which calls \cs{@caption} or
  %    the socket \texttt{caption/step} directly (without \cs{caption}) gets
-@@ -1173,9 +1217,8 @@
+@@ -1170,9 +1214,8 @@
    {#2}{#3}%
    \@kernel@caption@reset}
  \long\def\@caption@body#1#2#3#4{%
