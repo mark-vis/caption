@@ -234,21 +234,20 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
 
 ## 7. Update 2026-10-06: proposal (c) keeps the hook label (found while revising proposal (b))
 
-- Kernel: latex2e branch `poc-kernel-interfaces` (local, not pushed; backup of the old head
-  8143551c8 in `poc-kernel-interfaces-r3backup`). The fix of poc-b2 90fe37d7c was squashed
+- Kernel: latex2e branch `poc-kernel-interfaces` (https://github.com/mark-vis/latex2e). The fix of poc-b2 90fe37d7c was squashed
   into the (c) commit, now **5e0a9fc88**: latex-lab-float adds the code with the label
   `latex-lab-testphase-float` again and documents it (with a `voids` rule as the preferred
   way to disable it); new tests `float-025-makecaption-label`, `float-026-makecaption-voids`
   (their `.tlg` saved again for the v1 `\caption*`, which passes an empty label).
   `kernel-patches/0004-*.patch` regenerated with `git format-patch`; 0001–0003 unchanged.
-  Built as `poc-env/kernel-r4` (formats and inputs; compared with `poc-env/kernel`, only
+  Built as `kernel-r4` (formats and inputs; compared with `kernel`, only
   `latex-lab-float.dtx`/`latex-lab-testphase-float.sty` differ, plus the branch's
   `latexrelease.sty`, which `kernel/` lacked).
 - Client: caption.dtx (commit eb35223 on this branch) disables the code with
   `\AddToHook{begindocument}[caption]{}` +
   `\DeclareHookRule{begindocument}{caption}{voids}{latex-lab-testphase-float}` instead of
   `\RemoveFromHook{begindocument}[latex-lab/float/makecaption]` (as caption poc-b2 0712913).
-  Built as `poc-env/sty-poc-ki-r4`; only `caption.sty` differs from `poc-env/sty-poc-ki`.
+  Built as `sty-poc-ki-r4`; only `caption.sty` differs from `sty-poc-ki`.
 - l3build (latex-lab, exports of the branch before and after): `config-float`,
   `config-table-pdftex`, `config-table-luatex`, `config-block` give the same `.diff` files with
   the same content (`<PDF>` line only); float-025/026 pass in both engines and fail on the old
@@ -272,12 +271,11 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
   eb35223 + sty-poc-ki-r4 on `kernel-r4`: failure lists identical (27 / 13), 258 / 256 common
   PDFs, text/positions differ only in issue_77 (the time), 0 `.aux` differences, structure
   trees of the 286 PDFs under `test/` identical.
-- Scripts and outputs: `poc-env/b2-revision/scripts/r4-fix/m3-label/` (SUMMARY.txt there).
+- Scripts and outputs: `b2-revision/scripts/r4-fix/m3-label/` (SUMMARY.txt there).
 
-## 8. Update 2026-10-06 (round 5): the series passes the full base suite; (c) in its final form
+## 8. Update 2026-10-06: the series passes the full base suite; (c) in its final form
 
-- Kernel: latex2e branch `poc-kernel-interfaces` rewritten again (local, not pushed; backup
-  of 5e0a9fc88 in `poc-kernel-interfaces-r4backup`), head **8a937c600**:
+- Kernel: latex2e branch `poc-kernel-interfaces` rewritten again, head **8a937c600**:
   - (a) and (b) now carry the `.tlg` lines of their release blocks and hooks in the base
     tests that list all of them (13 roll-back tests in pdfTeX, LuaTeX and XeTeX,
     `lthooks2-002`, `lthooks2-005`). These updates existed only on the (b) v2 branch, so
@@ -291,17 +289,16 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
   tests, three engines), `config-lthooks`, `config-lthooks2` and the other base
   configurations, firstaid (`build`, `config-TU`): all pass; latex-lab `config-float`: only
   the tests that print the structure differ, in the local `<PDF>` line.
-- Built as `poc-env/kernel-r5`: inputs identical to `kernel-r4` except
+- Built as `kernel-r5`: inputs identical to `kernel-r4` except
   `latex-lab-float.dtx` (documentation only); base sources identical. Corpus (78 jobs,
   3 runs) with `sty-poc-ki-r4`: kernel-r4 against kernel-r5 **0 / 78** differ; totals
   errors 39, caption W 24, tagpdf W 49, hyperref W 0, other W 9 (as in section 7). The
   caption client (`eb35223`) is unchanged and still pairs with `kernel-r4`/`kernel-r5`, not
   with `kernel/`.
 
-## 9. Update 2026-10-06 (round 5, repair): no new tagpdf errors for wide `\caption*` and threeparttable
+## 9. Update 2026-10-06: no new tagpdf errors for wide `\caption*` and threeparttable
 
-- latex2e `poc-kernel-interfaces` rewritten again (head `de50ef859`; backup ref
-  `poc-kernel-interfaces-r5prep` = `8a937c600`); (a) and (d) unchanged.
+- latex2e `poc-kernel-interfaces` rewritten again (head `de50ef859`); (a) and (d) unchanged.
   - (b): latex-lab's `\@makecaption` gives the label tagging sockets the plugs `nolabel`
     for `\caption*` instead of `noop` (with `noop` a `\caption*` wider than the line gave
     a `P` inside a `P` and the tagpdf error "para hooks differ"). New test `float-028`.
@@ -314,16 +311,10 @@ CheckSums are **not** updated in this round. That affects caption.dtx, caption3.
 - l3build on `git archive`s of (a)+(d)+(b) and of the whole series: base (603 tests, three
   engines), `config-lthooks`, `config-lthooks2`, firstaid; for the series also the 7 other
   base configurations: all pass; latex-lab `config-float`: only the local `<PDF>` line.
-- Rebuilt `poc-env/kernel-r5`: only `latex-lab-float.dtx` and `latex-lab-testphase-float.sty`
+- Rebuilt `kernel-r5`: only `latex-lab-float.dtx` and `latex-lab-testphase-float.sty`
   differ. Tagged threeparttable and `\caption*` documents (20 documents, pdfLaTeX and
   LuaLaTeX): the error counts of develop (0, or develop's own `tablenotes` error);
   structure trees equal to the (b) v2 kernel in all 40 runs, and to develop in all runs
   without `\caption*`. Corpus (78 jobs) with `sty-poc-ki-r4`: old against new `kernel-r5`
   **0 / 78** differ (4 jobs that timed out under load were rerun).
 
-## Files
-- `cap-poc/` worktree (branch poc-kernel-interfaces, HEAD b9111ce after the review round; ce43fdf before); `sty-poc/` the build.
-- `suite/` trees, runs (`run-tl`, `run-stock`, `run-patched`), `cmpsuite-poc.py`, `cmp-{tl,stock,patched}.txt`.
-- `corpus-out/poc-{tl,stock,patched}/`, `corpus-out/cmp-*.txt`, `corpus/tgtnorm.py`.
-- `audit/` (gen.sh, run.sh, *.mng, table.txt); `integ/` (cmp.txt, out/).
-- Review round: `review-round/` (verify.sh, verify.log, fallback-cmp2.txt), `sty-poc-r0/` (build before the review), `suite/run-{tl,patched}-r1`, `suite/trees-r1/poc`, `corpus-out/poc-{tl,stock,patched}-r1`.
