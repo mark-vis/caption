@@ -10,8 +10,8 @@ other packages and classes as in TeX Live 2026. All files mentioned are in
 Eindhoven, and I have used (Lua)LaTeX for about twenty years. caption and subcaption are
 central to my work (lecture notes, course booklets), which is how I ran into latex2e #2172
 (fixed with a first aid in #2211 and, in subcaption itself, with caption MR !3) and the
-longtable issue #2227 (PR #2228). I have no arrangement with Axel Sommerfeldt and I do not
-maintain the bundle. Ulrike's remark on #2211, that packages should stop redefining kernel
+longtable issue #2227 (PR #2228). I am not the maintainer of the bundle; these are just my
+own experiments. Ulrike's remark on #2211, that packages should stop redefining kernel
 commands so that it is clear which definition wins, made me try what caption would need
 from the kernel to stop doing that. This document is the result of that experiment.
 
