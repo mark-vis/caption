@@ -96,7 +96,7 @@ the label hook and properties later.
 - **`\subref` still uses the `sub@<key>` label.** A properties-based design
   (`\RecordProperties`/`\RefProperty`) was not needed for the results above.
 
-## Proposals for the LaTeX team (to discuss with Mark first)
+## Proposals for the LaTeX team
 
 1. **A hook or socket at the start and end of every float, in the kernel `\@xfloat`.**
    The sockets `float/begin` and `float/end` are already declared in lttagging, but only

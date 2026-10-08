@@ -550,10 +550,8 @@ entry is written.
 ## (b) A caption interface: `\caption*`, list entries, sub-captions (version 2)
 
 > **Version 2, 2026-10-06; split into a series 2026-10-07.** This replaces version 1 of (b)
-> (2026-10-04; the old text is in the git history of this file). The long working version with
-> all measurements and review findings is `PROPOSAL-b-v2.md` in the caption branch `poc-b2`
-> (folder `poc-b2/`, section 2.7 for the series); `poc/PROPOSALS-b-v2-draft.md` is this section
-> on its own.
+> (2026-10-04; the old text is in the git history of this file). The details of each part are in
+> the commit messages of the series (latex2e branch `b2-split` of https://github.com/mark-vis/latex2e).
 
 Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
 - `series/0001-0014`: (a), (d), O2 and (b) in parts, with (c) after b-4, as 14 commits on
@@ -563,7 +561,7 @@ Patches (in `poc/proposals/patches/b-v2/`, with a cover letter `COVER.md`):
   and its replay on 2a9bfe9d6 are in the git history of this folder.
 - `O1.patch` (optional, on top of the series) and `O2-standalone.patch` (O2 alone on develop,
   for a first small PR).
-- `caption-client.diff`: caption as a client (against the caption PoC a518ec6); it takes its
+- `caption-client.diff`: caption as a client (against the caption PoC b9111ce); it takes its
   client path only when `\@kernel@@caption` is defined, i.e. from part b-5 on.
 
 Tests (copies in `poc/proposals/tests/b-v2/`, one set per part, see (b)4): base
@@ -691,14 +689,14 @@ The `\@kernel@...` commands are undefined after a `latexrelease` roll-back; the 
   that. Of 85 TL classes that compile with pdfLaTeX, 50 give a clean `\caption*`.
 - Known gaps: O1 overwrites titles that memoir or nameref sanitised (so O1 is optional); with
   hyperref's `naturalnames=true`, captions left unstepped by other code still give duplicates.
-  Resolved in the split: `subfloat/box` needs no group any more, and `\@kernel@caption@unique`
-  also works after a `\caption*` handled by a replaced `\@caption`.
+  `subfloat/box` needs no group, and `\@kernel@caption@unique` also works after a `\caption*`
+  handled by a replaced `\@caption`.
 - Size: the non-comment lines of ltfloat.dtx grow from 390 (develop 2a9bfe9d6) to 686 (the
   series); b-3a alone has 91 of them, b-3b 41, b-3c 54, b-3d 87.
 
 ### 4. Parts (the series) and their state
 
-latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; not pushed, not posted):
+latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; https://github.com/mark-vis/latex2e/tree/b2-split):
 
 | # | part | commit | content | tests |
 |---|---|---|---|---|
@@ -721,11 +719,10 @@ latex2e branch `b2-split` on develop 2a9bfe9d6 (`patches/b-v2/series/`; not push
 What is optional: b-5 and b-6 are requests for comments; O1 is optional; the last commit waits for
 hyperref. b-3d is not a free choice: without it the standard classes print ": Text" for
 `\caption*` (the alternative, a `classes.dtx` change, breaks babel-french and caption3). b-3b and
-b-3c are needed by the float first aid for restyled floats and by the hyperref sketch (the cover
-letter still calls them droppable; this is being corrected).
+b-3c are needed by the float first aid for restyled floats and by the hyperref sketch.
 
-The series had three review rounds; the open points are in the cover letter and in
-`PROPOSAL-b-v2.md`. The release date (2026/11/01 in every release block) is a placeholder.
+The open points are in the cover letter and in the commit messages. The release date
+(2026/11/01 in every release block) is a placeholder.
 
 ### 5. How caption uses it
 
@@ -1563,8 +1560,7 @@ for sub-figures see the sub-float sockets in (b).
 ## Verification of the combined patch
 
 This section is about the series (a), (d), (b) version 1, (c). The verification of (b)
-version 2 is summarised in (b)4 and given in full in `PROPOSAL-b-v2.md` (caption branch
-`poc-b2`, sections 4.1-4.5).
+version 2 is summarised in (b)4 and in the cover letter `patches/b-v2/COVER.md`.
 
 All four kernel patches applied in sequence (`patches/series/0001`–`0004`, the same
 content as `patches/combined.diff`) to a fresh copy of develop 829e56a15, compared with
