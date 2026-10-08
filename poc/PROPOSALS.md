@@ -1,16 +1,19 @@
 # What caption needs from the kernel: four proposals
 
-**DRAFT, not sent.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06, and (b) with (a), (c), (d) split into a reviewable series on current develop 2a9bfe9d6 on 2026-10-07 ((b)4). Written against latex2e `develop` at 829e56a15
+**Draft for discussion.** 2026-10-04; (c) item 4 changed 2026-10-06 (the hook label is kept); (b) replaced by version 2 on 2026-10-06, and (b) with (a), (c), (d) split into a reviewable series on current develop 2a9bfe9d6 on 2026-10-07 ((b)4). Written against latex2e `develop` at 829e56a15
 (format date 2026-11-01, pre-release). caption references are to branch
 `fixes-combined` of https://github.com/mark-vis/caption (caption v3.6p, caption3 v2.4e),
 other packages and classes as in TeX Live 2026. All files mentioned are in
 `poc/proposals/` on branch `poc-caption4` of the same repository.
 
-> **[MARK: About me — placeholder, fill in before sending.]**
-> For example: "I am Mark Vis (TU Eindhoven). I fix bugs in the caption bundle in my
-> fork (github.com/mark-vis/caption), and I am looking at what caption needs from the
-> kernel to work with tagging." Add one sentence on your role, e.g. your arrangement
-> with Axel Sommerfeldt.
+**About me.** I am Mark Vis, from the Computational Physical Chemistry group at TU
+Eindhoven, and I have used (Lua)LaTeX for about twenty years. caption and subcaption are
+central to my work (lecture notes, course booklets), which is how I ran into latex2e #2172
+(fixed with a first aid in #2211 and, in subcaption itself, with caption MR !3) and the
+longtable issue #2227 (PR #2228). I have no arrangement with Axel Sommerfeldt and I do not
+maintain the bundle. Ulrike's remark on #2211, that packages should stop redefining kernel
+commands so that it is clear which definition wins, made me try what caption would need
+from the kernel to stop doing that. This document is the result of that experiment.
 
 ## Summary
 
