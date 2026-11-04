@@ -1,0 +1,74 @@
+% Issue: 181
+% Title: Longtable caption not stick to the top of page when `\arraystretch` >1
+% Date:  Jun 6, 2025 6:11:47 PM GMT+2
+% URL:   https://gitlab.com/axelsommerfeldt/caption/issues/181
+
+% With longtable, the caption is implemented as a row in the table. In the definition of \LT@makecaption,
+% the height of \strutbox is removed, so that the box of caption is attached to the top of the table.
+% However, the height of the row is actually controlled by \@arstrutbox, which may be higher or lower
+% according to the value of \arraystretch.
+
+\documentclass{article}
+\usepackage{caption}
+\usepackage{longtable}
+\usepackage[pass,showframe]{geometry}
+
+\begin{document}
+
+\vspace*{0.8\textheight}
+
+\def\arraystretch{2}
+
+\begin{longtable}{ll}
+    \caption{\rule{1em}{\ht\strutbox} Table Caption} \\
+    \hline
+    Col 1 & Col 2 \\
+    \hline
+    \endfirsthead
+    \caption[]{\rule{1em}{\ht\strutbox} Table Caption} \\
+    \hline
+    Col 1 & Col 2 \\
+    \hline
+    \endhead
+    \hline
+    \endfoot
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+    Col 1 & Col 2 \\
+\end{longtable}
+
+\clearpage
+
+Some text.
+
+\begin{table}
+    \centering
+    \caption{\rule{1em}{\ht\strutbox} Table Caption}
+    \begin{tabular}{ll}
+        \hline
+        Col 1 & Col 2 \\
+        \hline
+        Col 1 & Col 2 \\
+        Col 1 & Col 2 \\
+        Col 1 & Col 2 \\
+        Col 1 & Col 2 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\end{document}
+
+% Expected output:
+% The caption of the continued longtable at the top of page 2 and the caption
+% of the regular table at the top of page 3 are both attached to the top of
+% the text area (same vertical position).
