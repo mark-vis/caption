@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{2961}
+% \CheckSum{3061}
 %
 % \iffalse
 %<*driver>
@@ -377,6 +377,10 @@
 % Loading one of them deactivates the matching feature in this package.
 %
 % \subsection{Known problems}
+%
+% With |\DocumentMetadata| and \LaTeX\ 2026-11-01 or newer the captions are typeset
+% by the \LaTeX\ kernel, so options like |font=|, |labelfont=|, or |labelsep=| have no effect on them.
+% This applies to the captions of the \pkg{listings} package, too.
 %
 % \iffalse
 % \subsubsection{listings package and alignment}
@@ -1063,7 +1067,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption}[2026/10/03 v3.6p Customizing captions (AR)]
+\ProvidesPackage{caption}[2026/11/04 v3.6q Customizing captions (AR)]
 %    \end{macrocode}
 %
 % \section{Loading the kernel}
@@ -4245,10 +4249,80 @@
 %
 % \begin{macro}{\lst@makecaption}
 % \begin{macro}{\lst@maketitle}
-% Wrapper macros for typesetting the |caption=| or |title=| value.
+% \changes{v3.6q}{2026/11/04}{Definitions of \pkg{latex-lab-listings} are kept}
+% Wrapper macros for typesetting the |caption=| or |title=| value.\par
+% If the \pkg{latex-lab-listings} package is loaded (which is done by
+% \LaTeX's tagging support with |\DocumentMetadata| since 2026-11-01),
+% or if |\DocumentMetadata| is used and |\lst@makecaption| has neither the
+% definition of the \pkg{listings} package nor ours,
+% the existing definitions are kept, and we only prepend the setting of the star flag.
+% (They set |\@captype| and the structure role and, for |title=|, suppress
+% the label structure and drop the label delimiter.)
+% Since \pkg{latex-lab-listings} could be loaded after us, we check this
+% again at the beginning of the |begindocument| hook.
+% Since the |\AtBeginDocument| code of the \pkg{listings} package
+% re-defines |\lst@maketitle| as |\caption@startrue\@makecaption\@empty|
+% (and this code might be executed after ours), we set |\lst@maketitle|
+% again at the end of the |begindocument| hook if needed.\par
+% Note: In this case the captions are typeset by the |\@makecaption|
+% of the \LaTeX\ kernel (as for all other captions), so options like
+% |font=| or |labelsep=| do not apply to them.
 %    \begin{macrocode}
-  \def\lst@makecaption{\caption@starfalse\@makecaption}%
-  \def\lst@maketitle{\caption@startrue\@makecaption\@empty}%
+  \def\caption@lst@makecaption@listings{\def\@captype{lstlisting}\@makecaption}%
+  \def\caption@lst@makecaption@caption{\caption@starfalse\@makecaption}%
+  \def\caption@lst@maketitle@caption{\caption@startrue\@makecaption\@empty}%
+  \def\caption@lst@makecaption{\caption@starfalse\caption@lab@lst@makecaption}%
+  \def\caption@lst@maketitle{\caption@startrue\caption@lab@lst@maketitle}%
+  \def\caption@lst@IfDocumentMetadata{%
+    \ifx\IfDocumentMetadataTF\@undefined
+      \expandafter\@secondoftwo
+    \else
+      \expandafter\IfDocumentMetadataTF
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \def\caption@lst@setup#1{%
+    \@tempswafalse
+    \@ifpackageloaded{latex-lab-listings}\@tempswatrue{%
+      \caption@lst@IfDocumentMetadata{%
+        \@tempswatrue
+        \ifx\lst@makecaption\caption@lst@makecaption@listings \@tempswafalse \fi
+        \ifx\lst@makecaption\caption@lst@makecaption@caption \@tempswafalse \fi}{}}%
+    \if@tempswa
+      \ifx\lst@makecaption\caption@lst@makecaption \else
+        \let\caption@lab@lst@makecaption\lst@makecaption
+        \let\lst@makecaption\caption@lst@makecaption
+      \fi
+      \ifx\lst@maketitle\caption@lst@maketitle \else
+        \ifx\lst@maketitle\caption@lst@maketitle@caption \else
+          \let\caption@lab@lst@maketitle\lst@maketitle
+          \let\lst@maketitle\caption@lst@maketitle
+        \fi
+      \fi
+    \else
+      #1%
+    \fi}%
+%    \end{macrocode}
+%    \begin{macrocode}
+  \caption@lst@setup{%
+    \let\lst@makecaption\caption@lst@makecaption@caption
+    \let\lst@maketitle\caption@lst@maketitle@caption}%
+%    \end{macrocode}
+% Without |\DocumentMetadata| nothing else is done.
+%    \begin{macrocode}
+  \caption@lst@IfDocumentMetadata{%
+    \AddToHook{begindocument/before}{\caption@lst@setup{}}%
+    \AddToHook{begindocument/end}{%
+      \@ifundefined{caption@lab@lst@maketitle}{}{%
+        \ifx\lst@maketitle\caption@lst@maketitle \else
+          \ifx\lst@maketitle\caption@lst@maketitle@caption
+            \let\lst@maketitle\caption@lst@maketitle
+          \else
+            \caption@Info{\noexpand\lst@maketitle was re-defined,\MessageBreak
+                          so its definition is kept}%
+          \fi
+        \fi}}%
+  }{}%
 %    \end{macrocode}
 % \end{macro}
 % \end{macro}
