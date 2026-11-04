@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{388}
+% \CheckSum{407}
 %
 % \iffalse
 %<*driver>
@@ -459,7 +459,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{ltcaption}[2021/01/08 v1.4c longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2026/10/03 v1.4d longtable captions (AR)]
 %    \end{macrocode}
 %
 %    \begin{macrocode}
@@ -616,11 +616,20 @@
 %       \addcontentsline{lot}{table}{\protect\numberline{\thetable}{#2}}}%
 %    \fi}
 %  \end{verbatim}%^^A
-%  Our implementation simply uses |\LTcaptype| instead of |{table}|:
+%  Our implementation simply uses |\LTcaptype| instead of |{table}|.
+% \changes{v1.4d}{2026/10/03}{Empty \cs{LTcaptype} supported}
+%  If |\LTcaptype| is empty (supported by \pkg{longtable} v4.21 or newer)
+%  the caption will be typeset without label and list entry, just like
+%  \pkg{longtable} does it.
+%  (The test must be expandable since |\LT@makecaption| starts with |\noalign|.)
 %    \begin{macrocode}
 \long\def\LT@c@ption#1[#2]#3{%
-  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-  \LT@listentry\LTcaptype{#2}}
+  \if\relax\detokenize\expandafter{\LTcaptype}\relax
+    \LT@makecaption\@gobble{}{#3}%
+  \else
+    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+    \LT@listentry\LTcaptype{#2}%
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
@@ -802,21 +811,11 @@
 % \begin{environment}{longtable*}
 % \changes{v1.1a}{2008/03/21}{Improved redefinition of \cs{refstepcounter} etc.}
 % \changes{v1.4c}{2021/01/08}{Improved error message if \cs{caption} is used}
+% \changes{v1.4d}{2026/10/03}{Uses an empty \cs{LTcaptype} with \pkg{longtable} v4.21 or newer}
 % A |longtable| environment without reference counter and hyperlink anchors.
 %    \begin{macrocode}
 \newenvironment{longtable*}{%
-%    \end{macrocode}
-%  We simply supress anything which has to do with reference counters here.
-%    \begin{macrocode}
-  \let\caption@LT@type\@gobble
-%    \end{macrocode}
-%  Unfortunately this is not so easy with |\Hy@raisedlink| (which actually sets
-%  the hyperlink anchor), so we assume that we have to supress the first usage.
-%    \begin{macrocode}
-   \let\caption@LT@raisedlink\Hy@raisedlink
-   \def\Hy@raisedlink{%
-     \let\Hy@raisedlink\caption@LT@raisedlink
-     \@gobble}%
+  \ltcaption@LTstar
 %    \end{macrocode}
 %  Finally we are redefining |\caption| so the non-starred variant
 %  issues an error.
@@ -838,6 +837,39 @@
  {\endlongtable}
 %    \end{macrocode}
 % \end{environment}
+%
+% \begin{macro}{\ltcaption@LTstar}
+% \changes{v1.4d}{2026/10/03}{This macro added}
+%  Since v4.21 the \pkg{longtable} package increments the counter itself
+%  (bypassing our patch of |\refstepcounter|), but it offers an empty
+%  |\LTcaptype| for longtables without counter, so we use that.
+%  But in this case \pkg{longtable} does not increment its internal counter
+%  |LT@tables| (which makes the hyperlink anchor and the column widths
+%  stored in the |.aux| file unique), so we do it here.
+%  (If \pkg{longtable} will do it in the future, too, no harm is done.)
+%    \begin{macrocode}
+\@ifpackagelater{longtable}{2024/07/04}{%
+  \newcommand*\ltcaption@LTstar{%
+    \def\LTcaptype{}%
+    \stepcounter{LT@tables}}%
+}{%
+%    \end{macrocode}
+%  With older versions we simply supress anything which has to do with
+%  reference counters here.
+%    \begin{macrocode}
+  \newcommand*\ltcaption@LTstar{%
+    \let\caption@LT@type\@gobble
+%    \end{macrocode}
+%  Unfortunately this is not so easy with |\Hy@raisedlink| (which actually sets
+%  the hyperlink anchor), so we assume that we have to supress the first usage.
+%    \begin{macrocode}
+    \let\caption@LT@raisedlink\Hy@raisedlink
+    \def\Hy@raisedlink{%
+      \let\Hy@raisedlink\caption@LT@raisedlink
+      \@gobble}}%
+}
+%    \end{macrocode}
+% \end{macro}
 %
 % \subsection{Adaption for \texorpdfstring{\KOMAScript}{KOMA Script}}
 %
