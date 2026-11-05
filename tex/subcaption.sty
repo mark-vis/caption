@@ -6,7 +6,7 @@
 %%
 %% subcaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -39,7 +39,7 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2007/12/06}
-\ProvidesPackage{subcaption}[2023/07/28 v1.6b Sub-captions (AR)]
+\ProvidesPackage{subcaption}[2026/10/03 v1.6c Sub-captions (AR)]
 \RequirePackage{caption}[2010/01/09] % we need at least v3.1m
 \newcommand*\subcaption@Info{%
   \PackageInfo{subcaption}}
@@ -167,11 +167,28 @@
   \newcommand*\subcaptionbox{%  caption >= v3.3
     \caption@withoptargs{\caption@ibox\setcaptionsubtype}}
 }}
-\g@addto@macro\caption@subtypehook{%
-  \ifx\label\subcaption@label \else
-    \let\subcaption@ORI@label\label
-    \let\label\subcaption@label
-  \fi}
+\IfFormatAtLeastTF{2023/06/01}{%
+  \AddToHookWithArguments{label}[subcaption]{\subcaption@label@hook{#1}}%
+  \let\subcaption@label@hook\@gobble
+  \g@addto@macro\caption@subtypehook{%
+    \let\subcaption@label@hook\subcaption@write@label}%
+}{%
+  \g@addto@macro\caption@subtypehook{%
+    \ifx\label\subcaption@label \else
+      \let\subcaption@ORI@label\label
+      \let\label\subcaption@label
+    \fi}%
+}
+\newcommand*\subcaption@write@label[1]{%
+  \begingroup
+    \protected@edef\@currentlabel{\csname thesub\@captype\endcsname}%
+    \protected@write\@auxout{%
+      \let\label\@gobble@om
+      \let\index\@gobble@som
+      \let\glossary\@gobble@om}%
+      {\string\newlabel{sub@#1}{{\@currentlabel}{\thepage}%
+        {\@currentlabelname}{\@currentHref}{\@kernel@reserved@label@data}}}%
+  \endgroup}
 \newcommand*\subcaption@label{%
   \caption@withoptargs\subcaption@@label}
 \newcommand*\subcaption@@label[2]{%
