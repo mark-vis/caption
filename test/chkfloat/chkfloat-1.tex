@@ -1,0 +1,42 @@
+% chkfloat loaded before caption, with tolerance=0:
+% Each \caption must not give an error, and the moved [p] float must be
+% reported in the .fof file (and as "Float misplaced on pages 2->3, Figure 1: moved").
+\documentclass{article}
+\makeatletter
+% Check the .fof file of the previous run (before chkfloat overwrites it)
+\newif\ifchkfloattest@found
+\begingroup
+  \def\chkfloattest@expected{Figure\nobreakspace 1: moved}%
+  \def\chkfloat@#1#2#3{%
+    \def\chkfloattest@entry{#3}%
+    \ifx\chkfloattest@entry\chkfloattest@expected
+      \ifnum#1>#2\relax \global\chkfloattest@foundtrue \fi
+    \fi}%
+  \IfFileExists{\jobname.fof}{%
+    \@input{\jobname.fof}%
+    \ifchkfloattest@found
+      \typeout{Test `chkfloat: moved float reported' passed.}%
+    \else
+      \GenericError{(chkfloat-test)\@spaces}{Test `chkfloat: moved float reported' failed}{}{}%
+    \fi}{%
+    \typeout{LaTeX Warning: Rerun to get the .fof file checked.}}%
+\endgroup
+\makeatother
+\usepackage[tolerance=0]{chkfloat}
+\usepackage[labelfont=bf,labelformat=parens]{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\begin{document}
+a\clearpage
+\begin{figure}[p] X\caption{moved}\end{figure}
+b\clearpage c\clearpage
+\begin{figure}[t] X\caption{A}\label{f}\end{figure}
+\begin{table}[h]\caption{A table}\end{table}
+\begin{figure}[H]
+  \begin{subfigure}{.4\linewidth}X\caption{sub}\end{subfigure}
+  \caption{With subfigure}
+\end{figure}
+\captionof{figure}{outside}
+\begin{figure}\caption*{star}\end{figure}
+See figure~\ref{f}.
+\end{document}
