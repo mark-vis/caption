@@ -7,8 +7,9 @@
 %% documentations.
 %%
 %% Copyright (C) 2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%%           (C) 2026 Mark Vis
 %%
-%% https://gitlab.com/axelsommerfeldt/caption
+%% https://github.com/mark-vis/caption
 %%
 %% --------------------------------------------------------------------------
 %%
@@ -22,7 +23,7 @@
 %%
 %% This work has the LPPL maintenance status "maintained".
 %%
-%% This Current Maintainer of this work is Axel Sommerfeldt.
+%% The Current Maintainer of this work is Mark Vis.
 %%
 %% This work consists of the files
 %%   caption.ins, caption.dtx, caption-light.dtx, caption2.dtx, caption3.dtx,
