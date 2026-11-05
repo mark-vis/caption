@@ -6,7 +6,7 @@
 %%
 %% caption-koma.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -36,7 +36,7 @@
 %%   caption-thesis.sto, bicaption.sty, ltcaption.sty, subcaption.sty.
 %% 
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2023/09/08 v2.0e Adaption of the caption package to the KOMA-Script document classes (AR)]
+\ProvidesFile{caption-koma.sto}[2026/11/05 v2.0f Adaption of the caption package to the KOMA-Script document classes (AR)]
 \expandafter\let\expandafter\caption@koma@setcapwidth
                 \csname\string\setcapwidth\endcsname
 \@namedef{\string\setcapwidth}[#1]#2{%
@@ -86,14 +86,15 @@
 \ifx\cap@margin\relax \else
   \caption@setcapmargin
 \fi
-\let\caption@koma@setcapindent\@setcapindent
-\renewcommand*\@setcapindent[1]{%
-  \caption@koma@setcapindent{#1}%
-  \caption@setcapindent}
-\let\caption@koma@@setcapindent\@@setcapindent
-\renewcommand*\@@setcapindent[1]{%
-  \caption@koma@@setcapindent{#1}%
-  \caption@setcapindent}
+\@ifundefined{@setcapindent}{}{%
+  \let\caption@koma@setcapindent\@setcapindent
+  \renewcommand*\@setcapindent[1]{%
+    \caption@koma@setcapindent{#1}%
+    \caption@setcapindent}%
+  \let\caption@koma@@setcapindent\@@setcapindent
+  \renewcommand*\@@setcapindent[1]{%
+    \caption@koma@@setcapindent{#1}%
+    \caption@setcapindent}}
 \newcommand*\caption@setcapindent{%
   \captionsetup{indent=\ifdim\cap@indent<\z@\z@\else\cap@indent\fi}}
 \caption@ifdefined\cap@indent{\caption@setcapindent}{}
@@ -128,6 +129,8 @@
 \DeclareCaptionFont{scr@labelfont}{\scr@fnt@captionlabel}
 \SetCaptionDefault{font}{scr@font}
 \SetCaptionDefault{labelfont}{scr@labelfont}
+\@ifpackageloaded{tocbasic}{%
+  \@ifpackagelater{tocbasic}{2025/06/13}{\endinput}{}}{}
 \g@addto@macro\@captionabovetrue{\caption@setposition{t}}%
 \g@addto@macro\@captionabovefalse{\caption@setposition{b}}%
 \if@captionabove
@@ -138,13 +141,14 @@
 \AfterCaptionPackage{\caption@AtBeginLongtable{%
   \def\@captionabovetrue{\LT@captionsetup{position=t}}%
   \def\@captionabovefalse{\LT@captionsetup{position=b}}}}
-\g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}%
-\g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}%
-\if@tablecaptionabove
-  \@tablecaptionabovetrue
-\else
-  \@tablecaptionabovefalse
-\fi
+\@ifundefined{@tablecaptionabovetrue}{}{%
+  \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}%
+  \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}%
+  \if@tablecaptionabove
+    \@tablecaptionabovetrue
+  \else
+    \@tablecaptionabovefalse
+  \fi}
 \@ifundefined{@figurecaptionabovetrue}{}{%
   \g@addto@macro\@figurecaptionabovetrue{\captionsetup*[figure]{position=t}}%
   \g@addto@macro\@figurecaptionabovefalse{\captionsetup*[figure]{position=b}}%

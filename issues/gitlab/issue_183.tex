@@ -1,0 +1,54 @@
+% Issue: 183
+% Title: caption-koma.sto should be updated for KOMA-Script v3.46 and later
+% Date:  Jun 13, 2025
+% URL:   https://github.com/mark-vis/caption/issues/50 (moved from https://gitlab.com/axelsommerfeldt/caption/issues/183)
+
+% Since KOMA-Script 3.46 tocbasic has its own implementation of the caption
+% position which supports caption via \captionsetup, and the classes no longer
+% define \if@tablecaptionabove or \@setcapindent. With caption-koma.sto v2.0e
+% loading caption-koma.sto with such a class gave 7 errors (\@setcapindent,
+% \@@setcapindent, \@tablecaptionabovetrue ...), and its position patches
+% overrode the ones of tocbasic.
+%
+% KOMA-Script 3.49 prevents loading of caption-koma.sto by setting
+% \caption@documentclass to `standard' in the package/caption3/before hook.
+% This test switches that off, so caption-koma.sto IS loaded.
+
+\documentclass[captions=tableheading]{scrartcl}
+
+\makeatletter
+\AddToHook{package/caption3/before}[issue183]{\def\caption@documentclass{koma}}
+\DeclareHookRule{package/caption3/before}{issue183}{after}{tocbasic}
+\makeatother
+
+\usepackage{longtable}
+\usepackage[tableposition=top]{caption}
+\setcapindent{1em}
+
+\begin{document}
+
+\begin{figure}
+  \centering
+  \rule{3cm}{1cm}
+  \caption{Figure caption}
+\end{figure}
+
+\begin{table}
+  \caption{Table caption}
+  \centering
+  x
+\end{table}
+
+\begin{longtable}{l}
+  \captionabove{Longtable caption}\\
+  x\\
+\end{longtable}
+
+\end{document}
+
+% Expected output:
+% No errors, and no warning "Option `tableposition=top' has no effect when
+% used with a KOMA-Script document class".
+% The log contains "File: caption-koma.sto 2026/11/05 v2.0f".
+% The output is the same as without the hook code above (i.e. without
+% caption-koma.sto).
