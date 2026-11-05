@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{3874}
+% \CheckSum{3888}
 %
 % \iffalse
 %<*driver>
@@ -232,7 +232,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/11/05 v2.4f caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -3985,12 +3985,29 @@
 % \changes{v2.0}{2020/08/03}{The original definition will be stored in \cs{caption@original@fnum}}
 % \changes{v2.3}{2021/01/06}{Usage of \cs{thexxx} replaced by \cs{caption@the}}
 % \changes{v2.3}{2022/01/05}{Definition of \cs{caption@@fnum} added}
+% \changes{v2.4f}{2026/11/05}{Expands to the original label if not typeset, e.g.~inside \cs{protected@write}}
 %   |\caption@fnum|\marg{float type}\\
 %   |\caption@@fnum|\marg{float type}\marg{name}\marg{number}\\
 %   typesets the caption label; this acts as replacement for |\fnum@|\meta{float type}.
+%
+%   Since typesetting the label is not expandable, |\caption@fnum| only
+%   does so if |\protect| has its typesetting meaning. Otherwise, for
+%   example when |\fnum@|\meta{float type} is written to a file with
+%   |\protected@write| or |\addtocontents| (as done by the \pkg{chkfloat}
+%   package), it expands to the original definition of
+%   |\fnum@|\meta{float type} instead, or to
+%   \meta{name}~\meta{number} if there is none.
 %    \begin{macrocode}
 \newcommand*\caption@fnum[1]{%
-  \caption@@fnum{#1}{\@nameuse{#1name}}{\caption@the{#1}}}
+  \ifx\protect\@typeset@protect
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi
+  {\caption@@fnum{#1}{\@nameuse{#1name}}{\caption@the{#1}}}%
+  {\@ifundefined{caption@fnum@#1}%
+     {\@nameuse{#1name}\nobreakspace\caption@the{#1}}%
+     {\@nameuse{caption@fnum@#1}}}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@@fnum[1]{%
