@@ -6,7 +6,7 @@
 %%
 %% ltcaption.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2022 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -39,7 +39,7 @@
 \providecommand\DeclareRelease[3]{}
 \providecommand\DeclareCurrentRelease[2]{}
 \DeclareCurrentRelease{v1}{2007-04-15}
-\ProvidesPackage{ltcaption}[2021/01/08 v1.4c longtable captions (AR)]
+\ProvidesPackage{ltcaption}[2026/10/03 v1.4d longtable captions (AR)]
 \@ifpackageloaded{longtable}{}{%
   \PackageError{ltcaption}{longtable package not loaded, aborting}{RTFM}}
 \providecommand*\LTcaptype{table}
@@ -82,8 +82,12 @@
   \expandafter#1\expandafter{\LTcaptype}}
 \newcommand*\caption@LT@table{table}%
 \long\def\LT@c@ption#1[#2]#3{%
-  \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
-  \LT@listentry\LTcaptype{#2}}
+  \if\relax\detokenize\expandafter{\LTcaptype}\relax
+    \LT@makecaption\@gobble{}{#3}%
+  \else
+    \LT@makecaption#1{\csname fnum@\LTcaptype\endcsname}{#3}%
+    \LT@listentry\LTcaptype{#2}%
+  \fi}
 \renewcommand\LT@makecaption[3]{%
   \LT@@makecaption{%
     \sbox\@tempboxa{%
@@ -163,11 +167,7 @@
   \fi
   \ignorespaces}
 \newenvironment{longtable*}{%
-  \let\caption@LT@type\@gobble
-   \let\caption@LT@raisedlink\Hy@raisedlink
-   \def\Hy@raisedlink{%
-     \let\Hy@raisedlink\caption@LT@raisedlink
-     \@gobble}%
+  \ltcaption@LTstar
    \let\ltcaption@ORI@LT@c@ption\LT@c@ption
    \def\LT@c@ption##1[##2]##3{%
      \ifx##1\@firstofone
@@ -181,6 +181,18 @@
      \fi}%
   \longtable}%
  {\endlongtable}
+\@ifpackagelater{longtable}{2024/07/04}{%
+  \newcommand*\ltcaption@LTstar{%
+    \def\LTcaptype{}%
+    \stepcounter{LT@tables}}%
+}{%
+  \newcommand*\ltcaption@LTstar{%
+    \let\caption@LT@type\@gobble
+    \let\caption@LT@raisedlink\Hy@raisedlink
+    \def\Hy@raisedlink{%
+      \let\Hy@raisedlink\caption@LT@raisedlink
+      \@gobble}}%
+}
 \@ifundefined{@komalongtablefalse}{}{%
   \if@komalongtable
     \renewcommand\LT@makecaption[3]{%

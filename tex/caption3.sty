@@ -6,7 +6,7 @@
 %%
 %% caption3.dtx  (with options: `package')
 %% 
-%% Copyright (C) 1994-2023 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
+%% Copyright (C) 1994-2024 Axel Sommerfeldt (axel.sommerfeldt@f-m.fm)
 %% 
 %% https://gitlab.com/axelsommerfeldt/caption
 %% 
@@ -45,7 +45,7 @@
 \DeclareRelease{v1.13}{2019-11-24}{caption3_2020-07-29.sty} % for caption v3.4
 \DeclareRelease{v2.0} {2020-08-30}{caption3_2020-10-26.sty} % for caption v3.5
 \DeclareCurrentRelease{v2.3}{2022-02-20}                    % for caption v3.6
-\ProvidesPackage{caption3}[2023/07/31 v2.4d caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
 \@ifundefined{kernel@ifnextchar}{\let\kernel@ifnextchar\@ifnextchar}{}
 \providecommand*\@nameundef[1]{%
   \expandafter\let\csname #1\endcsname\@undefined}
@@ -735,7 +735,7 @@
 \DeclareCaptionLabelFormat{simple}{\bothIfFirst{#1}{\nobreakspace}#2}
 \DeclareCaptionLabelFormat{parens}{\bothIfFirst{#1}{\nobreakspace}(#2)}
 \DeclareCaptionLabelFormat{brace}{\bothIfFirst{#1}{\nobreakspace}#2)}
-\DeclareCaptionLabelFormat{autodot}{\bothIfFirst{#1}{\nobreakspace}#2\autodot}
+\DeclareCaptionLabelFormat{autodot}{\bothIfFirst{#1}{\nobreakspace}#2\autodot} % obsolete, use `koma' instead
 \DeclareCaptionLabelFormat{unnumbered}{#1}
 \DeclareCaptionLabelFormat{original}{%
   \caption@ifdefined\caption@original@fnum
@@ -1433,7 +1433,9 @@
          \@namedef{the\caption@listtype}{\caption@the{#1}}}%
       \expandafter\caption@@addcontentsline\expandafter{\caption@listtype}{#2}%
     \endgroup}%
-    \caption@addsubcontentslines{#1}}
+    \ifcaption@star \else
+      \caption@addsubcontentslines{#1}%
+    \fi}
 \newcommand\caption@@addcontentsline[2]{%
   {\let\\\space
    \@ifundefined{ext@#1}%
@@ -1730,15 +1732,15 @@
       \else
         \def\caption@tempb{\label}%
         \ifx\caption@tempa\caption@tempb
-          \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+          \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
         \else
           \def\caption@tempb{\index}%
           \ifx\caption@tempa\caption@tempb
-            \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+            \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
           \else
             \def\caption@tempb{\glossary}%
             \ifx\caption@tempa\caption@tempb
-              \expandafter\caption@if@empty\expandafter{\@gobbletwo#1}%
+              \expandafter\caption@if@empty@cmd\expandafter{\@gobble#1}%
             \else
               \let\caption@ifempty\@gobbletwo
             \fi
@@ -1748,6 +1750,12 @@
     \fi
   \fi}
 \long\def\caption@car#1#2\caption@nil{#1}% same as \@car, but \long
+\long\def\caption@if@empty@cmd#1{%
+  \@ifnextchar[\caption@if@empty@opt\caption@if@empty@arg#1\caption@nil}
+\long\def\caption@if@empty@opt[#1]{%
+  \caption@if@empty@arg}
+\long\def\caption@if@empty@arg#1#2\caption@nil{%
+  \caption@if@empty{#2}}
 \newcommand*\caption@@par{%
   \parindent\caption@parindent\hangindent\caption@hangindent}%
 \newcommand*\DeclareCaptionType{%
