@@ -31,7 +31,7 @@
 % 
 % \fi
 %
-% \CheckSum{262}
+% \CheckSum{267}
 %
 % \iffalse
 %<*driver>
@@ -169,7 +169,7 @@
 %
 %    \begin{macrocode}
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption-koma.sto}[2023/09/08 v2.0e Adaption of the caption package to the KOMA-Script document classes (AR)]
+\ProvidesFile{caption-koma.sto}[2026/11/05 v2.0f Adaption of the caption package to the KOMA-Script document classes (AR)]
 %    \end{macrocode}
 %
 % \section{Margin or width}
@@ -257,18 +257,23 @@
 % \section{Indentions}
 %
 % \begin{macro}{\setcapindent}
+% \changes{v2.0f}{2026/11/05}{Only done if \cs{@setcapindent} is defined}
 % Patch |\setcapindent| so it will set the \pkg{caption3} indention setting, too.
+% (Newer \KOMAScript\ versions define |\setcapindent| with |\NewDocumentCommand|
+%  and set the \pkg{caption3} indention setting themselves, so
+%  |\@setcapindent| and |\@@setcapindent| do not exist there.)
 %    \begin{macrocode}
-\let\caption@koma@setcapindent\@setcapindent
-\renewcommand*\@setcapindent[1]{%
-  \caption@koma@setcapindent{#1}%
-  \caption@setcapindent}
+\@ifundefined{@setcapindent}{}{%
+  \let\caption@koma@setcapindent\@setcapindent
+  \renewcommand*\@setcapindent[1]{%
+    \caption@koma@setcapindent{#1}%
+    \caption@setcapindent}%
 %    \end{macrocode}
 %    \begin{macrocode}
-\let\caption@koma@@setcapindent\@@setcapindent
-\renewcommand*\@@setcapindent[1]{%
-  \caption@koma@@setcapindent{#1}%
-  \caption@setcapindent}
+  \let\caption@koma@@setcapindent\@@setcapindent
+  \renewcommand*\@@setcapindent[1]{%
+    \caption@koma@@setcapindent{#1}%
+    \caption@setcapindent}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setcapindent{%
@@ -362,6 +367,23 @@
 % Here we patch the caption related \KOMAScript\ commands to set \pkg{caption} package settings as well.
 % Furthermore we take over the caption related settings from the \KOMAScript\ classes.
 %
+% \changes{v2.0f}{2026/11/05}{Skip the rest of this file if \pkg{tocbasic} 2025/06/13 or newer is loaded}
+% Since version 2025/06/13 the \KOMAScript\ package \pkg{tocbasic} offers its own
+% implementation of the caption position (|\captionabove|, |\captionbelow|, and the
+% options |captions=|\dots) which supports the \pkg{caption} package via |\captionsetup|.
+% It no longer uses |\if@captionabove|, |\if@tablecaptionabove|, or
+% |\if@figurecaptionabove|, so the patches below (including the re-definition
+% of the options |figure|\-|position| and |table|\-|position|) are neither needed
+% nor wanted then.
+% Everything above this point (width, margin, indention, single-line-check, format,
+% label format, label separator, and fonts) is still processed.
+% (We use |\@ifpackagelater| instead of |\IfPackageAtLeastT| so this works with
+%  \LaTeX\ formats older than 2021/11/15, too.)
+%    \begin{macrocode}
+\@ifpackageloaded{tocbasic}{%
+  \@ifpackagelater{tocbasic}{2025/06/13}{\endinput}{}}{}
+%    \end{macrocode}
+%
 % \begin{macro}{\if@captionabove}
 % \changes{v1.0j}{2006/03/21}{Bugfix 2006-03-21: \cs{let}\cs{caption@setposition}\cs{@gobble} added}
 % \changes{v1.0n}{2006/03/09}{Accidentally this got broken in \version{1.0m}, fixed}
@@ -395,17 +417,19 @@
 %
 % \begin{macro}{\if@tablecaptionabove}
 % \changes{v1.1g}{2008/03/01}{\cs{def} changed to \cs{g@addto@macro}}
+% \changes{v2.0f}{2026/11/05}{Only done if \cs{@tablecaptionabovetrue} is defined (like \cs{@figurecaptionabovetrue})}
 % Patch |\@tablecaptionabovetrue| and |\@tablecaptionabovefalse| so they will set the \pkg{caption3} position setting, too.
 %    \begin{macrocode}
-\g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}%
-\g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}%
+\@ifundefined{@tablecaptionabovetrue}{}{%
+  \g@addto@macro\@tablecaptionabovetrue{\captionsetup*[table]{position=t}}%
+  \g@addto@macro\@tablecaptionabovefalse{\captionsetup*[table]{position=b}}%
 %    \end{macrocode}
 %    \begin{macrocode}
-\if@tablecaptionabove
-  \@tablecaptionabovetrue
-\else
-  \@tablecaptionabovefalse
-\fi
+  \if@tablecaptionabove
+    \@tablecaptionabovetrue
+  \else
+    \@tablecaptionabovefalse
+  \fi}
 %    \end{macrocode}
 % \end{macro}
 %
