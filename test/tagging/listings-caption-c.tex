@@ -1,0 +1,59 @@
+% Captions of the listings package with tagging (\DocumentMetadata{tagging=on})
+% The listings package is loaded before the caption package, and the
+% latex-lab-listings package is loaded by hand after the caption package
+% (instead of by the latex-lab-firstaid package right after listings).
+%
+% With LaTeX 2026-11-01 the tagging support of the listings package
+% (latex-lab-listings) re-defines \lst@makecaption and \lst@maketitle.
+% caption v3.6p replaced these definitions by its own, so caption= gave
+% "! Undefined control sequence. <argument> float/\@captype /caption"
+% (and more errors), and title= failed, too.
+%
+% If latex-lab-listings.sty is not available (LaTeX before 2026-11-01, where
+% the listings package does not work with tagging anyway), the document is
+% compiled without \DocumentMetadata.
+
+\IfFileExists{latex-lab-listings.sty}{%
+  \DocumentMetadata{tagging=on}%
+  \RemoveFromHook{package/listings/after}[latex-lab-firstaid]}{}
+\documentclass{article}
+\usepackage{listings}
+\usepackage{caption}
+\IfFileExists{latex-lab-listings.sty}{\usepackage{latex-lab-listings}}{}
+
+\begin{document}
+
+\lstlistoflistings
+
+\section{Listings}
+
+\begin{lstlisting}[caption={A listing},label=lst:a]
+abc
+\end{lstlisting}
+
+\begin{lstlisting}[title={A title}]
+def
+\end{lstlisting}
+
+\begin{lstlisting}[float=htbp,caption={A floating listing},label=lst:b]
+ghi
+\end{lstlisting}
+
+\begin{lstlisting}[float=htbp,title={A floating title}]
+jkl
+\end{lstlisting}
+
+See listing~\ref{lst:a} and listing~\ref{lst:b}.
+
+\end{document}
+
+% Expected output:
+% No errors. "Listing 1: A listing", "A title" (without label and without
+% a leading colon), "Listing 2: A floating listing" and "A floating title";
+% the list of listings contains the two numbered listings, the references
+% give "1" and "2".
+% With tagging the output and the structure tree are the same as without the
+% caption package: Caption structures for all four captions, with a Lbl
+% structure for the two numbered ones only.
+% (With \DocumentMetadata the captions are typeset by the LaTeX kernel, so
+% caption package options like font= do not apply to them.)

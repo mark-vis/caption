@@ -31,12 +31,12 @@
 % 
 % \fi
 %
-% \CheckSum{3874}
+% \CheckSum{3919}
 %
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{caption3.drv}[2023/07/10 v2.4 Implementation of the caption kernel]
+\ProvidesFile{caption3.drv}[2026/11/04 v2.4 Implementation of the caption kernel]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -86,7 +86,7 @@
 % 
 % \section*{Internal commands}
 %
-% These internal commands are save to use by other packages as well
+% These internal commands are safe to use by other packages as well
 % since their interface will not change in future releases:
 % \begin{quote}\begin{tabular}{ll}
 %   Internal command            & Currently used by    \\
@@ -106,7 +106,8 @@
 % \end{tabular}\end{quote}
 %
 % If your package wants to use any other internal command of the \pkg{caption3} package,
-% please write me an e-mail so we can define a proper interface together.
+% please open an issue at \url{https://github.com/mark-vis/caption/issues}
+% so we can define a proper interface together.
 %
 % Unfortunately these internal commands are used by other packages and therefore will likely
 % not change in the future, too, but I do not support them (and maybe I will change them anyway
@@ -129,9 +130,7 @@
 % Furthermore the \pkg{floatrow} package uses the undocumented option
 % |position=a| (as abbreviation of |position=auto|).
 %
-% The \pkg{lwarp} package uses a lot of internal commands as well,
-% but we are working on it on the Git branch \texttt{feature/lwarp}:
-% \url{https://gitlab.com/axelsommerfeldt/caption/-/tree/feature/lwarp}
+% The \pkg{lwarp} package uses a lot of internal commands as well.
 %
 % \StopEventually{}
 % \clearpage
@@ -232,7 +231,7 @@
 %
 % Identify the current version of the package.
 %    \begin{macrocode}
-\ProvidesPackage{caption3}[2026/10/03 v2.4e caption3 kernel (AR)]
+\ProvidesPackage{caption3}[2026/11/04 v2.4f caption3 kernel (AR)]
 %    \end{macrocode}
 %
 % \section{Generic helpers}
@@ -817,12 +816,15 @@
 % \changes{v2.3b}{2022/03/17}{Usage of \cs{captionsetup} inside \cs{caption@setup@options@@} replaced by \cs{caption@setup@options@}}
 % \changes{v2.4}{2022/04/18}{\cs{@ifnextchar} replaced by \cs{kernel@ifnextchar}}
 % \changes{v2.4}{2022/04/18}{Usage of \cs{ifcaptionsetup@star} removed}
+% \changes{v2.4f}{2026/11/04}{Bugfix: The starred variant suppresses the warning ``The type was already set'' again}
 %   |\captionsetup*|\oarg{type}\marg{keyval-list of options}\\
 %   applies the given list of options.
 %   If the optional argument `type' is specified, we simply save or append
 %   the option list, otherwise we `execute' it with |\set|\-|keys|.
 %   (The non-starred variant issues a warning if \meta{keyval-list of options}
-%    is not used later on.)
+%    is not used later on.
+%    The starred variant suppresses the warning ``The (sub)type was already
+%    set to \ldots'' when executing \meta{keyval-list of options}.)
 %   \Note{The starred variant will be used inside packages automatically.}
 %    \begin{macrocode}
 \newcommand*\captionsetup{%
@@ -832,11 +834,41 @@
 \newcommand*\@captionsetup[1]{%
   \kernel@ifnextchar[%]
     {\caption@setup@options#1}%
-    {\caption@setup}}
+    {\ifx\@gobble#1%
+       \expandafter\caption@setup@star
+     \else
+       \expandafter\caption@setup
+     \fi}}
 %    \end{macrocode}
 %    \begin{macrocode}
 \newcommand*\caption@setup{%
   \caption@setkeys{caption}}
+%    \end{macrocode}
+% While executing the options given to |\captionsetup*| the type warnings
+% (see |\caption@@settype| in the \pkg{caption} package) are switched off.
+% Afterwards they are restored, unless they were re-defined in the meantime
+% (i.e.~a new (sub)type was set). The saved definitions are indexed by
+% |\caption@keydepth| so nested usage is safe.
+%    \begin{macrocode}
+\newcommand\caption@setup@star[1]{%
+  \caption@typewarning@off{}%
+  \caption@typewarning@off{sub}%
+  \caption@setup{#1}%
+  \caption@typewarning@on{sub}%
+  \caption@typewarning@on{}}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@typewarning@off[1]{%
+  \expandafter\let\csname caption@ORI@#1typewarning\caption@keydepth
+    \expandafter\endcsname\csname caption@#1type@warning\endcsname
+  \expandafter\let\csname caption@#1type@warning\endcsname\@empty}
+%    \end{macrocode}
+%    \begin{macrocode}
+\newcommand*\caption@typewarning@on[1]{%
+  \expandafter\ifx\csname caption@#1type@warning\endcsname\@empty
+    \expandafter\let\csname caption@#1type@warning\expandafter\endcsname
+      \csname caption@ORI@#1typewarning\caption@keydepth\endcsname
+  \fi}
 %    \end{macrocode}
 %    \begin{macrocode}
 \def\caption@setup@options#1[#2]{%

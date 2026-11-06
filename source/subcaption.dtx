@@ -36,7 +36,7 @@
 % \iffalse
 %<*driver>
 \NeedsTeXFormat{LaTeX2e}[1994/12/01]
-\ProvidesFile{subcaption.drv}[2023/08/13 v1.6 Adds a sub-caption feature to the caption package]
+\ProvidesFile{subcaption.drv}[2026/11/04 v1.6 Adds a sub-caption feature to the caption package]
 %\errorcontextlines=3
 %
 \documentclass{captiondoc}
@@ -90,6 +90,7 @@
 % |\caption@sub|\-|type|\-|hook| could be extended to apply own code when a switch to the sub-caption mode is in progress.
 %
 % This package demonstrates its usage by offering a high-level user interface additionally.
+% (See section~\ref{sec:authors} for details.)
 % \end{background*}
 % 
 % \clearpage
@@ -120,6 +121,31 @@
 %   |\subcaptionsetup|\marg{options}\quad.
 % \end{quote}
 %
+% \pagebreak[3]
+% \Thispackage\ loads the \pkg{caption} package itself. If you load the \pkg{caption}
+% package with options, too, the order of both |\usepackage| commands does not matter,
+% e.g.:
+% \begin{quote}
+%   |\usepackage[labelfont=bf]{caption}|\\
+%   |\usepackage[labelfont=it]{subcaption}|
+% \end{quote}
+% gives the same result as loading \thispackage\ first.
+% (Only if you need a specific version of the \pkg{caption} package, load it first,
+% see section~\ref{sec:caption}.)
+%
+% \medskip
+%
+% \pagebreak[3]
+% The options of the \pkg{caption} package apply to sub-captions as well,
+% unless they are overridden by the default settings for sub-captions (see below)
+% or by own settings for sub-captions (see section~\ref{sec:options}).
+% For example
+% \begin{quote}
+%   |\usepackage[skip=20pt,labelfont=bf]{caption}|
+% \end{quote}
+% sets the label font of sub-captions to bold, too, but not their skip,
+% since the default settings for sub-captions contain |skip=6pt|.
+%
 % \bigskip
 %
 % \pagebreak[3]
@@ -130,6 +156,18 @@
 %     This means that sub-captions are not listed in the List of Figures
 %     or Tables by default, but you can enable it by
 %     specifying the option \texttt{list=true}.}
+% \end{quote}
+%
+% \pagebreak[3]
+% \INFO
+% Please note that some document classes and packages, e.g.~the \cls{memoir} document class
+% and the \pkg{tocloft} package, only show entries in the List of Figures (or Tables)
+% up to the level given by the counter |lofdepth| (or |lotdepth|), which they set to $1$.
+% Since entries for sub-captions have level $2$, they are written to the list file
+% but not shown. To show them, set these counters to $2$, e.g.:
+% \begin{quote}
+%   |\setcounter{lofdepth}{2}|\\
+%   |\setcounter{lotdepth}{2}|
 % \end{quote}
 %
 % \iffalse
@@ -602,6 +640,7 @@
 %
 % \PageBreak
 % \section{The \cs{DeclareCaptionSubType} command}
+% \label{sec:subtype}
 %
 % \DescribeMacro\DeclareCaptionSubType
 % For using the sub-caption feature of the \pkg{caption} package some
@@ -1566,6 +1605,88 @@
 % \begin{quote}
 %   |\subfloat|\oarg{list\_entry}\oarg{sub-caption}\marg{body}
 % \end{quote}
+%
+% \iffalse
+% --------------------------------------------------------------------------- %
+% \fi
+%
+% \PageBreak
+% \section{The sub-caption interface for package authors}
+% \label{sec:authors}
+%
+% The commands and environments of \thispackage\ are built on a low-level interface
+% offered by the \pkg{caption} package itself. Document class and package authors can use it
+% to offer own commands or environments for sub-captions, with or without \thispackage.
+%
+% \medskip
+%
+% |\Declare|\-|Caption|\-|Sub|\-|Type|\oarg{numbering scheme}\marg{type}
+% (see sections~\ref{sec:subtype} and~\ref{crossreferencing})
+% can only be used in the document preamble. It defines
+% \begin{itemize}
+%   \item the counter |sub|\meta{type}, which is reset by the counter \meta{type},
+%   \item |\thesub|\meta{type}, |\p@sub|\meta{type}, and |\theHsub|\meta{type} (for \pkg{hyperref}),
+%   \item |\sub|\meta{type}|name| (empty) and |\sub|\meta{type}|autorefname|
+%     (the same as |\|\meta{type}|autorefname|),
+%   \item |\ext@sub|\meta{type} (the same list file as for \meta{type}) and
+%     |\l@sub|\meta{type}, which typesets list entries at level $2$.
+% \end{itemize}
+% \Thispackage\ does this for |figure|, |table|, and all environments defined with
+% |\Declare|\-|Floating|\-|Environment|; without \thispackage\ you have to do it yourself.
+%
+% \pagebreak[3]
+% \DescribeMacro\setcaptionsubtype
+% The command
+% \begin{quote}
+%   |\setcaptionsubtype|\\
+%   |\setcaptionsubtype*|
+% \end{quote}
+% switches to the sub-caption mode: then |\caption| (and |\phantom|\-|caption|,
+% |\caption|\-|list|\-|entry|, and |\caption|\-|text|) work for sub-captions, i.e.~they use
+% the counter |sub|\meta{type} and the settings for sub-captions (see section~\ref{sec:options}).
+% The non-starred variant also sets a \pkg{hyperref} anchor (see section~\ref{hypcap}),
+% the starred variant does not.
+% It can only be used inside a floating environment (or after |\caption|\-|setup{type=|\ldots|}|),
+% otherwise the error ``\cs{setcaptionsubtype} outside float'' is issued.
+% Since the sub-caption mode lasts until the end of the current group,
+% use it inside an extra group or environment within the floating environment,
+% otherwise the warning ``\cs{setcaptionsubtype} outside box or environment'' is issued.
+%
+% \pagebreak[3]
+% \DescribeMacro\ForEachCaptionSubType
+% The command
+% \begin{quote}
+%   |\ForEachCaptionSubType|\marg{code}\\
+%   |\ForEachCaptionSubType*|\marg{code}
+% \end{quote}
+% executes \meta{code} for every sub-type, with |#1| as the name of the sub-type
+% (e.g.~|subfigure|).
+% The non-starred variant does this also for sub-types which are declared later on,
+% the starred variant only for the ones already declared.
+%
+% \medskip
+%
+% \pagebreak[3]
+% Code added to the internal macro |\caption@sub|\-|type|\-|hook|
+% (e.g.~with |\g@add|\-|to@macro|) will be executed every time the sub-caption mode is switched on;
+% |\@sub|\-|cap|\-|type| holds the name of the sub-type then.
+%
+% \medskip
+%
+% \pagebreak[3]
+% An example which does not use \thispackage:
+% \begin{quote}
+%   |\usepackage{caption}|\\
+%   |\DeclareCaptionSubType{figure}|\\
+%   |\captionsetup[subfigure]{labelformat=parens,labelsep=space}|\\
+%   |\newenvironment{mysubfigure}[1]|\\
+%   |  {\begin{minipage}[t]{#1}\setcaptionsubtype}|\\
+%   |  {\end{minipage}}|
+% \end{quote}
+% Inside a |figure|, |\caption| within |my|\-|sub|\-|figure| gives a sub-caption like `(a)~\ldots',
+% and |\ref| gives `1a'.
+% Note that without \thispackage\ the default settings for sub-captions
+% (|margin=0pt,font+=smaller,|\ldots, see section~\ref{sec:options}) are not set.
 %
 % \iffalse
 % --------------------------------------------------------------------------- %
